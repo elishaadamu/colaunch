@@ -4,7 +4,7 @@ import { Check, Play, Eye, Heart } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
-import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator } from '../../services/ai'
+import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator, parseFollowerCount } from '../../services/ai'
 
 
 const ANALYSIS_STEPS = [
@@ -41,7 +41,7 @@ const ANALYSIS_STEPS = [
 ]
 
 function fmt(n) {
-  n = parseInt(n) || 0
+  n = parseFollowerCount(n)
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`
   return String(n)

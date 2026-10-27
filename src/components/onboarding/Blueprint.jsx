@@ -4,14 +4,20 @@ import { ArrowRight, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, 
 import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
-import { generateRecommendationsAI, areRecsValidForCreator, getFallbackCleanRecommendations } from '../../services/ai'
+import { 
+  generateRecommendationsAI, 
+  areRecsValidForCreator, 
+  getFallbackCleanRecommendations,
+  calculateFollowerRevenueRange,
+  parseFollowerCount
+} from '../../services/ai'
 import { recommendCreator } from '../../services/opsApi'
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n) {
-  n = parseInt(n) || 0
+  n = parseFollowerCount(n)
   if (n >= 1_000_000) {
     const m = n / 1_000_000
     return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`
@@ -82,7 +88,7 @@ function buildCreatorBlurb(creator) {
 function buildReasons(blueprintId, creator) {
   const { platform, followers, engagementRate, niche, description } = creator
   const eng = parseFloat(engagementRate) || 0
-  const subs = parseInt(followers) || 0
+  const subs = parseFollowerCount(followers)
   const desc = (description || '').toLowerCase()
   const nicheL = (niche || '').toLowerCase()
 
@@ -323,8 +329,16 @@ const PREVIEW_COMPONENTS = { webapp: WebAppPreview, mobile: MobilePreview, commu
 
 // ── Mapping Recommendations ──────────────────────────────────────────────────
 
-function mapRecommendationsToBlueprints(recs) {
-  if (!recs || recs.length === 0) return BLUEPRINTS
+function mapRecommendationsToBlueprints(recs, creatorData = {}) {
+  const followers = parseFollowerCount(creatorData?.followers)
+  const eng = parseFloat(creatorData?.engagementRate) || 3.5
+
+  if (!recs || recs.length === 0) {
+    return BLUEPRINTS.map(b => ({
+      ...b,
+      revenue: calculateFollowerRevenueRange(followers, b.id, eng)
+    }))
+  }
 
   const CATEGORY_MAP = {
     course:            { type: 'Web App', icon: Globe, preview: 'webapp' },
@@ -350,13 +364,20 @@ function mapRecommendationsToBlueprints(recs) {
       other: ['Custom storefront', 'Digital delivery', 'Secure checkout', 'Customer dashboard']
     }
 
+    const dynamicRev = calculateFollowerRevenueRange(
+      followers,
+      r.product_category,
+      eng,
+      r.revenue_potential
+    )
+
     return {
       id: r.id || `rec-${index}`,
       type: config.type,
       name: r.product_name,
       tagline: r.tagline || 'Custom built for your brand',
       description: r.description || 'A tailored monetization platform designed specifically for your audience niche.',
-      revenue: r.revenue_potential || '$5K–$25K / mo',
+      revenue: dynamicRev,
       fit: Math.round((r.confidence_score || 0.8) * 100),
       icon: config.icon,
       primary: index === 0,
@@ -391,7 +412,7 @@ function parseMetricViews(str) {
 }
 
 function getDynamicEngagementRate(creator) {
-  const followers = parseInt(creator?.followers) || 0
+  const followers = parseFollowerCount(creator?.followers)
   const posts = creator?.recentPosts || []
 
   if (followers > 0 && posts.length > 0) {
@@ -425,7 +446,7 @@ function calculateAudienceFit(creator, blueprint) {
   if (blueprint?.fit && typeof blueprint.fit === 'number') {
     return blueprint.fit
   }
-  const followers = parseInt(creator?.followers) || 0
+  const followers = parseFollowerCount(creator?.followers)
   const niche = (creator?.niche || '').toLowerCase()
   const postCount = creator?.recentPosts?.length || 0
 
@@ -457,7 +478,7 @@ export default function Blueprint() {
   const rawRecs = creatorData.recommendations
   const isValidRecs = areRecsValidForCreator(rawRecs, creatorData)
   const validRecs = isValidRecs ? rawRecs : null
-  const blueprints = mapRecommendationsToBlueprints(validRecs)
+  const blueprints = mapRecommendationsToBlueprints(validRecs, creatorData)
   const [selected, setSelected] = useState(blueprints[0]?.id)
   const [visible,  setVisible]  = useState(false)
   const [showReasons, setShowReasons] = useState(false)
@@ -512,6 +533,12 @@ export default function Blueprint() {
           const cleanHandle = (creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
           return finalRecs.map(r => ({
             ...r,
+            revenue_potential: calculateFollowerRevenueRange(
+              creatorData.followers,
+              r.product_category,
+              creatorData.engagementRate,
+              r.revenue_potential
+            ),
             forHandle: cleanHandle,
             forCreator: creatorData.name || ''
           }))

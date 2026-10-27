@@ -6,6 +6,7 @@ import {
   Download, ShoppingBag, Laptop, Smartphone, Volume2, Award
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
+import { parseFollowerCount } from '../../services/ai'
 
 const QUICK_PROMPTS = [
   'Make it more premium',
@@ -30,7 +31,7 @@ function getDynamicProducts(blueprint, creatorData) {
   const bpName = blueprint?.name || 'Platform'
   const bpNameL = bpName.toLowerCase()
   const category = (blueprint?.raw?.product_category || '').toLowerCase()
-  const followers = parseInt(creatorData.followers) || 0
+  const followers = parseFollowerCount(creatorData.followers)
 
   // 1. Philanthropy / Impact / Cause ventures
   if (bpNameL.includes('philanthrop') || bpNameL.includes('impact') || bpNameL.includes('charity')) {

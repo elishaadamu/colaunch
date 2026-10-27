@@ -1409,11 +1409,30 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
 }
 
 /**
+ * Robust follower parsing that handles numeric values and strings like "455K", "1.2M", "10,500".
+ */
+export function parseFollowerCount(val) {
+  if (typeof val === 'number') return isNaN(val) ? 0 : Math.round(val);
+  if (!val) return 0;
+  const s = String(val).replace(/,/g, '').trim().toLowerCase();
+  const m = s.match(/([\d.]+)\s*([kmb])?/);
+  if (m) {
+    const num = parseFloat(m[1]) || 0;
+    const unit = m[2];
+    if (unit === 'b') return Math.round(num * 1_000_000_000);
+    if (unit === 'm') return Math.round(num * 1_000_000);
+    if (unit === 'k') return Math.round(num * 1_000);
+    return Math.round(num);
+  }
+  return parseInt(s) || 0;
+}
+
+/**
  * Calculates a realistic, dynamically scaled revenue range based on follower count,
  * engagement rate, and product category.
  */
 export function calculateFollowerRevenueRange(followers = 0, category = 'course', engagementRate = 3.5, rawRev = null) {
-  const f = Math.max(50, parseInt(followers) || 0);
+  const f = Math.max(50, parseFollowerCount(followers));
   const eng = Math.max(1.0, Math.min(15.0, parseFloat(engagementRate) || 3.5));
   const engMultiplier = 0.75 + (eng / 10.0) * 0.7;
 
@@ -1468,10 +1487,10 @@ export function calculateFollowerRevenueRange(followers = 0, category = 'course'
       return m % 1 === 0 ? `$${m}M` : `$${m.toFixed(1)}M`;
     }
     if (val >= 100_000) {
-      return `$${Math.round(val / 10_000) * 10}K`;
+      return `$${Math.round(val / 10_000) * 10}k`;
     }
     if (val >= 1_000) {
-      return `$${Math.round(val / 1000)}K`;
+      return `$${Math.round(val / 1000)}k`;
     }
     return `$${val}`;
   };
@@ -1490,12 +1509,12 @@ export function calculateFollowerRevenueRange(followers = 0, category = 'course'
       const n1 = parseNum(cleanMatches[0]);
       const n2 = parseNum(cleanMatches[1]);
       if (n1 > 0 && n2 > 0 && n1 >= 0.25 * lowARR && n2 <= 3.5 * highARR) {
-        return `${fmtArr(n1)}–${fmtArr(n2)}`;
+        return `${fmtArr(n1)}-${fmtArr(n2)}`;
       }
     }
   }
 
-  return `${fmtArr(lowARR)}–${fmtArr(highARR)}`;
+  return `${fmtArr(lowARR)}-${fmtArr(highARR)}`;
 }
 
 /**
@@ -1567,7 +1586,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   const rawNiche = Array.isArray(creatorData.niche) ? creatorData.niche[0] : creatorData.niche;
   const niche = rawNiche || "Content";
   const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
-  const followers = parseInt(creatorData.followers) || 0;
+  const followers = parseFollowerCount(creatorData.followers);
   const eng = parseFloat(creatorData.engagementRate) || 3.5;
 
   return [
