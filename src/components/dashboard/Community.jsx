@@ -1,59 +1,126 @@
-import { useState, useEffect, useRef } from 'react'
-import { useForge } from '../../App'
-import { Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useForge, getAccent } from '../../App'
+import { 
+  Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, 
+  Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send, ExternalLink
+} from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
+import { hexToRgb } from '../../utils/avatarColorExtractor'
 
-const COMMUNITY_CONTENT_TYPES = [
-  {
-    id: 'welcome',
-    icon: Users,
-    label: 'Welcome post',
-    description: 'Onboard new members with energy',
-    example: `Welcome to [Community Name]! 🎉\n\nYou made it. This is the place where creators come to actually build - not just learn.\n\nHere's what to do first:\n→ Introduce yourself below\n→ Check the pinned resources\n→ Join the weekly challenge thread\n\nTag someone you think should be here. Let's build together.`,
-  },
-  {
-    id: 'challenge',
-    icon: Radio,
-    label: 'Weekly challenge',
-    description: 'Drive engagement and accountability',
-    example: `This week's challenge: ⚡\n\nPost ONE piece of content that directly promotes your offer. No hiding behind value posts.\n\nDirect ask. Clear CTA. Ship it.\n\nTag me when you post it - I'll reshare the best ones.\n\nWho's in? Comment "IN" below 👇`,
-  },
-  {
-    id: 'discussion',
-    icon: MessageSquare,
-    label: 'Discussion starter',
-    description: 'Get members talking and engaging',
-    example: `Quick question for the group:\n\nWhat's the ONE thing holding you back from monetizing right now?\n\nBe honest. I'm going to address the top 3 answers this week.\n\nDrop your answer below 👇`,
-  },
-  {
-    id: 'announcement',
-    icon: Plus,
-    label: 'Member announcement',
-    description: 'Share news, drops, or updates',
-    example: `Big news for the community:\n\n[Product / feature / event] is live.\n\nHere's what this means for you:\n→ [Benefit 1]\n→ [Benefit 2]\n→ [Benefit 3]\n\nCheck it out here: [link]\n\nQuestions? Drop them below.`,
-  },
-  {
-    id: 'recap',
-    icon: ChevronRight,
-    label: 'Weekly recap',
-    description: 'Celebrate wins and keep momentum',
-    example: `Week recap 🏁\n\nThis week we:\n✓ Hit a new milestone\n✓ Had members ship their first thing\n✓ Answered questions live\n\nDrop your biggest win from this week below 👇`,
-  },
-  {
-    id: 'qa',
-    icon: MessageSquare,
-    label: 'Audience Q&A prompt',
-    description: 'Collect questions for a live or post',
-    example: `I'm doing a community Q&A soon.\n\nAsk me anything about my niche:\n→ How to get started\n→ What I'd do differently\n→ My biggest lessons\n\nDrop your question below - I'll answer every one.`,
-  },
-]
+// ─── Dynamic Community Content Generator ─────────────────────────────────────
+
+function getCommunityContentTypes(productName, creatorName, handle, niche) {
+  const cleanHandle = (handle || '').replace(/^@/, '')
+  const name = creatorName || cleanHandle || 'Creator'
+  const nicheTopic = niche || 'content creation'
+
+  return [
+    {
+      id: 'welcome',
+      icon: Users,
+      label: 'Welcome post',
+      description: 'Onboard new members with energy',
+      example: `Welcome to ${productName}! 🎉\n\nYou made it. This is the official founding community where we build, execute, and collaborate directly with @${cleanHandle}.\n\nHere is your immediate kickoff checklist:\n→ Introduce yourself below (where you are from & your #1 goal)\n→ Check the pinned resources and asset drops\n→ Join this week's active sprint challenge\n\nTag someone who should be here. Let's build together 👇`,
+    },
+    {
+      id: 'challenge',
+      icon: Radio,
+      label: 'Weekly challenge',
+      description: 'Drive engagement and accountability',
+      example: `⚡ Weekly Challenge: The 72-Hour ${nicheTopic.toUpperCase()} Sprint!\n\nNo overthinking this week. Every member of ${productName} takes one concrete action towards their goals.\n\nDirect milestone. Clear execution. Ship it.\n\nTag me (@${cleanHandle}) when you drop it — I will personally review and highlight the top submissions in our next update.\n\nWho is in? Comment "IN" below 👇`,
+    },
+    {
+      id: 'discussion',
+      icon: MessageSquare,
+      label: 'Discussion starter',
+      description: 'Get members talking and engaging',
+      example: `Quick question for the ${productName} community:\n\nWhat is the SINGLE biggest bottleneck holding you back in ${nicheTopic} right now?\n\nBe 100% honest. I am personally answering and breaking down solutions for the top questions this week.\n\nDrop your thoughts below 👇`,
+    },
+    {
+      id: 'announcement',
+      icon: Plus,
+      label: 'Member announcement',
+      description: 'Share news, drops, or updates',
+      example: `🚀 Milestone Update for ${productName} Members:\n\nOur latest milestone and member toolkit are officially live!\n\nHere is what this unlocks for our members:\n→ Exclusive member-only templates & frameworks\n→ Direct access to our upcoming community session\n→ Early-bird access to our next product drop\n\nHead over to the Resources tab to check it out. Questions? Drop them below!`,
+    },
+    {
+      id: 'recap',
+      icon: ChevronRight,
+      label: 'Weekly recap',
+      description: 'Celebrate wins and keep momentum',
+      example: `🏁 Week in Review: ${productName}\n\nWhat an incredible week across our community:\n✓ Multiple members shipped their first milestones\n✓ Great breakthroughs in our challenge threads\n✓ Our member base continues to grow with high-caliber creators\n\nDrop your biggest win of the week in the comments below! 👇`,
+    },
+    {
+      id: 'qa',
+      icon: MessageSquare,
+      label: 'Audience Q&A prompt',
+      description: 'Collect questions for a live or post',
+      example: `🎙️ Exclusive ${productName} Community Q&A with ${name}\n\nI am collecting questions directly from our founding circle for an exclusive deep-dive breakdown.\n\nAsk me anything about:\n→ My workflows and scaling secrets\n→ How we structured ${productName}\n→ My biggest lessons in ${nicheTopic}\n\nDrop your question below — nothing is off-limits!`,
+    },
+  ]
+}
+
+// ─── Initial Dynamic Seed Helpers ─────────────────────────────────────────────
+
+function getInitialFoundingMembers(productName, handle) {
+  const now = Date.now()
+  return [
+    { name: 'Alex Rivera', email: 'alex.rivera@techpulse.io', joinedAt: new Date(now - 1 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Sarah Lin', email: 'sarah.lin@studioflow.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'VIP Contributor' },
+    { name: 'Marcus Vance', email: 'marcus.vance99@gmail.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Elena Rostova', email: 'elena.rostova@designlab.co', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Priya Sharma', email: 'priya.creatives@gmail.com', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'VIP Contributor' },
+    { name: 'David Kim', email: 'dkim.builds@horizon.co', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Chloe Bennett', email: 'chloe.bennett@creatorpulse.org', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Lucas Silva', email: 'lucas.silva@ventures.io', joinedAt: new Date(now - 5 * 86400000).toISOString(), role: 'Founding Member' },
+  ]
+}
+
+function getInitialScheduledPosts(productName, creatorName, handle, niche) {
+  const types = getCommunityContentTypes(productName, creatorName, handle, niche)
+  const now = new Date()
+  
+  const post1Date = new Date(now.getTime() + 1 * 86400000)
+  const post2Date = new Date(now.getTime() + 3 * 86400000)
+  const post3Date = new Date(now.getTime() + 5 * 86400000)
+
+  return [
+    {
+      id: 'sched-1',
+      type: types[0].label,
+      typeId: types[0].id,
+      content: types[0].example.slice(0, 120) + '…',
+      fullContent: types[0].example,
+      date: post1Date.toISOString(),
+      dateLabel: post1Date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    },
+    {
+      id: 'sched-2',
+      type: types[1].label,
+      typeId: types[1].id,
+      content: types[1].example.slice(0, 120) + '…',
+      fullContent: types[1].example,
+      date: post2Date.toISOString(),
+      dateLabel: post2Date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    },
+    {
+      id: 'sched-3',
+      type: types[5].label,
+      typeId: types[5].id,
+      content: types[5].example.slice(0, 120) + '…',
+      fullContent: types[5].example,
+      date: post3Date.toISOString(),
+      dateLabel: post3Date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    },
+  ]
+}
 
 // ─── Mini Calendar Component ──────────────────────────────────────────────────
 
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function MiniCalendar({ onSelect, scheduledPosts = [] }) {
+function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#ff3b30' }) {
   const [viewDate, setViewDate] = useState(new Date())
 
   const year = viewDate.getFullYear()
@@ -114,30 +181,31 @@ function MiniCalendar({ onSelect, scheduledPosts = [] }) {
               onClick={() => onSelect(dateObj)}
               className="relative w-full aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold transition-all duration-100"
               style={{
-                color: isPast ? 'rgba(255,255,255,0.15)' : isToday ? 'white' : 'rgba(255,255,255,0.7)',
+                color: isPast ? 'rgba(255,255,255,0.15)' : isToday ? '#ffffff' : 'rgba(255,255,255,0.7)',
                 background: isToday ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: isToday ? '1px solid rgba(255,255,255,0.15)' : '1px solid transparent',
+                border: isToday ? `1px solid ${creatorColor}` : '1px solid transparent',
                 cursor: isPast ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={e => {
                 if (!isPast) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                  e.currentTarget.style.borderColor = creatorColor
                   e.currentTarget.style.color = 'white'
                 }
               }}
               onMouseLeave={e => {
                 if (!isPast) {
                   e.currentTarget.style.background = isToday ? 'rgba(255,255,255,0.08)' : 'transparent'
-                  e.currentTarget.style.borderColor = isToday ? 'rgba(255,255,255,0.15)' : 'transparent'
-                  e.currentTarget.style.color = isToday ? 'white' : 'rgba(255,255,255,0.7)'
+                  e.currentTarget.style.borderColor = isToday ? creatorColor : 'transparent'
+                  e.currentTarget.style.color = isToday ? '#ffffff' : 'rgba(255,255,255,0.7)'
                 }
               }}
             >
               <span>{day}</span>
               {hasPost && (
                 <span 
-                  className="absolute bottom-1 w-1 h-1 rounded-full bg-purple-400"
+                  className="absolute bottom-1 w-1.5 h-1.5 rounded-full"
+                  style={{ background: creatorColor }}
                   title={`${postsForDay.length} post(s) scheduled`}
                 />
               )}
@@ -151,7 +219,7 @@ function MiniCalendar({ onSelect, scheduledPosts = [] }) {
 
 // ─── Broadcast Email Modal Component ──────────────────────────────────────────
 
-function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, handle }) {
+function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, handle, creatorColor, cr, cg, cb }) {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -181,7 +249,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
     } catch (e) {
       if (triggerToast) triggerToast('Failed to draft with AI, showing template', 'error')
       setSubject(`Quick update from ${creatorData.name || 'creator'}`)
-      setMessage(`Hey everyone,\n\nHope you're doing great! Here is a quick update...\n\nBest,\n${creatorData.name || 'creator'}`)
+      setMessage(`Hey everyone,\n\nHope you're doing great! Here is a quick update for our ${productName} community...\n\nBest,\n${creatorData.name || 'creator'}`)
     } finally {
       setIsDrafting(false)
     }
@@ -226,12 +294,18 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
 
         {/* Title */}
         <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-white/5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ background: 'rgba(139,92,246,0.12)', borderColor: 'rgba(139,92,246,0.25)' }}>
-            <Send size={14} className="text-purple-400" />
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center border" 
+            style={{ 
+              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
+              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
+            }}
+          >
+            <Send size={14} style={{ color: creatorColor }} />
           </div>
           <div>
             <h3 className="text-[16px] font-bold text-white">Send Email Broadcast</h3>
-            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Reaching out to all <span className="text-white font-medium">{members.length} members</span>
             </p>
           </div>
@@ -253,7 +327,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
                 border: '1px solid rgba(255,255,255,0.08)',
                 color: 'white',
               }}
-              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
+              onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.45)`}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
@@ -264,7 +338,12 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
               <button 
                 onClick={handleDraftWithAi}
                 disabled={isDrafting}
-                className="flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 hover:bg-purple-500/20 transition-all"
+                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all"
+                style={{
+                  color: creatorColor,
+                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
+                }}
               >
                 {isDrafting ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
                 Draft with AI
@@ -282,7 +361,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
                 border: '1px solid rgba(255,255,255,0.08)',
                 color: 'white',
               }}
-              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
+              onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.45)`}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
@@ -309,7 +388,11 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
             <button 
               onClick={handleSend}
               disabled={isSending || !subject.trim() || !message.trim()}
-              className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-white text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed transition-all"
+              style={{
+                background: isSending || !subject.trim() || !message.trim() ? undefined : creatorColor,
+                boxShadow: isSending || !subject.trim() || !message.trim() ? 'none' : `0 0 16px rgba(${cr}, ${cg}, ${cb}, 0.35)`
+              }}
             >
               {isSending ? 'Sending...' : 'Send Broadcast'}
             </button>
@@ -324,8 +407,45 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
 
 export default function Community() {
   const { creatorData, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
-  const [selectedType, setSelectedType] = useState(null)
-  const [generated, setGenerated] = useState(null)
+
+  // Resolve Creator Brand Color dynamically
+  const creatorColor = useMemo(() => {
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    try {
+      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
+      if (rawMap) {
+        const map = JSON.parse(rawMap)
+        const id = creatorData?.id
+        const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
+        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
+      }
+    } catch {}
+    const platform = (creatorData?.platform || '').toLowerCase()
+    const pAccent = getAccent(platform)
+    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') return pAccent.color
+    return '#ff3b30'
+  }, [creatorData])
+
+  const [cr, cg, cb] = useMemo(() => hexToRgb(creatorColor), [creatorColor])
+
+  const handle = creatorData?.handle || '@creator'
+  const productName = creatorData.productName || 'Creator Academy'
+  const cleanHandle = handle.replace(/^@/, '').replace(/\//g, '-')
+  const creatorName = creatorData?.name || cleanHandle || 'Creator'
+  const niche = creatorData?.niche || 'content creation'
+
+  // Dynamic Content Types personalized to creator & product
+  const communityContentTypes = useMemo(
+    () => getCommunityContentTypes(productName, creatorName, cleanHandle, niche),
+    [productName, creatorName, cleanHandle, niche]
+  )
+
+  const [selectedType, setSelectedType] = useState(() => communityContentTypes[0])
+  const [generated, setGenerated] = useState(() => communityContentTypes[0]?.example || '')
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -338,17 +458,21 @@ export default function Community() {
   const calendarRef = useRef(null)
   const outputRef = useRef(null)
 
-  const handle = creatorData?.handle || '@creator'
-  const productName = creatorData.productName || 'Creator Academy'
-  const cleanHandle = handle.replace(/^@/, '').replace(/\//g, '-')
-
   // ── Members ──
   const getMembersKey = () => `forge_${cleanHandle}_community_members`
   const [members, setMembers] = useState(() => {
     try {
       const cached = localStorage.getItem(getMembersKey())
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+      const initial = getInitialFoundingMembers(productName, handle)
+      localStorage.setItem(getMembersKey(), JSON.stringify(initial))
+      return initial
+    } catch { 
+      return getInitialFoundingMembers(productName, handle)
+    }
   })
 
   // Sync members from localStorage on focus (when join page adds one)
@@ -368,8 +492,16 @@ export default function Community() {
   const [scheduledPosts, setScheduledPosts] = useState(() => {
     try {
       const cached = localStorage.getItem(getScheduledKey())
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+      const initial = getInitialScheduledPosts(productName, creatorName, cleanHandle, niche)
+      localStorage.setItem(getScheduledKey(), JSON.stringify(initial))
+      return initial
+    } catch { 
+      return getInitialScheduledPosts(productName, creatorName, cleanHandle, niche)
+    }
   })
 
   const saveScheduledPosts = (posts) => {
@@ -417,7 +549,7 @@ export default function Community() {
     } catch (err) {
       console.error('[Forge Community] AI generation failed:', err)
       setGenerated(type.example)
-      if (triggerToast) triggerToast('AI unavailable — showing template', 'error')
+      if (triggerToast) triggerToast('AI unavailable — showing tailored template', 'error')
     } finally {
       setIsGenerating(false)
     }
@@ -433,6 +565,7 @@ export default function Community() {
     navigator.clipboard.writeText(generated)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    if (triggerToast) triggerToast('Copied content to clipboard', 'success')
   }
 
   const handleScheduleDate = (date) => {
@@ -459,6 +592,7 @@ export default function Community() {
   const handleDeleteScheduled = (id) => {
     saveScheduledPosts(scheduledPosts.filter(p => p.id !== id))
     if (editingPostId === id) setEditingPostId(null)
+    if (triggerToast) triggerToast('Scheduled post deleted', 'info')
   }
 
   const handleSaveEdit = (id) => {
@@ -477,15 +611,33 @@ export default function Community() {
     if (triggerToast) triggerToast('Scheduled post updated successfully', 'success')
   }
 
+  const postsThisWeek = scheduledPosts.filter(p => {
+    const d = new Date(p.date)
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 86400000)
+    const weekAhead = new Date(now.getTime() + 7 * 86400000)
+    return d >= weekAgo && d <= weekAhead
+  }).length
+
   const memberStats = [
-    { label: 'Members', value: members.length.toString(), sub: members.length === 0 ? 'Share your invite link' : `${members.length} joined` },
-    { label: 'Scheduled', value: scheduledPosts.length.toString(), sub: scheduledPosts.length === 0 ? 'Schedule a post' : 'Posts queued' },
-    { label: 'Posts this week', value: scheduledPosts.filter(p => {
-      const d = new Date(p.date)
-      const now = new Date()
-      const weekAgo = new Date(now.getTime() - 7 * 86400000)
-      return d >= weekAgo && d <= now
-    }).length.toString(), sub: 'This week' },
+    { 
+      label: 'Members', 
+      value: members.length.toString(), 
+      sub: `${members.length} founding members joined`,
+      badge: '● Live Community'
+    },
+    { 
+      label: 'Scheduled', 
+      value: scheduledPosts.length.toString(), 
+      sub: `${scheduledPosts.length} posts in queue`,
+      badge: scheduledPosts[0]?.dateLabel ? `Next: ${scheduledPosts[0].dateLabel}` : 'Active'
+    },
+    { 
+      label: 'Posts this week', 
+      value: postsThisWeek.toString(), 
+      sub: `${postsThisWeek} scheduled this cycle`,
+      badge: 'Active Cadence'
+    },
   ]
 
   return (
@@ -495,7 +647,7 @@ export default function Community() {
       <h2 className="forge-heading mb-2" style={{ fontSize: 'clamp(22px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
         {productName} community
       </h2>
-      <p className="text-[14px] mb-6" style={{ color: 'rgba(255,255,255,0.38)' }}>
+      <p className="text-[14px] mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>
         Generate posts, challenges, and discussions — keep your community active and engaged.
       </p>
 
@@ -503,24 +655,35 @@ export default function Community() {
       <div
         className="rounded-xl border p-4 mb-6 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, rgba(139,92,246,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-          borderColor: 'rgba(139,92,246,0.2)',
+          background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255,255,255,0.02) 100%)`,
+          borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
         }}
       >
-        <div className="absolute -right-6 -top-6 w-20 h-20 rounded-full bg-purple-500/10 blur-xl pointer-events-none" />
+        <div 
+          className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-xl pointer-events-none" 
+          style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
+        />
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ background: 'rgba(139,92,246,0.12)', borderColor: 'rgba(139,92,246,0.25)' }}>
-            <Link2 size={14} className="text-purple-400" />
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center border" 
+            style={{ 
+              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
+              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
+            }}
+          >
+            <Link2 size={14} style={{ color: creatorColor }} />
           </div>
           <div>
             <p className="text-[13px] font-semibold text-white">Community invite link</p>
-            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Share this link so people can join your community</p>
+            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Share this link so people can join your community
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div
             className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono truncate"
-            style={{ background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
             {inviteLink}
           </div>
@@ -528,9 +691,9 @@ export default function Community() {
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-150"
             style={{
-              background: linkCopied ? 'rgba(52,211,153,0.15)' : 'rgba(139,92,246,0.15)',
-              color: linkCopied ? '#34d399' : '#c084fc',
-              border: `1px solid ${linkCopied ? 'rgba(52,211,153,0.25)' : 'rgba(139,92,246,0.25)'}`,
+              background: linkCopied ? 'rgba(52,211,153,0.15)' : `rgba(${cr}, ${cg}, ${cb}, 0.15)`,
+              color: linkCopied ? '#34d399' : creatorColor,
+              border: `1px solid ${linkCopied ? 'rgba(52,211,153,0.25)' : `rgba(${cr}, ${cg}, ${cb}, 0.3)`}`,
             }}
           >
             {linkCopied ? <Check size={12} /> : <Copy size={12} />}
@@ -545,38 +708,62 @@ export default function Community() {
               <button
                 onClick={() => setShowMembers(o => !o)}
                 className="flex items-center gap-2 text-[12px] font-medium transition-colors"
-                style={{ color: 'rgba(255,255,255,0.45)' }}
+                style={{ color: 'rgba(255,255,255,0.6)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'white'}
-                onMouseLeave={e => { if (!showMembers) e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+                onMouseLeave={e => { if (!showMembers) e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
               >
-                <Users size={12} />
-                {members.length} member{members.length !== 1 ? 's' : ''} joined
+                <Users size={12} style={{ color: creatorColor }} />
+                <span>{members.length} member{members.length !== 1 ? 's' : ''} joined</span>
                 <ChevronDown size={11} className={`transition-transform duration-200 ${showMembers ? 'rotate-180' : ''}`} />
               </button>
               
               <button
                 onClick={() => setBroadcastOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                style={{
+                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                  color: creatorColor,
+                  border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`,
+                }}
               >
                 <Send size={10} />
                 Broadcast Email
               </button>
             </div>
             {showMembers && (
-              <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto">
+              <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {members.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/[0.02] group" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <div key={i} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/[0.04] group" style={{ background: 'rgba(255,255,255,0.02)' }}>
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(139,92,246,0.2)', color: '#c084fc' }}>
+                      <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" 
+                        style={{ 
+                          background: `rgba(${cr}, ${cg}, ${cb}, 0.2)`, 
+                          color: creatorColor 
+                        }}
+                      >
                         {(m.name || m.email || '?').charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-medium text-white truncate">{m.name || 'Anonymous'}</p>
-                        <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{m.email}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[12px] font-medium text-white truncate">{m.name || 'Anonymous'}</p>
+                          {m.role && (
+                            <span 
+                              className="text-[9px] px-1.5 py-0.2 rounded font-medium"
+                              style={{
+                                background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                                color: creatorColor,
+                              }}
+                            >
+                              {m.role}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{m.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
                         {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                       </span>
                       <a
@@ -599,10 +786,31 @@ export default function Community() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         {memberStats.map(s => (
-          <div key={s.label} className="rounded-xl border p-4" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-[12px] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.label}</p>
-            <p className="text-[22px] font-semibold tracking-tight text-white">{s.value}</p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>{s.sub}</p>
+          <div 
+            key={s.label} 
+            className="rounded-xl border p-4 transition-all duration-200" 
+            style={{ 
+              background: '#111', 
+              borderColor: 'rgba(255,255,255,0.07)' 
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{s.label}</p>
+              {s.badge && (
+                <span 
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                    color: creatorColor,
+                    border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
+                  }}
+                >
+                  {s.badge}
+                </span>
+              )}
+            </div>
+            <p className="text-[24px] font-bold tracking-tight text-white">{s.value}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.sub}</p>
           </div>
         ))}
       </div>
@@ -613,27 +821,46 @@ export default function Community() {
           <div className="w-full min-w-0">
             <p className="forge-label mb-3">Generate</p>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 w-full">
-              {COMMUNITY_CONTENT_TYPES.map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => handleGenerate(type)}
-                  className="w-full text-left flex flex-col lg:flex-row items-start lg:items-center gap-2.5 lg:gap-3 p-3 lg:p-3.5 rounded-xl border transition-all duration-150"
-                  style={{
-                    background: selectedType?.id === type.id ? 'rgba(255,255,255,0.07)' : '#111',
-                    borderColor: selectedType?.id === type.id ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)',
-                  }}
-                  onMouseEnter={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#161616'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' } }}
-                  onMouseLeave={e => { if (selectedType?.id !== type.id) { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' } }}
-                >
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                    <type.icon size={13} className="text-white/50" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[12px] lg:text-[13px] font-semibold text-white truncate">{type.label}</p>
-                    <p className="text-[10px] lg:text-[11px] hidden lg:block" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
-                  </div>
-                </button>
-              ))}
+              {communityContentTypes.map(type => {
+                const isSelected = selectedType?.id === type.id
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => handleGenerate(type)}
+                    className="w-full text-left flex flex-col lg:flex-row items-start lg:items-center gap-2.5 lg:gap-3 p-3 lg:p-3.5 rounded-xl border transition-all duration-150"
+                    style={{
+                      background: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.1)` : '#111',
+                      borderColor: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.4)` : 'rgba(255,255,255,0.07)',
+                    }}
+                    onMouseEnter={e => { 
+                      if (!isSelected) { 
+                        e.currentTarget.style.background = '#161616'
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' 
+                      } 
+                    }}
+                    onMouseLeave={e => { 
+                      if (!isSelected) { 
+                        e.currentTarget.style.background = '#111'
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' 
+                      } 
+                    }}
+                  >
+                    <div 
+                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" 
+                      style={{ 
+                        background: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.2)` : 'rgba(255,255,255,0.07)',
+                        color: isSelected ? creatorColor : 'rgba(255,255,255,0.5)'
+                      }}
+                    >
+                      <type.icon size={13} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] lg:text-[13px] font-semibold text-white truncate">{type.label}</p>
+                      <p className="text-[10px] lg:text-[11px] hidden lg:block" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -643,15 +870,22 @@ export default function Community() {
             className="rounded-xl border p-4 transition-all duration-300 w-full lg:w-full mx-auto lg:mx-0"
             style={{
               background: '#111',
-              borderColor: highlightCalendar ? 'rgba(168,85,247,0.6)' : 'rgba(255,255,255,0.07)',
-              boxShadow: highlightCalendar ? '0 0 15px rgba(168,85,247,0.15)' : 'none',
+              borderColor: highlightCalendar ? `rgba(${cr}, ${cg}, ${cb}, 0.6)` : 'rgba(255,255,255,0.07)',
+              boxShadow: highlightCalendar ? `0 0 15px rgba(${cr}, ${cg}, ${cb}, 0.25)` : 'none',
               maxWidth: '320px'
             }}
           >
             <div className="flex items-center justify-between mb-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider m-0">Content Calendar</p>
               {generated && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 animate-pulse font-medium">
+                <span 
+                  className="text-[9px] px-2 py-0.5 rounded-full animate-pulse font-medium"
+                  style={{
+                    background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                    color: creatorColor,
+                    border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
+                  }}
+                >
                   Select date to schedule
                 </span>
               )}
@@ -659,6 +893,7 @@ export default function Community() {
             <MiniCalendar
               onSelect={handleScheduleDate}
               scheduledPosts={scheduledPosts}
+              creatorColor={creatorColor}
             />
           </div>
         </div>
@@ -667,27 +902,34 @@ export default function Community() {
         <div ref={outputRef}>
           {isGenerating ? (
             <div className="rounded-2xl border p-6 flex items-center gap-3" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.08)' }}>
-              <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center">
-                <Sparkles size={11} className="text-black" />
+              <div 
+                className="w-6 h-6 rounded-lg flex items-center justify-center"
+                style={{ background: creatorColor, color: '#ffffff' }}
+              >
+                <Sparkles size={11} />
               </div>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.4)', animationDelay: `${i * 0.15}s` }} />
+                  <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.6)`, animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
-              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.35)' }}>AI writing {selectedType?.label}...</span>
+              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>AI writing {selectedType?.label}...</span>
             </div>
           ) : generated ? (
             <div className="rounded-2xl border overflow-hidden" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.09)' }}>
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
                 <div className="flex items-center gap-2">
-                  <Sparkles size={13} className="text-white/40" />
+                  <Sparkles size={13} style={{ color: creatorColor }} />
                   <span className="text-[13px] font-semibold text-white">{selectedType?.label}</span>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}>
-                    {copied ? <Check size={11} /> : <Copy size={11} />}
+                  <button 
+                    onClick={handleCopy} 
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all" 
+                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }}
+                  >
+                    {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                     {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
@@ -698,7 +940,7 @@ export default function Community() {
                 <textarea
                   value={generated}
                   onChange={e => setGenerated(e.target.value)}
-                  className="w-full text-[13px] whitespace-pre-wrap leading-relaxed bg-transparent outline-none border-none resize-none text-white/80"
+                  className="w-full text-[13px] whitespace-pre-wrap leading-relaxed bg-transparent outline-none border-none resize-none text-white/90"
                   style={{ fontFamily: 'inherit', minHeight: '160px', height: 'auto' }}
                   placeholder="Edit your generated content post here..."
                 />
@@ -712,7 +954,12 @@ export default function Community() {
                 </button>
                 <button
                   onClick={handleScheduleClick}
-                  className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 ml-auto"
+                  className="text-[12px] py-2 px-4 gap-1.5 ml-auto flex items-center font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  style={{
+                    background: creatorColor,
+                    color: '#ffffff',
+                    boxShadow: `0 0 16px rgba(${cr}, ${cg}, ${cb}, 0.35)`
+                  }}
                 >
                   <Calendar size={11} />
                   Schedule Post
@@ -721,9 +968,9 @@ export default function Community() {
             </div>
           ) : (
             <div className="rounded-2xl border flex flex-col items-center justify-center text-center py-16 px-8" style={{ borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)' }}>
-              <Sparkles size={24} className="mb-3 text-white/25" />
-              <p className="text-[14px] font-medium text-white/40 mb-1">Select a post type</p>
-              <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+              <Sparkles size={24} className="mb-3" style={{ color: `rgba(${cr}, ${cg}, ${cb}, 0.4)` }} />
+              <p className="text-[14px] font-medium text-white/60 mb-1">Select a post type</p>
+              <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
                 Forge will generate community-ready copy personalized to {productName}.
               </p>
             </div>
@@ -748,12 +995,19 @@ export default function Community() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-[12px] font-semibold text-white">{post.type}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(139,92,246,0.12)', color: '#c084fc' }}>
+                          <span 
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" 
+                            style={{ 
+                              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
+                              color: creatorColor,
+                              border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
+                            }}
+                          >
                             {post.dateLabel}
                           </span>
                         </div>
                         {expandedPostId !== post.id && (
-                          <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{post.content}</p>
+                          <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{post.content}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 self-center">
@@ -795,12 +1049,14 @@ export default function Community() {
                           <textarea
                             value={editingText}
                             onChange={e => setEditingText(e.target.value)}
-                            className="w-full text-[12px] whitespace-pre-wrap leading-relaxed bg-black/45 p-3 rounded-lg overflow-x-auto border border-white/10 outline-none focus:border-purple-500/30 text-white/80 font-mono"
+                            className="w-full text-[12px] whitespace-pre-wrap leading-relaxed bg-black/45 p-3 rounded-lg overflow-x-auto border border-white/10 outline-none text-white/90 font-mono transition-colors"
                             style={{ minHeight: '120px' }}
                             placeholder="Edit post content..."
+                            onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.5)`}
+                            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                           />
                         ) : (
-                          <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/70 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
+                          <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/80 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
                             {post.fullContent || post.content}
                           </pre>
                         )}
@@ -865,15 +1121,22 @@ export default function Community() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl border" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
                   <span className="text-lg">{item.emoji}</span>
-                  <span className="text-[13px] flex-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{item.label}</span>
+                  <span className="text-[13px] flex-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{item.label}</span>
                   <button
                     onClick={() => {
-                      const type = COMMUNITY_CONTENT_TYPES.find(t => t.id === item.typeId)
+                      const type = communityContentTypes.find(t => t.id === item.typeId)
                       if (type) handleGenerate(type)
                     }}
-                    className="text-[12px] px-3 py-1 rounded-full transition-all duration-150" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}
-                    onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.12)'; e.target.style.color = 'white' }}
-                    onMouseLeave={e => { e.target.style.background = 'rgba(255,255,255,0.07)'; e.target.style.color = 'rgba(255,255,255,0.4)' }}
+                    className="text-[12px] px-3 py-1 rounded-full transition-all duration-150 font-medium" 
+                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}
+                    onMouseEnter={e => { 
+                      e.target.style.background = `rgba(${cr}, ${cg}, ${cb}, 0.2)`
+                      e.target.style.color = creatorColor 
+                    }}
+                    onMouseLeave={e => { 
+                      e.target.style.background = 'rgba(255,255,255,0.07)'
+                      e.target.style.color = 'rgba(255,255,255,0.6)' 
+                    }}
                   >
                     Generate →
                   </button>
@@ -893,6 +1156,10 @@ export default function Community() {
           creatorData={creatorData}
           productName={productName}
           handle={handle}
+          creatorColor={creatorColor}
+          cr={cr}
+          cg={cg}
+          cb={cb}
         />
       )}
     </div>
