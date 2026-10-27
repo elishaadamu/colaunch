@@ -130,15 +130,15 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                   onClick={() => { goTo('signup'); setIsOpen(false) }}
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group border"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)',
-                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                    background: 'linear-gradient(135deg, var(--theme-accent-bg) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                    borderColor: 'var(--theme-accent-border)',
                   }}
                 >
-                  <UserPlus size={18} className="flex-shrink-0 text-purple-400" />
+                  <UserPlus size={18} className="flex-shrink-0" style={{ color: 'var(--theme-accent)' }} />
                   <span className="text-[13px] font-semibold text-white text-left flex-1">
                     Register Account
                   </span>
-                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
                 </button>
               </div>
             )}
@@ -230,17 +230,24 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 padding: isOpen ? '9px 10px' : '9px 0',
                 justifyContent: isOpen ? 'flex-start' : 'center',
                 gap: isOpen ? '10px' : '0',
-                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(79, 70, 229, 0.25))',
-                border: '1px solid rgba(168, 85, 247, 0.4)',
+                background: 'linear-gradient(135deg, var(--theme-accent-bg) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                border: '1px solid var(--theme-accent-border)',
               }}
             >
-              <Rocket size={16} className="flex-shrink-0 text-purple-400" />
+              <Rocket size={16} className="flex-shrink-0" style={{ color: 'var(--theme-accent)' }} />
               {isOpen && (
                 <>
                   <span className="text-[13px] font-bold flex-1 text-left whitespace-nowrap text-white">
                     Creator Launch
                   </span>
-                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40">
+                  <span 
+                    className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: 'var(--theme-accent-bg)',
+                      color: 'var(--theme-accent)',
+                      border: '1px solid var(--theme-accent-border)',
+                    }}
+                  >
                     OS
                   </span>
                 </>
@@ -310,13 +317,14 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 padding: isOpen ? '10px 10px' : '10px 0',
                 justifyContent: isOpen ? 'flex-start' : 'center',
                 gap: isOpen ? '10px' : '0',
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)',
-                borderColor: 'rgba(139, 92, 246, 0.3)',
+                background: 'linear-gradient(135deg, var(--theme-accent-bg) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                borderColor: 'var(--theme-accent-border)',
               }}
             >
               <UserPlus
                 size={16}
-                className="flex-shrink-0 text-purple-400 group-hover:scale-110 transition-transform"
+                className="flex-shrink-0 group-hover:scale-110 transition-transform"
+                style={{ color: 'var(--theme-accent)' }}
               />
               {isOpen && (
                 <span className="text-[12px] font-semibold text-white whitespace-nowrap text-left flex-1">
@@ -324,7 +332,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 </span>
               )}
               {/* Subtle accent dot */}
-              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full bg-purple-400" />
+              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
             </button>
           </div>
         )}

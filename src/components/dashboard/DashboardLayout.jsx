@@ -9,7 +9,7 @@ import Revenue from './Revenue'
 import Accounts from './Accounts'
 import Settings from './Settings'
 import ForgeChat from './ForgeChat'
-import { useForge } from '../../App'
+import { useForge, getAccent } from '../../App'
 import { Sparkles, Laptop, Smartphone, Menu, LogOut, Zap } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup } from '../onboarding/Preview'
@@ -183,28 +183,35 @@ export default function DashboardLayout() {
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
 
-  // Resolve Creator Brand Color detected in Step 5 Section 1
+  // Resolve Creator Brand Color dynamically (override stale #7C5CFC fallback)
   const creatorBrandColor = useMemo(() => {
-    if (creatorData?.brand_color) return creatorData.brand_color
-    if (creatorData?.brandColor) return creatorData.brandColor
-    if (creatorData?.brandHex) return creatorData.brandHex
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex) return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex) return map[handle].primaryHex
+        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
         const entries = Object.values(map)
-        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex) {
+        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex && entries[entries.length - 1].primaryHex !== '#7C5CFC') {
           return entries[entries.length - 1].primaryHex
         }
       }
     } catch {}
-    // Signature BBC Studios / CoLaunch creator purple matching demo video (0:36s)
-    return '#7C5CFC'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.id, creatorData?.handle])
+
+    // Fallback to platform accent (e.g. #ff3b30 for YouTube / MrBeast)
+    const platform = (creatorData?.platform || '').toLowerCase()
+    const pAccent = getAccent(platform)
+    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') {
+      return pAccent.color
+    }
+    return '#ff3b30'
+  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.platform, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(creatorBrandColor), [creatorBrandColor])
 
@@ -230,6 +237,7 @@ export default function DashboardLayout() {
         '--theme-text': '#F5F3EA',
         '--theme-text-muted': '#94a3b8',
         '--theme-accent': creatorBrandColor,
+        '--theme-accent-rgb': `${cr}, ${cg}, ${cb}`,
         '--theme-accent-bg': `rgba(${cr}, ${cg}, ${cb}, 0.14)`,
         '--theme-accent-border': `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
         '--theme-btn-primary-text': '#ffffff',
@@ -360,29 +368,39 @@ export default function DashboardLayout() {
           <div 
             className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
-              borderColor: 'rgba(139, 92, 246, 0.25)',
+              background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)`,
+              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
               backdropFilter: 'blur(16px)',
               boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
             }}
           >
-            {/* Ambient purple background glow */}
-            <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-purple-500/10 blur-xl pointer-events-none" />
+            {/* Ambient creator background glow */}
+            <div 
+              className="absolute -right-8 -top-8 w-24 h-24 rounded-full blur-xl pointer-events-none" 
+              style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
+            />
             
             <div className="flex items-center gap-3.5 relative z-10">
               <div 
                 className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"
                 style={{ 
-                  background: 'rgba(139, 92, 246, 0.1)', 
-                  borderColor: 'rgba(139, 92, 246, 0.2)' 
+                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
                 }}
               >
-                <Sparkles size={16} className="text-purple-400 animate-pulse" />
+                <Sparkles size={16} className="animate-pulse" style={{ color: creatorBrandColor }} />
               </div>
               <div className="space-y-0.5 text-left">
                 <h4 className="text-[13px] font-semibold text-white tracking-tight flex items-center gap-2">
                   Upgrade to Secure Account
-                  <span className="text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded-full">
+                  <span 
+                    className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: `rgba(${cr}, ${cg}, ${cb}, 0.2)`,
+                      color: creatorBrandColor,
+                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.3)`
+                    }}
+                  >
                     {aiActionsCount} AI Actions
                   </span>
                 </h4>

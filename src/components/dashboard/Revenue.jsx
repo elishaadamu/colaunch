@@ -43,28 +43,31 @@ const REVENUE_PATHS = [
 export default function Revenue() {
   const { creatorData, triggerToast, setActiveTab, setPreloadStudioType } = useForge()
 
-  // Resolve Creator Brand Color detected in Step 5 Section 1
+  // Resolve Creator Brand Color dynamically
   const detectedBrandColor = useMemo(() => {
-    if (creatorData?.brand_color) return creatorData.brand_color
-    if (creatorData?.brandColor) return creatorData.brandColor
-    if (creatorData?.brandHex) return creatorData.brandHex
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex) return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex) return map[handle].primaryHex
+        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
         const entries = Object.values(map)
-        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex) {
+        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex && entries[entries.length - 1].primaryHex !== '#7C5CFC') {
           return entries[entries.length - 1].primaryHex
         }
       }
     } catch {}
-    // Signature BBC Studios / CoLaunch creator purple matching demo video (0:36s)
-    return '#7C5CFC'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.id, creatorData?.handle])
+    const platform = (creatorData?.platform || '').toLowerCase()
+    const pAccent = getAccent(platform)
+    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') return pAccent.color
+    return '#ff3b30'
+  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.platform, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
   const accent = useMemo(() => ({

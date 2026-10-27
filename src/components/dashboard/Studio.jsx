@@ -673,7 +673,12 @@ export default function Studio() {
         </div>
         <button
           onClick={() => setShowTypeSelectorMobile(true)}
-          className="text-[12px] font-semibold text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20"
+          className="text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-all"
+          style={{
+            color: 'var(--theme-accent)',
+            background: 'var(--theme-accent-bg)',
+            borderColor: 'var(--theme-accent-border)',
+          }}
         >
           Change Type
         </button>

@@ -528,8 +528,14 @@ export default function Accounts() {
                       <li>Manage your linked pages & accounts list (`pages_show_list`, `pages_read_engagement`)</li>
                     </ul>
                   </div>
-                  <div className="p-3.5 rounded-xl border border-purple-500/10 bg-purple-500/[0.02] space-y-1">
-                    <p className="text-purple-400 font-bold text-[12px] flex items-center gap-1.5">
+                  <div 
+                    className="p-3.5 rounded-xl border space-y-1"
+                    style={{
+                      background: 'var(--theme-accent-bg)',
+                      borderColor: 'var(--theme-accent-border)',
+                    }}
+                  >
+                    <p className="font-bold text-[12px] flex items-center gap-1.5" style={{ color: 'var(--theme-accent)' }}>
                       <Radio size={13} className="animate-pulse" />
                       Auto-Publishing Flow
                     </p>

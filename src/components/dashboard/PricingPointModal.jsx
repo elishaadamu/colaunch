@@ -9,7 +9,7 @@ export default function PricingPointModal({
   isOpen,
   onClose,
   creatorData,
-  creatorBrandColor = '#7C5CFC',
+  creatorBrandColor = '#ff3b30',
   onSelectTrack,
   onOpenDiyPayment
 }) {
@@ -177,7 +177,14 @@ export default function PricingPointModal({
                         We build, host & manage. You promote.
                       </p>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                    <div 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center border"
+                      style={{
+                        background: `${creatorBrandColor}18`,
+                        color: creatorBrandColor,
+                        borderColor: `${creatorBrandColor}35`
+                      }}
+                    >
                       <HeartHandshake size={18} />
                     </div>
                   </div>
@@ -355,7 +362,7 @@ export default function PricingPointModal({
                 <ShieldCheck size={14} className="text-emerald-400" /> Bank-Grade Stripe Encryption
               </span>
               <span className="flex items-center gap-1">
-                <Rocket size={14} className="text-purple-400" /> 14-Day Deployment Guarantee
+                <Rocket size={14} style={{ color: creatorBrandColor }} /> 14-Day Deployment Guarantee
               </span>
             </div>
             <span>© {new Date().getFullYear()} CoLaunch Studio Inc.</span>
