@@ -4,7 +4,7 @@ import { Check, Play, Eye, Heart } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
-import { generateRecommendationsAI, hasTextKey } from '../../services/ai'
+import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator } from '../../services/ai'
 
 
 const ANALYSIS_STEPS = [
@@ -306,13 +306,9 @@ export default function Analyzing() {
 
   useEffect(() => {
     if (recsJob.status === 'done' && recsJob.result) {
-      const cleanHandle = (creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
-      const stamped = recsJob.result.map(r => ({
-        ...r,
-        forHandle: cleanHandle,
-        forCreator: creatorData.name || ''
-      }))
-      updateCreator({ recommendations: stamped })
+      if (areRecsValidForCreator(recsJob.result, creatorData)) {
+        updateCreator({ recommendations: recsJob.result })
+      }
     }
   }, [recsJob.status, recsJob.result, creatorData.handle, creatorData.name])
 

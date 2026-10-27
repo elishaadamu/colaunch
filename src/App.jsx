@@ -25,7 +25,7 @@ import BetaTestingPortal from './components/launch/BetaTestingPortal'
 import LaunchAuth from './components/launch/LaunchAuth'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
-import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys } from './services/ai'
+import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
 import { CheckCircle, AlertCircle, X } from 'lucide-react'
 
 export const ForgeContext = createContext(null)
@@ -416,7 +416,16 @@ export default function App() {
   const [creatorData, setCreatorData] = useState(() => {
     try {
       const cached = localStorage.getItem('forge_creator_data')
-      return cached ? JSON.parse(cached) : {
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed.recommendations && !areRecsValidForCreator(parsed.recommendations, parsed)) {
+          parsed.recommendations = null
+          parsed.blueprint = null
+          parsed.productName = ''
+        }
+        return parsed
+      }
+      return {
         url: '',
         platform: null,
         handle: '',
