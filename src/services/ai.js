@@ -1388,9 +1388,13 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
     if (Array.isArray(recsList) && recsList.length > 0) {
       const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
       const cleanName = creatorData.name || cleanHandle || "";
+      const followersCount = parseInt(creatorData.followers) || 0;
+      const engRate = parseFloat(creatorData.engagementRate) || 3.5;
+
       return recsList.map((item, idx) => ({
         ...item,
         id: item.id || `rec-${idx}`,
+        revenue_potential: calculateFollowerRevenueRange(followersCount, item.product_category, engRate, item.revenue_potential),
         forHandle: cleanHandle,
         forCreator: cleanName,
       }));
@@ -1402,6 +1406,96 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
     console.error("AI failed for recommendations:", err);
     throw err;
   }
+}
+
+/**
+ * Calculates a realistic, dynamically scaled revenue range based on follower count,
+ * engagement rate, and product category.
+ */
+export function calculateFollowerRevenueRange(followers = 0, category = 'course', engagementRate = 3.5, rawRev = null) {
+  const f = Math.max(50, parseInt(followers) || 0);
+  const eng = Math.max(1.0, Math.min(15.0, parseFloat(engagementRate) || 3.5));
+  const engMultiplier = 0.75 + (eng / 10.0) * 0.7;
+
+  const cat = String(category || '').toLowerCase();
+  let lowMult = 0.55;
+  let highMult = 2.20;
+
+  if (cat.includes('course') || cat.includes('saas') || cat.includes('academy') || cat.includes('masterclass')) {
+    lowMult = 0.55;
+    highMult = 2.20;
+  } else if (cat.includes('community') || cat.includes('membership') || cat.includes('hub')) {
+    lowMult = 0.40;
+    highMult = 1.65;
+  } else if (cat.includes('app') || cat.includes('mobile')) {
+    lowMult = 0.32;
+    highMult = 1.35;
+  } else {
+    lowMult = 0.20;
+    highMult = 0.90;
+  }
+
+  let lowARR = Math.round(f * lowMult * engMultiplier);
+  let highARR = Math.round(f * highMult * engMultiplier);
+
+  // Calibrated floors by follower tiers
+  if (f < 2_000) {
+    lowARR = Math.max(2_000, lowARR);
+    highARR = Math.max(8_000, highARR);
+  } else if (f < 10_000) {
+    lowARR = Math.max(6_000, lowARR);
+    highARR = Math.max(28_000, highARR);
+  } else if (f < 50_000) {
+    lowARR = Math.max(22_000, lowARR);
+    highARR = Math.max(95_000, highARR);
+  } else if (f < 250_000) {
+    lowARR = Math.max(65_000, lowARR);
+    highARR = Math.max(260_000, highARR);
+  } else if (f < 1_000_000) {
+    lowARR = Math.max(160_000, lowARR);
+    highARR = Math.max(700_000, highARR);
+  } else if (f < 5_000_000) {
+    lowARR = Math.max(550_000, lowARR);
+    highARR = Math.max(2_400_000, highARR);
+  } else {
+    lowARR = Math.max(1_800_000, lowARR);
+    highARR = Math.max(9_000_000, highARR);
+  }
+
+  const fmtArr = (val) => {
+    if (val >= 1_000_000) {
+      const m = val / 1_000_000;
+      return m % 1 === 0 ? `$${m}M` : `$${m.toFixed(1)}M`;
+    }
+    if (val >= 100_000) {
+      return `$${Math.round(val / 10_000) * 10}K`;
+    }
+    if (val >= 1_000) {
+      return `$${Math.round(val / 1000)}K`;
+    }
+    return `$${val}`;
+  };
+
+  // If rawRev was provided by AI and is already within roughly 0.25x - 3.5x of the tier, preserve it
+  if (rawRev && typeof rawRev === 'string' && (rawRev.includes('$') || rawRev.toLowerCase().includes('k') || rawRev.toLowerCase().includes('m'))) {
+    const cleanMatches = rawRev.match(/\$?\s*([\d\.]+\s*[kmbKMB]?)/g);
+    if (cleanMatches && cleanMatches.length >= 2) {
+      const parseNum = (s) => {
+        const lower = s.toLowerCase().replace('$', '').trim();
+        if (lower.endsWith('m')) return parseFloat(lower) * 1_000_000;
+        if (lower.endsWith('k')) return parseFloat(lower) * 1_000;
+        if (lower.endsWith('b')) return parseFloat(lower) * 1_000_000_000;
+        return parseFloat(lower) || 0;
+      };
+      const n1 = parseNum(cleanMatches[0]);
+      const n2 = parseNum(cleanMatches[1]);
+      if (n1 > 0 && n2 > 0 && n1 >= 0.25 * lowARR && n2 <= 3.5 * highARR) {
+        return `${fmtArr(n1)}–${fmtArr(n2)}`;
+      }
+    }
+  }
+
+  return `${fmtArr(lowARR)}–${fmtArr(highARR)}`;
 }
 
 /**
@@ -1473,6 +1567,8 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   const rawNiche = Array.isArray(creatorData.niche) ? creatorData.niche[0] : creatorData.niche;
   const niche = rawNiche || "Content";
   const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
+  const followers = parseInt(creatorData.followers) || 0;
+  const eng = parseFloat(creatorData.engagementRate) || 3.5;
 
   return [
     {
@@ -1481,7 +1577,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       product_category: "course",
       tagline: `Step-by-step masterclass course in ${niche}`,
       description: `A branded premium learning hub where your audience can access structured video lessons, training modules, and insight material directly from ${name}.`,
-      revenue_potential: "$8K–$30K / mo",
+      revenue_potential: calculateFollowerRevenueRange(followers, 'course', eng),
       confidence_score: 0.95,
       forHandle: cleanHandle,
       forCreator: name,
@@ -1492,7 +1588,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       product_category: "community",
       tagline: `Private member-only ${niche} community`,
       description: `A paid gated community for ${name}'s followers with exclusive discussion boards, live Q&As, community events, and member perks.`,
-      revenue_potential: "$5K–$25K / mo",
+      revenue_potential: calculateFollowerRevenueRange(followers, 'community', eng),
       confidence_score: 0.88,
       forHandle: cleanHandle,
       forCreator: name,
@@ -1503,7 +1599,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       product_category: "app",
       tagline: "Your custom mobile application",
       description: `An iOS/Android app allowing you to reach ${name}'s audience directly on their phone screens with daily drops and notifications.`,
-      revenue_potential: "$5K–$20K / mo",
+      revenue_potential: calculateFollowerRevenueRange(followers, 'app', eng),
       confidence_score: 0.82,
       forHandle: cleanHandle,
       forCreator: name,
@@ -1514,7 +1610,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       product_category: "physical_product",
       tagline: `Curated digital resources & ${niche} toolkits`,
       description: `A dedicated storefront containing digital resources, study guides, and templates matching ${name}'s audience.`,
-      revenue_potential: "$2K–$12K / mo",
+      revenue_potential: calculateFollowerRevenueRange(followers, 'physical_product', eng),
       confidence_score: 0.76,
       forHandle: cleanHandle,
       forCreator: name,
