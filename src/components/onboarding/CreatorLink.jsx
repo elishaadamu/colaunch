@@ -57,7 +57,7 @@ const EXAMPLES = [
 ]
 
 export default function CreatorLink() {
-  const { next, updateCreator, prev, aiKeys } = useForge()
+  const { next, updateCreator, prev, aiKeys, clearBgJob } = useForge()
   const [url, setUrl]               = useState('')
   const [platform, setPlatform]     = useState(null)
   const [handle, setHandle]         = useState('')
@@ -99,6 +99,8 @@ export default function CreatorLink() {
     const h          = currentHandle || '@creator'
     const platformId = currentPlatform?.id || 'youtube'
 
+    if (clearBgJob) clearBgJob('onboarding-recs')
+
     updateCreator({
       url:            currentUrl,
       platform:       platformId,
@@ -109,6 +111,11 @@ export default function CreatorLink() {
       niche:          '',
       avatarUrl:      '',
       recentPosts:    [],
+      recommendations: null,
+      blueprint:      null,
+      productName:    '',
+      buildItems:     [],
+      id:             null,
     })
 
     startScrape(currentUrl, platformId)

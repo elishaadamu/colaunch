@@ -1337,42 +1337,63 @@ Return exactly this JSON structure:
   ]
 }
 
-Keep product names authentic, tailored, and highly specific to the creator's niche.`;
+Keep product names authentic, tailored, and highly specific to the creator's niche.
+CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (such as MrBeast, PewDiePie, etc.). All names, descriptions, and taglines MUST be 100% tailored exclusively to ${name} (${handle}) and their specific niche (${niche}).`;
 
   try {
     const data = await aiTextCall(prompt, system, 8192, signal, true);
 
-    // 1. Direct array
-    if (Array.isArray(data)) return data;
+    let recsList = null;
 
+    // 1. Direct array
+    if (Array.isArray(data)) {
+      recsList = data;
+    }
     // 2. Wrapped string content — try to parse it
-    if (data && typeof data.content === "string") {
+    else if (data && typeof data.content === "string") {
       const raw = data.content.trim();
-      // Strip markdown fences if present
       const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
       const jsonStr = fenceMatch ? fenceMatch[1] : raw;
-      // Find first '[' array in the string
       const arrStart = jsonStr.indexOf("[");
       const arrEnd = jsonStr.lastIndexOf("]");
       if (arrStart !== -1 && arrEnd !== -1) {
         try {
-          return JSON.parse(jsonStr.slice(arrStart, arrEnd + 1));
+          recsList = JSON.parse(jsonStr.slice(arrStart, arrEnd + 1));
         } catch (e) { }
       }
-      try {
-        return JSON.parse(jsonStr);
-      } catch (e) { }
+      if (!recsList) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          recsList = Array.isArray(parsed)
+            ? parsed
+            : (parsed.recommendations || Object.values(parsed).find((v) => Array.isArray(v)));
+        } catch (e) { }
+      }
+    }
+    // 3. Wrapped object content
+    else if (data && typeof data.content === "object") {
+      recsList = Array.isArray(data.content)
+        ? data.content
+        : (data.content.recommendations || Object.values(data.content).find((v) => Array.isArray(v)));
+    }
+    // 4. Object with known array keys
+    else if (data && typeof data === "object") {
+      if (data.recommendations) {
+        recsList = data.recommendations;
+      } else {
+        recsList = Object.values(data).find((v) => Array.isArray(v));
+      }
     }
 
-    // 3. Wrapped object content
-    if (data && typeof data.content === "object") return data.content;
-
-    // 4. Object with known array keys
-    if (data && typeof data === "object") {
-      if (data.recommendations) return data.recommendations;
-      // Search any array-valued key
-      const arrVal = Object.values(data).find((v) => Array.isArray(v));
-      if (arrVal) return arrVal;
+    if (Array.isArray(recsList) && recsList.length > 0) {
+      const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
+      const cleanName = creatorData.name || cleanHandle || "";
+      return recsList.map((item, idx) => ({
+        ...item,
+        id: item.id || `rec-${idx}`,
+        forHandle: cleanHandle,
+        forCreator: cleanName,
+      }));
     }
 
     throw new Error("AI returned unrecognisable format");
@@ -1381,6 +1402,124 @@ Keep product names authentic, tailored, and highly specific to the creator's nic
     console.error("AI failed for recommendations:", err);
     throw err;
   }
+}
+
+/**
+ * Validates whether a set of recommendations genuinely belongs to the current creator,
+ * rejecting stale items from prior sessions (e.g., MrBeast recommendations showing for another creator).
+ */
+export function areRecsValidForCreator(recs, creatorData) {
+  if (!recs || !Array.isArray(recs) || recs.length === 0) return false;
+
+  // Reject placeholder items
+  if (
+    recs.length === 1 &&
+    (recs[0].product_name?.includes("[Placeholder]") ||
+      recs[0].product_name?.includes("Placeholder"))
+  ) {
+    return false;
+  }
+
+  const currentHandle = (creatorData?.handle || "")
+    .replace(/^@/, "")
+    .toLowerCase()
+    .trim();
+  const currentName = (creatorData?.name || "").toLowerCase().trim();
+
+  // If creatorData has no identity at all yet, can't determine mismatch
+  if (!currentHandle && !currentName) return true;
+
+  for (const r of recs) {
+    if (!r) continue;
+
+    // 1. If stamped with forHandle, it MUST match the current creator's handle
+    if (r.forHandle) {
+      const recHandle = String(r.forHandle).replace(/^@/, "").toLowerCase().trim();
+      if (currentHandle && recHandle && recHandle !== currentHandle) {
+        return false;
+      }
+    }
+
+    // 2. If stamped with forCreator, check if it contradicts current creator name
+    if (r.forCreator) {
+      const recCreator = String(r.forCreator).toLowerCase().trim();
+      if (
+        currentName &&
+        recCreator &&
+        !currentName.includes(recCreator) &&
+        !recCreator.includes(currentName)
+      ) {
+        return false;
+      }
+    }
+
+    // 3. Reject obvious alien test creator branding when not matching current creator
+    const combinedText = `${r.product_name || ""} ${r.tagline || ""} ${r.description || ""}`.toLowerCase();
+    const isBeastItem = combinedText.includes("mrbeast") || combinedText.includes("beast clan");
+    const isCurrentBeast = currentHandle.includes("beast") || currentName.includes("beast");
+    if (isBeastItem && !isCurrentBeast) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Returns dynamic, clean fallback recommendations personalized to the active creator
+ */
+export function getFallbackCleanRecommendations(creatorData = {}) {
+  const name = creatorData.name || creatorData.handle?.replace("@", "") || "Creator";
+  const rawNiche = Array.isArray(creatorData.niche) ? creatorData.niche[0] : creatorData.niche;
+  const niche = rawNiche || "Content";
+  const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
+
+  return [
+    {
+      id: "fallback-course",
+      product_name: `${name} Masterclass & Academy`,
+      product_category: "course",
+      tagline: `Step-by-step masterclass course in ${niche}`,
+      description: `A branded premium learning hub where your audience can access structured video lessons, training modules, and insight material directly from ${name}.`,
+      revenue_potential: "$8K–$30K / mo",
+      confidence_score: 0.95,
+      forHandle: cleanHandle,
+      forCreator: name,
+    },
+    {
+      id: "fallback-community",
+      product_name: `${name} Inner Circle`,
+      product_category: "community",
+      tagline: `Private member-only ${niche} community`,
+      description: `A paid gated community for ${name}'s followers with exclusive discussion boards, live Q&As, community events, and member perks.`,
+      revenue_potential: "$5K–$25K / mo",
+      confidence_score: 0.88,
+      forHandle: cleanHandle,
+      forCreator: name,
+    },
+    {
+      id: "fallback-app",
+      product_name: `${name} Club App`,
+      product_category: "app",
+      tagline: "Your custom mobile application",
+      description: `An iOS/Android app allowing you to reach ${name}'s audience directly on their phone screens with daily drops and notifications.`,
+      revenue_potential: "$5K–$20K / mo",
+      confidence_score: 0.82,
+      forHandle: cleanHandle,
+      forCreator: name,
+    },
+    {
+      id: "fallback-store",
+      product_name: `${name} Resource Vault`,
+      product_category: "physical_product",
+      tagline: `Curated digital resources & ${niche} toolkits`,
+      description: `A dedicated storefront containing digital resources, study guides, and templates matching ${name}'s audience.`,
+      revenue_potential: "$2K–$12K / mo",
+      confidence_score: 0.76,
+      forHandle: cleanHandle,
+      forCreator: name,
+    },
+  ];
 }
 
 export function buildSmartFallbackPlan(source) {

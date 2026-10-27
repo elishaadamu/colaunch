@@ -139,7 +139,7 @@ function IdentityPalette({ hue, visible }) {
 }
 
 export default function Analyzing() {
-  const { next, creatorData, updateCreator, startBgJob, prev } = useForge()
+  const { next, creatorData, updateCreator, startBgJob, prev, clearBgJob } = useForge()
   const accent = getAccent(creatorData.platform)
   const recsJob = useBgJob('onboarding-recs')
 
@@ -210,15 +210,13 @@ export default function Analyzing() {
     
     if (!promise) {
       scrapeDoneRef.current = true
-      if (recsJob.status === 'idle') {
-        startBgJob('onboarding-recs', async (sig) => {
-          const aiRecs = await generateRecommendationsAI(creatorData, sig)
-          if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
-            return aiRecs
-          }
-          throw new Error("Empty recommendations response")
-        })
-      }
+      startBgJob('onboarding-recs', async (sig) => {
+        const aiRecs = await generateRecommendationsAI(creatorData, sig)
+        if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
+          return aiRecs
+        }
+        throw new Error("Empty recommendations response")
+      })
       return
     }
 
@@ -226,47 +224,50 @@ export default function Analyzing() {
       .then(data => {
         scrapeDoneRef.current = true
         setLiveData(data)
-        updateCreator(data)
+        updateCreator({ ...data, recommendations: null })
         
-        // Start onboarding-recs job
-        if (recsJob.status === 'idle') {
-          startBgJob('onboarding-recs', async (sig) => {
-            let finalRecs = null
-            try {
-              const res = await saveCreator({
-                handle: data.handle,
-                platform: data.platform,
-                display_name: data.name,
-                bio: data.description,
-                follower_count: data.followers,
-                niche: Array.isArray(data.niche)
-                  ? data.niche.filter(Boolean).map(String)
-                  : (data.niche ? [String(data.niche)] : []),
-                profile_url: `https://${data.platform}.com/${data.handle.replace('@', '')}`,
-                discovery_source: 'onboarding_flow'
-              })
-              const creatorId = res?.creator?.id
-              if (creatorId) {
-                updateCreator({ id: creatorId })
-                console.log('[Forge] Lead saved, ID:', creatorId)
-                finalRecs = await recommendCreator(creatorId)
-              }
-            } catch (err) {
-              console.error('[Forge] Backend pipeline failed:', err)
+        // Start onboarding-recs job specifically for the newly analyzed creator
+        startBgJob('onboarding-recs', async (sig) => {
+          let finalRecs = null
+          try {
+            const res = await saveCreator({
+              handle: data.handle,
+              platform: data.platform,
+              display_name: data.name,
+              bio: data.description,
+              follower_count: data.followers,
+              niche: Array.isArray(data.niche)
+                ? data.niche.filter(Boolean).map(String)
+                : (data.niche ? [String(data.niche)] : []),
+              profile_url: `https://${data.platform}.com/${data.handle.replace('@', '')}`,
+              discovery_source: 'onboarding_flow'
+            })
+            const creatorId = res?.creator?.id
+            if (creatorId) {
+              updateCreator({ id: creatorId })
+              console.log('[Forge] Lead saved, ID:', creatorId)
+              finalRecs = await recommendCreator(creatorId)
             }
+          } catch (err) {
+            console.error('[Forge] Backend pipeline failed:', err)
+          }
 
-            const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
-            if ((!finalRecs || finalRecs.length === 0 || isPlaceholder) && hasTextKey()) {
-              console.log('[Forge] Backend returned placeholder or empty, generating custom recommendations in frontend...')
-              finalRecs = await generateRecommendationsAI(data, sig)
-            }
+          const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
+          if (!finalRecs || finalRecs.length === 0 || isPlaceholder) {
+            console.log('[Forge] Generating custom recommendations for creator:', data.name || data.handle)
+            finalRecs = await generateRecommendationsAI(data, sig)
+          }
 
-            if (finalRecs && Array.isArray(finalRecs) && finalRecs.length > 0) {
-              return finalRecs
-            }
-            throw new Error("Empty recommendations response")
-          })
-        }
+          if (finalRecs && Array.isArray(finalRecs) && finalRecs.length > 0) {
+            const cleanHandle = (data.handle || creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
+            return finalRecs.map(r => ({
+              ...r,
+              forHandle: cleanHandle,
+              forCreator: data.name || creatorData.name || ''
+            }))
+          }
+          throw new Error("Empty recommendations response")
+        })
 
         if (stepsDoneRef.current) {
           finishAndAdvance()
@@ -284,15 +285,18 @@ export default function Analyzing() {
           setScrapeErrorMsg(msg)
         }
         
-        if (recsJob.status === 'idle') {
-          startBgJob('onboarding-recs', async (sig) => {
-            const aiRecs = await generateRecommendationsAI(creatorData, sig)
-            if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
-              return aiRecs
-            }
-            throw new Error("Empty recommendations response")
-          })
-        }
+        startBgJob('onboarding-recs', async (sig) => {
+          const aiRecs = await generateRecommendationsAI(creatorData, sig)
+          if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
+            const cleanHandle = (creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
+            return aiRecs.map(r => ({
+              ...r,
+              forHandle: cleanHandle,
+              forCreator: creatorData.name || ''
+            }))
+          }
+          throw new Error("Empty recommendations response")
+        })
 
         if (stepsDoneRef.current) {
           finishAndAdvance()
@@ -302,9 +306,15 @@ export default function Analyzing() {
 
   useEffect(() => {
     if (recsJob.status === 'done' && recsJob.result) {
-      updateCreator({ recommendations: recsJob.result })
+      const cleanHandle = (creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
+      const stamped = recsJob.result.map(r => ({
+        ...r,
+        forHandle: cleanHandle,
+        forCreator: creatorData.name || ''
+      }))
+      updateCreator({ recommendations: stamped })
     }
-  }, [recsJob.status, recsJob.result])
+  }, [recsJob.status, recsJob.result, creatorData.handle, creatorData.name])
 
   // Analysis animation
   useEffect(() => {

@@ -4,7 +4,8 @@ import { ArrowRight, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, 
 import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
-import { generateRecommendationsAI } from '../../services/ai'
+import { generateRecommendationsAI, areRecsValidForCreator, getFallbackCleanRecommendations } from '../../services/ai'
+import { recommendCreator } from '../../services/opsApi'
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -152,47 +153,7 @@ function buildReasons(blueprintId, creator) {
   }
 }
 
-function getFallbackCleanRecommendations(creatorData) {
-  const name = creatorData.name || creatorData.handle?.replace('@','') || 'Creator'
-  return [
-    {
-      id: 'fallback-course',
-      product_name: `${name}'s Creator Academy`,
-      product_category: 'course',
-      tagline: 'Step-by-step masterclass course platform',
-      description: `A branded premium learning hub where your audience can buy courses and training material directly from you.`,
-      revenue_potential: '$8K–$30K / mo',
-      confidence_score: 0.99
-    },
-    {
-      id: 'fallback-app',
-      product_name: `${name} Club`,
-      product_category: 'app',
-      tagline: 'Your custom mobile application',
-      description: 'An iOS/Android app allowing you to reach your audience directly on their phone screens.',
-      revenue_potential: '$5K–$20K / mo',
-      confidence_score: 0.87
-    },
-    {
-      id: 'fallback-community',
-      product_name: `${name} Inner Circle`,
-      product_category: 'community',
-      tagline: 'Private member-only community',
-      description: 'A paid gated community for your followers with exclusive discussion boards, Q&As, and perks.',
-      revenue_potential: '$3K–$15K / mo',
-      confidence_score: 0.81
-    },
-    {
-      id: 'fallback-store',
-      product_name: `${name} Store`,
-      product_category: 'physical_product',
-      tagline: 'Templates, guides, and toolkits',
-      description: 'A dedicated storefront containing digital resources, guides, and checklists matching your niche.',
-      revenue_potential: '$2K–$12K / mo',
-      confidence_score: 0.74
-    }
-  ]
-}
+
 
 // ── Blueprint definitions ─────────────────────────────────────────────────────
 
@@ -424,18 +385,19 @@ export default function Blueprint() {
   const accent  = getAccent(creatorData.platform)
   
   const recsJob = useBgJob('onboarding-recs')
-  const blueprints = mapRecommendationsToBlueprints(creatorData.recommendations)
+  const rawRecs = creatorData.recommendations
+  const isValidRecs = areRecsValidForCreator(rawRecs, creatorData)
+  const validRecs = isValidRecs ? rawRecs : null
+  const blueprints = mapRecommendationsToBlueprints(validRecs)
   const [selected, setSelected] = useState(blueprints[0]?.id)
   const [visible,  setVisible]  = useState(false)
   const [showReasons, setShowReasons] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
   const [quotaWarning, setQuotaWarning] = useState(null)
 
-  const recs = creatorData.recommendations
-  const isPlaceholder = recs && recs.length === 1 && (recs[0].product_name?.includes('[Placeholder]') || recs[0].product_name?.includes('Placeholder'))
-  const hasNoRecs = !recs || recs.length === 0 || isPlaceholder
+  const hasNoRecs = !validRecs || validRecs.length === 0
 
-  const isGenerating = recsJob.status === 'running' || (hasNoRecs && recsJob.status === 'idle')
+  const isGenerating = recsJob.status === 'running' || hasNoRecs
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
@@ -460,20 +422,50 @@ export default function Blueprint() {
   }, [])
 
   useEffect(() => {
-    if (hasNoRecs && recsJob.status === 'idle' && !isScraping) {
+    if (hasNoRecs && recsJob.status !== 'running' && !isScraping) {
+      if (rawRecs && !isValidRecs) {
+        updateCreator({ recommendations: null })
+      }
       startBgJob('onboarding-recs', async (sig) => {
-        const aiRecs = await generateRecommendationsAI(creatorData, sig)
-        if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
-          return aiRecs
+        let finalRecs = null
+        if (creatorData.id) {
+          try {
+            finalRecs = await recommendCreator(creatorData.id)
+          } catch (err) {
+            console.warn('[Forge] Backend recommend in Blueprint failed, fallback to AI:', err)
+          }
+        }
+        const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
+        if (!finalRecs || finalRecs.length === 0 || isPlaceholder) {
+          finalRecs = await generateRecommendationsAI(creatorData, sig)
+        }
+        if (finalRecs && Array.isArray(finalRecs) && finalRecs.length > 0) {
+          const cleanHandle = (creatorData.handle || '').replace(/^@/, '').toLowerCase().trim()
+          return finalRecs.map(r => ({
+            ...r,
+            forHandle: cleanHandle,
+            forCreator: creatorData.name || ''
+          }))
         }
         throw new Error("Empty recommendations response")
       })
     }
-  }, [hasNoRecs, recsJob.status, isScraping])
+  }, [hasNoRecs, recsJob.status, isScraping, creatorData.handle, creatorData.name, creatorData.id])
 
   useEffect(() => {
     if (recsJob.status === 'done' && recsJob.result) {
-      updateCreator({ recommendations: recsJob.result })
+      if (areRecsValidForCreator(recsJob.result, creatorData)) {
+        updateCreator({ recommendations: recsJob.result })
+      } else {
+        console.warn('[Forge] Stale recommendations detected in recsJob. Regenerating...')
+        startBgJob('onboarding-recs', async (sig) => {
+          const aiRecs = await generateRecommendationsAI(creatorData, sig)
+          if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
+            return aiRecs
+          }
+          throw new Error("Empty recommendations response")
+        })
+      }
     } else if (recsJob.status === 'error') {
       const fallbacks = getFallbackCleanRecommendations(creatorData)
       updateCreator({ recommendations: fallbacks })
@@ -483,7 +475,7 @@ export default function Blueprint() {
           : "Failed to generate recommendations. Loaded default templates."
       )
     }
-  }, [recsJob.status, recsJob.result, recsJob.error])
+  }, [recsJob.status, recsJob.result, recsJob.error, creatorData.handle, creatorData.name])
 
   useEffect(() => {
     if (blueprints.length > 0 && !blueprints.some(b => b.id === selected)) {
