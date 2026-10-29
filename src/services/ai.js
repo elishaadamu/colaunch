@@ -1331,11 +1331,17 @@ Return exactly this JSON structure:
       "revenue_model": "Pricing strategy (e.g. $29/mo membership, $199 one-time course)",
       "revenue_potential": "$5K–$20K / mo (reasonable estimation matching their followers/niche)",
       "rationale": "1-sentence tailored explanation of why this product fits this creator and audience specifically",
-      "confidence_score": 0.95
+      "confidence_score": 0.93
     },
     ...
   ]
 }
+
+AI CONFIDENCE SCORING:
+Calculate a realistic, distinct confidence_score between 0.70 and 0.98 for each recommendation based on the creator's follower count, engagement rate, and niche suitability:
+- Primary best-fit product: evaluate genuinely based on engagement and audience demand (e.g., 0.93, 0.96, 0.91, 0.97).
+- Secondary products: distinctly lower scores (e.g., 0.86, 0.79, 0.72) indicating relative audience affinity.
+DO NOT use a static 0.95 across all products or recommendations.
 
 Keep product names authentic, tailored, and highly specific to the creator's niche.
 CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (such as MrBeast, PewDiePie, etc.). All names, descriptions, and taglines MUST be 100% tailored exclusively to ${name} (${handle}) and their specific niche (${niche}).`;
@@ -1391,13 +1397,32 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
       const followersCount = parseInt(creatorData.followers) || 0;
       const engRate = parseFloat(creatorData.engagementRate) || 3.5;
 
-      return recsList.map((item, idx) => ({
-        ...item,
-        id: item.id || `rec-${idx}`,
-        revenue_potential: calculateFollowerRevenueRange(followersCount, item.product_category, engRate, item.revenue_potential),
-        forHandle: cleanHandle,
-        forCreator: cleanName,
-      }));
+      return recsList.map((item, idx) => {
+        let conf = parseFloat(item.confidence_score ?? item.confidenceScore ?? item.fit);
+        if (!isNaN(conf) && conf > 1) {
+          conf = conf / 100;
+        }
+        if (isNaN(conf) || conf < 0.5 || conf > 0.99) {
+          const base = 0.93 - (idx * 0.08);
+          const bonus = (engRate >= 4.0 ? 0.03 : 0) + (followersCount > 100_000 ? 0.02 : 0);
+          conf = parseFloat(Math.min(0.98, Math.max(0.70, base + bonus)).toFixed(2));
+        } else if (conf === 0.95) {
+          // Break artificial 0.95 default ties with genuine creator metric calibration
+          const engBonus = engRate >= 6.0 ? 0.03 : engRate >= 4.0 ? 0.01 : -0.02;
+          const followerBonus = followersCount >= 500_000 ? 0.02 : followersCount >= 50_000 ? 0.01 : 0;
+          const calibratedTop = parseFloat(Math.min(0.98, Math.max(0.88, 0.93 + engBonus + followerBonus)).toFixed(2));
+          conf = idx === 0 ? calibratedTop : parseFloat(Math.max(0.68, calibratedTop - (idx * 0.07)).toFixed(2));
+        }
+
+        return {
+          ...item,
+          id: item.id || `rec-${idx}`,
+          confidence_score: conf,
+          revenue_potential: calculateFollowerRevenueRange(followersCount, item.product_category, engRate, item.revenue_potential),
+          forHandle: cleanHandle,
+          forCreator: cleanName,
+        };
+      });
     }
 
     throw new Error("AI returned unrecognisable format");
@@ -1432,89 +1457,70 @@ export function parseFollowerCount(val) {
  * engagement rate, and product category.
  */
 export function calculateFollowerRevenueRange(followers = 0, category = 'course', engagementRate = 3.5, rawRev = null) {
-  const f = Math.max(50, parseFollowerCount(followers));
+  const f = Math.max(100, parseFollowerCount(followers));
   const eng = Math.max(1.0, Math.min(15.0, parseFloat(engagementRate) || 3.5));
-  const engMultiplier = 0.75 + (eng / 10.0) * 0.7;
+  const engMultiplier = 0.85 + (eng / 10.0) * 0.45;
 
   const cat = String(category || '').toLowerCase();
-  let lowMult = 0.55;
-  let highMult = 2.20;
+  let basePrice = 29;
+  let convLow = 0.0012; // 0.12% conversion
+  let convHigh = 0.0038; // 0.38% conversion
 
-  if (cat.includes('course') || cat.includes('saas') || cat.includes('academy') || cat.includes('masterclass')) {
-    lowMult = 0.55;
-    highMult = 2.20;
-  } else if (cat.includes('community') || cat.includes('membership') || cat.includes('hub')) {
-    lowMult = 0.40;
-    highMult = 1.65;
+  if (cat.includes('course') || cat.includes('academy') || cat.includes('masterclass')) {
+    basePrice = 39;
+    convLow = 0.0010;
+    convHigh = 0.0032;
+  } else if (cat.includes('community') || cat.includes('membership')) {
+    basePrice = 24;
+    convLow = 0.0015;
+    convHigh = 0.0045;
   } else if (cat.includes('app') || cat.includes('mobile')) {
-    lowMult = 0.32;
-    highMult = 1.35;
+    basePrice = 19;
+    convLow = 0.0018;
+    convHigh = 0.0050;
   } else {
-    lowMult = 0.20;
-    highMult = 0.90;
+    basePrice = 29;
+    convLow = 0.0012;
+    convHigh = 0.0035;
   }
 
-  let lowARR = Math.round(f * lowMult * engMultiplier);
-  let highARR = Math.round(f * highMult * engMultiplier);
+  // Realistic monthly recurring potential
+  let lowMRR = Math.round(f * convLow * basePrice * engMultiplier);
+  let highMRR = Math.round(f * convHigh * basePrice * engMultiplier);
 
-  // Calibrated floors by follower tiers
-  if (f < 2_000) {
-    lowARR = Math.max(2_000, lowARR);
-    highARR = Math.max(8_000, highARR);
-  } else if (f < 10_000) {
-    lowARR = Math.max(6_000, lowARR);
-    highARR = Math.max(28_000, highARR);
-  } else if (f < 50_000) {
-    lowARR = Math.max(22_000, lowARR);
-    highARR = Math.max(95_000, highARR);
-  } else if (f < 250_000) {
-    lowARR = Math.max(65_000, lowARR);
-    highARR = Math.max(260_000, highARR);
-  } else if (f < 1_000_000) {
-    lowARR = Math.max(160_000, lowARR);
-    highARR = Math.max(700_000, highARR);
-  } else if (f < 5_000_000) {
-    lowARR = Math.max(550_000, lowARR);
-    highARR = Math.max(2_400_000, highARR);
+  // Calibrated realistic monthly floors and caps by audience size
+  if (f < 5_000) {
+    lowMRR = Math.max(500, Math.min(2_000, lowMRR));
+    highMRR = Math.max(1_500, Math.min(5_000, highMRR));
+  } else if (f < 25_000) {
+    lowMRR = Math.max(1_500, Math.min(4_500, lowMRR));
+    highMRR = Math.max(4_000, Math.min(12_000, highMRR));
+  } else if (f < 100_000) {
+    lowMRR = Math.max(3_500, Math.min(9_000, lowMRR));
+    highMRR = Math.max(9_000, Math.min(24_000, highMRR));
+  } else if (f < 500_000) {
+    lowMRR = Math.max(8_000, Math.min(18_000, lowMRR));
+    highMRR = Math.max(20_000, Math.min(48_000, highMRR));
+  } else if (f < 2_000_000) {
+    lowMRR = Math.max(16_000, Math.min(35_000, lowMRR));
+    highMRR = Math.max(40_000, Math.min(95_000, highMRR));
   } else {
-    lowARR = Math.max(1_800_000, lowARR);
-    highARR = Math.max(9_000_000, highARR);
+    lowMRR = Math.max(30_000, Math.min(65_000, lowMRR));
+    highMRR = Math.max(75_000, Math.min(160_000, highMRR));
   }
 
-  const fmtArr = (val) => {
+  const fmtK = (val) => {
     if (val >= 1_000_000) {
       const m = val / 1_000_000;
       return m % 1 === 0 ? `$${m}M` : `$${m.toFixed(1)}M`;
     }
-    if (val >= 100_000) {
-      return `$${Math.round(val / 10_000) * 10}k`;
-    }
     if (val >= 1_000) {
-      return `$${Math.round(val / 1000)}k`;
+      return `$${Math.round(val / 1000)}K`;
     }
     return `$${val}`;
   };
 
-  // If rawRev was provided by AI and is already within roughly 0.25x - 3.5x of the tier, preserve it
-  if (rawRev && typeof rawRev === 'string' && (rawRev.includes('$') || rawRev.toLowerCase().includes('k') || rawRev.toLowerCase().includes('m'))) {
-    const cleanMatches = rawRev.match(/\$?\s*([\d\.]+\s*[kmbKMB]?)/g);
-    if (cleanMatches && cleanMatches.length >= 2) {
-      const parseNum = (s) => {
-        const lower = s.toLowerCase().replace('$', '').trim();
-        if (lower.endsWith('m')) return parseFloat(lower) * 1_000_000;
-        if (lower.endsWith('k')) return parseFloat(lower) * 1_000;
-        if (lower.endsWith('b')) return parseFloat(lower) * 1_000_000_000;
-        return parseFloat(lower) || 0;
-      };
-      const n1 = parseNum(cleanMatches[0]);
-      const n2 = parseNum(cleanMatches[1]);
-      if (n1 > 0 && n2 > 0 && n1 >= 0.25 * lowARR && n2 <= 3.5 * highARR) {
-        return `${fmtArr(n1)}-${fmtArr(n2)}`;
-      }
-    }
-  }
-
-  return `${fmtArr(lowARR)}-${fmtArr(highARR)}`;
+  return `${fmtK(lowMRR)}–${fmtK(highMRR)} / mo`;
 }
 
 /**
@@ -1589,6 +1595,11 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   const followers = parseFollowerCount(creatorData.followers);
   const eng = parseFloat(creatorData.engagementRate) || 3.5;
 
+  const topScore = eng >= 6.0 ? 0.97 : eng >= 4.0 ? 0.94 : followers >= 100_000 ? 0.92 : 0.89;
+  const score2 = parseFloat((topScore - 0.08).toFixed(2));
+  const score3 = parseFloat((score2 - 0.07).toFixed(2));
+  const score4 = parseFloat((score3 - 0.06).toFixed(2));
+
   return [
     {
       id: "fallback-course",
@@ -1597,7 +1608,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       tagline: `Step-by-step masterclass course in ${niche}`,
       description: `A branded premium learning hub where your audience can access structured video lessons, training modules, and insight material directly from ${name}.`,
       revenue_potential: calculateFollowerRevenueRange(followers, 'course', eng),
-      confidence_score: 0.95,
+      confidence_score: topScore,
       forHandle: cleanHandle,
       forCreator: name,
     },
@@ -1608,7 +1619,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       tagline: `Private member-only ${niche} community`,
       description: `A paid gated community for ${name}'s followers with exclusive discussion boards, live Q&As, community events, and member perks.`,
       revenue_potential: calculateFollowerRevenueRange(followers, 'community', eng),
-      confidence_score: 0.88,
+      confidence_score: score2,
       forHandle: cleanHandle,
       forCreator: name,
     },
@@ -1619,7 +1630,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       tagline: "Your custom mobile application",
       description: `An iOS/Android app allowing you to reach ${name}'s audience directly on their phone screens with daily drops and notifications.`,
       revenue_potential: calculateFollowerRevenueRange(followers, 'app', eng),
-      confidence_score: 0.82,
+      confidence_score: score3,
       forHandle: cleanHandle,
       forCreator: name,
     },
@@ -1630,7 +1641,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       tagline: `Curated digital resources & ${niche} toolkits`,
       description: `A dedicated storefront containing digital resources, study guides, and templates matching ${name}'s audience.`,
       revenue_potential: calculateFollowerRevenueRange(followers, 'physical_product', eng),
-      confidence_score: 0.76,
+      confidence_score: score4,
       forHandle: cleanHandle,
       forCreator: name,
     },

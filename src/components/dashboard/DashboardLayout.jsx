@@ -16,7 +16,7 @@ import { AppMockup } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import PricingPointModal from './PricingPointModal'
 import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
-import { hexToRgb } from '../../utils/avatarColorExtractor'
+import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
 
 function DashboardAppPreview() {
   const { creatorData } = useForge()
@@ -168,6 +168,7 @@ const TAB_LABELS = {
 export default function DashboardLayout() {
   const { 
     creatorData, 
+    updateCreator,
     isRegistered, 
     aiActionsCount, 
     goTo, 
@@ -183,35 +184,48 @@ export default function DashboardLayout() {
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
 
-  // Resolve Creator Brand Color dynamically (override stale #7C5CFC fallback)
+  // Extract and apply avatar brand color dynamically if not set or if defaulted to red
+  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url
+  useEffect(() => {
+    let active = true
+    const currentBrand = creatorData?.brandColor || creatorData?.brand_color || creatorData?.brandHex
+    if (resolvedAvatar && (!currentBrand || currentBrand.toLowerCase() === '#ff3b30' || currentBrand === '#7C5CFC')) {
+      extractBrandColorFromAvatar(resolvedAvatar, creatorData).then(res => {
+        if (active && res?.primaryHex && res.primaryHex.toLowerCase() !== '#ff3b30') {
+          updateCreator({ brandColor: res.primaryHex, brandHex: res.primaryHex })
+        }
+      }).catch(err => {
+        console.warn('[DashboardLayout] Avatar color extraction notice:', err)
+      })
+    }
+    return () => { active = false }
+  }, [resolvedAvatar, creatorData?.brandColor, creatorData?.brand_color, creatorData?.brandHex])
+
+  // Resolve Creator Brand Color dynamically from detected avatar color
   const creatorBrandColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC' && creatorData.brand_color.toLowerCase() !== '#ff3b30') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC' && creatorData.brandColor.toLowerCase() !== '#ff3b30') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC' && creatorData.brandHex.toLowerCase() !== '#ff3b30') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC' && creatorData.color.toLowerCase() !== '#ff3b30') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
-        const entries = Object.values(map)
-        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex && entries[entries.length - 1].primaryHex !== '#7C5CFC') {
-          return entries[entries.length - 1].primaryHex
-        }
+        const name = (creatorData?.name || '').toLowerCase()
+        if (id && map[id]?.primaryHex && map[id].primaryHex.toLowerCase() !== '#ff3b30') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex.toLowerCase() !== '#ff3b30') return map[handle].primaryHex
+        if (name && map[name]?.primaryHex && map[name].primaryHex.toLowerCase() !== '#ff3b30') return map[name].primaryHex
       }
     } catch {}
 
-    // Fallback to platform accent (e.g. #ff3b30 for YouTube / MrBeast)
-    const platform = (creatorData?.platform || '').toLowerCase()
-    const pAccent = getAccent(platform)
-    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') {
-      return pAccent.color
+    const det = getDeterministicBrandColor(creatorData)
+    if (det?.primaryHex && det.primaryHex.toLowerCase() !== '#ff3b30') {
+      return det.primaryHex
     }
-    return '#ff3b30'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.platform, creatorData?.id, creatorData?.handle])
+    return '#10B981'
+  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(creatorBrandColor), [creatorBrandColor])
 
@@ -338,9 +352,9 @@ export default function DashboardLayout() {
                   color: '#ffffff',
                 }}
               >
-                {creatorData.avatarUrl ? (
+                {resolvedAvatar ? (
                   <img
-                    src={creatorData.avatarUrl}
+                    src={resolvedAvatar}
                     alt={creatorData.name || creatorData.handle}
                     className="w-full h-full object-cover"
                     onError={e => { e.currentTarget.style.display = 'none' }}

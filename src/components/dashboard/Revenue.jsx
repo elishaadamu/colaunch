@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useForge, getAccent } from '../../App'
 import { TrendingUp, ChevronRight, Sparkles, BarChart2, AlertCircle, ArrowUpRight, Zap, Rocket, ShieldCheck, Check } from 'lucide-react'
-import { hexToRgb } from '../../utils/avatarColorExtractor'
+import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
 
 const MONTHS = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Now']
 const REVENUE_DATA = [0, 0, 0, 0, 0, 0, 0]
@@ -45,29 +45,28 @@ export default function Revenue() {
 
   // Resolve Creator Brand Color dynamically
   const detectedBrandColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC' && creatorData.brand_color.toLowerCase() !== '#ff3b30') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC' && creatorData.brandColor.toLowerCase() !== '#ff3b30') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC' && creatorData.brandHex.toLowerCase() !== '#ff3b30') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC' && creatorData.color.toLowerCase() !== '#ff3b30') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
-        const entries = Object.values(map)
-        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex && entries[entries.length - 1].primaryHex !== '#7C5CFC') {
-          return entries[entries.length - 1].primaryHex
-        }
+        const name = (creatorData?.name || '').toLowerCase()
+        if (id && map[id]?.primaryHex && map[id].primaryHex.toLowerCase() !== '#ff3b30') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex.toLowerCase() !== '#ff3b30') return map[handle].primaryHex
+        if (name && map[name]?.primaryHex && map[name].primaryHex.toLowerCase() !== '#ff3b30') return map[name].primaryHex
       }
     } catch {}
-    const platform = (creatorData?.platform || '').toLowerCase()
-    const pAccent = getAccent(platform)
-    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') return pAccent.color
-    return '#ff3b30'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.platform, creatorData?.id, creatorData?.handle])
+    const det = getDeterministicBrandColor(creatorData)
+    if (det?.primaryHex && det.primaryHex.toLowerCase() !== '#ff3b30') {
+      return det.primaryHex
+    }
+    return '#10B981'
+  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
   const accent = useMemo(() => ({

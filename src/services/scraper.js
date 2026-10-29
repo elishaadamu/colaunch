@@ -126,9 +126,19 @@ let _isPending = false
 export function startScrape(url, platform) {
   _isPending = true
   _scrapePromise = _doScrape(url, platform).then(data => {
-    _isPending = false
-    if (data && data.avatarUrl && typeof data.avatarUrl === 'string' && data.avatarUrl.startsWith('http') && !data.avatarUrl.includes('/api/proxy/avatar')) {
-      data.avatarUrl = `/api/proxy/avatar?url=${encodeURIComponent(data.avatarUrl)}`
+    if (data) {
+      const rawAv = data.avatarUrl || data.avatar_url || data.avatar || ''
+      if (rawAv) {
+        let cleanAv = rawAv
+        if (typeof cleanAv === 'string' && cleanAv.includes('/api/proxy/avatar?url=')) {
+          try {
+            cleanAv = decodeURIComponent(cleanAv.split('/api/proxy/avatar?url=')[1])
+          } catch {}
+        }
+        data.avatarUrl = cleanAv
+        data.avatar = cleanAv
+        data.avatar_url = cleanAv
+      }
     }
     return data
   }).catch(err => {
@@ -192,20 +202,38 @@ function extractDynamicEngagementRate(scraped, followers) {
 
 async function _doScrape(url, platform) {
   const handle = extractHandle(url)
-  const res = await fetch('/api/creators/scrape', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ platform, handle, save: false })
-  })
-  if (!res.ok) {
-    const txt = await res.text()
-    throw new Error(`Scrape failed: ${res.status} ${txt.slice(0, 150)}`)
+  const payloadHandle = url.includes('://') ? url.trim() : (handle || url.trim())
+  let scraped = null
+
+  try {
+    const res = await fetch('/api/creators/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform, handle: payloadHandle, save: false })
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.scraped && !data.error) {
+        scraped = data.scraped
+      }
+    }
+  } catch (err) {
+    console.warn('[Forge Scraper] Backend fetch error:', err)
   }
-  const data = await res.json()
-  if (data.error || !data.scraped) {
-    throw new Error(data.error || 'Failed to retrieve scraped data from backend.')
+
+  // Fallback to client-side direct YouTube scraper if backend was unavailable
+  if (!scraped && (platform === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be'))) {
+    try {
+      const clientData = await scrapeYouTube(url)
+      if (clientData) return clientData
+    } catch (ytErr) {
+      console.warn('[Forge Scraper] Client fallback threw:', ytErr)
+    }
   }
-  const scraped = data.scraped
+
+  if (!scraped) {
+    throw new Error('Failed to retrieve scraped data from backend.')
+  }
   const parsedFollowers = parseBigNum(
     scraped.follower_count ?? scraped.followers ?? scraped.subscribers ?? scraped.numberOfSubscribers ?? 0
   )
@@ -215,13 +243,22 @@ async function _doScrape(url, platform) {
     : (scraped.niche || inferNicheFromDescription(scraped.bio || ''))
   const cleanNiche = rawNiche ? (rawNiche.charAt(0).toUpperCase() + rawNiche.slice(1)) : 'Entertainment'
 
+  let rawPosts = scraped.recent_posts || scraped.recentPosts || scraped.videos || []
+  if ((!rawPosts || rawPosts.length === 0) && (platform === 'youtube' || scraped.platform === 'youtube')) {
+    try {
+      rawPosts = await fetchCreatorYouTubeVideos(url || handle, 6)
+    } catch {}
+  }
+
   return {
     platform: scraped.platform || platform,
     handle: scraped.handle?.startsWith('@') ? scraped.handle : `@${scraped.handle || handle}`,
-    name: scraped.display_name || scraped.handle?.replace('@', '') || 'Creator',
+    name: scraped.name || scraped.display_name || scraped.handle?.replace('@', '') || 'Creator',
     followers: parsedFollowers,
     description: scraped.bio || '',
-    avatarUrl: scraped.avatar_url || '',
+    avatarUrl: scraped.avatar_url || scraped.avatarUrl || scraped.avatar || '',
+    avatar: scraped.avatar_url || scraped.avatarUrl || scraped.avatar || '',
+    avatar_url: scraped.avatar_url || scraped.avatarUrl || scraped.avatar || '',
     videoCount: scraped.videoCount || scraped.video_count || 0,
     postCount: scraped.postCount || scraped.post_count || 0,
     totalViews: scraped.totalViews || scraped.total_views || 0,
@@ -229,11 +266,11 @@ async function _doScrape(url, platform) {
     heartCount: scraped.heartCount || scraped.heart_count || 0,
     niche: cleanNiche,
     engagementRate: extractDynamicEngagementRate(scraped, parsedFollowers),
-    recentPosts: (scraped.recent_posts || []).map(p => ({
+    recentPosts: (rawPosts || []).map(p => ({
       title: p.title || '',
-      thumbnail: p.thumbnail || '',
-      videoId: p.videoId || '',
-      url: p.url || '',
+      thumbnail: p.thumbnail || p.thumbnailUrl || '',
+      videoId: p.videoId || p.id || '',
+      url: p.url || (p.videoId ? `https://www.youtube.com/watch?v=${p.videoId}` : ''),
       views: typeof p.views === 'number' ? fmt(p.views) : String(p.views || ''),
       likes: typeof p.likes === 'number' ? fmt(p.likes) : String(p.likes || ''),
       comments: typeof p.comments === 'number' ? fmt(p.comments) : String(p.comments || ''),

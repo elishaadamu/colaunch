@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent } from '../../App'
 import { 
   Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, 
-  Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send, ExternalLink
+  Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send, ExternalLink, Zap
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
-import { hexToRgb } from '../../utils/avatarColorExtractor'
+import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
 
 // ─── Dynamic Community Content Generator ─────────────────────────────────────
 
@@ -120,7 +120,7 @@ function getInitialScheduledPosts(productName, creatorName, handle, niche) {
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#ff3b30' }) {
+function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' }) {
   const [viewDate, setViewDate] = useState(new Date())
 
   const year = viewDate.getFullYear()
@@ -410,24 +410,27 @@ export default function Community() {
 
   // Resolve Creator Brand Color dynamically
   const creatorColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC' && creatorData.brand_color.toLowerCase() !== '#ff3b30') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC' && creatorData.brandColor.toLowerCase() !== '#ff3b30') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC' && creatorData.brandHex.toLowerCase() !== '#ff3b30') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC' && creatorData.color.toLowerCase() !== '#ff3b30') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
+        const name = (creatorData?.name || '').toLowerCase()
+        if (id && map[id]?.primaryHex && map[id].primaryHex.toLowerCase() !== '#ff3b30') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex.toLowerCase() !== '#ff3b30') return map[handle].primaryHex
+        if (name && map[name]?.primaryHex && map[name].primaryHex.toLowerCase() !== '#ff3b30') return map[name].primaryHex
       }
     } catch {}
-    const platform = (creatorData?.platform || '').toLowerCase()
-    const pAccent = getAccent(platform)
-    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') return pAccent.color
-    return '#ff3b30'
+    const det = getDeterministicBrandColor(creatorData)
+    if (det?.primaryHex && det.primaryHex.toLowerCase() !== '#ff3b30') {
+      return det.primaryHex
+    }
+    return '#10B981'
   }, [creatorData])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(creatorColor), [creatorColor])
@@ -1115,13 +1118,21 @@ export default function Community() {
             <p className="forge-label mb-3">Quick wins</p>
             <div className="space-y-2">
               {[
-                { emoji: '👋', label: 'Post your first welcome message', typeId: 'welcome' },
-                { emoji: '💬', label: 'Start a discussion to break the ice', typeId: 'discussion' },
-                { emoji: '⚡', label: 'Create your first weekly challenge', typeId: 'challenge' },
+                { icon: Users, label: 'Post your first welcome message', typeId: 'welcome' },
+                { icon: MessageSquare, label: 'Start a discussion to break the ice', typeId: 'discussion' },
+                { icon: Zap, label: 'Create your first weekly challenge', typeId: 'challenge' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl border" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
-                  <span className="text-lg">{item.emoji}</span>
-                  <span className="text-[13px] flex-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{item.label}</span>
+                  <div 
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
+                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
+                    }}
+                  >
+                    <item.icon size={14} style={{ color: creatorColor }} />
+                  </div>
+                  <span className="text-[13px] flex-1 font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>{item.label}</span>
                   <button
                     onClick={() => {
                       const type = communityContentTypes.find(t => t.id === item.typeId)

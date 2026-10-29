@@ -1,10 +1,31 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { Check, Play, Eye, Heart } from 'lucide-react'
+import { Check, Play, Eye, Heart, Clock, Trash2 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
 import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator, parseFollowerCount } from '../../services/ai'
+import { extractBrandColorFromAvatar, getDeterministicBrandColor, hexToRgb } from '../../utils/avatarColorExtractor'
+
+// Helper: RGB to HSL
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0;
+    }
+    h /= 6;
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
 
 
 const ANALYSIS_STEPS = [
@@ -139,8 +160,8 @@ function IdentityPalette({ hue, visible }) {
 }
 
 export default function Analyzing() {
-  const { next, creatorData, updateCreator, startBgJob, prev, clearBgJob } = useForge()
-  const accent = getAccent(creatorData.platform)
+  const { next, creatorData, updateCreator, startBgJob, prev, clearBgJob, requestWipeCreator } = useForge()
+  const accent = getAccent(creatorData)
   const recsJob = useBgJob('onboarding-recs')
 
   const [completedSteps, setCompletedSteps] = useState([])
@@ -154,13 +175,16 @@ export default function Analyzing() {
   const [scrapeError, setScrapeError]       = useState(null)
   const [scrapeErrorMsg, setScrapeErrorMsg] = useState('')
   const [liveData, setLiveData]             = useState(null)
+  const [analysisElapsedMs, setAnalysisElapsedMs] = useState(0)
+  const [stepTimings, setStepTimings]       = useState({})
+  const timerRef = useRef(null)
 
   // Prefer real scraped data at every level
   const displayName = liveData?.name      || creatorData.name      || ''
   const handle      = liveData?.handle    || creatorData.handle    || '@creator'
   const followers   = liveData?.followers || creatorData.followers || 0
   const engRate     = liveData?.engagementRate || creatorData.engagementRate || 0
-  const avatarUrl   = liveData?.avatarUrl || creatorData.avatarUrl || ''
+  const avatarUrl   = liveData?.avatarUrl || liveData?.avatar || liveData?.avatar_url || creatorData.avatarUrl || creatorData.avatar || creatorData.avatar_url || ''
   const niche       = liveData?.niche     || creatorData.niche     || 'Creator'
   const description = liveData?.description || creatorData.description || ''
   const videoCount  = liveData?.videoCount  || creatorData.videoCount  || 0
@@ -176,8 +200,19 @@ export default function Analyzing() {
     { hue: 195, likes: '', views: '', thumbnail: '' },
   ]
 
-  const platformHue = { youtube: 0, instagram: 330, twitter: 210, tiktok: 180, twitch: 270 }
-  const hue         = platformHue[creatorData.platform] || 220
+  // Dynamically compute hue from the detected creator avatar / brand color
+  const activeBrandHex = liveData?.brandColor || creatorData?.brandColor || creatorData?.brandHex
+  const hue = useMemo(() => {
+    if (activeBrandHex && activeBrandHex.toLowerCase() !== '#ff3b30') {
+      const [r, g, b] = hexToRgb(activeBrandHex)
+      const [h] = rgbToHsl(r, g, b)
+      return h
+    }
+    const det = getDeterministicBrandColor(liveData || creatorData)
+    const [r, g, b] = hexToRgb(det.primaryHex)
+    const [h] = rgbToHsl(r, g, b)
+    return h
+  }, [activeBrandHex, liveData, creatorData])
 
   const INSIGHTS = [
     liveData
@@ -210,6 +245,10 @@ export default function Analyzing() {
     
     if (!promise) {
       scrapeDoneRef.current = true
+      const fallbackColor = getDeterministicBrandColor(creatorData).primaryHex
+      if (!creatorData.brandColor || creatorData.brandColor === '#ff3b30') {
+        updateCreator({ brandColor: fallbackColor, brandHex: fallbackColor })
+      }
       startBgJob('onboarding-recs', async (sig) => {
         const aiRecs = await generateRecommendationsAI(creatorData, sig)
         if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
@@ -221,10 +260,31 @@ export default function Analyzing() {
     }
 
     promise
-      .then(data => {
+      .then(async data => {
         scrapeDoneRef.current = true
-        setLiveData(data)
-        updateCreator({ ...data, recommendations: null })
+        let detectedBrandColor = null
+        if (data?.avatarUrl) {
+          try {
+            const colorRes = await extractBrandColorFromAvatar(data.avatarUrl, data)
+            if (colorRes?.primaryHex && colorRes.primaryHex.toLowerCase() !== '#ff3b30') {
+              detectedBrandColor = colorRes.primaryHex
+            }
+          } catch (e) {
+            console.warn('[Analyzing] Avatar color extraction notice:', e)
+          }
+        }
+        if (!detectedBrandColor) {
+          detectedBrandColor = getDeterministicBrandColor(data).primaryHex
+        }
+
+        const enrichedData = {
+          ...data,
+          brandColor: detectedBrandColor,
+          brandHex: detectedBrandColor,
+          recommendations: null
+        }
+        setLiveData(enrichedData)
+        updateCreator(enrichedData)
         
         // Start onboarding-recs job specifically for the newly analyzed creator
         startBgJob('onboarding-recs', async (sig) => {
@@ -275,6 +335,10 @@ export default function Analyzing() {
       })
       .catch(err => {
         scrapeDoneRef.current = true
+        const fallbackColor = getDeterministicBrandColor(creatorData).primaryHex
+        if (!creatorData.brandColor || creatorData.brandColor === '#ff3b30') {
+          updateCreator({ brandColor: fallbackColor, brandHex: fallbackColor })
+        }
         const msg = err?.message || String(err)
         console.error('[Forge] Scrape failed:', msg)
         if (msg.includes('NO_') || msg.includes('NO_KEY')) {
@@ -317,14 +381,21 @@ export default function Analyzing() {
     let stepIdx   = 0
     const totalTime = ANALYSIS_STEPS.reduce((s, step) => s + step.duration, 0)
     let elapsed   = 0
+    const startTime = Date.now()
+
+    timerRef.current = setInterval(() => {
+      setAnalysisElapsedMs(Date.now() - startTime)
+    }, 40)
+
+    let currentStepTimer = null
 
     const runSteps = () => {
       if (stepIdx >= ANALYSIS_STEPS.length) {
         stepsDoneRef.current = true
+        if (timerRef.current) clearInterval(timerRef.current)
         if (scrapeDoneRef.current || !getScrapePromise()) {
           finishAndAdvance()
         } else {
-          // If scrape is still processing, wait up to 10s max
           setTimeout(() => {
             if (!hasAdvancedRef.current) {
               finishAndAdvance()
@@ -335,6 +406,7 @@ export default function Analyzing() {
       }
       setActiveStep(stepIdx)
       const step = ANALYSIS_STEPS[stepIdx]
+      const stepStart = Date.now()
 
       if (stepIdx === 1) {
         [0,1,2,3,4,5].forEach(i =>
@@ -343,15 +415,16 @@ export default function Analyzing() {
         setTimeout(() => setShowPalette(true), 800)
       }
 
-      const timeout = setTimeout(() => {
-        setCompletedSteps(prev => [...prev, stepIdx])
-        setInsight(INSIGHTS[stepIdx])
+      currentStepTimer = setTimeout(() => {
+        const stepDurationSec = ((Date.now() - stepStart) / 1000).toFixed(2)
+        const idx = stepIdx
+        setStepTimings(prev => ({ ...prev, [idx]: stepDurationSec }))
+        setCompletedSteps(prev => [...prev, idx])
+        setInsight(INSIGHTS[idx])
         elapsed += step.duration
         stepIdx++
         runSteps()
       }, step.duration)
-
-      return timeout
     }
 
     runSteps()
@@ -363,7 +436,11 @@ export default function Analyzing() {
       setConfidence(Math.min(Math.round(pct * 0.97), 94))
     }, 80)
 
-    return () => clearInterval(progressInterval)
+    return () => {
+      if (currentStepTimer) clearTimeout(currentStepTimer)
+      if (timerRef.current) clearInterval(timerRef.current)
+      clearInterval(progressInterval)
+    }
   }, [])
 
   return (
@@ -376,7 +453,7 @@ export default function Analyzing() {
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={prev}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150"
@@ -388,11 +465,29 @@ export default function Analyzing() {
             >
               ← Back
             </button>
-            <div className="flex items-center gap-2.5">
-              <WingLogo size={22} />
-              <span className="text-white/50 font-semibold text-[13px] tracking-tight">CoLaunch</span>
+            <div className="flex items-center gap-2">
+              <WingLogo size={20} color={accent.color} />
+              <span className="text-white/60 font-semibold text-[13px] tracking-tight">CoLaunch</span>
             </div>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-md border flex items-center gap-1.5"
+              style={{ background: `rgba(${accent.rgb}, 0.1)`, borderColor: `rgba(${accent.rgb}, 0.25)`, color: accent.color }}>
+              <Clock size={11} />
+              00:0{((analysisElapsedMs || 0) / 1000).toFixed(2)}s
+            </span>
+            <button
+              type="button"
+              onClick={requestWipeCreator}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+              title="Wipe creator from storage"
+            >
+              <Trash2 size={11} />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
+          </div>
+
           {scrapeError && (
             <div className="flex flex-col items-end gap-1">
               <span className="text-[11px] px-2.5 py-1 rounded-full"
@@ -423,25 +518,32 @@ export default function Analyzing() {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div
-                className="w-16 h-16 rounded-full border-2 flex items-center justify-center overflow-hidden"
+                className="w-16 h-16 rounded-full border-2 flex items-center justify-center overflow-hidden relative"
                 style={{
                   borderColor: completedSteps.includes(0) ? `rgba(${accent.rgb},0.5)` : 'rgba(255,255,255,0.15)',
                   background:  `hsl(${hue},20%,15%)`,
                   transition:  'border-color 0.5s',
                 }}
               >
+                <span className="text-2xl font-bold text-white/70 select-none">
+                  {(displayName || handle).replace('@','').charAt(0).toUpperCase()}
+                </span>
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt={displayName || handle}
-                    className="w-full h-full object-cover"
-                    onError={e => { e.currentTarget.style.display = 'none' }}
+                    referrerPolicy="no-referrer"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={e => {
+                      if (!e.currentTarget.dataset.proxied && avatarUrl.startsWith('http')) {
+                        e.currentTarget.dataset.proxied = 'true'
+                        e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatarUrl)}`
+                      } else {
+                        e.currentTarget.style.display = 'none'
+                      }
+                    }}
                   />
-                ) : (
-                  <span className="text-2xl font-bold text-white/70">
-                    {(displayName || handle).replace('@','').charAt(0).toUpperCase()}
-                  </span>
-                )}
+                ) : null}
               </div>
               {/* Scanning ring */}
               {!done && activeStep === 0 && (
@@ -566,12 +668,17 @@ export default function Analyzing() {
                     }
                   </div>
                   <span className="text-[13px] font-medium transition-colors duration-300"
-                    style={{ color: isCompleted ? 'rgba(255,255,255,0.65)' : isActive ? 'white' : 'rgba(255,255,255,0.25)' }}>
+                    style={{ color: isCompleted ? 'rgba(255,255,255,0.75)' : isActive ? 'white' : 'rgba(255,255,255,0.25)' }}>
                     {step.label}
                     {isActive && <span className="cursor-blink text-white/40 ml-0.5">_</span>}
                   </span>
+                  {isCompleted && stepTimings[i] && (
+                    <span className="ml-auto text-[10px] font-mono font-semibold" style={{ color: accent.color }}>
+                      +{stepTimings[i]}s
+                    </span>
+                  )}
                   {isActive && (
-                    <div className="flex-1 h-px rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <div className="flex-1 h-px rounded-full overflow-hidden ml-2" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <div className="h-full shimmer-line" style={{ width: '100%' }} />
                     </div>
                   )}

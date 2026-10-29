@@ -3,7 +3,8 @@ import { useForge, getAccent, useBgJob } from '../../App'
 import {
   Sparkles, RefreshCw, Copy, Check, X,
   Mail, Instagram, Twitter, Smartphone, BarChart2, Image,
-  AlertCircle, ExternalLink, Settings, ChevronDown, ChevronUp, Play
+  AlertCircle, ExternalLink, Settings, ChevronDown, ChevronUp, Play,
+  Home, BookOpen, MessageSquare, User, Calendar, Lock, Compass, Rocket, FileText, Layers, Briefcase
 } from 'lucide-react'
 import {
   generateMarketingPack, generateProductImage,
@@ -151,7 +152,7 @@ function ProductMockup({ creatorData, accent }) {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[13px] font-bold text-white">Welcome back 👋</p>
+              <p className="text-[13px] font-bold text-white">Welcome back</p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Your {niche} hub</p>
             </div>
             <div className="flex items-center gap-2">
@@ -177,7 +178,9 @@ function ProductMockup({ creatorData, accent }) {
               <div key={i} className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="h-12 flex items-center justify-center"
                   style={{ background: i === 0 ? `rgba(${accent.rgb},0.15)` : 'rgba(255,255,255,0.04)' }}>
-                  <span className="text-[18px]">{i === 0 ? '🎯' : '🚀'}</span>
+                  <span className="flex items-center justify-center">
+                    {i === 0 ? <Compass size={18} style={{ color: accent.color }} /> : <Rocket size={18} style={{ color: accent.color }} />}
+                  </span>
                 </div>
                 <div className="p-2">
                   <p className="text-[10px] font-semibold text-white leading-tight">{title}</p>
@@ -210,7 +213,7 @@ function ProductMockup({ creatorData, accent }) {
         </div>
         {/* Feed */}
         <div className="p-3 space-y-2">
-          {[`New drop 🔥`, `Exclusive post`, `Members only`].map((t, i) => (
+          {[`New drop`, `Exclusive post`, `Members only`].map((t, i) => (
             <div key={i} className="rounded-xl p-2.5 flex gap-2 items-center"
               style={{ background: i === 0 ? `rgba(${accent.rgb},0.1)` : 'rgba(255,255,255,0.04)', border: i === 0 ? `1px solid rgba(${accent.rgb},0.2)` : '1px solid rgba(255,255,255,0.06)' }}>
               {avatarUrl ? (
@@ -229,8 +232,10 @@ function ProductMockup({ creatorData, accent }) {
         </div>
         {/* Tab bar */}
         <div className="flex justify-around py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#111' }}>
-          {['🏠','📚','💬','👤'].map((ic, i) => (
-            <div key={i} className="text-[14px]" style={{ opacity: i === 0 ? 1 : 0.3 }}>{ic}</div>
+          {[Home, BookOpen, MessageSquare, User].map((IconComp, i) => (
+            <div key={i} style={{ opacity: i === 0 ? 1 : 0.4 }}>
+              <IconComp size={15} style={{ color: i === 0 ? accent.color : 'white' }} />
+            </div>
           ))}
         </div>
       </div>
@@ -247,10 +252,18 @@ function ProductMockup({ creatorData, accent }) {
             <p className="text-[11px] font-bold text-white truncate">{productName}</p>
             <p className="text-[9px]" style={{ color: accent.color }}>Inner Circle</p>
           </div>
-          {['🏠 Home','💬 Chat','📅 Events','🔒 Members Only'].map((item, i) => (
-            <div key={item} className="py-1.5 px-2 rounded-lg text-[10px] mb-0.5"
+          {[
+            { icon: Home, label: 'Home' },
+            { icon: MessageSquare, label: 'Chat' },
+            { icon: Calendar, label: 'Events' },
+            { icon: Lock, label: 'Members Only' }
+          ].map((item, i) => (
+            <div key={item.label} className="flex items-center gap-1.5 py-1.5 px-2 rounded-lg text-[10px] mb-0.5"
               style={{ background: i === 0 ? `rgba(${accent.rgb},0.12)` : 'transparent',
-                color: i === 0 ? 'white' : 'rgba(255,255,255,0.35)' }}>{item}</div>
+                color: i === 0 ? 'white' : 'rgba(255,255,255,0.45)' }}>
+              <item.icon size={11} style={{ color: i === 0 ? accent.color : 'rgba(255,255,255,0.4)' }} />
+              <span>{item.label}</span>
+            </div>
           ))}
         </div>
         {/* Posts */}
@@ -262,7 +275,7 @@ function ProductMockup({ creatorData, accent }) {
             </div>
           </div>
           {[
-            { label: `Welcome to ${productName}! 🎉`, sub: 'Pinned by ' + name },
+            { label: `Welcome to ${productName}!`, sub: 'Pinned by ' + name },
             { label: 'This week\'s challenge drop', sub: 'Yesterday · 12 replies' },
             { label: `${niche} resources & tools`, sub: '2 days ago · 8 replies' },
           ].map((post, i) => (
@@ -272,7 +285,7 @@ function ProductMockup({ creatorData, accent }) {
               ) : (
                 <div className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center text-[8px]"
                   style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
-                  {i === 0 ? initials[0] : '👤'}
+                  {i === 0 ? initials[0] : <User size={10} />}
                 </div>
               )}
               <div>
@@ -306,16 +319,18 @@ function ProductMockup({ creatorData, accent }) {
         {/* Product grid */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { emoji: '📋', name: `${niche} Template Pack`, price: '$27' },
-            { emoji: '📖', name: 'Ultimate Guide', price: '$47' },
-            { emoji: '🎯', name: 'Starter Toolkit', price: '$19' },
-            { emoji: '📊', name: 'Notion Workspace', price: '$37' },
-            { emoji: '🚀', name: 'Crash Course', price: '$97' },
-            { emoji: '💼', name: 'Bundle Deal', price: '$149', hot: true },
+            { icon: FileText, name: `${niche} Template Pack`, price: '$27' },
+            { icon: BookOpen, name: 'Ultimate Guide', price: '$47' },
+            { icon: Compass, name: 'Starter Toolkit', price: '$19' },
+            { icon: Layers, name: 'Notion Workspace', price: '$37' },
+            { icon: Rocket, name: 'Crash Course', price: '$97' },
+            { icon: Briefcase, name: 'Bundle Deal', price: '$149', hot: true },
           ].map((p, i) => (
             <div key={i} className="rounded-xl overflow-hidden relative"
               style={{ border: p.hot ? `1px solid rgba(${accent.rgb},0.3)` : '1px solid rgba(255,255,255,0.07)', background: p.hot ? `rgba(${accent.rgb},0.06)` : 'rgba(255,255,255,0.03)' }}>
-              <div className="flex items-center justify-center py-3 text-[22px]">{p.emoji}</div>
+              <div className="flex items-center justify-center py-3">
+                <p.icon size={20} style={{ color: p.hot ? accent.color : 'rgba(255,255,255,0.7)' }} />
+              </div>
               <div className="px-2 pb-2">
                 <p className="text-[9px] font-medium text-white leading-tight mb-0.5">{p.name}</p>
                 <p className="text-[10px] font-bold" style={{ color: accent.color }}>{p.price}</p>

@@ -39,49 +39,110 @@ export default function Products() {
     localStorage.setItem('forge_products_members', membersCount.toString())
   }, [membersCount])
 
-  const productName = creatorData.productName || 'Creator Academy'
-  const blueprint = creatorData.blueprint || { type: 'Web App' }
-  const features = creatorData.features || []
+  const productName = creatorData.productName || creatorData.blueprint?.name || 'Creator Academy'
+  const blueprint = creatorData.blueprint || { type: 'Web App', name: productName }
+  const features = (creatorData.features && creatorData.features.length > 0)
+    ? creatorData.features
+    : (blueprint.features || ['Private forum', 'Monthly AMAs', 'Exclusive perks'])
 
-  // Dynamic modules list reflecting onboarding choices
-  const activeModules = [
-    {
-      id: 'courses',
-      icon: Package,
-      label: 'Course builder',
-      description: 'Upload lessons, modules, and resources',
-      status: 'Active',
-      members: Math.round(membersCount * 0.8),
-      cta: 'Upload first lesson',
-    },
-    {
-      id: 'community',
-      icon: Users,
-      label: 'Community forum',
-      description: 'Threaded discussions, announcements, DMs',
-      status: 'Active',
-      members: membersCount,
-      cta: 'Post welcome message',
-    },
-    ...(features.includes('Podcast section') ? [{
-      id: 'podcast',
-      icon: Volume2,
-      label: 'Podcast section',
-      description: 'Publish audio episodes, show notes, and transcripts',
-      status: 'Active',
-      members: Math.round(membersCount * 0.5),
-      cta: 'Upload first episode',
-    }] : []),
-    {
-      id: 'offer-page',
-      icon: ExternalLink,
-      label: 'Offer page',
-      description: 'Conversion-optimized landing page',
-      status: 'Live',
-      members: null,
-      cta: 'Share link',
-    },
-  ]
+  // Dynamic modules list decisively reflecting onboarding choices and regeneration
+  const activeModules = []
+
+  features.forEach((feat, index) => {
+    const fLower = feat.toLowerCase()
+    if (fLower.includes('forum') || fLower.includes('community')) {
+      activeModules.push({
+        id: `community-${index}`,
+        icon: Users,
+        label: feat,
+        description: 'Threaded discussions, member directory & announcements',
+        status: 'Active',
+        members: membersCount,
+        cta: 'Post welcome message',
+      })
+    } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('worksheet') || fLower.includes('vault')) {
+      activeModules.push({
+        id: `courses-${index}`,
+        icon: Package,
+        label: feat,
+        description: 'Upload lessons, modules, and video resources',
+        status: 'Active',
+        members: Math.round(membersCount * 0.8),
+        cta: 'Upload first lesson',
+      })
+    } else if (fLower.includes('podcast')) {
+      activeModules.push({
+        id: `podcast-${index}`,
+        icon: Volume2,
+        label: 'Podcast section',
+        description: 'Publish audio episodes, show notes, and transcripts',
+        status: 'Active',
+        members: Math.round(membersCount * 0.5),
+        cta: 'Upload first episode',
+      })
+    } else if (fLower.includes('ama') || fLower.includes('event') || fLower.includes('live')) {
+      activeModules.push({
+        id: `ama-${index}`,
+        icon: Radio,
+        label: feat,
+        description: 'Scheduled live streams, Q&A sessions & recordings',
+        status: 'Active',
+        members: Math.round(membersCount * 0.65),
+        cta: 'Schedule next AMA',
+      })
+    } else if (fLower.includes('tier') || fLower.includes('perk')) {
+      activeModules.push({
+        id: `tier-${index}`,
+        icon: DollarSign,
+        label: feat,
+        description: 'Tiered subscriber levels, recurring Stripe billing & gates',
+        status: 'Active',
+        members: membersCount,
+        cta: 'Configure pricing',
+      })
+    } else if (fLower.includes('push') || fLower.includes('notification')) {
+      activeModules.push({
+        id: `push-${index}`,
+        icon: Radio,
+        label: feat,
+        description: 'Instant mobile alerts directly to member devices',
+        status: 'Active',
+        members: membersCount,
+        cta: 'Send notification',
+      })
+    } else if (fLower.includes('drop') || fLower.includes('store') || fLower.includes('delivery')) {
+      activeModules.push({
+        id: `drop-${index}`,
+        icon: DollarSign,
+        label: feat,
+        description: 'Digital downloads, templates and limited-time releases',
+        status: 'Active',
+        members: Math.round(membersCount * 0.4),
+        cta: 'Add new drop',
+      })
+    } else {
+      activeModules.push({
+        id: `custom-${index}`,
+        icon: Package,
+        label: feat,
+        description: `Active module configured for ${productName}`,
+        status: 'Active',
+        members: Math.round(membersCount * 0.7),
+        cta: 'Manage module',
+      })
+    }
+  })
+
+  // Always append Offer Page
+  activeModules.push({
+    id: 'offer-page',
+    icon: ExternalLink,
+    label: 'Offer page',
+    description: 'Conversion-optimized landing & checkout page',
+    status: 'Live',
+    members: null,
+    cta: 'Share link',
+  })
 
   const handleGenerate = async (label) => {
     setGenerating(label)

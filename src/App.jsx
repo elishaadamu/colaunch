@@ -26,7 +26,17 @@ import LaunchAuth from './components/launch/LaunchAuth'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
-import { CheckCircle, AlertCircle, X } from 'lucide-react'
+import { CheckCircle, AlertCircle, X, XCircle, Trash2, RefreshCw, Info } from 'lucide-react'
+import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor } from './utils/avatarColorExtractor'
+
+export function isLightColor(hex) {
+  if (!hex || typeof hex !== 'string') return false
+  const clean = hex.replace('#', '').trim()
+  const r = parseInt(clean.slice(0, 2), 16) || 0
+  const g = parseInt(clean.slice(2, 4), 16) || 0
+  const b = parseInt(clean.slice(4, 6), 16) || 0
+  return ((r * 299 + g * 587 + b * 114) / 1000) > 135
+}
 
 export const ForgeContext = createContext(null)
 export function useForge() { return useContext(ForgeContext) }
@@ -46,18 +56,60 @@ const STEPS = [
   'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
 ]
 
-// Subtle accent colors per platform — kept low-opacity so B&W stays dominant
+// Subtle accent colors per platform — fallback only if creator has no avatar color
 const PLATFORM_ACCENTS = {
-  youtube: { color: '#ff3b30', rgb: '255,59,48' },
+  youtube: { color: '#10B981', rgb: '16,185,129' },
   instagram: { color: '#e1306c', rgb: '225,48,108' },
   twitter: { color: '#60a5fa', rgb: '96,165,250' },
   tiktok: { color: '#00c8c8', rgb: '0,200,200' },
   twitch: { color: '#9146ff', rgb: '145,70,255' },
-  other: { color: '#ffffff', rgb: '255,255,255' },
+  other: { color: '#10B981', rgb: '16,185,129' },
 }
 
-export function getAccent(platform) {
-  return PLATFORM_ACCENTS[platform] || PLATFORM_ACCENTS.other
+export function getAccent(platformOrCreator, brandColorOverride = null) {
+  if (brandColorOverride && typeof brandColorOverride === 'string' && brandColorOverride.startsWith('#')) {
+    const [r, g, b] = hexToRgb(brandColorOverride)
+    return { color: brandColorOverride, rgb: `${r},${g},${b}` }
+  }
+
+  if (platformOrCreator && typeof platformOrCreator === 'object') {
+    const hex = platformOrCreator.brandColor || platformOrCreator.brand_color || platformOrCreator.brandHex
+    if (hex && typeof hex === 'string' && hex.startsWith('#') && hex.toLowerCase() !== '#ff3b30') {
+      const [r, g, b] = hexToRgb(hex)
+      return { color: hex, rgb: `${r},${g},${b}` }
+    }
+    // Check localStorage cache
+    try {
+      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
+      if (rawMap) {
+        const map = JSON.parse(rawMap)
+        const id = platformOrCreator?.id
+        const handle = (platformOrCreator?.handle || '').replace(/^@/, '').toLowerCase()
+        const found = (id && map[id]) || (handle && map[handle])
+        if (found?.primaryHex && found.primaryHex.toLowerCase() !== '#ff3b30') {
+          const [r, g, b] = hexToRgb(found.primaryHex)
+          return { color: found.primaryHex, rgb: `${r},${g},${b}` }
+        }
+      }
+    } catch {}
+
+    const det = getDeterministicBrandColor(platformOrCreator)
+    if (det?.primaryHex) {
+      const [r, g, b] = hexToRgb(det.primaryHex)
+      return { color: det.primaryHex, rgb: `${r},${g},${b}` }
+    }
+
+    const plat = (platformOrCreator.platform || '').toLowerCase()
+    return PLATFORM_ACCENTS[plat] || PLATFORM_ACCENTS.other
+  }
+
+  if (typeof platformOrCreator === 'string' && platformOrCreator.startsWith('#')) {
+    const [r, g, b] = hexToRgb(platformOrCreator)
+    return { color: platformOrCreator, rgb: `${r},${g},${b}` }
+  }
+
+  const p = String(platformOrCreator || '').toLowerCase()
+  return PLATFORM_ACCENTS[p] || PLATFORM_ACCENTS.other
 }
 
 
@@ -207,50 +259,77 @@ function GlobalToast({ toast, onClose }) {
   )
 }
 
+function WipeCreatorModal({ isOpen, onClose, onConfirm, creatorData }) {
+  if (!isOpen) return null
+  const handle = creatorData?.handle || creatorData?.name || 'current creator'
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-md rounded-2xl bg-[#0f1117] border border-[#262c3b] p-6 shadow-2xl text-left relative overflow-hidden">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white tracking-tight">Wipe Saved Creator?</h3>
+            <p className="text-xs text-slate-400">Confirm local storage reset</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-300 leading-relaxed mb-4">
+          This will permanently wipe <strong className="text-white">{handle}</strong>, active blueprints, and cached scraping signals from your browser's local storage.
+        </p>
+
+        <div className="p-3 rounded-xl bg-[#151822] border border-[#1f2433] text-[11px] text-slate-400 mb-6 space-y-1">
+          <p className="font-semibold text-slate-200 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-blue-400" />
+            <span>Implications:</span>
+          </p>
+          <p>• If you simply refresh the page, your progress remains safely saved.</p>
+          <p>• Clicking "Wipe &amp; Start Fresh" resets everything back to Step 1.</p>
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-[#2a3042] text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Keep Saved
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>Wipe &amp; Start Fresh</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [step, setStep] = useState(() => {
     try {
-      const now = Date.now()
-      const loginTimestamp = parseInt(localStorage.getItem('forge_login_timestamp') || '0', 10)
-      if (loginTimestamp > 0 && now - loginTimestamp > 3600000) {
-        localStorage.removeItem('forge_active_session')
-        localStorage.removeItem('forge_login_timestamp')
-      }
-
-      const onboardingTimestamp = parseInt(localStorage.getItem('forge_onboarding_timestamp') || '0', 10)
-      if (onboardingTimestamp > 0 && now - onboardingTimestamp > 3600000) {
-        localStorage.removeItem('forge_onboarding_step')
-        localStorage.removeItem('forge_onboarding_timestamp')
-      }
-
       // Purge legacy shadow cache so deleted database creators never ghost in browser
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
-      const cachedUser = localStorage.getItem('forge_user_profile')
-      const activeSession = localStorage.getItem('forge_active_session')
-      if (path === '/dashboard') {
-        if (cachedUser && activeSession === 'true') {
-          return 'dashboard'
-        }
-        return 'login'
-      }
+      if (path === '/dashboard') return 'dashboard'
       if (path === '/login') return 'login'
       if (path === '/signup') return 'signup'
-      if (path === '/get-started' || path === '/creator-link') return 'creator-link'
 
-      if (path === '/') {
-        const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-        if (searchParams && searchParams.get('step') === 'creator-link') {
-          return 'creator-link'
-        }
-        const cachedStep = localStorage.getItem('forge_onboarding_step')
-        if (cachedStep && ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(cachedStep)) {
-          return cachedStep
-        }
+      // Restore saved onboarding step and creator data if present
+      const savedStep = localStorage.getItem('forge_onboarding_step')
+      const savedCreator = localStorage.getItem('forge_creator_data')
+      if (savedStep && savedCreator && STEPS.includes(savedStep)) {
+        return savedStep
       }
+      return 'creator-link'
     } catch { }
-    return 'welcome'
+    return 'creator-link'
   })
 
   const [userProfile, setUserProfile] = useState(() => {
@@ -272,6 +351,7 @@ export default function App() {
   })
 
   // Lives at the root so it persists across all tab/page navigation.
+  const [resetKey, setResetKey] = useState(0)
   const [bgJobs, setBgJobs] = useState({})
   const abortControllersRef = useRef({})
 
@@ -517,6 +597,11 @@ export default function App() {
   // Navigate function that updates pathname using history pushState
   const navigate = useCallback((newStep) => {
     setStep(newStep)
+    try {
+      if (newStep !== 'dashboard' && newStep !== 'login' && newStep !== 'signup') {
+        localStorage.setItem('forge_onboarding_step', newStep)
+      }
+    } catch {}
     let path = '/'
     if (newStep === 'login') path = '/login'
     else if (newStep === 'signup') path = '/signup'
@@ -596,11 +681,77 @@ export default function App() {
   const prev = useCallback(() => {
     if (step === 'signup' || step === 'login') {
       navigate('celebration')
+    } else if (step === 'blueprint' || step === 'analyzing') {
+      navigate('creator-link')
     } else {
       const idx = STEPS.indexOf(step)
       if (idx > 0) navigate(STEPS[idx - 1])
     }
   }, [step, navigate])
+
+  const resetCreator = useCallback(() => {
+    try {
+      localStorage.removeItem('forge_creator_data')
+      localStorage.removeItem('forge_recommendations')
+      localStorage.removeItem('forge_products_members')
+      localStorage.removeItem('forge_onboarding_step')
+      localStorage.removeItem('forge_onboarding_timestamp')
+      localStorage.removeItem('forge_ai_actions')
+      localStorage.removeItem('forge_user_profile')
+      localStorage.removeItem('forge_active_session')
+      localStorage.removeItem('forge_dashboard_active_tab')
+
+      // Purge any creator-specific or cached data in localStorage and sessionStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && (
+          k.startsWith('forge_creator_') ||
+          k.startsWith('forge_video_') ||
+          k.startsWith('forge_channel_') ||
+          k.startsWith('forge_calendar_') ||
+          k.includes('_launch_pack') ||
+          k.includes('_launch_image') ||
+          k.includes('_studio_')
+        )) {
+          localStorage.removeItem(k)
+        }
+      }
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i)
+        if (k && (
+          k.startsWith('forge_creator_') ||
+          k.startsWith('forge_video_') ||
+          k.startsWith('forge_channel_')
+        )) {
+          sessionStorage.removeItem(k)
+        }
+      }
+      localStorage.setItem('forge_onboarding_step', 'creator-link')
+    } catch (e) {
+      console.warn('[Forge] Error during resetCreator storage purge:', e)
+    }
+
+    setUserProfile(null)
+    setResetKey(k => k + 1)
+    setCreatorData({
+      url: '',
+      platform: null,
+      handle: '',
+      name: '',
+      followers: 0,
+      avatar: null,
+      avatarUrl: '',
+      niche: '',
+      recentPosts: [],
+      engagementRate: 0,
+      brandColor: null,
+      blueprint: null,
+      productName: '',
+      buildItems: [],
+      id: null,
+    })
+    navigate('creator-link')
+  }, [navigate])
 
   const goTo = (s) => navigate(s)
 
@@ -618,41 +769,24 @@ export default function App() {
     })
   }
 
-  // Handle URL navigation popstate and session restores
+  // Handle URL navigation popstate and session restores (without wiping saved creator)
   useEffect(() => {
     const handleNavigation = () => {
       const path = window.location.pathname
-      const cachedUser = localStorage.getItem('forge_user_profile')
-      const activeSession = localStorage.getItem('forge_active_session')
       const cachedCreator = localStorage.getItem('forge_creator_data')
-
-      if (cachedCreator) {
-        try {
-          setCreatorData(JSON.parse(cachedCreator))
-        } catch (e) {
-          console.error('[Forge] Failed to sync creator data:', e)
-        }
-      }
 
       if (path === '/login') {
         setStep('login')
       } else if (path === '/signup') {
         setStep('signup')
-      } else if (path === '/get-started' || path === '/creator-link') {
-        setStep('creator-link')
       } else if (path === '/dashboard') {
-        if (cachedUser && activeSession === 'true') {
-          setStep('dashboard')
-        } else {
-          setStep('login')
-          window.history.replaceState(null, '', '/login')
-        }
+        setStep('dashboard')
       } else {
-        const cachedStep = localStorage.getItem('forge_onboarding_step')
-        if (cachedStep && ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(cachedStep)) {
-          setStep(cachedStep)
+        const savedStep = localStorage.getItem('forge_onboarding_step')
+        if (savedStep && STEPS.includes(savedStep) && cachedCreator) {
+          setStep(savedStep)
         } else {
-          setStep('welcome')
+          setStep('creator-link')
         }
       }
     }
@@ -661,6 +795,44 @@ export default function App() {
     window.addEventListener('popstate', handleNavigation)
     return () => window.removeEventListener('popstate', handleNavigation)
   }, [])
+
+  // Warn on page reload/refresh if onboarding is active with implications notice
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (step !== 'dashboard' && step !== 'login' && step !== 'signup' && (creatorData?.handle || creatorData?.url)) {
+        e.preventDefault()
+        e.returnValue = 'Your current setup remains safely stored in local storage. To start fresh, use the Reset Creator button.'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [step, creatorData?.handle, creatorData?.url])
+
+  // Dynamically synchronize root CSS variables with creator's accent color
+  useEffect(() => {
+    const acc = getAccent(creatorData)
+    if (acc?.color && acc?.rgb) {
+      document.documentElement.style.setProperty('--theme-accent', acc.color)
+      document.documentElement.style.setProperty('--theme-accent-bg', `rgba(${acc.rgb}, 0.12)`)
+      document.documentElement.style.setProperty('--theme-accent-border', `rgba(${acc.rgb}, 0.28)`)
+      document.documentElement.style.setProperty(
+        '--theme-btn-primary-text',
+        isLightColor(acc.color) ? '#000000' : '#ffffff'
+      )
+    }
+  }, [creatorData?.brandColor, creatorData?.brand_color, creatorData?.brandHex, creatorData?.avatarUrl, creatorData?.platform])
+
+  // Wipe Creator Modal State
+  const [wipeModalOpen, setWipeModalOpen] = useState(false)
+  const requestWipeCreator = useCallback(() => {
+    setWipeModalOpen(true)
+  }, [])
+  const confirmWipeCreator = useCallback(() => {
+    setWipeModalOpen(false)
+    resetCreator()
+    triggerToast('Creator data successfully wiped. Starting fresh.', 'success')
+  }, [resetCreator, triggerToast])
 
   // Dynamically update document title and SEO metadata on route or step change
   useEffect(() => {
@@ -681,9 +853,6 @@ export default function App() {
       const isOnboardingStep = ['welcome', 'creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)
       if (isOnboardingStep) {
         localStorage.setItem('forge_onboarding_step', step)
-        if (!localStorage.getItem('forge_onboarding_timestamp')) {
-          localStorage.setItem('forge_onboarding_timestamp', Date.now().toString())
-        }
       } else if (step === 'dashboard' || step === 'login' || step === 'signup') {
         localStorage.removeItem('forge_onboarding_step')
         localStorage.removeItem('forge_onboarding_timestamp')
@@ -692,35 +861,6 @@ export default function App() {
       console.warn('[Forge] Failed to save onboarding step:', e)
     }
   }, [step])
-
-  // Periodic expiration check (1 hour timeout for login and onboarding)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now()
-      const loginTs = parseInt(localStorage.getItem('forge_login_timestamp') || '0', 10)
-      if (loginTs > 0 && now - loginTs > 3600000) {
-        localStorage.removeItem('forge_active_session')
-        localStorage.removeItem('forge_login_timestamp')
-        if (step === 'dashboard') {
-          navigate('login')
-        }
-      }
-
-      const onboardTs = parseInt(localStorage.getItem('forge_onboarding_timestamp') || '0', 10)
-      if (onboardTs > 0 && now - onboardTs > 3600000) {
-        localStorage.removeItem('forge_onboarding_step')
-        localStorage.removeItem('forge_onboarding_timestamp')
-        if (['creator-link', 'analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)) {
-          setCreatorData({
-            url: '', platform: null, handle: '', name: '', followers: 0, avatar: null, niche: '',
-            recentPosts: [], engagementRate: 0, brandColor: null, blueprint: null, productName: '', buildItems: []
-          })
-          navigate('welcome')
-        }
-      }
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [step, navigate])
 
   // Restore full profile data from DB if user is logged in
   useEffect(() => {
@@ -803,7 +943,21 @@ export default function App() {
     navigate('login')
   }, [navigate])
 
-  const accent = getAccent(creatorData.platform)
+  // Automatically extract and set brandColor from creator's avatar image
+  useEffect(() => {
+    const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url
+    if (avatar && (!creatorData.brandColor || creatorData.brandColor === '#ff3b30')) {
+      let active = true
+      extractBrandColorFromAvatar(avatar, creatorData).then((res) => {
+        if (active && res && res.primaryHex && res.primaryHex !== '#ff3b30') {
+          updateCreator({ brandColor: res.primaryHex, brandHex: res.primaryHex })
+        }
+      }).catch(() => {})
+      return () => { active = false }
+    }
+  }, [creatorData?.avatarUrl, creatorData?.avatar, creatorData?.avatar_url, creatorData?.brandColor])
+
+  const accent = getAccent(creatorData)
   const ctx = {
     step,
     next,
@@ -811,6 +965,10 @@ export default function App() {
     goTo,
     creatorData,
     updateCreator,
+    resetCreator,
+    requestWipeCreator,
+    wipeModalOpen,
+    setWipeModalOpen,
     accent,
     bgJobs,
     startBgJob,
@@ -932,6 +1090,12 @@ export default function App() {
     return (
       <ForgeContext.Provider value={ctx}>
         <DashboardLayout />
+        <WipeCreatorModal 
+          isOpen={wipeModalOpen} 
+          onClose={() => setWipeModalOpen(false)} 
+          onConfirm={confirmWipeCreator} 
+          creatorData={creatorData} 
+        />
         {globalToast && (
           <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
         )}
@@ -941,7 +1105,7 @@ export default function App() {
 
   const screens = {
     'welcome': <Welcome />,
-    'creator-link': <CreatorLink />,
+    'creator-link': <CreatorLink key={`creator-link-${resetKey}`} />,
     'analyzing': <Analyzing />,
     'blueprint': <Blueprint />,
     'preview': <Preview />,
@@ -957,6 +1121,12 @@ export default function App() {
       <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
         {screens[step] || <Welcome />}
       </div>
+      <WipeCreatorModal 
+        isOpen={wipeModalOpen} 
+        onClose={() => setWipeModalOpen(false)} 
+        onConfirm={confirmWipeCreator} 
+        creatorData={creatorData} 
+      />
       {globalToast && (
         <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
       )}

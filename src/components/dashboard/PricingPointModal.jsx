@@ -9,7 +9,7 @@ export default function PricingPointModal({
   isOpen,
   onClose,
   creatorData,
-  creatorBrandColor = '#ff3b30',
+  creatorBrandColor = '#10B981',
   onSelectTrack,
   onOpenDiyPayment
 }) {

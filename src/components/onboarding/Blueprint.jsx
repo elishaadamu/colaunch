@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { ArrowRight, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, CheckCircle, Play } from 'lucide-react'
+import { 
+  ArrowRight, ArrowLeft, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, 
+  CheckCircle, CheckCircle2, Play, Lock, Check, ChevronDown, HelpCircle, Info, Video, Compass, MoreHorizontal,
+  Hammer, Trash2, MessageSquare, Heart
+} from 'lucide-react'
 import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
@@ -27,6 +31,15 @@ function fmt(n) {
     return k % 1 === 0 ? `${k}K` : `${k.toFixed(1)}K`
   }
   return String(n)
+}
+
+function isLightColor(hex) {
+  if (!hex || typeof hex !== 'string') return false
+  const clean = hex.replace('#', '').trim()
+  const r = parseInt(clean.slice(0, 2), 16) || 0
+  const g = parseInt(clean.slice(2, 4), 16) || 0
+  const b = parseInt(clean.slice(4, 6), 16) || 0
+  return ((r * 299 + g * 587 + b * 114) / 1000) > 135
 }
 
 const PLATFORM_ICONS = {
@@ -171,7 +184,7 @@ const BLUEPRINTS = [
     tagline: 'Your own skill-building platform',
     description: 'A branded learning hub where your audience pays for courses, live sessions, and exclusive resources — all under your name.',
     revenue: '$8K–$30K / mo',
-    fit: 99,
+    fit: 93,
     icon: Globe,
     primary: true,
     preview: 'webapp',
@@ -217,25 +230,126 @@ const BLUEPRINTS = [
 
 // ── Preview mocks ─────────────────────────────────────────────────────────────
 
-function WebAppPreview({ accent }) {
+function WebAppPreview({ accent, primary, creatorData }) {
+  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+  const appName = primary?.name || 'Masterclass Series'
+  const isMusic = (appName + ' ' + (creatorData?.niche || '')).toLowerCase().match(/musical|theater|broadway|music|song/)
+
+  const modules = isMusic ? [
+    { title: 'Dramatic Score & Form', lessons: '12 lessons', badge: 'POPULAR', progress: '85%' },
+    { title: 'Broadway Archive Vault', lessons: '8 lessons', badge: 'PRO', lock: true },
+    { title: 'Lyrical Storytelling', lessons: '6 lessons', badge: 'READY', progress: '100%' },
+    { title: 'Live Composition AMA', lessons: 'Live in 2d', badge: 'LIVE', live: true },
+  ] : [
+    { title: `${creatorName} Core Method`, lessons: '12 lessons', badge: 'POPULAR', progress: '85%' },
+    { title: 'Advanced Tactics & Secrets', lessons: '8 lessons', badge: 'PRO', lock: true },
+    { title: 'Quick Start Templates', lessons: '6 lessons', badge: 'READY', progress: '100%' },
+    { title: 'Weekly Creator Stream', lessons: 'Live in 2d', badge: 'LIVE', live: true },
+  ]
+
   return (
-    <div className="w-full h-full flex flex-col p-3 gap-2">
-      <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="w-16 h-2 rounded-full shimmer-line" />
-        <div className="flex gap-1.5">
-          {[8,8,10].map((w,i) => <div key={i} className="h-2 rounded-full" style={{ width: `${w*4}px`, background: 'rgba(255,255,255,0.08)' }} />)}
+    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#0a0a0c' }}>
+      {/* Top Navbar */}
+      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 relative"
+            style={{ background: `rgba(${accent.rgb}, 0.15)`, border: `1px solid rgba(${accent.rgb}, 0.3)` }}>
+            <span className="text-[7px] font-black select-none" style={{ color: accent.color }}>
+              {creatorName.charAt(0).toUpperCase()}
+            </span>
+            {avatar && (
+              <img 
+                src={avatar} 
+                alt="" 
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover" 
+                onError={e => { 
+                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
+                    e.currentTarget.dataset.proxied = 'true';
+                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
+                  } else {
+                    e.currentTarget.style.display = 'none'; 
+                  }
+                }} 
+              />
+            )}
+          </div>
+          <span className="text-[9px] font-bold text-white/90 truncate max-w-[70px] sm:max-w-[85px]">
+            {appName}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[8px] font-semibold shrink-0">
+          <span className="relative pb-0.5 whitespace-nowrap" style={{ color: accent.color }}>
+            Courses
+            <span className="absolute bottom-0 left-0 right-0 h-[1.5px] rounded-full" style={{ background: accent.color }} />
+          </span>
+          <span className="text-white/40 whitespace-nowrap hidden sm:inline">Community</span>
+          <span className="text-white/40 whitespace-nowrap">Live</span>
+          <div className="px-2 py-0.5 rounded-full text-[7px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0 leading-tight"
+            style={{ 
+              background: accent.color, 
+              color: isLightColor(accent.color) ? '#000000' : '#ffffff' 
+            }}>
+            Sign In
+          </div>
         </div>
       </div>
-      <div className="rounded-lg p-2.5 flex-shrink-0" style={{ background: `rgba(${accent.rgb},0.08)` }}>
-        <div className="w-20 h-1.5 rounded-full shimmer-line mb-1.5" />
-        <div className="w-32 h-2.5 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
+
+      {/* Hero Featured Banner - Flat studio style, no gradient, no shadow */}
+      <div className="rounded-lg p-2 relative overflow-hidden flex items-center justify-between flex-shrink-0 border"
+        style={{
+          background: `rgba(${accent.rgb}, 0.12)`,
+          borderColor: `rgba(${accent.rgb}, 0.25)`
+        }}>
+        <div className="min-w-0 pr-2">
+          <div className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[6.5px] font-extrabold uppercase tracking-wide mb-0.5"
+            style={{ background: `rgba(${accent.rgb}, 0.22)`, color: accent.color }}>
+            Featured Masterclass
+          </div>
+          <div className="text-[9.5px] font-bold text-white truncate leading-tight">
+            {isMusic ? 'Storytelling Through Song' : `${creatorName} Masterclass`}
+          </div>
+          <div className="text-[7.5px] text-white/50">Full Video Curriculum · 4.9 ★</div>
+        </div>
+        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: accent.color, color: '#000' }}>
+          <Play size={10} fill="#000" className="ml-0.5" />
+        </div>
       </div>
+
+      {/* Grid of Real Module Cards */}
       <div className="grid grid-cols-2 gap-1.5 flex-1">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="rounded-lg p-2 flex flex-col gap-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="w-full h-8 rounded-md" style={{ background: 'rgba(255,255,255,0.07)' }} />
-            <div className="w-3/4 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
-            <div className="w-1/2 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        {modules.map((m, idx) => (
+          <div key={idx} className="rounded-lg p-1.5 flex flex-col justify-between border"
+            style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[7px] font-bold px-1 rounded uppercase tracking-wider"
+                  style={{
+                    background: m.live ? 'rgba(239,68,68,0.18)' : m.lock ? 'rgba(255,255,255,0.08)' : `rgba(${accent.rgb}, 0.15)`,
+                    color: m.live ? '#ef4444' : m.lock ? 'rgba(255,255,255,0.5)' : accent.color
+                  }}>
+                  {m.badge}
+                </span>
+                {m.lock ? (
+                  <Lock size={9} className="text-white/40" />
+                ) : (
+                  <Play size={9} style={{ color: accent.color }} fill={accent.color} />
+                )}
+              </div>
+              <div className="text-[8.5px] font-semibold text-white/90 leading-tight truncate">
+                {m.title}
+              </div>
+              <div className="text-[7px] text-white/40">{m.lessons}</div>
+            </div>
+            {m.progress ? (
+              <div className="mt-1">
+                <div className="h-0.5 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: m.progress, background: accent.color }} />
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -243,59 +357,250 @@ function WebAppPreview({ accent }) {
   )
 }
 
-function MobilePreview() {
+function MobilePreview({ accent, primary, creatorData }) {
+  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+
   return (
-    <div className="w-full h-full flex items-center justify-center p-3">
-      <div className="relative rounded-3xl border-2 overflow-hidden"
-        style={{ width: '100px', height: '175px', borderColor: 'rgba(255,255,255,0.15)', background: '#111' }}>
-        <div className="flex justify-between items-center px-3 pt-2 pb-1">
-          <div className="w-8 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
-          <div className="w-10 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }} />
+    <div className="w-full h-full flex items-center justify-center p-2 select-none">
+      <div className="relative rounded-2xl border-2 overflow-hidden flex flex-col"
+        style={{ width: '135px', height: '200px', borderColor: 'rgba(255,255,255,0.18)', background: '#08080a' }}>
+        
+        {/* Phone Speaker Notch */}
+        <div className="w-10 h-1.5 bg-black rounded-b-md mx-auto z-10 flex-shrink-0" />
+
+        {/* Mini App Header */}
+        <div className="flex items-center justify-between px-2 py-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 relative"
+              style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
+              <span className="text-[6px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
+              {avatar && (
+                <img 
+                  src={avatar} 
+                  alt="" 
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover" 
+                  onError={e => { 
+                    if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
+                      e.currentTarget.dataset.proxied = 'true';
+                      e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
+                    } else {
+                      e.currentTarget.style.display = 'none'; 
+                    }
+                  }} 
+                />
+              )}
+            </div>
+            <span className="text-[7.5px] font-bold text-white truncate max-w-[65px]">{creatorName}</span>
+          </div>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
         </div>
-        <div className="px-2 space-y-1.5">
-          {[1,2,3].map(i => (
-            <div key={i} className="rounded-lg p-1.5 flex gap-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-              <div className="flex-1 space-y-1">
-                <div className="w-full h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                <div className="w-2/3 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+
+        {/* Stories / Highlights row */}
+        <div className="flex items-center gap-1 px-2 py-1 overflow-hidden">
+          {['Live', 'Drops', 'Vault', 'Chat'].map((s, i) => (
+            <div key={s} className="flex flex-col items-center gap-0.5 flex-shrink-0">
+              <div className="w-4 h-4 rounded-full p-0.5 flex items-center justify-center"
+                style={{ border: `1px solid ${i === 0 ? accent.color : 'rgba(255,255,255,0.2)'}` }}>
+                <div className="w-full h-full rounded-full bg-white/10 flex items-center justify-center text-[5px] text-white">
+                  {s.charAt(0)}
+                </div>
+              </div>
+              <span className="text-[5px] text-white/50">{s}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Feed Card - Flat studio style, no gradient */}
+        <div className="flex-1 px-2 space-y-1 overflow-hidden">
+          <div className="rounded-lg p-1.5 border"
+            style={{ background: `rgba(${accent.rgb}, 0.10)`, borderColor: `rgba(${accent.rgb}, 0.25)` }}>
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-[6px] font-bold uppercase" style={{ color: accent.color }}>New Drop</span>
+              <Play size={7} style={{ color: accent.color }} fill={accent.color} />
+            </div>
+            <div className="text-[7.5px] font-bold text-white truncate leading-tight">Masterclass Series #1</div>
+            <div className="text-[6px] text-white/40">Watch in-app · 18 min</div>
+          </div>
+
+          <div className="rounded-lg p-1.5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="text-[6px] text-white/40 mb-0.5">Member discussion</div>
+            <div className="text-[7px] text-white/80 line-clamp-2">"The phrasing in this lesson is brilliant."</div>
+          </div>
+        </div>
+
+        {/* Bottom Nav Bar */}
+        <div className="h-5 border-t flex items-center justify-around flex-shrink-0"
+          style={{ borderColor: 'rgba(255,255,255,0.08)', background: '#000000' }}>
+          <div className="w-2.5 h-2.5 rounded-full flex items-center justify-center" style={{ background: accent.color }} />
+          <div className="w-2 h-2 rounded-full bg-white/20" />
+          <div className="w-2 h-2 rounded-full bg-white/20" />
+          <div className="w-2 h-2 rounded-full bg-white/20" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CommunityPreview({ accent, primary, creatorData }) {
+  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+  const isMusic = (primary?.name + ' ' + (creatorData?.niche || '')).toLowerCase().match(/worship|music|song|praise|gospel/)
+
+  return (
+    <div className="w-full h-full p-3.5 space-y-3 font-sans text-xs select-none bg-[#090b10]">
+      {/* Channel Title in Mock */}
+      <div className="flex items-center justify-between pb-2 border-b border-[#1f2433]/70">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white overflow-hidden shrink-0 relative"
+            style={{ background: accent.color }}
+          >
+            <span className="select-none">{creatorName.charAt(0).toUpperCase()}</span>
+            {avatar && (
+              <img 
+                src={avatar} 
+                alt="" 
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover" 
+                onError={e => { 
+                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
+                    e.currentTarget.dataset.proxied = 'true';
+                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
+                  } else {
+                    e.currentTarget.style.display = 'none'; 
+                  }
+                }} 
+              />
+            )}
+          </div>
+          <span className="font-semibold text-slate-200 text-[11px] truncate max-w-[130px]">
+            {creatorName} Inner Circle
+          </span>
+        </div>
+        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-medium border border-emerald-500/20">
+          Online
+        </span>
+      </div>
+
+      {/* Channel Sidebar + Feed simulation */}
+      <div className="grid grid-cols-12 gap-2 text-[10px]">
+        <div className="col-span-4 space-y-1.5 text-slate-400 border-r border-[#1f2433]/50 pr-1">
+          <div 
+            className="font-medium px-1.5 py-1 rounded truncate text-[9.5px]"
+            style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
+          >
+            # general
+          </div>
+          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
+            {isMusic ? '# lyric-drops' : '# resources'}
+          </div>
+          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
+            {isMusic ? '# chords' : '# ama-q-and-a'}
+          </div>
+          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
+            # feedback
+          </div>
+        </div>
+
+        <div className="col-span-8 space-y-2">
+          <div className="p-2 rounded-lg bg-[#151822] border border-[#1f2433]/60 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-slate-200 text-[10px] truncate max-w-[90px]">{creatorName}</span>
+              <span className="text-[8px] text-slate-400">10m ago</span>
+            </div>
+            <p className="text-[9px] text-slate-300 leading-snug">
+              Welcome everyone to the private circle! Drop questions below for tomorrow's breakdown.
+            </p>
+            <div className="flex items-center gap-3 pt-1 text-[8px] font-medium" style={{ color: accent.color }}>
+              <span className="flex items-center gap-1">
+                <MessageSquare className="w-2.5 h-2.5" />
+                <span>16 replies</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-2.5 h-2.5" />
+                <span>34 likes</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="p-1.5 rounded bg-[#151822]/40 border border-dashed border-[#1f2433] text-center text-slate-400 text-[9px] truncate">
+            {isMusic ? 'Sunday Stems Pack v2.4 attached' : 'VIP Resource Toolkit v2.4 attached'}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StorePreview({ accent, primary, creatorData }) {
+  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+
+  const products = [
+    { title: 'Masterclass Pass', price: '$99.00', tag: 'COURSE' },
+    { title: 'Resource Vault', price: '$49.00', tag: 'DIGITAL' },
+    { title: 'Arrangement Stems', price: '$29.00', tag: 'FILES' },
+    { title: 'Starter Guide', price: 'FREE', tag: 'STARTER' },
+  ]
+
+  return (
+    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#0a0a0c' }}>
+      {/* Store Header */}
+      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center relative shrink-0"
+            style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
+            <span className="text-[7px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
+            {avatar && (
+              <img 
+                src={avatar} 
+                alt="" 
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover" 
+                onError={e => { 
+                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
+                    e.currentTarget.dataset.proxied = 'true';
+                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
+                  } else {
+                    e.currentTarget.style.display = 'none'; 
+                  }
+                }} 
+              />
+            )}
+          </div>
+          <span className="text-[8.5px] font-bold text-white truncate max-w-[100px]">{creatorName} Store</span>
+        </div>
+        <div className="px-1.5 py-0.5 rounded text-[7px] font-bold"
+          style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>
+          Cart (1)
+        </div>
+      </div>
+
+      {/* Product Grid */}
+      <div className="grid grid-cols-2 gap-1.5 flex-1">
+        {products.map((p, i) => (
+          <div key={i} className="rounded-lg p-1.5 flex flex-col justify-between border"
+            style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[6px] font-bold px-1 rounded uppercase"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
+                  {p.tag}
+                </span>
+                <span className="text-[8px] font-extrabold text-white">{p.price}</span>
+              </div>
+              <div className="text-[8px] font-semibold text-white/90 leading-tight truncate">
+                {p.title}
               </div>
             </div>
-          ))}
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 flex justify-around py-1.5 border-t"
-          style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.6)' }}>
-          {[1,2,3,4].map(i => (
-            <div key={i} className="w-3.5 h-3.5 rounded-full"
-              style={{ background: i === 1 ? 'white' : 'rgba(255,255,255,0.15)' }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CommunityPreview() {
-  return (
-    <div className="w-full h-full flex gap-2 p-3">
-      <div className="flex flex-col gap-1.5 w-14 flex-shrink-0">
-        {['Members','Posts','Events','Chat'].map((l, i) => (
-          <div key={l} className="px-1.5 py-1 rounded-lg text-center"
-            style={{ background: i === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', fontSize: '7px', color: 'rgba(255,255,255,0.5)' }}>
-            {l}
-          </div>
-        ))}
-      </div>
-      <div className="flex-1 space-y-1.5">
-        {[1,2,3].map(i => (
-          <div key={i} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-3.5 h-3.5 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
-              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
-            </div>
-            <div className="space-y-0.5">
-              <div className="w-full h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }} />
-              <div className="w-3/4 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div className="mt-1 w-full py-0.5 rounded text-center text-[7px] font-bold uppercase"
+              style={{
+                background: i === 0 ? accent.color : 'rgba(255,255,255,0.08)',
+                color: i === 0 ? '#000000' : 'rgba(255,255,255,0.8)'
+              }}>
+              {i === 0 ? 'Buy Now' : 'View'}
             </div>
           </div>
         ))}
@@ -304,26 +609,99 @@ function CommunityPreview() {
   )
 }
 
-function StorePreview() {
+function DashboardPreview({ accent, primary, creatorData }) {
+  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+  const appName = primary?.name || 'Masterclass Series'
+
   return (
-    <div className="w-full h-full p-3">
-      <div className="w-20 h-2 rounded-full shimmer-line mb-3" />
+    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#09090b' }}>
+      {/* Dashboard Top Header */}
+      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 relative"
+            style={{ background: `rgba(${accent.rgb}, 0.18)`, border: `1px solid rgba(${accent.rgb}, 0.3)` }}>
+            <span className="text-[7px] font-black select-none" style={{ color: accent.color }}>
+              {creatorName.charAt(0).toUpperCase()}
+            </span>
+            {avatar && (
+              <img 
+                src={avatar} 
+                alt="" 
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover" 
+                onError={e => { 
+                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
+                    e.currentTarget.dataset.proxied = 'true';
+                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
+                  } else {
+                    e.currentTarget.style.display = 'none'; 
+                  }
+                }} 
+              />
+            )}
+          </div>
+          <span className="text-[9px] font-bold text-white truncate max-w-[90px]">
+            {creatorName} Studio OS
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
+          <span className="text-[7.5px] font-mono uppercase" style={{ color: accent.color }}>Live Rails</span>
+        </div>
+      </div>
+
+      {/* 4 Metric Tiles */}
       <div className="grid grid-cols-2 gap-1.5">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <div className="w-full h-14" style={{ background: `rgba(255,255,255,${0.06 + i * 0.02})` }} />
-            <div className="p-1.5 space-y-1">
-              <div className="w-3/4 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
-              <div className="w-1/2 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} />
-            </div>
+        <div className="rounded-lg p-1.5 border"
+          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-[6.5px] text-white/40 uppercase">Monthly MRR</span>
+            <span className="text-[6px] font-bold px-1 rounded" style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>+18.4%</span>
           </div>
-        ))}
+          <div className="text-[11px] font-bold text-white font-mono leading-tight">$14,850</div>
+          <div className="text-[6.5px] text-white/30">Target: $20,000</div>
+        </div>
+
+        <div className="rounded-lg p-1.5 border"
+          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="text-[6.5px] text-white/40 uppercase">Members</span>
+            <span className="text-[6px] text-white/50 font-bold">Active</span>
+          </div>
+          <div className="text-[11px] font-bold text-white font-mono leading-tight">1,280</div>
+          <div className="text-[6.5px] text-white/30">92% Retention</div>
+        </div>
+      </div>
+
+      {/* Modules & Revenue Engine Row */}
+      <div className="rounded-lg p-1.5 border flex-1 flex flex-col justify-between"
+        style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center justify-between pb-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+          <span className="text-[7.5px] font-bold text-white">Active Product Engine</span>
+          <span className="text-[6.5px] px-1 py-0.2 rounded font-mono" style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>
+            {appName.slice(0, 16)}
+          </span>
+        </div>
+        <div className="space-y-1 my-1">
+          <div className="flex items-center justify-between text-[7px]">
+            <span className="text-white/80 truncate max-w-[120px]">Module 1: Core Curriculum</span>
+            <span className="font-mono text-white/50">85% done</span>
+          </div>
+          <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: '85%', background: accent.color }} />
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-1 border-t text-[6.5px] text-white/40" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+          <span>Payouts: Stripe Connected</span>
+          <span style={{ color: accent.color }}>Next batch: Today</span>
+        </div>
       </div>
     </div>
   )
 }
 
-const PREVIEW_COMPONENTS = { webapp: WebAppPreview, mobile: MobilePreview, community: CommunityPreview, store: StorePreview }
+const PREVIEW_COMPONENTS = { webapp: WebAppPreview, mobile: MobilePreview, community: CommunityPreview, store: StorePreview, dashboard: DashboardPreview }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -334,8 +712,10 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
   const eng = parseFloat(creatorData?.engagementRate) || 3.5
 
   if (!recs || recs.length === 0) {
-    return BLUEPRINTS.map(b => ({
+    const baseFit = eng >= 6.0 ? 97 : eng >= 4.0 ? 94 : followers >= 100_000 ? 92 : 89
+    return BLUEPRINTS.map((b, idx) => ({
       ...b,
+      fit: Math.max(65, baseFit - (idx * 6)),
       revenue: calculateFollowerRevenueRange(followers, b.id, eng)
     }))
   }
@@ -371,6 +751,27 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
       r.revenue_potential
     )
 
+    const rawConf = r.confidence_score ?? r.confidenceScore ?? r.fit
+    let fitVal
+    if (typeof rawConf === 'number' && !isNaN(rawConf)) {
+      fitVal = rawConf <= 1 ? Math.round(rawConf * 100) : Math.round(rawConf)
+    } else if (typeof rawConf === 'string') {
+      const parsed = parseFloat(rawConf.replace('%', ''))
+      if (!isNaN(parsed)) {
+        fitVal = parsed <= 1 ? Math.round(parsed * 100) : Math.round(parsed)
+      }
+    }
+
+    if (!fitVal || isNaN(fitVal)) {
+      const topFit = eng >= 6.0 ? 96 : eng >= 4.0 ? 94 : followers >= 100_000 ? 92 : 89
+      fitVal = Math.max(68, topFit - (index * 7))
+    } else if (fitVal === 95 && index === 0) {
+      // If AI returned static 0.95 default, refine it with creator engagement
+      fitVal = eng >= 6.0 ? 97 : eng >= 4.0 ? 96 : followers >= 100_000 ? 94 : 92
+    }
+
+    const finalFit = Math.min(98, Math.max(65, fitVal))
+
     return {
       id: r.id || `rec-${index}`,
       type: config.type,
@@ -378,7 +779,7 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
       tagline: r.tagline || 'Custom built for your brand',
       description: r.description || 'A tailored monetization platform designed specifically for your audience niche.',
       revenue: dynamicRev,
-      fit: Math.round((r.confidence_score || 0.8) * 100),
+      fit: finalFit,
       icon: config.icon,
       primary: index === 0,
       preview: config.preview,
@@ -471,8 +872,8 @@ function calculateAudienceFit(creator, blueprint) {
 }
 
 export default function Blueprint() {
-  const { next, creatorData, updateCreator, startBgJob, prev } = useForge()
-  const accent  = getAccent(creatorData.platform)
+  const { next, creatorData, updateCreator, startBgJob, prev, goTo, requestWipeCreator } = useForge()
+  const accent  = getAccent(creatorData)
   
   const recsJob = useBgJob('onboarding-recs')
   const rawRecs = creatorData.recommendations
@@ -484,6 +885,7 @@ export default function Blueprint() {
   const [showReasons, setShowReasons] = useState(false)
   const [isScraping, setIsScraping] = useState(false)
   const [quotaWarning, setQuotaWarning] = useState(null)
+  const [previewMode, setPreviewMode] = useState('app')
 
   const hasNoRecs = !validRecs || validRecs.length === 0
 
@@ -580,11 +982,11 @@ export default function Blueprint() {
   }, [creatorData.recommendations])
 
   const selectedBlueprint = blueprints.find(b => b.id === selected) || blueprints[0]
-  const primary           = blueprints[0]
-  const alternates        = blueprints.slice(1)
+  const activeBlueprint = selectedBlueprint || blueprints[0]
+  const otherOptions = blueprints.filter(b => b.id !== activeBlueprint.id)
 
   const dynamicEngagement = getDynamicEngagementRate(creatorData)
-  const audienceFit = primary?.fit || calculateAudienceFit(creatorData, selectedBlueprint)
+  const audienceFit = activeBlueprint?.fit || calculateAudienceFit(creatorData, activeBlueprint)
 
   useEffect(() => {
     if (dynamicEngagement && (!creatorData.engagementRate || creatorData.engagementRate === 3.8)) {
@@ -593,52 +995,128 @@ export default function Blueprint() {
   }, [dynamicEngagement, creatorData.engagementRate])
 
   const blurb   = buildCreatorBlurb(creatorData)
-  const reasonsKey = getReasonsCategoryKey(selectedBlueprint)
+  const reasonsKey = getReasonsCategoryKey(activeBlueprint)
   const reasons = buildReasons(reasonsKey, creatorData)
 
+  const PLATFORM_COLORS = {
+    youtube: '#ef4444',
+    instagram: '#e1306c',
+    twitter: '#60a5fa',
+    tiktok: '#00c8c8',
+    twitch: '#9146ff',
+  }
+
   const PlatformIcon = PLATFORM_ICONS[creatorData.platform] || Globe
+  const platformColor = PLATFORM_COLORS[creatorData.platform] || accent.color
+  const activeAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+
+  const ActiveIcon = activeBlueprint?.icon || Globe
+  const PreviewComp = PREVIEW_COMPONENTS[activeBlueprint?.preview] || WebAppPreview
 
   const handleContinue = () => {
     if (isScraping || isGenerating) return
-    updateCreator({ blueprint: selectedBlueprint, productName: selectedBlueprint.name })
+    updateCreator({ blueprint: activeBlueprint, productName: activeBlueprint.name })
     next()
   }
 
-  const PreviewComp = PREVIEW_COMPONENTS[primary.preview]
+  const creatorName = creatorData.name || (creatorData.handle || 'Creator').replace('@', '')
+  const rawPosts = (creatorData.recentPosts && creatorData.recentPosts.length > 0)
+    ? creatorData.recentPosts
+    : []
+
+  // Dynamic creator-contextual benchmark fallback if no real uploads found
+  const fallbackBenchmarkPosts = [
+    { title: `${creatorName} Core Guide & Overview`, duration: '10:24', views: '45K' },
+    { title: `${creatorName} Channel Masterclass`, duration: '14:10', views: '62K' },
+    { title: `${creatorName} Audience Live Session`, duration: '18:45', views: '38K' },
+    { title: `${creatorName} Strategy Deep Dive`, duration: '12:05', views: '55K' },
+    { title: `${creatorName} Behind The Scenes`, duration: '08:30', views: '71K' },
+  ]
+
+  const displayPosts = rawPosts.length > 0
+    ? rawPosts.slice(0, 5)
+    : fallbackBenchmarkPosts
+
+  const VIDEO_GRADIENTS = [
+    { bg: 'from-amber-900/40 via-stone-800 to-black', text: 'text-amber-200' },
+    { bg: 'from-blue-900/40 via-sky-950 to-black', text: 'text-sky-200' },
+    { bg: 'from-cyan-950 via-teal-900/40 to-black', text: 'text-teal-200' },
+    { bg: 'from-purple-950 via-indigo-900/30 to-black', text: 'text-indigo-200' },
+    { bg: 'from-rose-950 via-orange-950/40 to-black', text: 'text-orange-200' },
+  ]
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={prev}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.5)',
-            }}
-          >
-            ← Back
-          </button>
-          <div className="flex items-center gap-2.5">
-            <WingLogo size={26} />
-            <span className="text-white font-semibold text-[15px] tracking-tight">CoLaunch</span>
+    <div 
+      className="min-h-screen flex flex-col text-slate-200 font-sans antialiased selection:bg-brand-500 selection:text-white pb-36 sm:pb-44"
+      style={{
+        background: `radial-gradient(circle at 50% 0%, rgba(${accent.rgb}, 0.08) 0%, transparent 60%), radial-gradient(circle at 10% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 40%), #08090c`
+      }}
+    >
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#08090c]/85 border-b border-[#1f2433]/70 transition-all">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Back Button & Brand */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => goTo('creator-link')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-[#0f1117] hover:bg-[#151822] border border-[#1f2433] rounded-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <div className="h-4 w-[1px] bg-[#1f2433]"></div>
+            <div className="flex items-center gap-2">
+              {/* CoLaunch 4-square Logo */}
+              <div className="grid grid-cols-2 gap-1 w-4 h-4">
+                <span className="w-1.5 h-1.5 rounded-sm" style={{ background: accent.color }}></span>
+                <span className="w-1.5 h-1.5 rounded-sm bg-emerald-400"></span>
+                <span className="w-1.5 h-1.5 rounded-sm bg-amber-400"></span>
+                <span className="w-1.5 h-1.5 rounded-sm bg-purple-400"></span>
+              </div>
+              <span className="font-bold tracking-tight text-white text-sm">CoLaunch</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {[1,2,3,4,5,6,7,8].map(i => (
-            <div key={i} className="rounded-full transition-all duration-300"
-              style={{ width: i === 4 ? '20px' : '6px', height: '6px',
-                background: i === 4 ? 'white' : i < 4 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)' }}
-            />
-          ))}
+
+          {/* Action Menus & Step Indicator */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={requestWipeCreator}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+              title="Wipe creator from session storage"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset Creator</span>
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div
+                  key={i}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === 4 ? '18px' : '5px',
+                    height: '5px',
+                    background: i === 4 ? accent.color : i < 4 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)',
+                  }}
+                />
+              ))}
+            </div>
+            <button 
+              type="button"
+              aria-label="Options"
+              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-[#0f1117] border border-transparent hover:border-[#1f2433] transition-colors cursor-pointer"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 px-6 pb-12 max-w-5xl mx-auto w-full">
+      {/* Main Container */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-12 space-y-8">
         {quotaWarning && (
-          <div className="mb-6 p-4 rounded-xl border flex items-center justify-between gap-4" style={{ background: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.15)' }}>
+          <div className="p-4 rounded-xl border flex items-center justify-between gap-4" style={{ background: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.15)' }}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
                 <CheckCircle size={16} className="text-amber-400" />
@@ -653,482 +1131,532 @@ export default function Blueprint() {
 
         {/* ═══════════════ SKELETON LOADER ═══════════════ */}
         {(isScraping || isGenerating) ? (
-          <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-
-            {/* ── Loading Title & Status ── */}
-            <div className="mb-10" style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.55s cubic-bezier(0.16,1,0.3,1)' }}>
-              <p className="forge-label mb-3">Product Blueprint</p>
-              <h2 className="forge-heading mb-3"
-                style={{ fontSize: 'clamp(26px, 4vw, 38px)', letterSpacing: '-0.035em', maxWidth: '520px' }}>
-                {isScraping ? 'Analyzing your channel…' : 'Generating your blueprint…'}
+          <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }} className="space-y-8">
+            {/* Loading Title & Status */}
+            <div className="space-y-2">
+              <div 
+                className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
+                style={{ background: `rgba(${accent.rgb}, 0.1)`, borderColor: `rgba(${accent.rgb}, 0.25)`, color: accent.color }}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                {isScraping ? 'Analyzing Channel Signals…' : 'Synthesizing Architecture…'}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {isScraping ? 'Extracting live audience benchmarks…' : 'Generating custom monetization blueprint…'}
               </h2>
-              <p className="text-[14px] max-w-md" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
+              <p className="text-sm text-slate-400">
                 {isScraping
-                  ? 'Forge is scraping your profile data, recent posts, and audience signals to build a personalized monetization strategy.'
-                  : 'Our AI is crafting tailored product recommendations based on your niche, audience size, and engagement patterns.'
-                }
+                  ? 'CoLaunch is analyzing your recent videos, engagement ratios, and niche demand to construct the highest-yield platform.'
+                  : 'Tailoring pricing tiers, curriculum modules, and interactive studio features.'}
               </p>
-
-              {/* Animated progress dots */}
-              <div className="flex items-center gap-3 mt-5">
-                <div className="flex items-center gap-1.5">
-                  {[0,1,2].map(i => (
-                    <div key={i} className="w-2 h-2 rounded-full"
-                      style={{
-                        background: 'white',
-                        animation: `dot-pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
-                        opacity: 0.15,
-                      }}
-                    />
-                  ))}
-                </div>
-                <span className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  {isScraping ? 'Collecting signals…' : 'Building recommendations…'}
-                </span>
-              </div>
             </div>
 
-            {/* Skeleton cards */}
-            <div>
-            {/* Skeleton: Creator card */}
-            <div className="flex items-center gap-4 mb-8 p-4 rounded-2xl border"
-              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-              <div className="w-12 h-12 rounded-full shimmer-line flex-shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="w-32 h-3 rounded-full shimmer-line" />
-                <div className="w-48 h-2.5 rounded-full shimmer-line" />
-              </div>
-              <div className="flex gap-5 flex-shrink-0">
-                <div className="text-right space-y-1">
-                  <div className="w-10 h-3.5 rounded-full shimmer-line ml-auto" />
-                  <div className="w-14 h-2 rounded-full shimmer-line ml-auto" />
-                </div>
-                <div className="text-right space-y-1 hidden sm:block">
-                  <div className="w-10 h-3.5 rounded-full shimmer-line ml-auto" />
-                  <div className="w-16 h-2 rounded-full shimmer-line ml-auto" />
-                </div>
-                <div className="text-right space-y-1 hidden sm:block">
-                  <div className="w-8 h-3.5 rounded-full shimmer-line ml-auto" />
-                  <div className="w-16 h-2 rounded-full shimmer-line ml-auto" />
-                </div>
-              </div>
-            </div>
-
-            {/* Skeleton: Recent posts strip */}
-            <div className="mb-6">
-              <div className="w-20 h-2 rounded-full shimmer-line mb-3" />
-              <div className="flex gap-2 overflow-hidden">
-                {[1,2,3,4,5,6].map(i => (
-                  <div key={i} className="flex-shrink-0 rounded-xl shimmer-line"
-                    style={{ width: 110, height: 72 }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Skeleton: Grid — Primary + Alternates */}
-            <div className="grid lg:grid-cols-[1fr_300px] gap-5">
-              {/* Skeleton: Primary card */}
-              <div className="rounded-2xl border p-6" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                <div className="flex justify-between mb-5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl shimmer-line" />
-                    <div className="w-16 h-2.5 rounded-full shimmer-line" />
-                  </div>
-                  <div className="w-24 h-6 rounded-full shimmer-line" />
-                </div>
-                <div className="grid md:grid-cols-[1fr_200px] gap-6">
-                  <div className="space-y-3">
-                    <div className="w-44 h-5 rounded-lg shimmer-line" />
-                    <div className="w-52 h-3 rounded-full shimmer-line" />
-                    <div className="space-y-1.5 mt-2">
-                      <div className="w-full h-2.5 rounded-full shimmer-line" />
-                      <div className="w-4/5 h-2.5 rounded-full shimmer-line" />
-                      <div className="w-3/5 h-2.5 rounded-full shimmer-line" />
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className="w-20 h-6 rounded-full shimmer-line" />
-                      ))}
-                    </div>
-                    <div className="w-36 h-3 rounded-full shimmer-line mt-3" />
-                    <div className="flex items-center gap-3 mt-3">
-                      <div className="w-28 h-5 rounded-lg shimmer-line" />
-                      <div className="w-24 h-3 rounded-full shimmer-line" />
-                    </div>
-                  </div>
-                  {/* Skeleton: Preview mock */}
-                  <div className="rounded-xl overflow-hidden" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)', minHeight: 180 }}>
-                    <div className="w-full h-6 flex items-center gap-1.5 px-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                      {[1,2,3].map(i => <div key={i} className="w-2 h-2 rounded-full shimmer-line" />)}
-                    </div>
-                    <div className="p-3 space-y-2">
-                      <div className="w-full h-3 rounded-full shimmer-line" />
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {[1,2,3,4].map(i => (
-                          <div key={i} className="rounded-lg shimmer-line" style={{ height: 48 }} />
-                        ))}
-                      </div>
-                    </div>
+            {/* Skeleton Creator Profile Header */}
+            <div className="rounded-2xl bg-[#0f1117] border border-[#1f2433] p-5 sm:p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl shimmer-line shrink-0" />
+                  <div className="space-y-2">
+                    <div className="w-36 h-4 rounded-full shimmer-line" />
+                    <div className="w-64 h-3 rounded-full shimmer-line" />
                   </div>
                 </div>
-              </div>
-
-              {/* Skeleton: Alternates sidebar */}
-              <div className="flex flex-col gap-2">
-                <div className="w-20 h-2.5 rounded-full shimmer-line mb-1" />
-                {[1,2,3].map(i => (
-                  <div key={i} className="rounded-xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="flex items-start gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-lg shimmer-line flex-shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="flex justify-between">
-                          <div className="w-24 h-3 rounded-full shimmer-line" />
-                          <div className="w-8 h-3 rounded-full shimmer-line" />
-                        </div>
-                        <div className="w-32 h-2.5 rounded-full shimmer-line" />
-                        <div className="w-20 h-2.5 rounded-full shimmer-line" />
-                      </div>
-                    </div>
-                    <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div className="w-full h-2 rounded-full shimmer-line" />
-                    </div>
-                  </div>
-                ))}
-                <div className="rounded-xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}>
-                  <div className="w-24 h-3 rounded-full shimmer-line mx-auto mb-1" />
-                  <div className="w-36 h-2 rounded-full shimmer-line mx-auto" />
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-12 rounded-xl shimmer-line" />
+                  <div className="w-20 h-12 rounded-xl shimmer-line" />
+                  <div className="w-20 h-12 rounded-xl shimmer-line" />
                 </div>
               </div>
             </div>
 
-            {/* Skeleton: CTA */}
-            <div className="mt-8 flex items-center gap-4">
-              <div className="w-44 h-12 rounded-xl shimmer-line" />
-              <div className="w-48 h-3 rounded-full shimmer-line" />
+            {/* Skeleton Videos Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="aspect-video rounded-xl shimmer-line" />
+              ))}
             </div>
+
+            {/* Skeleton Matrix */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 rounded-2xl bg-[#0f1117] border border-[#1f2433] p-6 h-80 shimmer-line" />
+              <div className="lg:col-span-4 space-y-4">
+                <div className="h-32 rounded-2xl shimmer-line" />
+                <div className="h-32 rounded-2xl shimmer-line" />
+              </div>
             </div>
           </div>
-
         ) : (
-        /* ═══════════════ REAL CONTENT ═══════════════ */
-        <>
-        {/* ── Creator card ─────────────────────────────────────────────────── */}
-          <div
-            className="flex items-center gap-4 mb-8 p-4 rounded-2xl border"
-            style={{
-              background:  `rgba(${accent.rgb},0.05)`,
-              borderColor: `rgba(${accent.rgb},0.15)`,
-              opacity:     visible ? 1 : 0,
-              transition:  'opacity 0.5s ease',
-            }}
-          >
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              <div
-                className="w-12 h-12 rounded-full border-2 flex items-center justify-center overflow-hidden"
-                style={{ borderColor: `rgba(${accent.rgb},0.4)`, background: `rgba(${accent.rgb},0.15)` }}
-              >
-                {creatorData.avatarUrl ? (
-                  <img
-                    src={creatorData.avatarUrl}
-                    alt={creatorData.handle}
-                    className="w-full h-full object-cover"
-                    onError={e => { e.currentTarget.style.display = 'none' }}
-                  />
-                ) : (
-                  <span className="text-white font-bold text-[16px]">
-                    {(creatorData.handle || '@C').replace('@','').charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              {/* Platform badge */}
-              <div
-                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border"
-                style={{ background: '#0e0e0e', borderColor: `rgba(${accent.rgb},0.3)` }}
-              >
-                <PlatformIcon size={10} style={{ color: accent.color }} />
+          /* ═══════════════ REAL CONTENT ═══════════════ */
+          <>
+            {/* Creator Profile Header Card */}
+            <div 
+              className="relative overflow-hidden rounded-2xl bg-[#0f1117] border border-[#1f2433]/80 p-5 sm:p-6 backdrop-blur-sm transition-all"
+              style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                
+                {/* Creator Identity */}
+                <div className="flex items-start sm:items-center gap-4">
+                  <div className="relative shrink-0">
+                    {/* Channel Avatar */}
+                    <div 
+                      className="w-14 h-14 rounded-2xl p-[2px] shadow-lg"
+                      style={{ background: `linear-gradient(135deg, ${accent.color}, #6366f1, #38bdf8)` }}
+                    >
+                      <div className="w-full h-full rounded-[14px] bg-[#0c101a] flex items-center justify-center overflow-hidden relative">
+                        <span className="text-xl font-extrabold text-white/80 select-none">
+                          {(creatorData.name || creatorData.handle || 'C').replace(/^@/, '').charAt(0).toUpperCase()}
+                        </span>
+                        {activeAvatar && (
+                          <img
+                            src={activeAvatar}
+                            alt={creatorData.handle || ''}
+                            referrerPolicy="no-referrer"
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={e => {
+                              if (!e.currentTarget.dataset.proxied && activeAvatar.startsWith('http')) {
+                                e.currentTarget.dataset.proxied = 'true';
+                                e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(activeAvatar)}`;
+                              } else {
+                                e.currentTarget.style.display = 'none';
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <div 
+                      className="absolute -bottom-1 -right-1 text-white rounded-full p-1 border-2 border-[#0f1117] flex items-center justify-center"
+                      style={{ background: platformColor }}
+                      title={`${PLATFORM_LABELS[creatorData.platform] || 'Creator'} Verified`}
+                    >
+                      <Play className="w-2.5 h-2.5 fill-current" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                        {creatorData.handle ? (creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`) : (creatorData.name || '@creator')}
+                      </h1>
+                      <span 
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        style={{
+                          background: `rgba(${creatorData.platform === 'youtube' ? '239,68,68' : accent.rgb}, 0.1)`,
+                          color: creatorData.platform === 'youtube' ? '#f87171' : accent.color,
+                          border: `1px solid rgba(${creatorData.platform === 'youtube' ? '239,68,68' : accent.rgb}, 0.2)`
+                        }}
+                      >
+                        {PLATFORM_LABELS[creatorData.platform] || 'YouTube'}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl leading-relaxed">
+                      {blurb}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Metric Badges */}
+                <div className="flex items-center gap-2 sm:gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-[#1f2433]">
+                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
+                    <div className="text-base sm:text-lg font-bold text-white tracking-tight">
+                      {creatorData.followers ? fmt(creatorData.followers) : '—'}
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
+                      {creatorData.platform === 'youtube' ? 'Subscribers' : 'Followers'}
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
+                    <div className="text-base sm:text-lg font-bold text-emerald-400 tracking-tight">
+                      {dynamicEngagement}%
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
+                      Engagement
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
+                    <div className="text-base sm:text-lg font-bold tracking-tight" style={{ color: accent.color }}>
+                      {activeBlueprint.fit}%
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
+                      Audience Fit
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                {creatorData.name && creatorData.name !== creatorData.handle?.replace('@','') ? (
-                  <>
-                    <p className="text-[15px] font-bold text-white truncate">{creatorData.name}</p>
-                    <p className="text-[12px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                      {creatorData.handle}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-[14px] font-semibold text-white truncate">
-                    {creatorData.handle || '@creator'}
-                  </p>
-                )}
-                <span className="text-[11px] flex-shrink-0 px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
-                  {PLATFORM_LABELS[creatorData.platform] || 'creator'}
+            {/* Latest Videos Horizontal Carousel */}
+            <div className="space-y-3" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.1s' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-slate-400" />
+                  Latest Videos
                 </span>
+                <span className="text-xs text-slate-400">Audience affinity benchmark</span>
               </div>
-              <p className="text-[12px] leading-snug" style={{ color: 'rgba(255,255,255,0.45)', maxWidth: 420 }}>
-                {blurb}
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {displayPosts.map((post, i) => {
+                  const grad = VIDEO_GRADIENTS[i % VIDEO_GRADIENTS.length]
+                  let postUrl = post.url
+                  if (!postUrl) {
+                    if (creatorData.platform === 'youtube' && post.videoId) {
+                      postUrl = `https://www.youtube.com/watch?v=${post.videoId}`
+                    } else if (creatorData.platform === 'instagram' && post.shortcode) {
+                      postUrl = `https://www.instagram.com/p/${post.shortcode}/`
+                    } else {
+                      postUrl = '#'
+                    }
+                  }
+
+                  return (
+                    <div 
+                      key={i} 
+                      onClick={() => {
+                        if (postUrl && postUrl !== '#') window.open(postUrl, '_blank', 'noopener,noreferrer')
+                      }}
+                      className={`group relative rounded-xl overflow-hidden bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] transition-all cursor-pointer ${i === 4 ? 'col-span-2 sm:col-span-1' : ''}`}
+                    >
+                      <div className={`aspect-video w-full bg-gradient-to-br ${grad.bg} relative overflow-hidden flex flex-col justify-between p-2`}>
+                        {post.thumbnail ? (
+                          <img 
+                            src={post.thumbnail} 
+                            alt={post.title || ''} 
+                            referrerPolicy="no-referrer"
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={e => {
+                              if (!e.currentTarget.dataset.proxied) {
+                                e.currentTarget.dataset.proxied = 'true';
+                                e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(post.thumbnail)}`;
+                              } else {
+                                e.currentTarget.style.display = 'none';
+                              }
+                            }} 
+                          />
+                        ) : null}
+
+                        {/* Scrim Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#08090c] via-black/40 to-black/20 group-hover:via-black/20 transition-all pointer-events-none" />
+
+                        {/* Center Play Icon Badge */}
+                        <div className="relative z-10 self-center my-auto">
+                          <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center group-hover:scale-110 group-hover:bg-black/80 transition-all shadow-md">
+                            <Play className="w-3 h-3 text-white fill-white ml-0.5" />
+                          </div>
+                        </div>
+
+                        {/* Docked Bottom Title & Duration */}
+                        <div className="relative z-10 w-full mt-auto flex items-end justify-between gap-1.5">
+                          <p className="text-[11px] font-semibold text-white/90 line-clamp-1 leading-snug group-hover:text-white transition-colors text-left flex-1 drop-shadow-sm">
+                            {post.title}
+                          </p>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/80 text-white/90 border border-white/10 shrink-0">
+                            {post.duration || post.views || '8:14'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Recommendation Section Header */}
+            <div className="pt-4 space-y-1.5" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
+              <div 
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
+                style={{
+                  background: `rgba(${accent.rgb}, 0.1)`,
+                  borderColor: `rgba(${accent.rgb}, 0.2)`,
+                  color: accent.color
+                }}
+              >
+                <Hammer className="w-3.5 h-3.5" />
+                <span>What Forge Should Build</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Here is what makes sense for {creatorData.name || (creatorData.handle || 'your audience')}.
+              </h2>
+              <p className="text-sm text-slate-400">
+                Based on your follower count, engagement rate, niche, and platform behavior.
               </p>
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-5 flex-shrink-0">
-              <div className="text-right">
-                <p className="text-[15px] font-bold text-white">
-                  {creatorData.followers ? fmt(creatorData.followers) : '?'}
-                </p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  {creatorData.platform === 'youtube' ? 'Subscribers' : 'Followers'}
-                </p>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-[15px] font-bold text-white">{dynamicEngagement}%</p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Engagement</p>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-[15px] font-bold text-white">{audienceFit}%</p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>Audience fit</p>
-              </div>
-            </div>
-          </div>
+            {/* Product Options Matrix */}
+            <div 
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+              style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.2s' }}
+            >
+              {/* Primary Recommended Product (Featured) */}
+              <div 
+                className="lg:col-span-8 rounded-2xl bg-[#0f1117] border border-[#1f2433] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
+              >
+                {/* Ambient Top Accent Gradient */}
+                <div 
+                  className="absolute top-0 left-0 right-0 h-1" 
+                  style={{ background: `linear-gradient(90deg, ${accent.color}, #38bdf8, #6366f1)` }} 
+                />
 
-        {/* ── Recent posts strip ───────────────────────────────────────────── */}
-        {creatorData.recentPosts && creatorData.recentPosts.length > 0 && (
-          <div className="mb-6"
-            style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.1s' }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5 px-0.5"
-              style={{ color: 'rgba(255,255,255,0.2)' }}>
-              {creatorData.platform === 'youtube' ? 'Latest videos' : 'Recent posts'}
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-              {creatorData.recentPosts.slice(0, 6).map((post, i) => {
-                let postUrl = post.url;
-                if (!postUrl) {
-                  if (creatorData.platform === 'youtube' && post.videoId) {
-                    postUrl = `https://www.youtube.com/watch?v=${post.videoId}`;
-                  } else if (creatorData.platform === 'instagram' && post.shortcode) {
-                    postUrl = `https://www.instagram.com/p/${post.shortcode}/`;
-                  } else {
-                    postUrl = '#';
-                  }
-                }
-                return (
-                  <a key={i} href={postUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 relative rounded-xl overflow-hidden group block"
-                    style={{ width: 140, height: 80, background: 'rgba(255,255,255,0.05)' }}>
-                    {post.thumbnail ? (
-                      <img 
-                        src={post.thumbnail} 
-                        alt={post.title || ''} 
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                        onError={e => {
-                          if (!e.currentTarget.dataset.proxied) {
-                            e.currentTarget.dataset.proxied = 'true';
-                            e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(post.thumbnail)}`;
-                          } else {
-                            e.currentTarget.style.display = 'none';
-                            if (e.currentTarget.nextElementSibling) {
-                              e.currentTarget.nextElementSibling.style.display = 'flex';
-                            }
-                          }
-                        }} 
-                      />
-                    ) : null}
-                    {/* Fallback placeholder — always present, shown if no thumbnail or img errors */}
-                    <div className="w-full h-full flex items-center justify-center absolute inset-0"
-                      style={{ display: post.thumbnail ? 'none' : 'flex', background: 'rgba(255,255,255,0.03)' }}>
-                      <Play size={16} style={{ color: 'rgba(255,255,255,0.15)' }} />
-                    </div>
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0"
-                      style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }} />
-                    {/* Stats */}
-                    <div className="absolute bottom-1 left-1.5 right-1.5 flex justify-between items-center">
-                      {post.views && <span className="text-[8px] font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>{post.views}</span>}
-                      {post.likes && <span className="text-[8px]" style={{ color: 'rgba(255,255,255,0.5)' }}>♥ {post.likes}</span>}
-                    </div>
-                    {/* Title tooltip on hover */}
-                    {post.title && (
-                      <div className="absolute top-0 left-0 right-0 px-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)' }}>
-                        <p className="text-[7px] leading-tight text-white/70 line-clamp-2">{post.title}</p>
-                      </div>
-                    )}
-                  </a>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Heading ──────────────────────────────────────────────────────── */}
-        <div className="mb-8"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.55s cubic-bezier(0.16,1,0.3,1)' }}>
-          <p className="forge-label mb-3">What Forge should build</p>
-          <h2 className="forge-heading mb-2"
-            style={{ fontSize: 'clamp(28px, 4vw, 40px)', letterSpacing: '-0.035em', maxWidth: '500px' }}>
-            Here is what makes sense
-            <br />for {creatorData.name || (creatorData.handle || 'your audience')}.
-          </h2>
-          <p className="text-[14px] max-w-sm" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: '1.5' }}>
-            Based on your follower count, engagement rate, niche, and platform behavior.
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-[1fr_300px] gap-5"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)', transition: 'all 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
-
-          {/* ── Primary recommendation ───────────────────────────────────── */}
-          <div
-            className="relative rounded-2xl border p-6 cursor-pointer transition-all duration-200"
-            style={{
-              background:  selected === primary.id ? 'rgba(255,255,255,0.05)' : '#111',
-              borderColor: selected === primary.id ? `rgba(${accent.rgb},0.3)` : 'rgba(255,255,255,0.08)',
-            }}
-            onClick={() => setSelected(primary.id)}
-          >
-            <div className="absolute top-5 right-5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
-                style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color, border: `1px solid rgba(${accent.rgb},0.25)` }}>
-                Best match · {primary.fit}%
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-[1fr_200px] gap-6">
-              <div>
-                <div className="flex items-center gap-2.5 mb-5">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                    <primary.icon size={18} className="text-white" />
-                  </div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    {primary.type}
-                  </span>
-                </div>
-                <h3 className="forge-heading mb-1" style={{ fontSize: '26px', letterSpacing: '-0.03em' }}>
-                  {primary.name}
-                </h3>
-                <p className="text-[13px] mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>{primary.tagline}</p>
-                <p className="text-[13px] leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.4)', maxWidth: '380px' }}>
-                  {primary.description}
-                </p>
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {primary.features.map(f => (
-                    <span key={f} className="px-3 py-1 rounded-full text-[12px] font-medium"
-                      style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}>
-                      {f}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Why this fits */}
-                <div className="mb-5">
-                  <button
-                    onClick={e => { e.stopPropagation(); setShowReasons(v => !v) }}
-                    className="flex items-center gap-1.5 text-[12px] mb-2 transition-colors"
-                    style={{ color: showReasons ? accent.color : 'rgba(255,255,255,0.35)' }}
+                {/* Header Tag & Match Indicator */}
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div 
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold text-xs tracking-wide border"
+                    style={{
+                      background: `rgba(${accent.rgb}, 0.1)`,
+                      borderColor: `rgba(${accent.rgb}, 0.2)`,
+                      color: accent.color
+                    }}
                   >
-                    <CheckCircle size={12} />
-                    Why this fits {creatorData.name || creatorData.handle || 'you'}
-                    <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>{showReasons ? '▲' : '▼'}</span>
-                  </button>
-                  {showReasons && (
-                    <div className="space-y-2 pl-1">
-                      {reasons.map((r, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span className="text-[10px] mt-0.5 flex-shrink-0" style={{ color: accent.color }}>✓</span>
-                          <p className="text-[12px] leading-snug" style={{ color: 'rgba(255,255,255,0.5)' }}>{r}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-baseline gap-3">
-                  <span className="text-white font-semibold text-[18px]">{primary.revenue}</span>
-                  <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>estimated potential</span>
-                </div>
-              </div>
-
-              {/* App preview */}
-              <div className="rounded-xl overflow-hidden" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)', minHeight: '180px' }}>
-                <div className="w-full h-6 flex items-center gap-1.5 px-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                  {[1,2,3].map(i => <div key={i} className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />)}
-                </div>
-                <PreviewComp accent={accent} />
-              </div>
-            </div>
-          </div>
-
-          {/* ── Alternates sidebar ───────────────────────────────────────── */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[12px] mb-1 px-1" style={{ color: 'rgba(255,255,255,0.25)' }}>Other options</p>
-            {alternates.map(blueprint => {
-              const altReasonsKey = getReasonsCategoryKey(blueprint)
-              const altReasons = buildReasons(altReasonsKey, creatorData)
-              const isSelected = selected === blueprint.id
-              return (
-                <div key={blueprint.id}
-                  className="rounded-xl border p-4 cursor-pointer transition-all duration-200"
-                  style={{
-                    background:  isSelected ? 'rgba(255,255,255,0.05)' : '#111',
-                    borderColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
-                  }}
-                  onClick={() => setSelected(blueprint.id)}
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                      <blueprint.icon size={14} className="text-white/60" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[13px] font-semibold text-white">{blueprint.name}</span>
-                        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{blueprint.fit}%</span>
-                      </div>
-                      <p className="text-[12px] truncate mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{blueprint.tagline}</p>
-                      <p className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>{blueprint.revenue}</p>
-                    </div>
+                    <ActiveIcon className="w-3.5 h-3.5" />
+                    <span>{activeBlueprint.type.toUpperCase()}</span>
                   </div>
-                  {(blueprint.rationale || altReasons[0]) && (
-                    <div className="flex items-start gap-1.5 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span className="text-[9px] flex-shrink-0 mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>✓</span>
-                      <p className="text-[11px] leading-snug" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                        {blueprint.rationale || altReasons[0]}
+
+                  <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                    {activeBlueprint.fit}% Match
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Left Specs Column */}
+                  <div className="md:col-span-7 space-y-4">
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                        {activeBlueprint.name}
+                      </h3>
+                      <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1">
+                        {activeBlueprint.tagline}
                       </p>
                     </div>
-                  )}
+
+                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                      {activeBlueprint.description}
+                    </p>
+
+                    {/* Feature Pills */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {activeBlueprint.features.map(f => (
+                        <span 
+                          key={f} 
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1"
+                        >
+                          <Check className="w-3 h-3" style={{ color: accent.color }} />
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Accordion / Why it fits */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowReasons(!showReasons)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" style={{ color: accent.color }} />
+                        <span>Why this fits {creatorData.name || creatorData.handle || 'you'}</span>
+                        <ChevronDown 
+                          className="w-3.5 h-3.5 transition-transform duration-200" 
+                          style={{ transform: showReasons ? 'rotate(180deg)' : 'none' }} 
+                        />
+                      </button>
+                      {showReasons && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-[#141822] border border-[#1f2433] space-y-2">
+                          {reasons.map((r, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="text-[10px] mt-0.5 flex-shrink-0 font-bold" style={{ color: accent.color }}>✓</span>
+                              <p className="text-[11px] leading-relaxed text-slate-300">{r}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Projected Revenue */}
+                    <div className="pt-3 border-t border-[#1f2433] flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        {(activeBlueprint.revenue || '$17K–$48K').replace(/\s*\/\s*mo/i, '').trim()}
+                      </span>
+                      <span className="text-sm font-medium text-slate-400">/ mo</span>
+                      <span className="text-xs text-slate-400 ml-1">estimated potential</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Interactive App Preview Window */}
+                  <div className="md:col-span-5">
+                    <div className="rounded-xl bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[250px]">
+                      {/* Window Bar */}
+                      <div className="px-3 py-2 bg-[#151822]/80 border-b border-[#1f2433] flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block"></span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"></span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"></span>
+                        </div>
+                        {/* Switcher: Member App | Creator OS */}
+                        <div className="flex items-center p-0.5 rounded-md border border-[#1f2433] bg-[#090b10]">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewMode('app')}
+                            className="px-2 py-0.5 rounded text-[8px] font-semibold transition-colors cursor-pointer"
+                            style={{
+                              background: previewMode === 'app' ? accent.color : 'transparent',
+                              color: previewMode === 'app' ? (isLightColor(accent.color) ? '#000000' : '#ffffff') : 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            Member App
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewMode('dashboard')}
+                            className="px-2 py-0.5 rounded text-[8px] font-semibold transition-colors cursor-pointer"
+                            style={{
+                              background: previewMode === 'dashboard' ? accent.color : 'transparent',
+                              color: previewMode === 'dashboard' ? (isLightColor(accent.color) ? '#000000' : '#ffffff') : 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            Creator OS
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inside Mock UI */}
+                      <div className="flex-1 overflow-hidden">
+                        {previewMode === 'dashboard' ? (
+                          <DashboardPreview accent={accent} primary={activeBlueprint} creatorData={creatorData} />
+                        ) : (
+                          <PreviewComp accent={accent} primary={activeBlueprint} creatorData={creatorData} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-              )
-            })}
+              </div>
 
-            <div className="rounded-xl border p-4 cursor-pointer text-center"
-              style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.05)', borderStyle: 'dashed' }}>
-              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.25)' }}>Something else</span>
-              <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.15)' }}>Tell Forge what you have in mind</p>
+              {/* Right Column: Secondary / Alternate Options */}
+              <div className="lg:col-span-4 space-y-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+                  Other options
+                </div>
+
+                {otherOptions.map(blueprint => {
+                  const altReasonsKey = getReasonsCategoryKey(blueprint)
+                  const altReasons = buildReasons(altReasonsKey, creatorData)
+                  const AltIcon = blueprint.icon || Globe
+                  const cleanAltRevenue = (blueprint.revenue || '$17K–$46K').replace(/\s*\/\s*mo/i, '').trim()
+
+                  return (
+                    <div
+                      key={blueprint.id}
+                      onClick={() => setSelected(blueprint.id)}
+                      className="group p-5 rounded-2xl bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="w-full flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className="p-2.5 rounded-xl bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
+                            <AltIcon className="w-5 h-5 text-slate-300" />
+                          </div>
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <h4 className="text-sm font-bold text-white transition-colors leading-snug line-clamp-2 break-words">
+                              {blueprint.name}
+                            </h4>
+                            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                              {blueprint.tagline}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
+                          {blueprint.fit}%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[#1f2433]/70 flex items-center justify-between text-xs">
+                        <span className="font-bold text-white">
+                          {cleanAltRevenue} <span className="font-normal text-slate-400">/ mo</span>
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          {blueprint.revenueModel || (blueprint.type === 'Membership' ? 'Subscription' : blueprint.type === 'Mobile App' ? 'Subscription' : 'One-time / Bundles')}
+                        </span>
+                      </div>
+
+                      {(blueprint.rationale || altReasons[0]) && (
+                        <div className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: accent.color }} />
+                          <span className="line-clamp-2">{blueprint.rationale || altReasons[0]}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Something Else Prompt */}
+                <div 
+                  onClick={() => {
+                    const customIdea = window.prompt("Tell Forge what you have in mind:")
+                    if (customIdea && customIdea.trim()) {
+                      updateCreator({ customIdea: customIdea.trim() })
+                    }
+                  }}
+                  className="p-4 rounded-xl border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer"
+                >
+                  <p className="text-xs font-semibold text-slate-300">Something else?</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {creatorData?.customIdea ? `Concept noted: "${creatorData.customIdea}"` : 'Tell Forge what you have in mind'}
+                  </p>
+                </div>
+              </div>
+
             </div>
-          </div>
-        </div>
-
-        {/* ── CTA ──────────────────────────────────────────────────────────── */}
-        <div className="mt-8 flex items-center gap-4"
-          style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.3s' }}>
-          <button 
-            onClick={handleContinue} 
-            className="forge-btn-primary text-[15px] px-7 py-3.5 group"
-          >
-            Build {selectedBlueprint?.name}
-            <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-          </button>
-          <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
-            Customize everything in the next step
-          </span>
-        </div>
-        </>
+          </>
         )}
       </main>
+
+      {/* Sticky Bottom CTA Action Bar (With Dynamic Button Intact) */}
+      <aside className="fixed bottom-0 left-0 right-0 z-50 bg-[#08090c] border-t border-[#1f2433] py-4 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          
+          {/* Primary Dynamic Action Button (Do not modify dynamic binding) */}
+          <div className="w-full sm:w-auto">
+            <button 
+              id="dynamic-cta-button" 
+              onClick={handleContinue}
+              disabled={isScraping || isGenerating}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group"
+              style={{
+                background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : accent.color,
+                color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : (isLightColor(accent.color) ? '#000000' : '#ffffff'),
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}
+            >
+              {(isScraping || isGenerating) ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span>Synthesizing Blueprint…</span>
+                </span>
+              ) : (
+                <>
+                  <span>Build {activeBlueprint?.name}</span>
+                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Supporting Status Copy */}
+          <div className="text-xs text-slate-400 flex items-center gap-2 text-center sm:text-right">
+            <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>Customize live layout and review studio in the next step</span>
+          </div>
+
+        </div>
+      </aside>
     </div>
   )
 }

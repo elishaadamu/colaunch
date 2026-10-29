@@ -4,10 +4,10 @@ import { askForgeChat, generateStudioContent, hasTextKey, generateContentCalenda
 import {
   Sparkles, TrendingUp, Mail, Video, Share2, Users,
   RefreshCw, Copy, Check, X, Calendar, ChevronRight,
-  BarChart2, AlertCircle, MessageSquare, Send, ArrowRight, Play, Minus, Pencil, Zap
+  BarChart2, AlertCircle, MessageSquare, Send, ArrowRight, Play, Minus, Pencil, Zap, Plus
 } from 'lucide-react'
 import AiDoesItPanel from './AiDoesItPanel'
-import { hexToRgb } from '../../utils/avatarColorExtractor'
+import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
 
 // ─── PIXEL COACH ─────────────────────────────────────────────────────────────
 // A tiny pixel-art character that coaches the creator
@@ -182,15 +182,67 @@ function PixelCoach({ message, onChat }) {
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const TODAY_IDX = (new Date().getDay() + 6) % 7 // 0=Mon
 
-const INITIAL_WEEK = [
-  { day: 'Mon', posts: [{ id: 'init-mon-1', type: 'reel', label: 'Launch teaser reel', platform: 'IG', color: 'rgba(225,48,108,0.25)', done: false }] },
-  { day: 'Tue', posts: [{ id: 'init-tue-1', type: 'email', label: 'Early access email', platform: 'Email', color: 'rgba(255,255,255,0.12)', done: false }] },
-  { day: 'Wed', posts: [{ id: 'init-wed-1', type: 'thread', label: '5 things I wish I knew', platform: 'X', color: 'rgba(96,165,250,0.2)', done: false }, { id: 'init-wed-2', type: 'story', label: 'BTS story', platform: 'IG', color: 'rgba(225,48,108,0.15)', done: false }] },
-  { day: 'Thu', posts: [{ id: 'init-thu-1', type: 'live', label: 'YouTube live — product intro', platform: 'YT', color: 'rgba(255,59,48,0.2)', done: false }] },
-  { day: 'Fri', posts: [{ id: 'init-fri-1', type: 'post', label: 'Launch day announcement', platform: 'All', color: 'rgba(255,255,255,0.1)', done: false }] },
-  { day: 'Sat', posts: [] },
-  { day: 'Sun', posts: [{ id: 'init-sun-1', type: 'recap', label: 'Week 1 recap + results', platform: 'YT', color: 'rgba(255,59,48,0.15)', done: false }] },
-]
+function getWeekNumber(d = new Date()) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7))
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7)
+}
+
+function getPlatformColor(platform) {
+  const p = (platform || '').toLowerCase()
+  if (p.includes('you') || p === 'yt') return { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' }
+  if (p.includes('insta') || p === 'ig') return { text: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/30' }
+  if (p.includes('email') || p.includes('mail') || p.includes('letter')) return { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' }
+  if (p.includes('tik')) return { text: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' }
+  if (p.includes('link')) return { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' }
+  if (p.includes('x') || p.includes('twit')) return { text: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/30' }
+  return { text: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' }
+}
+
+function isMockupCalendar(result) {
+  if (!result || !Array.isArray(result) || result.length === 0) return true
+  const str = JSON.stringify(result)
+  return str.includes('init-mon-1') ||
+         str.includes('Launch teaser reel') ||
+         str.includes('Early access email') ||
+         str.includes('5 things I wish I knew') ||
+         str.includes('YouTube live — product intro') ||
+         str.includes('Launch day announcement')
+}
+
+function buildFallbackWeek(creatorData) {
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@/, '')
+  const niche = creatorData?.niche || 'Fitness'
+  const prod = creatorData?.productName || `${name} Academy`
+  return [
+    { day: 'Mon', posts: [
+      { id: 1, type: 'Video', title: `Welcome to the VIP ${name} ${niche} Masterclass Launch!`, platform: 'YouTube', theme: 'launch', status: 'posted' },
+      { id: 2, type: 'Reel', title: `3 ${niche} Myths Busted by our Academic Experts`, platform: 'Instagram', theme: 'value', status: 'draft' }
+    ]},
+    { day: 'Tue', posts: [
+      { id: 3, type: 'Email', title: `How Our Masterclass Will Transform Your ${niche} Journey`, platform: 'Email', theme: 'story', status: 'draft' }
+    ]},
+    { day: 'Wed', posts: [
+      { id: 4, type: 'Shorts', title: `Building the Masterclass: Behind-the-Scenes Sneak Peek`, platform: 'YouTube', theme: 'bts', status: 'draft' },
+      { id: 5, type: 'Story', title: `Meet the Trainers: Get to Know Our Masterclass Stars`, platform: 'Instagram', theme: 'community', status: 'draft' }
+    ]},
+    { day: 'Thu', posts: [
+      { id: 6, type: 'Community', title: `Join our Live Q&A Session with Masterclass Alumni`, platform: 'YouTube', theme: 'launch', status: 'draft' }
+    ]},
+    { day: 'Fri', posts: [
+      { id: 7, type: 'Post', title: `Why Our ${niche} Toolkit Is Essential for Your Success`, platform: 'Instagram', theme: 'proof', status: 'draft' },
+      { id: 8, type: 'Post', title: `Achieving Personal Bests: Success Stories from Our Masterclass`, platform: 'LinkedIn', theme: 'proof', status: 'draft' }
+    ]},
+    { day: 'Sat', posts: [
+      { id: 9, type: 'Video', title: `Your Weekend ${niche} Challenge: From the Masterclass Workbook`, platform: 'YouTube', theme: 'value', status: 'draft' }
+    ]},
+    { day: 'Sun', posts: [
+      { id: 10, type: 'Email', title: `Last Chance to Join: Enroll in the Masterclass Today`, platform: 'Email', theme: 'cta', status: 'draft' },
+      { id: 11, type: 'Thread', title: `Top 5 Reasons You Need Our ${niche} Masterclass This Year`, platform: 'Twitter', theme: 'cta', status: 'draft' }
+    ]}
+  ]
+}
 
 function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
   const getWeekDates = () => {
@@ -206,34 +258,54 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
     return dates
   }
   const weekDates = getWeekDates()
+  const todayIdx = (new Date().getDay() + 6) % 7 // 0=Mon, ..., 6=Sun
 
+  // Skeleton Loader when generating or opening page before real content is ready
   if (isLoading || !week || week.length === 0) {
     return (
-      <div className="calendar-grid grid grid-cols-7 gap-1.5 animate-pulse">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {DAYS.map((day, i) => {
+          const isToday = i === todayIdx
           const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
           return (
-            <div key={day}
-              className="rounded-xl overflow-hidden"
-              style={{
-                background: 'var(--theme-card-bg)',
-                border: '1px solid var(--theme-border-color)',
-                minHeight: 90,
-              }}
+            <div
+              key={day}
+              className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
+                isToday 
+                  ? 'bg-slate-900/90 border border-cyan-500/70' 
+                  : 'bg-[#111726]/80 border border-[#1e293b]'
+              }`}
             >
-              <div className="px-2 py-1.5 flex items-center justify-between"
-                style={{ borderBottom: '1px solid var(--theme-border-color)' }}>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold text-white/20">
-                    {day}
-                  </span>
-                  <span className="text-[8px] text-white/10 mt-0.5">
-                    {dateStr}
-                  </span>
-                </div>
+              {isToday && (
+                <span className="absolute -top-2.5 right-3 px-1.5 py-0.5 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+                  Today
+                </span>
+              )}
+
+              {/* Day Header Skeleton */}
+              <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
+                <span className={`text-xs font-bold ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>{day}</span>
+                <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>{dateStr}</span>
               </div>
-              <div className="p-1.5 space-y-1">
-                <div className="w-full h-8 rounded-md bg-white/5" />
+
+              {/* Skeleton Cards with Pulse */}
+              <div className="space-y-2 flex-1 animate-pulse">
+                <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 space-y-2">
+                  <div className="w-12 h-2.5 rounded bg-slate-700/80" />
+                  <div className="space-y-1">
+                    <div className="w-full h-2.5 rounded bg-slate-700/60" />
+                    <div className="w-4/5 h-2.5 rounded bg-slate-700/40" />
+                  </div>
+                  <div className="w-10 h-3 rounded bg-slate-900/90" />
+                </div>
+
+                {i % 2 === 0 && (
+                  <div className="p-2 rounded-lg bg-slate-800/40 border border-slate-800/80 space-y-2">
+                    <div className="w-14 h-2 rounded bg-slate-700/60" />
+                    <div className="w-full h-2 rounded bg-slate-700/40" />
+                    <div className="w-9 h-2.5 rounded bg-slate-900/90" />
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -242,78 +314,101 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
     )
   }
 
+  // Real Rendered Calendar
   return (
-    <div className="calendar-grid grid grid-cols-7 gap-1.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
       {week.map((dayData, i) => {
-        const isToday = i === TODAY_IDX
+        const isToday = i === todayIdx
         const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+        const posts = dayData.posts || []
+
         return (
-          <div key={`${dayData.day || 'day'}-${i}`}
-            className="rounded-xl overflow-hidden"
-            style={{
-              background: isToday ? 'var(--theme-accent-bg)' : 'var(--theme-card-bg)',
-              border: `1px solid ${isToday ? 'var(--theme-accent)' : 'var(--theme-border-color)'}`,
-              minHeight: 90,
-            }}
+          <div
+            key={`${dayData.day || 'day'}-${i}`}
+            className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] transition-all relative ${
+              isToday
+                ? 'bg-slate-900/90 border border-cyan-500/70'
+                : 'bg-[#111726] border border-[#1e293b] hover:border-slate-700'
+            }`}
           >
-            <div className="px-2 py-1.5 flex items-center justify-between"
-              style={{ borderBottom: '1px solid var(--theme-border-color)' }}>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold"
-                  style={{ color: isToday ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
-                  {dayData.day}
-                </span>
-                <span className="text-[8px]" style={{ color: isToday ? 'var(--theme-accent)' : 'rgba(255,255,255,0.2)' }}>
-                  {dateStr}
-                </span>
-              </div>
-              {isToday && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />}
+            {isToday && (
+              <span className="absolute -top-2.5 right-3 px-1.5 py-0.5 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+                Today
+              </span>
+            )}
+
+            {/* Header: Day & Date */}
+            <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
+              <span className={`text-xs font-bold ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>
+                {dayData.day}
+              </span>
+              <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>
+                {dateStr}
+              </span>
             </div>
-            <div className="p-1.5 space-y-1">
-              {(dayData.posts || []).map((post, j) => (
-                <div key={post.id ? `post-id-${post.id}-${j}` : `post-idx-${dayData.day}-${j}`}
-                  className="group/card relative rounded-lg cursor-pointer transition-all duration-150 hover:brightness-110"
-                  style={{ background: post.color }}
-                  onClick={() => onCardClick && onCardClick(post, dayData.day)}
-                >
-                  {/* Platform badge + edit icon row */}
-                  <div className="flex items-center justify-between px-1.5 pt-1 pb-0.5">
-                    <span
-                      className="text-[9px] sm:text-[7.5px] font-bold uppercase tracking-widest"
-                      style={{ color: 'rgba(255,255,255,0.55)' }}
-                    >{post.platform}</span>
-                    <button
-                      onClick={e => { e.stopPropagation(); onCardClick && onCardClick(post, dayData.day) }}
-                      className="opacity-0 group-hover/card:opacity-100 post-card-actions transition-opacity w-3.5 h-3.5 flex items-center justify-center rounded-sm flex-shrink-0"
-                      style={{ background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.8)' }}
-                      title="Edit post"
-                    >
-                      <Pencil size={7} />
-                    </button>
-                  </div>
-                  {/* Post label */}
-                  <p
-                    className="px-1.5 pb-0.5 text-[10px] sm:text-[8.5px] font-semibold leading-snug"
-                    style={{ color: 'rgba(255,255,255,0.82)' }}
-                  >{post.label}</p>
-                  {/* Type pill at bottom */}
-                  {post.type && (
-                    <div className="px-1.5 pb-1.5 pt-0.5">
-                      <span
-                        className="inline-block text-[6px] font-bold uppercase tracking-widest px-1 py-0.5 rounded-sm"
-                        style={{ background: 'rgba(0,0,0,0.25)', color: 'rgba(255,255,255,0.45)' }}
-                      >{post.type}</span>
+
+            {/* Posts List */}
+            <div className="space-y-2 flex-1">
+              {posts.map((post, j) => {
+                const colors = getPlatformColor(post.platform)
+                return (
+                  <div
+                    key={post.id ? `post-id-${post.id}-${j}` : `post-idx-${dayData.day}-${j}`}
+                    onClick={() => onCardClick && onCardClick(post, dayData.day)}
+                    className={`p-2.5 rounded-lg border transition-all cursor-pointer group hover:border-slate-600 ${
+                      isToday
+                        ? 'bg-cyan-950/40 border-cyan-500/40 hover:border-cyan-400'
+                        : 'bg-slate-800/80 border-slate-700/60 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[9px] uppercase font-bold tracking-wider ${colors.text} block`}>
+                        {post.platform || 'Social'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCardClick && onCardClick(post, dayData.day)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white"
+                        title="Edit post"
+                      >
+                        <Pencil size={10} />
+                      </button>
                     </div>
-                  )}
+
+                    <p className={`text-[11px] font-medium leading-tight line-clamp-3 mb-1.5 ${isToday ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                      {post.title || post.label || 'Untitled Post'}
+                    </p>
+
+                    {post.type && (
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-mono uppercase ${
+                        isToday ? 'bg-cyan-900/60 text-cyan-200' : 'bg-slate-900 text-slate-400'
+                      }`}>
+                        {post.type}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+
+              {posts.length === 0 && (
+                <div className="h-full flex items-center justify-center p-3 text-center">
+                  <span className="text-[10px] text-slate-600 font-mono">Rest / Off day</span>
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Add Post Button */}
+            <div className="pt-2 mt-2 border-t border-slate-800/60">
               <button
+                type="button"
                 onClick={() => onAddPost(i)}
-                className="w-full py-1 rounded-md text-[9px] transition-all duration-150 opacity-0 hover:opacity-100"
-                style={{ color: 'rgba(255,255,255,0.25)', border: '1px dashed rgba(255,255,255,0.1)' }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                className="w-full py-1 text-center text-[10px] text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 rounded transition-colors flex items-center justify-center gap-1 cursor-pointer"
               >
-                + add
+                <Plus size={10} />
+                <span>Add post</span>
               </button>
             </div>
           </div>
@@ -844,29 +939,28 @@ export default function Marketing() {
   
   // Derive Creator Accent dynamically
   const detectedBrandColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC' && creatorData.brand_color.toLowerCase() !== '#ff3b30') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC' && creatorData.brandColor.toLowerCase() !== '#ff3b30') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC' && creatorData.brandHex.toLowerCase() !== '#ff3b30') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC' && creatorData.color.toLowerCase() !== '#ff3b30') return creatorData.color
     try {
       const rawMap = localStorage.getItem("forge_creator_brand_color_map")
       if (rawMap) {
         const map = JSON.parse(rawMap)
         const id = creatorData?.id
         const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        if (id && map[id]?.primaryHex && map[id].primaryHex !== '#7C5CFC') return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex && map[handle].primaryHex !== '#7C5CFC') return map[handle].primaryHex
-        const entries = Object.values(map)
-        if (entries.length > 0 && entries[entries.length - 1]?.primaryHex && entries[entries.length - 1].primaryHex !== '#7C5CFC') {
-          return entries[entries.length - 1].primaryHex
-        }
+        const name = (creatorData?.name || '').toLowerCase()
+        if (id && map[id]?.primaryHex && map[id].primaryHex.toLowerCase() !== '#ff3b30') return map[id].primaryHex
+        if (handle && map[handle]?.primaryHex && map[handle].primaryHex.toLowerCase() !== '#ff3b30') return map[handle].primaryHex
+        if (name && map[name]?.primaryHex && map[name].primaryHex.toLowerCase() !== '#ff3b30') return map[name].primaryHex
       }
     } catch {}
-    const platform = (creatorData?.platform || '').toLowerCase()
-    const pAccent = getAccent(platform)
-    if (pAccent && pAccent.color && pAccent.color !== '#ffffff') return pAccent.color
-    return '#ff3b30'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.platform, creatorData?.id, creatorData?.handle])
+    const det = getDeterministicBrandColor(creatorData)
+    if (det?.primaryHex && det.primaryHex.toLowerCase() !== '#ff3b30') {
+      return det.primaryHex
+    }
+    return '#10B981'
+  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
   const accent = useMemo(() => ({
@@ -1118,7 +1212,10 @@ export default function Marketing() {
     try {
       const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
-        return mapCalendarResult(JSON.parse(cached))
+        const parsed = JSON.parse(cached)
+        if (!isMockupCalendar(parsed)) {
+          return mapCalendarResult(parsed)
+        }
       }
     } catch (e) {
       console.error('Failed to parse cached calendar:', e)
@@ -1195,8 +1292,10 @@ export default function Marketing() {
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        console.log('[Forge Marketing] Loaded cached launch week calendar:', parsed)
-        setWeek(mapCalendarResult(parsed))
+        if (!isMockupCalendar(parsed)) {
+          console.log('[Forge Marketing] Loaded cached launch week calendar:', parsed)
+          setWeek(mapCalendarResult(parsed))
+        }
       } catch (e) {
         console.error('Failed to parse cached calendar:', e)
       }
@@ -1244,19 +1343,20 @@ export default function Marketing() {
       const cacheKeyLower = `forge_calendar_${h.toLowerCase()}_launch_w0`
       const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
-        // If cached calendar exists, load it and return (do NOT auto-generate)
         try {
-          setWeek(mapCalendarResult(JSON.parse(cached)))
+          const parsed = JSON.parse(cached)
+          if (!isMockupCalendar(parsed)) {
+            setWeek(mapCalendarResult(parsed))
+            return
+          }
         } catch (e) {
           console.error('Failed to parse cached calendar:', e)
         }
-        return
       }
 
+      // If not cached or was old mockup, trigger AI autofill so skeleton shows!
       if (hasTextKey() && autofillJob.status === 'idle') {
         startBgJob(AUTOFILL_JOB, (sig) => generateContentCalendar(creatorData, 'launch', sig))
-      } else if (!hasTextKey()) {
-        setWeek(INITIAL_WEEK)
       }
     }
   }, [creatorData?.handle, week, autofillJob.status, dbLoadedTimestamp, userProfile?.username])
@@ -1274,20 +1374,9 @@ export default function Marketing() {
         if (triggerToast) triggerToast('Weekly content calendar autofilled!', 'success')
         setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
       } else {
-        console.warn('[Forge] Weekly calendar mapping failed. Falling back to default/cached week.')
-        const handle = creatorData?.handle || 'default'
-        const cacheKey = `forge_calendar_${handle}_launch_w0`
-        const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_launch_w0`
-        const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
-        if (cached) {
-          try {
-            setWeek(mapCalendarResult(JSON.parse(cached)))
-          } catch (e) {
-            setWeek(INITIAL_WEEK)
-          }
-        } else {
-          setWeek(INITIAL_WEEK)
-        }
+        console.warn('[Forge] Weekly calendar mapping failed. Falling back to tailored week.')
+        const fallback = buildFallbackWeek(creatorData)
+        setWeek(mapCalendarResult(fallback))
         clearBgJob(AUTOFILL_JOB)
       }
     } else if (autofillJob.status === 'error' || autofillJob.status === 'cancelled') {
@@ -1297,13 +1386,17 @@ export default function Marketing() {
       const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
         try {
-          setWeek(mapCalendarResult(JSON.parse(cached)))
-        } catch (e) {
-          setWeek(INITIAL_WEEK)
-        }
-      } else {
-        setWeek(INITIAL_WEEK)
+          const parsed = JSON.parse(cached)
+          if (!isMockupCalendar(parsed)) {
+            setWeek(mapCalendarResult(parsed))
+            clearBgJob(AUTOFILL_JOB)
+            return
+          }
+        } catch (e) {}
       }
+      // If error and no valid cache, set tailored fallback
+      const fallback = buildFallbackWeek(creatorData)
+      setWeek(mapCalendarResult(fallback))
       clearBgJob(AUTOFILL_JOB)
     }
   }, [autofillJob.status, autofillJob.result])
@@ -1321,6 +1414,7 @@ export default function Marketing() {
 
   const handleAutoFillWeek = () => {
     if (incrementAiActions) incrementAiActions()
+    setWeek(null)
     startBgJob(AUTOFILL_JOB, (sig) => generateContentCalendar(creatorData, 'launch', sig))
   }
 
@@ -1612,7 +1706,7 @@ export default function Marketing() {
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 max-w-7xl mx-auto w-full">
 
       {/* ─── CREATOR PROFILE CARD ────────────────────────────────── */}
       <div className="rounded-2xl border overflow-hidden"
@@ -1701,7 +1795,7 @@ export default function Marketing() {
               {creatorData.platform === 'instagram' ? 'Recent posts' : 'Latest videos'}
             </p>
             <span className="text-[10px] font-semibold flex items-center gap-1.5" style={{ color: accent.color }}>
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent.color }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
               Channel sync active
             </span>
           </div>
@@ -1714,7 +1808,7 @@ export default function Marketing() {
                   href={postUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative rounded-xl overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                  className="group relative rounded-xl overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-600"
                   style={{
                     aspectRatio: '16/10',
                     background: 'rgba(255,255,255,0.03)',
@@ -1838,40 +1932,51 @@ export default function Marketing() {
       />
 
       {/* ─── WEEKLY CALENDAR ─────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <p className="forge-label">This week's launch plan</p>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">This Week's Launch Plan</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Week {getWeekNumber()}</span>
+          </div>
           <div className="flex items-center gap-2">
             {autofillJob.status === 'running' && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                  Running in background…
+                <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5">
+                  <Sparkles size={11} className="animate-spin text-cyan-400" />
+                  Generating custom plan…
                 </span>
                 <button
+                  type="button"
                   onClick={() => cancelBgJob(AUTOFILL_JOB)}
-                  className="text-[10px] font-semibold text-white/40 hover:text-white/80 border border-white/10 hover:border-white/25 px-1.5 py-0.5 rounded transition-all"
+                  className="text-[10px] font-semibold text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-2 py-0.5 rounded transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
               </div>
             )}
             {autofillJob.status === 'error' && (
-              <span className="text-[10px]" style={{ color: 'rgba(255,80,80,0.8)' }}>
+              <span className="text-[10px] text-red-400">
                 Failed — try again
               </span>
             )}
             <button
+              type="button"
               onClick={handleAutoFillWeek}
               disabled={autofillJob.status === 'running'}
-              className="forge-btn-secondary text-[11px] py-1.5 px-3 gap-1.5 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-950/70 border border-cyan-800/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
             >
-              <Sparkles size={10} className={autofillJob.status === 'running' ? "animate-pulse" : ""} />
-              {autofillJob.status === 'running' ? "AI working…" : "Auto-fill week"}
+              <Sparkles size={11} className={autofillJob.status === 'running' ? "animate-pulse" : ""} />
+              <span>{autofillJob.status === 'running' ? "AI working…" : "Auto-fill Week"}</span>
             </button>
           </div>
         </div>
-        <WeekCalendar week={week} onAddPost={handleAddPost} accentRgb={accent.rgb} isLoading={autofillJob.status === 'running'} onCardClick={(post, day) => { setSelectedPost(post); setSelectedPostDay(day) }} />
+        <WeekCalendar 
+          week={week} 
+          onAddPost={handleAddPost} 
+          accentRgb={accent.rgb} 
+          isLoading={autofillJob.status === 'running' || !week || week.length === 0} 
+          onCardClick={(post, day) => { setSelectedPost(post); setSelectedPostDay(day) }} 
+        />
       </section>
 
 

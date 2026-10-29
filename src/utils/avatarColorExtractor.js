@@ -193,13 +193,13 @@ export function analyzeImageData(data) {
   if (!bestKey || buckets[bestKey].count === 0) {
     if (buckets.neutralDark.count > 10) {
       return {
-        primaryHex: "#0F172A",
-        name: "Obsidian Slate",
+        primaryHex: "#38BDF8",
+        name: "Electric Steel",
         isNeutral: true,
       };
     }
     return {
-      primaryHex: "#16A34A",
+      primaryHex: "#10B981",
       name: "Studio Emerald",
       isFallback: true,
     };
@@ -233,12 +233,23 @@ export function getDeterministicBrandColor(creator) {
   const name = String(creator?.name || creator?.display_name || creator?.handle || "Creator").toLowerCase();
   const niche = String(creator?.niche || "").toLowerCase();
 
+  // Broadway, Musical Theater, Theater, Arts & Music
+  if (
+    niche.includes("theater") || niche.includes("theatre") || niche.includes("musical") ||
+    niche.includes("broadway") || niche.includes("stage") || niche.includes("drama") ||
+    niche.includes("music") || niche.includes("orchestra") || niche.includes("opera") ||
+    name.includes("rodgers") || name.includes("hammerstein") || name.includes("broadway") ||
+    name.includes("theater") || name.includes("theatre")
+  ) {
+    return { primaryHex: "#D97706", name: "Broadway Amber" };
+  }
+
   if (niche.includes("tech") || niche.includes("code") || niche.includes("software")) {
     if (name.includes("coach")) return { primaryHex: "#16A34A", name: "Studio Emerald" };
     return { primaryHex: "#0284C7", name: "Ocean Cyan" };
   }
   if (niche.includes("ai") || niche.includes("data") || niche.includes("study")) {
-    return { primaryHex: "#4F46E5", name: "Royal Indigo" };
+    return { primaryHex: "#0284C7", name: "Electric Cobalt" };
   }
   if (niche.includes("pet") || niche.includes("community") || niche.includes("puppy") || niche.includes("media")) {
     return { primaryHex: "#D97706", name: "Venture Amber" };
@@ -246,16 +257,16 @@ export function getDeterministicBrandColor(creator) {
   if (niche.includes("game") || niche.includes("fitness")) {
     return { primaryHex: "#65A30D", name: "Forge Lime" };
   }
-  if (niche.includes("finance") || niche.includes("invest")) {
-    return { primaryHex: "#0F172A", name: "Obsidian Slate" };
+  if (niche.includes("finance") || niche.includes("invest") || niche.includes("crypto") || niche.includes("money")) {
+    return { primaryHex: "#10B981", name: "Venture Emerald" };
   }
 
-  // Hash based on letters
+  // Hash based on letters - palette of vibrant, prestigious studio colors (no purple/violet)
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const hues = [142, 199, 38, 220, 260, 330, 24]; // Emerald, Cyan, Amber, Cobalt, Indigo, Rose, Orange
+  const hues = [142, 199, 38, 215, 168, 340, 28]; // Emerald, Cyan, Gold, Cobalt, Teal, Crimson, Orange
   const chosenHue = hues[Math.abs(hash) % hues.length];
   const hex = hslToHex(chosenHue, 78, 48);
 
@@ -308,77 +319,85 @@ export async function extractBrandColorFromAvatar(avatarUrl, creator = null) {
       return;
     }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-
     let hasResolved = false;
     const finish = (result) => {
       if (hasResolved) return;
       hasResolved = true;
       COLOR_CACHE.set(avatarUrl, result);
+      try {
+        if (result?.primaryHex) {
+          const rawMap = localStorage.getItem("forge_creator_brand_color_map") || "{}";
+          const map = JSON.parse(rawMap);
+          if (creator?.id) map[creator.id] = result;
+          if (creator?.handle) map[creator.handle.replace(/^@/, '').toLowerCase()] = result;
+          if (creator?.name) map[creator.name.toLowerCase()] = result;
+          localStorage.setItem("forge_creator_brand_color_map", JSON.stringify(map));
+        }
+      } catch {}
       resolve(result);
     };
 
-    // Timeout safety: if image takes > 2.5s to load, fall back gracefully
+    // Timeout safety: if image takes > 3.0s to load, fall back gracefully
     const timeoutTimer = setTimeout(() => {
       finish(getDeterministicBrandColor(creator));
-    }, 2500);
+    }, 3000);
 
-    img.onload = () => {
-      clearTimeout(timeoutTimer);
-      try {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        const size = 48;
-        canvas.width = size;
-        canvas.height = size;
+    const trySampleUrl = (urlToSample, isRetry = false) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
 
-        ctx.drawImage(img, 0, 0, size, size);
-        const imageData = ctx.getImageData(0, 0, size, size);
-        const analysis = analyzeImageData(imageData.data);
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          const size = 48;
+          canvas.width = size;
+          canvas.height = size;
 
-        finish({
-          ...analysis,
-          source: "avatar_vision",
-        });
-      } catch (err) {
-        // Tainted canvas by cross-origin security: fall back to deterministic creator color
-        console.warn("[AvatarColorExtractor] Canvas CORS taint, using deterministic fallback:", err.message);
-        finish(getDeterministicBrandColor(creator));
-      }
-    };
+          ctx.drawImage(img, 0, 0, size, size);
+          const imageData = ctx.getImageData(0, 0, size, size);
+          const analysis = analyzeImageData(imageData.data);
 
-    img.onerror = () => {
-      clearTimeout(timeoutTimer);
-      // If direct URL failed, try using existing /api/proxy/avatar if not already using it
-      if (!avatarUrl.includes("/api/proxy/avatar") && avatarUrl.startsWith("http")) {
-        const proxyUrl = `/api/proxy/avatar?url=${encodeURIComponent(avatarUrl)}`;
-        const retryImg = new Image();
-        retryImg.crossOrigin = "anonymous";
-        retryImg.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            canvas.width = 48;
-            canvas.height = 48;
-            ctx.drawImage(retryImg, 0, 0, 48, 48);
-            const data = ctx.getImageData(0, 0, 48, 48);
-            const analysis = analyzeImageData(data.data);
-            finish({ ...analysis, source: "avatar_proxy_vision" });
-          } catch (e) {
+          clearTimeout(timeoutTimer);
+          finish({
+            ...analysis,
+            source: isRetry ? "avatar_proxy_vision" : "avatar_vision",
+          });
+        } catch (err) {
+          // If direct load hit CORS taint, try backend proxy once
+          if (!isRetry && !urlToSample.includes("/api/proxy/avatar") && urlToSample.startsWith("http")) {
+            const proxyUrl = `/api/proxy/avatar?url=${encodeURIComponent(urlToSample)}`;
+            trySampleUrl(proxyUrl, true);
+          } else {
+            clearTimeout(timeoutTimer);
             finish(getDeterministicBrandColor(creator));
           }
-        };
-        retryImg.onerror = () => {
+        }
+      };
+
+      img.onerror = () => {
+        if (!isRetry && !urlToSample.includes("/api/proxy/avatar") && urlToSample.startsWith("http")) {
+          const proxyUrl = `/api/proxy/avatar?url=${encodeURIComponent(urlToSample)}`;
+          trySampleUrl(proxyUrl, true);
+        } else {
+          clearTimeout(timeoutTimer);
           finish(getDeterministicBrandColor(creator));
-        };
-        retryImg.src = proxyUrl;
-      } else {
-        finish(getDeterministicBrandColor(creator));
-      }
+        }
+      };
+
+      img.src = urlToSample;
     };
 
-    img.src = avatarUrl;
+    // Clean original URL (unwrap proxy if present)
+    let cleanUrl = avatarUrl;
+    if (cleanUrl.includes('/api/proxy/avatar?url=')) {
+      try {
+        cleanUrl = decodeURIComponent(cleanUrl.split('/api/proxy/avatar?url=')[1]);
+      } catch {}
+    }
+
+    // Always attempt direct clean URL first with crossOrigin="anonymous" (e.g. YouTube CDN yt3.ggpht.com supports CORS)
+    trySampleUrl(cleanUrl, false);
   });
 }
 
