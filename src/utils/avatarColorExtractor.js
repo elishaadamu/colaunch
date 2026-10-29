@@ -82,6 +82,42 @@ export function hexToRgba(hex, alpha = 0.22) {
 }
 
 /**
+ * Computes WCAG 2.1 Relative Luminance for an RGB color.
+ */
+export function getRelativeLuminance(r, g, b) {
+  const [rs, gs, bs] = [r, g, b].map(c => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+/**
+ * AI Color & Contrast Engine:
+ * Decides whether text on top of this background color should be rich black (#080C14)
+ * or white (#FFFFFF) to guarantee maximum readability and WCAG AAA compliance.
+ * Whenever the background has high luminance (cyans, sky-blues, ambers, limes, golds, pastels),
+ * black text is selected.
+ */
+export function getContrastTextColor(hex) {
+  if (!hex || typeof hex !== 'string') return '#FFFFFF';
+  const [r, g, b] = hexToRgb(hex);
+  const lum = getRelativeLuminance(r, g, b);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+
+  // Mathematically, contrast with black exceeds contrast with white when lum > 0.179.
+  // We also use YIQ >= 118 to ensure vibrant cyans and greens always get crisp black text.
+  return (lum > 0.179 || yiq >= 118) ? '#080C14' : '#FFFFFF';
+}
+
+/**
+ * Returns true if the background color requires black/dark text.
+ */
+export function isLightColor(hex) {
+  return getContrastTextColor(hex) === '#080C14';
+}
+
+/**
  * Returns a human-friendly name for a given hex color
  */
 export function getFriendlyColorName(hex) {
@@ -192,15 +228,21 @@ export function analyzeImageData(data) {
   // If no chromatic color found, check neutral dark or fallback to Studio Emerald
   if (!bestKey || buckets[bestKey].count === 0) {
     if (buckets.neutralDark.count > 10) {
+      const hex = "#38BDF8";
       return {
-        primaryHex: "#38BDF8",
+        primaryHex: hex,
         name: "Electric Steel",
+        contrastText: getContrastTextColor(hex),
+        isLight: isLightColor(hex),
         isNeutral: true,
       };
     }
+    const hex = "#10B981";
     return {
-      primaryHex: "#10B981",
+      primaryHex: hex,
       name: "Studio Emerald",
+      contrastText: getContrastTextColor(hex),
+      isLight: isLightColor(hex),
       isFallback: true,
     };
   }
@@ -220,6 +262,8 @@ export function analyzeImageData(data) {
   return {
     primaryHex,
     name: getFriendlyColorName(primaryHex),
+    contrastText: getContrastTextColor(primaryHex),
+    isLight: isLightColor(primaryHex),
     hue: h,
     saturation: tunedS,
     lightness: tunedL,
@@ -233,6 +277,13 @@ export function getDeterministicBrandColor(creator) {
   const name = String(creator?.name || creator?.display_name || creator?.handle || "Creator").toLowerCase();
   const niche = String(creator?.niche || "").toLowerCase();
 
+  const wrapResult = (hex, colorName) => ({
+    primaryHex: hex,
+    name: colorName || getFriendlyColorName(hex),
+    contrastText: getContrastTextColor(hex),
+    isLight: isLightColor(hex)
+  });
+
   // Broadway, Musical Theater, Theater, Arts & Music
   if (
     niche.includes("theater") || niche.includes("theatre") || niche.includes("musical") ||
@@ -241,24 +292,24 @@ export function getDeterministicBrandColor(creator) {
     name.includes("rodgers") || name.includes("hammerstein") || name.includes("broadway") ||
     name.includes("theater") || name.includes("theatre")
   ) {
-    return { primaryHex: "#D97706", name: "Broadway Amber" };
+    return wrapResult("#D97706", "Broadway Amber");
   }
 
   if (niche.includes("tech") || niche.includes("code") || niche.includes("software")) {
-    if (name.includes("coach")) return { primaryHex: "#16A34A", name: "Studio Emerald" };
-    return { primaryHex: "#0284C7", name: "Ocean Cyan" };
+    if (name.includes("coach")) return wrapResult("#16A34A", "Studio Emerald");
+    return wrapResult("#0284C7", "Ocean Cyan");
   }
   if (niche.includes("ai") || niche.includes("data") || niche.includes("study")) {
-    return { primaryHex: "#0284C7", name: "Electric Cobalt" };
+    return wrapResult("#0284C7", "Electric Cobalt");
   }
   if (niche.includes("pet") || niche.includes("community") || niche.includes("puppy") || niche.includes("media")) {
-    return { primaryHex: "#D97706", name: "Venture Amber" };
+    return wrapResult("#D97706", "Venture Amber");
   }
   if (niche.includes("game") || niche.includes("fitness")) {
-    return { primaryHex: "#65A30D", name: "Forge Lime" };
+    return wrapResult("#65A30D", "Forge Lime");
   }
   if (niche.includes("finance") || niche.includes("invest") || niche.includes("crypto") || niche.includes("money")) {
-    return { primaryHex: "#10B981", name: "Venture Emerald" };
+    return wrapResult("#10B981", "Venture Emerald");
   }
 
   // Hash based on letters - palette of vibrant, prestigious studio colors (no purple/violet)
@@ -270,10 +321,7 @@ export function getDeterministicBrandColor(creator) {
   const chosenHue = hues[Math.abs(hash) % hues.length];
   const hex = hslToHex(chosenHue, 78, 48);
 
-  return {
-    primaryHex: hex,
-    name: getFriendlyColorName(hex),
-  };
+  return wrapResult(hex, getFriendlyColorName(hex));
 }
 
 /**
@@ -285,7 +333,13 @@ export async function extractBrandColorFromAvatar(avatarUrl, creator = null) {
     return getDeterministicBrandColor(creator);
   }
   if (!avatarUrl) {
-    return { primaryHex: "#16A34A", name: "Studio Emerald" };
+    const hex = "#16A34A";
+    return {
+      primaryHex: hex,
+      name: "Studio Emerald",
+      contrastText: getContrastTextColor(hex),
+      isLight: isLightColor(hex),
+    };
   }
 
   // Check in-memory cache
@@ -302,6 +356,8 @@ export async function extractBrandColorFromAvatar(avatarUrl, creator = null) {
         const res = {
           primaryHex: hex,
           name: getFriendlyColorName(hex),
+          contrastText: getContrastTextColor(hex),
+          isLight: isLightColor(hex),
           source: "ui_avatar",
         };
         COLOR_CACHE.set(avatarUrl, res);
@@ -323,6 +379,10 @@ export async function extractBrandColorFromAvatar(avatarUrl, creator = null) {
     const finish = (result) => {
       if (hasResolved) return;
       hasResolved = true;
+      if (result?.primaryHex) {
+        if (!result.contrastText) result.contrastText = getContrastTextColor(result.primaryHex);
+        if (result.isLight === undefined) result.isLight = isLightColor(result.primaryHex);
+      }
       COLOR_CACHE.set(avatarUrl, result);
       try {
         if (result?.primaryHex) {

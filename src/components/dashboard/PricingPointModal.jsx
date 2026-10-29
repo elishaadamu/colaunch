@@ -4,15 +4,18 @@ import {
   DollarSign, CheckCircle2, ChevronRight, HelpCircle, Lock,
   Layers, Users, Laptop, BarChart2, Award, HeartHandshake
 } from 'lucide-react'
+import { getContrastTextColor } from '../../utils/avatarColorExtractor'
 
 export default function PricingPointModal({
   isOpen,
   onClose,
   creatorData,
   creatorBrandColor = '#10B981',
+  creatorBrandTextColor,
   onSelectTrack,
   onOpenDiyPayment
 }) {
+  const brandTextColor = creatorBrandTextColor || getContrastTextColor(creatorBrandColor)
   const [selectedTrack, setSelectedTrack] = useState('50_50') // '50_50' | 'diy_pass'
   const [openFaq, setOpenFaq] = useState(null)
   const [isActivating, setIsActivating] = useState(false)
@@ -134,10 +137,10 @@ export default function PricingPointModal({
               </p>
               <button
                 onClick={onClose}
-                className="forge-btn-primary px-8 py-3 text-sm font-semibold rounded-full"
-                style={{ background: creatorBrandColor }}
+                className="forge-btn-primary px-8 py-3 text-sm font-semibold rounded-full shadow-sm"
+                style={{ background: creatorBrandColor, color: brandTextColor }}
               >
-                Return to Dashboard & Launch
+                <span style={{ color: brandTextColor }}>Return to Dashboard & Launch</span>
               </button>
             </div>
           ) : (
@@ -161,10 +164,11 @@ export default function PricingPointModal({
                   className="absolute -top-3 left-6 px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-md flex items-center gap-1.5"
                   style={{
                     background: creatorBrandColor,
-                    color: '#ffffff',
+                    color: brandTextColor,
                   }}
                 >
-                  <Award size={11} /> Recommended • $0 Upfront
+                  <Award size={11} style={{ color: brandTextColor }} />
+                  <span style={{ color: brandTextColor }}>Recommended • $0 Upfront</span>
                 </div>
 
                 <div className="space-y-4 pt-1">
@@ -222,11 +226,11 @@ export default function PricingPointModal({
                   <button
                     onClick={handleActivate5050}
                     disabled={isActivating}
-                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99]"
-                    style={{ background: creatorBrandColor }}
+                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    style={{ background: creatorBrandColor, color: brandTextColor }}
                   >
-                    {isActivating ? 'Activating Partnership...' : 'Claim 50/50 Partnership Track ($0 Upfront)'}
-                    <ArrowRight size={15} />
+                    <span style={{ color: brandTextColor }}>{isActivating ? 'Activating Partnership...' : 'Claim 50/50 Partnership Track ($0 Upfront)'}</span>
+                    <ArrowRight size={15} style={{ color: brandTextColor }} />
                   </button>
                   <p className="text-[11px] text-center text-slate-500 mt-2">
                     Instant activation • No credit card required today

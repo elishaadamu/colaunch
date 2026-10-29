@@ -87,6 +87,11 @@ export default function Login() {
             if (key && val) localStorage.setItem(key, val)
           })
         }
+        if (data.chat_data) {
+          Object.entries(data.chat_data).forEach(([key, val]) => {
+            if (key && val) localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val))
+          })
+        }
 
         // Restore AI keys from DB if user previously consented
         if (data.ai_keys) {

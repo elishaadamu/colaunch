@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useForge, getAccent } from '../../App'
 import { TrendingUp, ChevronRight, Sparkles, BarChart2, AlertCircle, ArrowUpRight, Zap, Rocket, ShieldCheck, Check } from 'lucide-react'
-import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
+import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 
 const MONTHS = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Now']
 const REVENUE_DATA = [0, 0, 0, 0, 0, 0, 0]
@@ -69,10 +69,12 @@ export default function Revenue() {
   }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
+  const brandTextColor = useMemo(() => getContrastTextColor(detectedBrandColor), [detectedBrandColor])
   const accent = useMemo(() => ({
     color: detectedBrandColor,
-    rgb: `${cr},${cg},${cb}`
-  }), [detectedBrandColor, cr, cg, cb])
+    rgb: `${cr},${cg},${cb}`,
+    contrastText: brandTextColor
+  }), [detectedBrandColor, cr, cg, cb, brandTextColor])
 
   const [activeRange, setActiveRange] = useState('all')
 
@@ -283,14 +285,15 @@ export default function Revenue() {
                   window.dispatchEvent(new CustomEvent('forge_open_pricing', { detail: { track: '50_50' } }))
                 }
               }}
-              className="w-full py-2.5 px-3 rounded-xl font-bold text-[12px] text-white flex items-center justify-center gap-1.5 transition-all shadow-md hover:brightness-110 active:scale-[0.98]"
+              className="w-full py-2.5 px-3 rounded-xl font-bold text-[12px] flex items-center justify-center gap-1.5 transition-all shadow-md hover:brightness-110 active:scale-[0.98] cursor-pointer"
               style={{
                 background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.8) 100%)`,
+                color: brandTextColor,
                 boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.3)`
               }}
             >
-              <span>Apply for 50/50 Track</span>
-              <ChevronRight size={13} />
+              <span style={{ color: brandTextColor }}>Apply for 50/50 Track</span>
+              <ChevronRight size={13} style={{ color: brandTextColor }} />
             </button>
           </div>
 

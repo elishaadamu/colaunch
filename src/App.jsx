@@ -27,16 +27,15 @@ import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
 import { CheckCircle, AlertCircle, X, XCircle, Trash2, RefreshCw, Info } from 'lucide-react'
-import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor } from './utils/avatarColorExtractor'
+import { 
+  hexToRgb, 
+  extractBrandColorFromAvatar, 
+  getDeterministicBrandColor,
+  getContrastTextColor,
+  isLightColor 
+} from './utils/avatarColorExtractor'
 
-export function isLightColor(hex) {
-  if (!hex || typeof hex !== 'string') return false
-  const clean = hex.replace('#', '').trim()
-  const r = parseInt(clean.slice(0, 2), 16) || 0
-  const g = parseInt(clean.slice(2, 4), 16) || 0
-  const b = parseInt(clean.slice(4, 6), 16) || 0
-  return ((r * 299 + g * 587 + b * 114) / 1000) > 135
-}
+export { getContrastTextColor, isLightColor }
 
 export const ForgeContext = createContext(null)
 export function useForge() { return useContext(ForgeContext) }
@@ -446,6 +445,7 @@ export default function App() {
   }, [])
 
   const [preloadStudioType, setPreloadStudioType] = useState(null)
+  const [chatOpen, setChatOpen] = useState(false)
 
   /**
    * startBgJob(jobId, asyncFn)
@@ -551,6 +551,7 @@ export default function App() {
     const calendar_data = {}
     const launch_pack_data = {}
     const studio_data = {}
+    const chat_data = {}
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
@@ -560,6 +561,8 @@ export default function App() {
         launch_pack_data[key] = localStorage.getItem(key)
       } else if (key && (key.startsWith(`forge_${h}_studio_`) || key.startsWith(`forge_${hLower}_studio_`))) {
         studio_data[key] = localStorage.getItem(key)
+      } else if (key && (key.startsWith('forge_chat_') || key.includes('_chat_messages') || key.includes('_coach_messages'))) {
+        chat_data[key] = localStorage.getItem(key)
       }
     }
 
@@ -568,7 +571,8 @@ export default function App() {
       creator_data: cData,
       calendar_data,
       launch_pack_data,
-      studio_data
+      studio_data,
+      chat_data
     }
 
     fetch('/api/auth/sync', {
@@ -631,6 +635,7 @@ export default function App() {
       const calendar_data = {}
       const launch_pack_data = {}
       const studio_data = {}
+      const chat_data = {}
 
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
@@ -640,6 +645,8 @@ export default function App() {
           launch_pack_data[key] = localStorage.getItem(key)
         } else if (key && (key.startsWith(`forge_${h}_studio_`) || key.startsWith(`forge_${hLower}_studio_`))) {
           studio_data[key] = localStorage.getItem(key)
+        } else if (key && (key.startsWith('forge_chat_') || key.includes('_chat_messages') || key.includes('_coach_messages'))) {
+          chat_data[key] = localStorage.getItem(key)
         }
       }
 
@@ -658,7 +665,8 @@ export default function App() {
           creator_data: creatorData,
           calendar_data,
           launch_pack_data,
-          studio_data
+          studio_data,
+          chat_data
         })
       })
         .then(res => res.json())
@@ -818,7 +826,7 @@ export default function App() {
       document.documentElement.style.setProperty('--theme-accent-border', `rgba(${acc.rgb}, 0.28)`)
       document.documentElement.style.setProperty(
         '--theme-btn-primary-text',
-        isLightColor(acc.color) ? '#000000' : '#ffffff'
+        getContrastTextColor(acc.color)
       )
     }
   }, [creatorData?.brandColor, creatorData?.brand_color, creatorData?.brandHex, creatorData?.avatarUrl, creatorData?.platform])
@@ -990,7 +998,9 @@ export default function App() {
     activeTab,
     setActiveTab,
     preloadStudioType,
-    setPreloadStudioType
+    setPreloadStudioType,
+    chatOpen,
+    setChatOpen
   }
 
   // /join/:handle route — public community join page (no auth)

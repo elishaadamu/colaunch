@@ -768,6 +768,105 @@ Return this exact JSON (be specific, personal, creator-native — not generic):
   return aiTextCall(prompt, system, 8192, signal, true);
 }
 
+// ── Generate Dynamic Today Priorities ──────────────────────────────────────────
+
+export async function generateTodayPrioritiesAI(creatorData, signal = undefined) {
+  const name = creatorData.name || creatorData.handle?.replace("@", "") || "this creator";
+  const handle = creatorData.handle || "@creator";
+  const platform = creatorData.platform || "YouTube";
+  const followers = creatorData.followers ? fmt(creatorData.followers) : "growing";
+  const engRate = creatorData.engagementRate ? `${creatorData.engagementRate}%` : "solid";
+  const niche = creatorData.niche || "content creation";
+  const productName = creatorData.productName || "Creator Academy";
+  const blueprint = creatorData.blueprint;
+  const productDesc = blueprint?.description || `a premium ${niche} product`;
+  
+  // Recent videos context
+  const recentVids = (creatorData.recentVideos || creatorData.videos || [])
+    .slice(0, 3)
+    .map(v => `"${v.title}" (${v.views || ''} views)`)
+    .join(', ');
+  const videoContext = recentVids ? `Recent uploads: ${recentVids}.` : '';
+
+  const system = `You are an elite creator economy launch strategist. You generate personalized, high-converting launch marketing priorities for this specific creator. Return ONLY valid JSON array.`;
+
+  const prompt = `Generate 4 personalized, urgent, high-leverage launch marketing priorities for TODAY for:
+Creator: ${name} (${handle})
+Platform: ${platform} (${followers} followers, ${engRate} engagement)
+Niche: ${niche}
+Product: "${productName}" (${productDesc})
+${videoContext}
+Current phase: Pre-launch / launch week countdown.
+
+Return a JSON array of 4 objects matching this exact structure:
+[
+  {
+    "id": "teaser",
+    "priority": "High",
+    "label": "Action title referencing their niche, recent video, or product",
+    "rationale": "Direct strategic reason why this moves the needle today for their audience",
+    "cta": "Generate teaser",
+    "contentType": "Launch Teaser Post",
+    "icon": "Share2",
+    "promptContext": "Contextual instruction for AI writer"
+  },
+  {
+    "id": "email",
+    "priority": "High",
+    "label": "Email list activation action",
+    "rationale": "Strategic reasoning about list conversions",
+    "cta": "Write email",
+    "contentType": "Launch Announcement Email",
+    "icon": "Mail",
+    "promptContext": "Contextual instruction for email draft"
+  },
+  {
+    "id": "bts",
+    "priority": "Medium",
+    "label": "Behind-the-scenes or algorithmic engagement action",
+    "rationale": "Strategic reasoning about organic reach",
+    "cta": "Generate caption",
+    "contentType": "Behind-the-Scenes Caption",
+    "icon": "Video",
+    "promptContext": "Contextual instruction for BTS caption"
+  },
+  {
+    "id": "calendar",
+    "priority": "Medium",
+    "label": "Audience conversion or sequence action",
+    "rationale": "Strategic reasoning about batching/consistency",
+    "cta": "Generate week",
+    "contentType": "7-Day Launch Calendar",
+    "icon": "Calendar",
+    "promptContext": "Contextual instruction"
+  }
+]`;
+
+  try {
+    const raw = await aiTextCall(prompt, system, 4096, signal, true);
+    let parsed = null;
+    if (typeof raw === "string") {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        const match = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (match) parsed = JSON.parse(match[0]);
+      }
+    } else if (Array.isArray(raw)) {
+      parsed = raw;
+    } else if (raw && Array.isArray(raw.priorities)) {
+      parsed = raw.priorities;
+    }
+
+    if (Array.isArray(parsed) && parsed.length >= 3) {
+      return parsed;
+    }
+  } catch (err) {
+    console.warn("[Forge AI] Dynamic priorities AI call notice:", err);
+  }
+  return null;
+}
+
 // ── Regenerate one section ─────────────────────────────────────────────────────
 
 export async function regenerateSection(section, creatorData) {

@@ -16,7 +16,7 @@ import { AppMockup } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import PricingPointModal from './PricingPointModal'
 import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
-import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
+import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 
 function DashboardAppPreview() {
   const { creatorData } = useForge()
@@ -178,9 +178,10 @@ export default function DashboardLayout() {
     setActiveTab,
     logout,
     userProfile,
+    chatOpen,
+    setChatOpen,
   } = useForge()
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
-  const [chatOpen, setChatOpen] = useState(false)
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
 
@@ -228,6 +229,7 @@ export default function DashboardLayout() {
   }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(creatorBrandColor), [creatorBrandColor])
+  const brandTextColor = useMemo(() => getContrastTextColor(creatorBrandColor), [creatorBrandColor])
 
   // Listen for pricing events from child tabs (Revenue, Marketing, etc.)
   useEffect(() => {
@@ -254,7 +256,7 @@ export default function DashboardLayout() {
         '--theme-accent-rgb': `${cr}, ${cg}, ${cb}`,
         '--theme-accent-bg': `rgba(${cr}, ${cg}, ${cb}, 0.14)`,
         '--theme-accent-border': `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
-        '--theme-btn-primary-text': '#ffffff',
+        '--theme-btn-primary-text': brandTextColor,
       }}
     >
       {/* Sidebar */}
@@ -297,16 +299,15 @@ export default function DashboardLayout() {
             {/* Commercial Launch & Pricing Point Button */}
             <button
               onClick={() => setPricingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all hover:opacity-90 active:scale-95 cursor-pointer shadow-sm"
               style={{
                 background: creatorBrandColor,
-                color: '#ffffff',
-                boxShadow: `0 0 16px rgba(${cr}, ${cg}, ${cb}, 0.35)`
+                color: brandTextColor,
               }}
               title="Review Co-Launch Commercial Terms & Pricing"
             >
-              <Zap size={12} className="fill-current" />
-              <span>Launch Plan • Pricing</span>
+              <Zap size={12} className="fill-current" style={{ color: brandTextColor }} />
+              <span style={{ color: brandTextColor }}>Launch Plan • Pricing</span>
             </button>
 
             {/* Live status pill */}
@@ -437,7 +438,7 @@ export default function DashboardLayout() {
         <div className="flex-1 flex overflow-hidden">
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
-            <TabComponent />
+            <TabComponent chatOpen={chatOpen} />
           </div>
 
           {/* Forge Chat panel */}
@@ -456,6 +457,7 @@ export default function DashboardLayout() {
         onClose={() => setPricingModalOpen(false)}
         creatorData={creatorData}
         creatorBrandColor={creatorBrandColor}
+        creatorBrandTextColor={brandTextColor}
         onSelectTrack={(track) => {
           // Track choice processed in modal
         }}

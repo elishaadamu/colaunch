@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { askForgeChat, generateStudioContent, hasTextKey, generateContentCalendar } from '../../services/ai'
+import { askForgeChat, generateStudioContent, hasTextKey, generateContentCalendar, generateTodayPrioritiesAI } from '../../services/ai'
 import {
   Sparkles, TrendingUp, Mail, Video, Share2, Users,
   RefreshCw, Copy, Check, X, Calendar, ChevronRight,
-  BarChart2, AlertCircle, MessageSquare, Send, ArrowRight, Play, Minus, Pencil, Zap, Plus
+  BarChart2, AlertCircle, MessageSquare, Send, ArrowRight, Play, Minus, Pencil, Zap, Plus, RotateCcw, Eye
 } from 'lucide-react'
 import AiDoesItPanel from './AiDoesItPanel'
-import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
+import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 
 // ─── PIXEL COACH ─────────────────────────────────────────────────────────────
 // A tiny pixel-art character that coaches the creator
@@ -244,7 +244,7 @@ function buildFallbackWeek(creatorData) {
   ]
 }
 
-function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
+function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chatOpen }) {
   const getWeekDates = () => {
     const dates = []
     const today = new Date()
@@ -260,10 +260,15 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
   const weekDates = getWeekDates()
   const todayIdx = (new Date().getDay() + 6) % 7 // 0=Mon, ..., 6=Sun
 
+  // When AI sidebar is open, reduce columns from 7 to 4 so cards remain wide & legible
+  const gridClass = chatOpen 
+    ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 transition-all duration-200"
+    : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 transition-all duration-200"
+
   // Skeleton Loader when generating or opening page before real content is ready
   if (isLoading || !week || week.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className={gridClass}>
         {DAYS.map((day, i) => {
           const isToday = i === todayIdx
           const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
@@ -316,7 +321,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick }) {
 
   // Real Rendered Calendar
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <div className={gridClass}>
       {week.map((dayData, i) => {
         const isToday = i === todayIdx
         const dateStr = weekDates[i].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
@@ -608,29 +613,96 @@ function OutputPanel({ content, onClose, onSchedule, onCopy, accent, onRefine, i
 // ─── COACH CHAT ──────────────────────────────────────────────────────────────
 
 function CoachChat({ accent, handle, onClose, creatorData }) {
+  const cleanHandle = (handle || creatorData?.handle || 'default').replace(/^@/, '').toLowerCase()
+  const storageKey = `forge_${cleanHandle}_coach_messages`
+
+  const formatChatTime = (timestamp) => {
+    if (!timestamp) return ''
+    try {
+      const date = new Date(timestamp)
+      if (isNaN(date.getTime())) return ''
+      const now = new Date()
+      const isToday = date.toDateString() === now.toDateString()
+      const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      if (isToday) return timeStr
+      return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`
+    } catch {
+      return ''
+    }
+  }
+
   const [messages, setMessages] = useState(() => {
     try {
-      const cached = localStorage.getItem(`forge_${handle}_coach_messages`)
-      return cached ? JSON.parse(cached) : [
-        { role: 'coach', text: `Hey ${handle}! I'm your Forge coach. I've analyzed your channel and I'm here to help you launch. What do you want to work on?` }
-      ]
+      const cached = localStorage.getItem(storageKey) || localStorage.getItem(`forge_${handle}_coach_messages`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
     } catch (e) {
       console.error(e)
-      return [
-        { role: 'coach', text: `Hey ${handle}! I'm your Forge coach. I've analyzed your channel and I'm here to help you launch. What do you want to work on?` }
-      ]
     }
+    return [
+      {
+        role: 'coach',
+        text: `Hey ${handle || 'there'}! I'm your Forge coach. I've analyzed your channel and I'm here to help you launch. What do you want to work on?`,
+        timestamp: Date.now()
+      }
+    ]
   })
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
+  const [minimized, setMinimized] = useState(false)
+  const bottomRef = useRef(null)
+
+  // Load any remote database chat history
+  useEffect(() => {
+    let active = true
+    if (!cleanHandle || cleanHandle === 'default') return
+
+    fetch(`/api/chat/messages?handle=${encodeURIComponent(cleanHandle)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!active || !d.messages || !Array.isArray(d.messages) || d.messages.length === 0) return
+        setMessages(prev => {
+          const seen = new Set()
+          const combined = []
+          d.messages.forEach(m => {
+            const txt = (m.content || m.text || '').trim()
+            const k = `${m.role}:${txt}`
+            if (!seen.has(k) && txt) {
+              seen.add(k)
+              combined.push({
+                role: m.role === 'coach' ? 'coach' : (m.role === 'forge' ? 'coach' : 'user'),
+                text: txt,
+                timestamp: m.timestamp || (m.created_at ? new Date(m.created_at).getTime() : Date.now())
+              })
+            }
+          })
+          prev.forEach(m => {
+            const txt = (m.text || m.content || '').trim()
+            const k = `${m.role}:${txt}`
+            if (!seen.has(k) && txt) {
+              seen.add(k)
+              combined.push(m)
+            }
+          })
+          combined.sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0))
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(combined))
+          } catch {}
+          return combined
+        })
+      })
+      .catch(() => {})
+
+    return () => { active = false }
+  }, [cleanHandle, storageKey])
 
   useEffect(() => {
     if (messages && messages.length > 0) {
-      localStorage.setItem(`forge_${handle}_coach_messages`, JSON.stringify(messages))
+      localStorage.setItem(storageKey, JSON.stringify(messages))
     }
-  }, [messages, handle])
-  const [minimized, setMinimized] = useState(false)
-  const bottomRef = useRef(null)
+  }, [messages, storageKey])
 
   const QUICK = ['What should I post today?', 'Write my launch email', 'How do I grow faster?', 'Give me 5 hooks']
 
@@ -639,9 +711,23 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
     if (!msg) return
     setInput('')
     
-    const newMessages = [...messages, { role: 'user', text: msg }]
+    const userTs = Date.now()
+    const userMsg = { role: 'user', text: msg, timestamp: userTs }
+    const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setTyping(true)
+
+    // Save user message to cloud DB
+    fetch('/api/chat/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handle: cleanHandle,
+        role: 'user',
+        content: msg,
+        timestamp: userTs
+      })
+    }).catch(() => {})
     
     try {
       const history = messages.map(m => ({
@@ -650,9 +736,23 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
       }))
       
       const reply = await askForgeChat(msg, history, creatorData)
-      setMessages(prev => [...prev, { role: 'coach', text: reply }])
+      const replyTs = Date.now()
+      const coachMsg = { role: 'coach', text: reply, timestamp: replyTs }
+      setMessages(prev => [...prev, coachMsg])
+
+      // Save coach reply to cloud DB
+      fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          handle: cleanHandle,
+          role: 'forge',
+          content: reply,
+          timestamp: replyTs
+        })
+      }).catch(() => {})
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'coach', text: `(Error) ${err.message}` }])
+      setMessages(prev => [...prev, { role: 'coach', text: `(Error) ${err.message}`, timestamp: Date.now() }])
     } finally {
       setTyping(false)
     }
@@ -685,16 +785,16 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
         </div>
         <div className="flex-1">
           <p className="text-[13px] font-semibold text-white">Forge Coach</p>
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Online and watching your metrics</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] text-white/40">Synced & Persistent</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={(e) => { e.stopPropagation(); setMinimized(!minimized) }} className="text-white/25 hover:text-white/60 transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); setMinimized(!minimized) }} className="text-white/25 hover:text-white/60 transition-colors cursor-pointer">
             <Minus size={14} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onClose() }} className="text-white/25 hover:text-white/60 transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); onClose() }} className="text-white/25 hover:text-white/60 transition-colors cursor-pointer">
             <X size={14} />
           </button>
         </div>
@@ -704,29 +804,37 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
         {/* Messages */}
         <div className="overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: 320 }}>
         {messages.map((m, i) => (
-          <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            {m.role === 'coach' && (
-              <div style={{ width: 22, height: 22, flexShrink: 0, marginTop: 2 }}>
-                <svg viewBox="0 0 16 16" width="22" height="22" style={{ imageRendering: 'pixelated' }}>
-                  <rect x="4" y="3" width="8" height="5" fill="#fde8c8"/>
-                  <rect x="5" y="5" width="2" height="2" fill="#2a2a2a"/>
-                  <rect x="9" y="5" width="2" height="2" fill="#2a2a2a"/>
-                  <rect x="5" y="9" width="6" height="4" fill="white"/>
-                </svg>
+          <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              {m.role === 'coach' && (
+                <div style={{ width: 22, height: 22, flexShrink: 0, marginTop: 2 }}>
+                  <svg viewBox="0 0 16 16" width="22" height="22" style={{ imageRendering: 'pixelated' }}>
+                    <rect x="4" y="3" width="8" height="5" fill="#fde8c8"/>
+                    <rect x="5" y="5" width="2" height="2" fill="#2a2a2a"/>
+                    <rect x="9" y="5" width="2" height="2" fill="#2a2a2a"/>
+                    <rect x="5" y="9" width="6" height="4" fill="white"/>
+                  </svg>
+                </div>
+              )}
+              <div
+                className="rounded-2xl px-3 py-2.5 max-w-[80%]"
+                style={{
+                  background: m.role === 'coach' ? '#1a1a1a' : 'white',
+                  borderRadius: m.role === 'coach' ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
+                  border: m.role === 'coach' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                <pre className="text-[12px] whitespace-pre-wrap leading-relaxed"
+                  style={{ color: m.role === 'coach' ? 'rgba(255,255,255,0.85)' : 'black', fontFamily: 'inherit' }}>
+                  {m.text || m.content}
+                </pre>
               </div>
-            )}
-            <div
-              className="rounded-2xl px-3 py-2.5 max-w-[80%]"
-              style={{
-                background: m.role === 'coach' ? '#1a1a1a' : 'white',
-                borderRadius: m.role === 'coach' ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
-              }}
-            >
-              <pre className="text-[12px] whitespace-pre-wrap leading-relaxed"
-                style={{ color: m.role === 'coach' ? 'rgba(255,255,255,0.75)' : 'black', fontFamily: 'inherit' }}>
-                {m.text}
-              </pre>
             </div>
+            {m.timestamp && (
+              <span className={`text-[9px] font-mono mt-0.5 px-1 ${m.role === 'user' ? 'text-slate-500' : 'text-white/30 ml-8'}`}>
+                {formatChatTime(m.timestamp)}
+              </span>
+            )}
           </div>
         ))}
         {typing && (
@@ -753,7 +861,7 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
       <div className="px-4 pb-2 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {QUICK.map(q => (
           <button key={q} onClick={() => send(q)}
-            className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap transition-all"
+            className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap transition-all cursor-pointer"
             style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
@@ -788,54 +896,226 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
-function getTodayActions(platform) {
-  const p = platform ? platform.toLowerCase() : 'other'
-  
+const ICON_MAP = {
+  Share2,
+  Mail,
+  Video,
+  Calendar,
+  Sparkles,
+  MessageSquare,
+  TrendingUp,
+  Zap,
+}
+
+function buildDynamicTodayActions(creatorData) {
+  const p = (creatorData?.platform || 'youtube').toLowerCase()
+  const name = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+  const product = creatorData?.productName || 'VIP Launch Pass'
+  const niche = creatorData?.niche || 'creator community'
+  const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'audience'
+  const latestVideo = creatorData?.recentVideos?.[0]?.title || creatorData?.videos?.[0]?.title || null
+
   if (p === 'youtube') {
     return [
-      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser video',    rationale: 'Prime your channel viewers before launch — a short teaser video or Community tab post builds massive hype.', cta: 'Generate teaser',   icon: Share2 },
-      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Convert subscribers to buyers. Your email list will drive the highest launch conversion rate.',         cta: 'Write email',        icon: Mail },
-      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes Short',   rationale: 'Shorts humanize your channel and drive high-reach algorithmic discovery. Show them how you built it.',     cta: 'Generate caption',   icon: Video },
-      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week uploads',  rationale: 'Consistency is key on YouTube. Plan your main videos, Shorts, and Community posts for launch week.',      cta: 'Generate week',      icon: Calendar },
+      {
+        id: 'teaser',
+        priority: 'High',
+        label: latestVideo ? `Pin a "${product}" teaser comment on "${latestVideo.slice(0, 32)}…"` : `Post your "${product}" launch teaser video`,
+        rationale: `Prime your ${followers} YouTube viewers. Teaser clips 48-72h before launch drive 3.8x higher day-1 conversions for ${niche} channels.`,
+        cta: 'Generate teaser',
+        contentType: 'Launch Teaser Post',
+        icon: Share2
+      },
+      {
+        id: 'email',
+        priority: 'High',
+        label: `Send VIP founding member invite for "${product}"`,
+        rationale: `Convert your warmest subscribers to day-1 buyers. Email converts 3-5x better than YouTube community posts.`,
+        cta: 'Write email',
+        contentType: 'Launch Announcement Email',
+        icon: Mail
+      },
+      {
+        id: 'bts',
+        priority: 'Medium',
+        label: `Drop a raw behind-the-scenes Short building "${product}"`,
+        rationale: `Shorts humanize ${name} and trigger algorithmic discovery across new ${niche} viewers looking to learn your system.`,
+        cta: 'Generate caption',
+        contentType: 'Behind-the-Scenes Caption',
+        icon: Video
+      },
+      {
+        id: 'calendar',
+        priority: 'Medium',
+        label: `Schedule your launch week uploads & Community Q&A`,
+        rationale: `Batch your main videos, Shorts, and Community polls so your launch run has daily momentum.`,
+        cta: 'Generate week',
+        contentType: '7-Day Launch Calendar',
+        icon: Calendar
+      }
     ]
   }
+
   if (p === 'instagram') {
     return [
-      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser Reel',     rationale: 'Priming your Instagram feed with a teaser primes your fans and lets you pin a high-converting announcement post.', cta: 'Generate teaser',   icon: Share2 },
-      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Move your IG followers to owned media. Email converts 3-5x better than a bio link.',                 cta: 'Write email',        icon: Mail },
-      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes Reel/Story', rationale: 'BTS Reels build trust and build intimate connections. Show the raw, unpolished building process.',   cta: 'Generate caption',   icon: Video },
-      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week IG posts', rationale: 'Keep engagement high during launch week. Batch your feed posts, Stories, and Reels.',                    cta: 'Generate week',      icon: Calendar },
+      {
+        id: 'teaser',
+        priority: 'High',
+        label: `Post your "${product}" launch teaser Reel & pin to profile`,
+        rationale: `Priming your ${followers} Instagram followers primes the algorithm and creates early comment demand before checkout opens.`,
+        cta: 'Generate teaser',
+        contentType: 'Launch Teaser Post',
+        icon: Share2
+      },
+      {
+        id: 'email',
+        priority: 'High',
+        label: `Broadcast VIP access link for "${product}" to your list`,
+        rationale: `Move your IG followers to owned media. Email converts 3-5x higher than link in bio taps.`,
+        cta: 'Write email',
+        contentType: 'Launch Announcement Email',
+        icon: Mail
+      },
+      {
+        id: 'bts',
+        priority: 'Medium',
+        label: `Share a 4-slide behind-the-scenes Story sequence`,
+        rationale: `Story sequences build intimate connection and urgency for ${niche} followers following your journey.`,
+        cta: 'Generate caption',
+        contentType: 'Behind-the-Scenes Caption',
+        icon: Video
+      },
+      {
+        id: 'calendar',
+        priority: 'Medium',
+        label: `Schedule your launch week Stories & broadcast drops`,
+        rationale: `Consistency is key during launch week. Pre-batch your daily engagement hooks.`,
+        cta: 'Generate week',
+        contentType: '7-Day Launch Calendar',
+        icon: Calendar
+      }
     ]
   }
+
   if (p === 'twitter' || p === 'x') {
     return [
-      { id: 'teaser',   priority: 'High',   label: 'Tweet your launch teaser thread',  rationale: 'Prime your timeline. A short hook-heavy teaser thread builds early bookmarks and retweets.',              cta: 'Generate teaser',   icon: Share2 },
-      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Email guarantees delivery. X algorithm fluctuates, but email lands directly in your followers\' primary inboxes.', cta: 'Write email',        icon: Mail },
-      { id: 'bts',      priority: 'Medium', label: 'Post a behind-the-scenes thread',   rationale: 'Share screenshots and raw stats. X audiences love transparent \'build-in-public\' BTS stories.',           cta: 'Generate caption',   icon: Video },
-      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week X posts',   rationale: 'Batching your X posts ensures you maintain high visibility without being glued to the timeline.',          cta: 'Generate week',      icon: Calendar },
+      {
+        id: 'teaser',
+        priority: 'High',
+        label: `Tweet your "${product}" launch teaser thread`,
+        rationale: `Prime your timeline. A hook-heavy teaser thread builds early bookmarks and retweets from ${niche} founders.`,
+        cta: 'Generate teaser',
+        contentType: 'Launch Teaser Post',
+        icon: Share2
+      },
+      {
+        id: 'email',
+        priority: 'High',
+        label: `Email your list about VIP founding access to "${product}"`,
+        rationale: `X algorithms fluctuate, but email lands directly in your followers' primary inboxes.`,
+        cta: 'Write email',
+        contentType: 'Launch Announcement Email',
+        icon: Mail
+      },
+      {
+        id: 'bts',
+        priority: 'Medium',
+        label: `Post a build-in-public breakdown of "${product}"`,
+        rationale: `Share screenshots and lessons learned. X audiences love transparent build-in-public stories.`,
+        cta: 'Generate caption',
+        contentType: 'Behind-the-Scenes Caption',
+        icon: Video
+      },
+      {
+        id: 'calendar',
+        priority: 'Medium',
+        label: `Schedule your launch week X threads & daily drops`,
+        rationale: `Batching your X posts ensures you maintain high visibility without being glued to the timeline.`,
+        cta: 'Generate week',
+        contentType: '7-Day Launch Calendar',
+        icon: Calendar
+      }
     ]
   }
+
   if (p === 'tiktok') {
     return [
-      { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser TikTok',   rationale: 'Prime your FYP views. A high-energy teaser video generates early search demand and profile visits.',      cta: 'Generate teaser',   icon: Share2 },
-      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Convert short-form views into direct revenue. Direct TikTok traffic to an email sequence.',               cta: 'Write email',        icon: Mail },
-      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes TikTok',   rationale: 'TikTok audiences connect with authentic, low-production BTS clips. Show the late nights of building.',     cta: 'Generate caption',   icon: Video },
-      { id: 'calendar', priority: 'Medium', label: 'Schedule your launch week TikToks',   rationale: 'Batching video hooks and captions ensures you maintain daily uploads during your launch phase.',          cta: 'Generate week',      icon: Calendar },
+      {
+        id: 'teaser',
+        priority: 'High',
+        label: `Post your "${product}" launch teaser TikTok`,
+        rationale: `Prime your FYP reach. A high-energy hook generates early search demand and profile visits for ${product}.`,
+        cta: 'Generate teaser',
+        contentType: 'Launch Teaser Post',
+        icon: Share2
+      },
+      {
+        id: 'email',
+        priority: 'High',
+        label: `Convert TikTok viewers into "${product}" VIP waitlist`,
+        rationale: `Convert short-form views into direct revenue before the algorithm shifts.`,
+        cta: 'Write email',
+        contentType: 'Launch Announcement Email',
+        icon: Mail
+      },
+      {
+        id: 'bts',
+        priority: 'Medium',
+        label: `Share a raw late-night building clip for ${product}`,
+        rationale: `TikTok audiences connect with authentic, low-production BTS clips in ${niche}.`,
+        cta: 'Generate caption',
+        contentType: 'Behind-the-Scenes Caption',
+        icon: Video
+      },
+      {
+        id: 'calendar',
+        priority: 'Medium',
+        label: `Schedule your launch week daily TikTok drops`,
+        rationale: `Daily posting during launch week keeps your videos in the FYP loop.`,
+        cta: 'Generate week',
+        contentType: '7-Day Launch Calendar',
+        icon: Calendar
+      }
     ]
   }
-  if (p === 'twitch') {
-    return [
-      { id: 'teaser',   priority: 'High',   label: 'Stream your launch countdown teaser', rationale: 'Announce the launch live! Prime your chat with a countdown and show early previews during stream.', cta: 'Generate teaser',   icon: Share2 },
-      { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Reach viewers when offline. An email notification brings loyal chat members back for launch day.',         cta: 'Write email',        icon: Mail },
-      { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes stream clip', rationale: 'Clip a funny or raw moment of creation. Share it on social channels to invite new viewers in.',    cta: 'Generate caption',   icon: Video },
-      { id: 'calendar', priority: 'Medium', label: 'Schedule launch week stream slots',   rationale: 'Set clear start times and titles for your stream events so your community knows exactly when to tune in.', cta: 'Generate week',      icon: Calendar },
-    ]
-  }
+
   return [
-    { id: 'teaser',   priority: 'High',   label: 'Post your launch teaser',          rationale: 'Last post was 4 days ago. Audiences forget fast — a teaser now primes your best fans before launch.', cta: 'Generate teaser',   icon: Share2 },
-    { id: 'email',    priority: 'High',   label: 'Email your list about your launch', rationale: 'Email converts 3-5x better than social. Your list needs to hear about this before you go wide.',         cta: 'Write email',        icon: Mail },
-    { id: 'bts',      priority: 'Medium', label: 'Share a behind-the-scenes reel',   rationale: 'BTS content builds trust and outperforms promos by 2x in your niche. Low effort, high payoff.',           cta: 'Generate caption',   icon: Video },
-    { id: 'calendar', priority: 'Medium', label: 'Schedule your next 7 days',        rationale: 'Creators who batch weekly post 4x more consistently. Forge can fill your entire week in seconds.',        cta: 'Generate week',      icon: Calendar },
+    {
+      id: 'teaser',
+      priority: 'High',
+      label: `Post your "${product}" launch teaser announcement`,
+      rationale: `Prime your ${followers} audience. Announcing 48-72h ahead drives immediate day-1 momentum for "${product}".`,
+      cta: 'Generate teaser',
+      contentType: 'Launch Teaser Post',
+      icon: Share2
+    },
+    {
+      id: 'email',
+      priority: 'High',
+      label: `Email your list about VIP founding access to "${product}"`,
+      rationale: `Email converts 3-5x better than public social posts. Give your closest fans the first offer.`,
+      cta: 'Write email',
+      contentType: 'Launch Announcement Email',
+      icon: Mail
+    },
+    {
+      id: 'bts',
+      priority: 'Medium',
+      label: `Share behind-the-scenes building "${product}"`,
+      rationale: `Authentic building stories outperform standard promos by 2x in ${niche}.`,
+      cta: 'Generate caption',
+      contentType: 'Behind-the-Scenes Caption',
+      icon: Video
+    },
+    {
+      id: 'calendar',
+      priority: 'Medium',
+      label: `Schedule your next 7 launch checkpoints`,
+      rationale: `Creators who batch weekly post 4x more consistently and double their launch revenue.`,
+      cta: 'Generate week',
+      contentType: '7-Day Launch Calendar',
+      icon: Calendar
+    }
   ]
 }
 
@@ -934,8 +1214,22 @@ function mapCalendarResult(result) {
   }))
 }
 
-export default function Marketing() {
-  const { creatorData, startBgJob, cancelBgJob, clearBgJob, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dbLoadedTimestamp, userProfile } = useForge()
+export default function Marketing({ chatOpen: propChatOpen }) {
+  const { 
+    creatorData, 
+    startBgJob, 
+    cancelBgJob, 
+    clearBgJob, 
+    incrementAiActions, 
+    setApiModalOpen, 
+    triggerToast, 
+    syncSessionToDb, 
+    dbLoadedTimestamp, 
+    userProfile,
+    chatOpen: contextChatOpen,
+    setChatOpen
+  } = useForge()
+  const isChatOpen = propChatOpen ?? contextChatOpen
   
   // Derive Creator Accent dynamically
   const detectedBrandColor = useMemo(() => {
@@ -963,10 +1257,12 @@ export default function Marketing() {
   }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
 
   const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
+  const brandTextColor = useMemo(() => getContrastTextColor(detectedBrandColor), [detectedBrandColor])
   const accent = useMemo(() => ({
     color: detectedBrandColor,
-    rgb: `${cr},${cg},${cb}`
-  }), [detectedBrandColor, cr, cg, cb])
+    rgb: `${cr},${cg},${cb}`,
+    contrastText: brandTextColor
+  }), [detectedBrandColor, cr, cg, cb, brandTextColor])
 
   // Resolve creator's latest videos (from real scraped posts or tailored high-production fallbacks)
   const displayVideos = useMemo(() => {
@@ -1191,6 +1487,20 @@ export default function Marketing() {
       return cached ? JSON.parse(cached) : []
     } catch { return [] }
   })
+  const [dynamicPriorities, setDynamicPriorities] = useState(() => {
+    const handle = creatorData?.handle || 'default'
+    try {
+      const cached = localStorage.getItem(`forge_${handle}_dynamic_priorities`) || localStorage.getItem(`forge_${handle.toLowerCase()}_dynamic_priorities`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch (e) {
+      console.error('Failed to parse cached dynamic priorities:', e)
+    }
+    return null
+  })
+  const [isPrioritiesGenerating, setIsPrioritiesGenerating] = useState(false)
   const [generating, setGenerating]             = useState(null)
   const [openOutputId, setOpenOutputId]         = useState(null)  // which action's output is open
   const [generatedContents, setGeneratedContents] = useState(() => {
@@ -1327,6 +1637,20 @@ export default function Marketing() {
         console.error('Failed to parse cached completed actions:', e)
       }
     }
+
+    const cachedPriorities = localStorage.getItem(`forge_${h}_dynamic_priorities`) ||
+                            localStorage.getItem(`forge_${h.toLowerCase()}_dynamic_priorities`)
+    if (cachedPriorities) {
+      try {
+        const parsed = JSON.parse(cachedPriorities)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log('[Forge Marketing] Loaded cached dynamic priorities:', parsed)
+          setDynamicPriorities(parsed)
+        }
+      } catch (e) {
+        console.error('Failed to parse cached dynamic priorities:', e)
+      }
+    }
   }, [creatorData?.handle, dbLoadedTimestamp])
 
   // ── Load cache or trigger autofill on mount
@@ -1418,11 +1742,98 @@ export default function Marketing() {
     startBgJob(AUTOFILL_JOB, (sig) => generateContentCalendar(creatorData, 'launch', sig))
   }
 
-  const todayActions = getTodayActions(creatorData?.platform)
+  const handleRegeneratePriorities = async () => {
+    if (isPrioritiesGenerating) return
+    setIsPrioritiesGenerating(true)
+    if (incrementAiActions) incrementAiActions()
+    try {
+      const aiPriorities = await generateTodayPrioritiesAI(creatorData)
+      if (aiPriorities && Array.isArray(aiPriorities) && aiPriorities.length > 0) {
+        setDynamicPriorities(aiPriorities)
+        const handle = creatorData?.handle || 'default'
+        localStorage.setItem(`forge_${handle}_dynamic_priorities`, JSON.stringify(aiPriorities))
+        if (triggerToast) triggerToast("Today's priorities personalized by Forge AI!", 'success')
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+      } else {
+        const fallback = buildDynamicTodayActions(creatorData)
+        setDynamicPriorities(fallback)
+        const handle = creatorData?.handle || 'default'
+        localStorage.setItem(`forge_${handle}_dynamic_priorities`, JSON.stringify(fallback))
+      }
+    } catch (e) {
+      console.warn('Failed to regenerate priorities with AI:', e)
+      const fallback = buildDynamicTodayActions(creatorData)
+      setDynamicPriorities(fallback)
+    } finally {
+      setIsPrioritiesGenerating(false)
+    }
+  }
 
-  const visibleActions = todayActions.filter(
-    a => !dismissedActions.includes(a.id) && !completedActions.includes(a.id)
-  )
+  // Load or generate dynamic priorities on mount if not already cached
+  useEffect(() => {
+    const h = creatorData?.handle
+    if (!h || h === 'default') return
+
+    if (!dynamicPriorities && hasTextKey() && !isPrioritiesGenerating) {
+      handleRegeneratePriorities()
+    }
+  }, [creatorData?.handle, dynamicPriorities])
+
+  const fallbackActions = useMemo(() => buildDynamicTodayActions(creatorData), [creatorData])
+  const todayActions = useMemo(() => {
+    if (dynamicPriorities && Array.isArray(dynamicPriorities) && dynamicPriorities.length > 0) {
+      return dynamicPriorities.map(a => ({
+        ...a,
+        icon: typeof a.icon === 'function' ? a.icon : (ICON_MAP[a.icon] || Sparkles)
+      }))
+    }
+    return fallbackActions
+  }, [dynamicPriorities, fallbackActions])
+
+  const isActionStruck = (id) => completedActions.includes(id) || dismissedActions.includes(id)
+
+  const sortedActions = useMemo(() => {
+    const active = todayActions.filter(a => !isActionStruck(a.id))
+    const struck = todayActions.filter(a => isActionStruck(a.id))
+    return [...active, ...struck]
+  }, [todayActions, completedActions, dismissedActions])
+
+  const remainingCount = useMemo(() => {
+    return todayActions.filter(a => !isActionStruck(a.id)).length
+  }, [todayActions, completedActions, dismissedActions])
+
+  const completedCount = useMemo(() => {
+    return todayActions.filter(a => isActionStruck(a.id)).length
+  }, [todayActions, completedActions, dismissedActions])
+
+  const handleToggleStrikeAction = (actionId) => {
+    const isCurrentlyStruck = isActionStruck(actionId)
+
+    if (isCurrentlyStruck) {
+      setCompletedActions(prev => {
+        const next = prev.filter(id => id !== actionId)
+        localStorage.setItem(`forge_${handle}_launch_pack_completed_actions`, JSON.stringify(next))
+        return next
+      })
+      setDismissedActions(prev => {
+        const next = prev.filter(id => id !== actionId)
+        localStorage.setItem(`forge_${handle}_launch_pack_dismissed_actions`, JSON.stringify(next))
+        return next
+      })
+    } else {
+      setCompletedActions(prev => {
+        const next = prev.includes(actionId) ? prev : [...prev, actionId]
+        localStorage.setItem(`forge_${handle}_launch_pack_completed_actions`, JSON.stringify(next))
+        return next
+      })
+      setDismissedActions(prev => {
+        const next = prev.includes(actionId) ? prev : [...prev, actionId]
+        localStorage.setItem(`forge_${handle}_launch_pack_dismissed_actions`, JSON.stringify(next))
+        return next
+      })
+    }
+    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+  }
 
   const handleRefine = async (id, instruction, tone) => {
     setGenerating(id)
@@ -1472,13 +1883,14 @@ export default function Marketing() {
     }
   }
 
-  const handleGenerate = async (id) => {
+  const handleGenerate = async (actionOrId) => {
+    const id = typeof actionOrId === 'string' ? actionOrId : actionOrId.id
+    const action = typeof actionOrId === 'object' ? actionOrId : todayActions.find(a => a.id === id)
+
     if (generatedContents[id]) {
       setOpenOutputId(id)
       return
     }
-
-    if (!CONTENT[id]) return
 
     setGenerating(id)
     setCoachTrigger(id)
@@ -1490,22 +1902,17 @@ export default function Marketing() {
         return
       }
       
-      const typeMap = {
-        'teaser': 'Launch Teaser Post',
-        'email': 'Launch Announcement Email',
-        'bts': 'Behind-the-Scenes Caption',
-        'calendar': '7-Day Launch Calendar'
-      }
-      const contentType = typeMap[id] || id
+      const contentType = action?.contentType || (id === 'teaser' ? 'Launch Teaser Post' : id === 'email' ? 'Launch Announcement Email' : id === 'bts' ? 'Behind-the-Scenes Caption' : '7-Day Launch Calendar')
+      const contextPrompt = action?.promptContext || action?.label || `I need launch materials for ${productName}.`
       
-      const result = await generateStudioContent(contentType, "I need launch materials.", creatorData)
+      const result = await generateStudioContent(contentType, contextPrompt, creatorData)
       
       setGeneratedContents(prev => {
         const updated = {
           ...prev,
           [id]: {
-            title: CONTENT[id].title,
-            platforms: result.platforms || CONTENT[id].platforms,
+            title: action?.label || CONTENT[id]?.title || contentType,
+            platforms: result.platforms || CONTENT[id]?.platforms || [getPlatformName(creatorData?.platform)],
             body: result.body || result.text || result
           }
         }
@@ -1891,11 +2298,11 @@ export default function Marketing() {
 
         {/* Coach in top right — click to open chat */}
         <button
-          onClick={() => setShowCoachChat(v => !v)}
-          className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border transition-all duration-150 flex-shrink-0"
+          onClick={() => setChatOpen ? setChatOpen(v => !v) : setShowCoachChat(v => !v)}
+          className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border transition-all duration-150 flex-shrink-0 cursor-pointer"
           style={{
-            background: showCoachChat ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-            borderColor: showCoachChat ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
+            background: isChatOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+            borderColor: isChatOpen ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
           }}
         >
           <div style={{ width: 24, height: 24, flexShrink: 0 }}>
@@ -1928,7 +2335,7 @@ export default function Marketing() {
       {/* ─── COACH BUBBLE (contextual) ───────────────────────────── */}
       <PixelCoach
         message={coachMessage}
-        onChat={() => setShowCoachChat(true)}
+        onChat={() => setChatOpen ? setChatOpen(true) : setShowCoachChat(true)}
       />
 
       {/* ─── WEEKLY CALENDAR ─────────────────────────────────────── */}
@@ -1976,109 +2383,222 @@ export default function Marketing() {
           accentRgb={accent.rgb} 
           isLoading={autofillJob.status === 'running' || !week || week.length === 0} 
           onCardClick={(post, day) => { setSelectedPost(post); setSelectedPostDay(day) }} 
+          chatOpen={isChatOpen}
         />
       </section>
 
 
       {/* ─── TODAY'S PRIORITIES ──────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <p className="forge-label">Today's priorities</p>
-          <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>{visibleActions.length} remaining</span>
+      <section className="space-y-3">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-widest font-mono">
+                Today's priorities
+              </p>
+            </div>
+
+            {completedCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
+                <Check size={10} className="stroke-[3]" />
+                {completedCount} of {todayActions.length} completed
+              </span>
+            )}
+
+            {isPrioritiesGenerating && (
+              <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5 animate-pulse">
+                <Sparkles size={11} className="animate-spin text-cyan-400" />
+                Forge AI tailoring priorities…
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={handleRegeneratePriorities}
+              disabled={isPrioritiesGenerating}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/60 border border-cyan-800/50 px-2.5 py-1 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              title="Regenerate dynamic priorities with AI"
+            >
+              <RefreshCw size={11} className={isPrioritiesGenerating ? "animate-spin" : ""} />
+              <span>{isPrioritiesGenerating ? "Tailoring…" : "AI Refresh"}</span>
+            </button>
+
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+              {remainingCount} remaining
+            </span>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          {visibleActions.map(action => (
-            <div key={action.id}>
-              <div
-                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all duration-150"
-                style={{ background: '#111', borderColor: openOutputId === action.id ? `rgba(${accent.rgb},0.3)` : 'rgba(255,255,255,0.07)' }}
-                onMouseEnter={e => { if (openOutputId !== action.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = '#161616' }}}
-                onMouseLeave={e => { if (openOutputId !== action.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = '#111' }}}
-              >
-                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0"
-                    style={{ background: openOutputId === action.id ? `rgba(${accent.rgb},0.15)` : 'rgba(255,255,255,0.07)' }}>
-                    <action.icon size={14} style={{ color: openOutputId === action.id ? accent.color : 'rgba(255,255,255,0.5)' }} />
-                  </div>
+        {/* Priority Cards List */}
+        <div className="space-y-2.5">
+          {sortedActions.map(action => {
+            const isStruck = isActionStruck(action.id)
+            const isHighPriority = action.priority === 'High'
+            const isMediumPriority = action.priority === 'Medium'
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <span className="text-[13px] font-semibold text-white">{action.label}</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                        style={PRIORITY_STYLES[action.priority]}>
-                        {action.priority}
-                      </span>
+            const ActionCtaIcon = action.cta?.toLowerCase().includes('email')
+              ? Mail
+              : action.cta?.toLowerCase().includes('calendar') || action.cta?.toLowerCase().includes('week')
+                ? Calendar
+                : action.cta?.toLowerCase().includes('caption')
+                  ? Pencil
+                  : Sparkles
+
+            return (
+              <div key={action.id} className="transition-all duration-200">
+                <div
+                  className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 ${
+                    isStruck
+                      ? 'bg-[#090d16]/70 border-slate-800/50 opacity-60 hover:opacity-95'
+                      : 'bg-[#0d1424] hover:bg-[#10192e] border-slate-800/80 hover:border-slate-700'
+                  }`}
+                  style={openOutputId === action.id ? { borderColor: `rgba(${accent.rgb},0.4)` } : {}}
+                >
+                  {/* Left: Interactive Checkbox + Content */}
+                  <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                    {/* Interactive Checkbox Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStrikeAction(action.id)}
+                      title={isStruck ? "Mark incomplete / restore to top" : "Mark completed & strike to bottom"}
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0 transition-all cursor-pointer ${
+                        isStruck
+                          ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
+                          : 'bg-slate-900/90 border border-slate-700/80 hover:border-cyan-400 text-transparent hover:text-cyan-400/60'
+                      }`}
+                    >
+                      <Check size={13} className={isStruck ? "stroke-[2.5]" : "stroke-[2]"} />
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span
+                          className={`text-[13px] sm:text-[13.5px] font-semibold tracking-tight transition-all ${
+                            isStruck
+                              ? 'text-slate-400 line-through decoration-slate-500/80'
+                              : 'text-slate-100 group-hover:text-white'
+                          }`}
+                        >
+                          {action.label}
+                        </span>
+
+                        {/* Priority / Completed Tag */}
+                        {isStruck ? (
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <Check size={10} className="stroke-[3]" /> Completed
+                          </span>
+                        ) : isHighPriority ? (
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            High
+                          </span>
+                        ) : isMediumPriority ? (
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            Medium
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
+                            {action.priority || 'Normal'}
+                          </span>
+                        )}
+                      </div>
+
+                      <p
+                        className={`text-[12px] leading-relaxed transition-all ${
+                          isStruck
+                            ? 'text-slate-500 line-through decoration-slate-600/70'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {action.rationale}
+                      </p>
                     </div>
-                    <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{action.rationale}</p>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
+                    {isStruck ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                        >
+                          <Eye size={12} className="text-slate-400" />
+                          <span>{openOutputId === action.id ? 'Hide Output' : 'Review Output'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStrikeAction(action.id)}
+                          title="Restore task to active list"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-cyan-300 bg-slate-900/60 hover:bg-slate-800 border border-slate-800/80 transition-all cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          <span>Restore</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action)}
+                          disabled={generating === action.id}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                        >
+                          {generating === action.id ? (
+                            <RefreshCw size={12} className="animate-spin" />
+                          ) : openOutputId === action.id ? (
+                            <Check size={12} />
+                          ) : (
+                            <ActionCtaIcon size={12} />
+                          )}
+                          <span>{generating === action.id ? 'Writing…' : openOutputId === action.id ? 'Generated' : action.cta}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStrikeAction(action.id)}
+                          title="Dismiss & move to bottom"
+                          className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-slate-800/80 transition-all cursor-pointer"
+                        >
+                          <X size={13} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
-                  <button
-                    onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action.id)}
-                    disabled={generating === action.id}
-                    className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 flex-1 sm:flex-initial text-center justify-center"
-                    style={openOutputId === action.id ? { background: `rgba(${accent.rgb},0.2)`, borderColor: `rgba(${accent.rgb},0.4)`, color: 'white' } : {}}
-                  >
-                    {generating === action.id
-                      ? <RefreshCw size={11} className="animate-spin" />
-                      : openOutputId === action.id
-                        ? <Check size={11} />
-                        : <Sparkles size={11} />
-                    }
-                    {generating === action.id ? 'Writing...' : openOutputId === action.id ? 'Generated' : action.cta}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCompletedActions(p => {
-                        const next = p.includes(action.id) ? p : [...p, action.id]
-                        localStorage.setItem(`forge_${handle}_launch_pack_completed_actions`, JSON.stringify(next))
-                        return next
-                      })
-                      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/30 hover:text-white/70"
-                    style={{ background: 'rgba(255,255,255,0.06)' }} title="Mark done">
-                    <Check size={12} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDismissedActions(p => {
-                        const next = p.includes(action.id) ? p : [...p, action.id]
-                        localStorage.setItem(`forge_${handle}_launch_pack_dismissed_actions`, JSON.stringify(next))
-                        return next
-                      })
-                      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/30 hover:text-white/70"
-                    style={{ background: 'rgba(255,255,255,0.06)' }} title="Dismiss">
-                    <X size={12} />
-                  </button>
-                </div>
+                {/* Output panel opens inline under the action that triggered it */}
+                {openOutputId === action.id && (generatedContents[action.id] || CONTENT[action.id]) && (
+                  <div className="mt-2.5">
+                    <OutputPanel
+                      content={generatedContents[action.id] || CONTENT[action.id] || {
+                        title: action.label,
+                        platforms: [getPlatformName(creatorData?.platform)],
+                        body: ''
+                      }}
+                      accent={accent}
+                      onClose={() => setOpenOutputId(null)}
+                      onSchedule={() => handleSchedule(action.id)}
+                      onCopy={handleCopy}
+                      onRefine={(instruction, tone) => handleRefine(action.id, instruction, tone)}
+                      isGenerating={generating === action.id}
+                    />
+                  </div>
+                )}
               </div>
+            )
+          })}
 
-              {/* Output panel opens inline under the action that triggered it */}
-              {openOutputId === action.id && (generatedContents[action.id] || CONTENT[action.id]) && (
-                <div className="mt-2">
-                  <OutputPanel
-                    content={generatedContents[action.id] || CONTENT[action.id]}
-                    accent={accent}
-                    onClose={() => setOpenOutputId(null)}
-                    onSchedule={() => handleSchedule(action.id)}
-                    onCopy={handleCopy}
-                    onRefine={(instruction, tone) => handleRefine(action.id, instruction, tone)}
-                    isGenerating={generating === action.id}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-
-          {visibleActions.length === 0 && (
-            <div className="text-center py-8" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              <Check size={20} className="mx-auto mb-2" />
-              <p className="text-[13px]">All done. Forge will surface new actions tomorrow.</p>
+          {sortedActions.length === 0 && (
+            <div className="text-center py-8 rounded-2xl bg-[#0d1424] border border-slate-800 text-slate-400">
+              <Check size={20} className="mx-auto mb-2 text-emerald-400" />
+              <p className="text-[13px] font-medium text-slate-300">All priorities cleared!</p>
+              <p className="text-xs text-slate-500 mt-0.5">Forge will surface new actions tomorrow.</p>
             </div>
           )}
         </div>
@@ -2120,15 +2640,15 @@ export default function Marketing() {
                   window.dispatchEvent(new CustomEvent('forge_open_pricing'))
                 }
               }}
-              className="px-5 py-3 rounded-xl font-bold text-[13px] text-white flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:brightness-110 active:scale-[0.98]"
+              className="px-5 py-3 rounded-xl font-bold text-[13px] flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-sm"
               style={{
-                background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.8) 100%)`,
-                boxShadow: `0 4px 16px rgba(${accent.rgb}, 0.35)`
+                background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.9) 100%)`,
+                color: brandTextColor,
               }}
             >
-              <Zap size={14} className="fill-white" />
-              <span>Review Launch Plan & Pricing</span>
-              <ChevronRight size={14} />
+              <Zap size={14} className="fill-current" style={{ color: brandTextColor }} />
+              <span style={{ color: brandTextColor }}>Review Launch Plan & Pricing</span>
+              <ChevronRight size={14} style={{ color: brandTextColor }} />
             </button>
           </div>
         </div>
