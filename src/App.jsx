@@ -334,7 +334,33 @@ export default function App() {
   const [userProfile, setUserProfile] = useState(() => {
     try {
       const cachedUser = localStorage.getItem('forge_user_profile')
-      return cachedUser ? JSON.parse(cachedUser) : null
+      if (cachedUser) {
+        const u = JSON.parse(cachedUser)
+        if (u) {
+          let updated = false
+          // Purge default/dummy emails so creator is prompted to set their real one
+          if (u.email === 'creatorforgeweb@gmail.com' || u.email?.endsWith('@example.com') || u.email?.endsWith('@test.com')) {
+            u.email = ''
+            u.needsCredentials = true
+            updated = true
+          }
+          // Purge default/dummy passwords
+          if (u.password === '320456ab' || u.password === 'demopassword' || u.password === 'creatorforge2026' || u.password === 'colaunch2026') {
+            u.password = ''
+            u.needsCredentials = true
+            updated = true
+          }
+          if (!u.email || !u.password) {
+            u.needsCredentials = true
+            updated = true
+          }
+          if (updated) {
+            localStorage.setItem('forge_user_profile', JSON.stringify(u))
+          }
+        }
+        return u
+      }
+      return null
     } catch {
       return null
     }
@@ -625,8 +651,9 @@ export default function App() {
 
       const profile = {
         username: mockUsername,
-        email: 'creatorforgeweb@gmail.com',
-        password: '320456ab'
+        email: '',
+        password: '',
+        needsCredentials: true
       }
 
       // Gather existing localStorage data so they are registered in the DB too
@@ -660,8 +687,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: mockUsername,
-          email: `${mockUsername}@example.com`,
-          password: 'demopassword',
+          email: '',
+          password: '',
           creator_data: creatorData,
           calendar_data,
           launch_pack_data,
@@ -671,12 +698,12 @@ export default function App() {
       })
         .then(res => res.json())
         .then(data => {
-          console.log('[Forge] Auto-registered demo account successfully:', data)
+          console.log('[Forge] Auto-registered creator account (pending credentials):', data)
           setUserProfile(profile)
           navigate('dashboard')
         })
         .catch(err => {
-          console.warn('[Forge] Demo auto-registration failed or user exists, continuing anyway:', err)
+          console.warn('[Forge] Auto-registration notice, continuing to dashboard:', err)
           setUserProfile(profile)
           navigate('dashboard')
         })

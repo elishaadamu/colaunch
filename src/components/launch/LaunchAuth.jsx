@@ -51,8 +51,8 @@ export function logoutLaunchAuth() {
 
 export default function LaunchAuth({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => isLaunchAuthenticated())
-  const [identifier, setIdentifier] = useState('creatorforgeweb@gmail.com')
-  const [password, setPassword] = useState('Upworkproject')
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -79,12 +79,22 @@ export default function LaunchAuth({ children }) {
     localStorage.setItem('forge_launch_auth_user', JSON.stringify({ email: cleanEmail, role: 'operator_admin' }))
     localStorage.setItem('forge_active_session', 'true')
     localStorage.setItem('forge_login_timestamp', Date.now().toString())
+
+    let existingProfile = {}
+    try {
+      existingProfile = JSON.parse(localStorage.getItem('forge_user_profile') || '{}')
+    } catch (e) {}
+
+    const isRealEmail = cleanEmail && cleanEmail.includes('@') && cleanEmail !== 'creatorforgeweb@gmail.com'
+
     localStorage.setItem(
       'forge_user_profile',
       JSON.stringify({
-        username: cleanEmail.split('@')[0] || 'admin',
-        email: cleanEmail,
-        role: 'operator_admin'
+        ...existingProfile,
+        username: existingProfile.username || (isRealEmail ? cleanEmail.split('@')[0] : 'admin'),
+        email: isRealEmail ? cleanEmail : (existingProfile.email || ''),
+        role: 'operator_admin',
+        needsCredentials: existingProfile.needsCredentials ?? !isRealEmail
       })
     )
     try {
@@ -133,10 +143,10 @@ export default function LaunchAuth({ children }) {
 
       // Friendly fallback validation for dev & testing accounts
       if (
-        (cleanIdentifier === 'creatorforgeweb@gmail.com' && (cleanPass === 'Upworkproject' || (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026'))) ||
-        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
+        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject')) ||
+        (cleanIdentifier === 'admin@colaunch.com' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
       ) {
-        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : 'creatorforgeweb@gmail.com')
+        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : '')
         return
       }
 
@@ -145,10 +155,10 @@ export default function LaunchAuth({ children }) {
     } catch (err) {
       // Direct offline fallback
       if (
-        (cleanIdentifier === 'creatorforgeweb@gmail.com' && (cleanPass === 'Upworkproject' || (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026'))) ||
-        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
+        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject')) ||
+        (cleanIdentifier === 'admin@colaunch.com' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
       ) {
-        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : 'creatorforgeweb@gmail.com')
+        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : '')
         return
       }
       setError('Authentication failed. Please verify credentials.')
@@ -157,8 +167,8 @@ export default function LaunchAuth({ children }) {
   }
 
   const handleAutoFillDemo = () => {
-    setIdentifier('creatorforgeweb@gmail.com')
-    setPassword('Upworkproject')
+    setIdentifier('admin')
+    setPassword('creatorforge2026')
     setError('')
   }
 
@@ -170,7 +180,7 @@ export default function LaunchAuth({ children }) {
 
   if (isAuthenticated) {
     return (
-      <LaunchAuthContext.Provider value={{ isAuthenticated, logout, operatorEmail: identifier || 'creatorforgeweb@gmail.com' }}>
+      <LaunchAuthContext.Provider value={{ isAuthenticated, logout, operatorEmail: identifier || '' }}>
         {children}
       </LaunchAuthContext.Provider>
     )

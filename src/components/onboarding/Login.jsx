@@ -14,8 +14,8 @@ import CoLaunchLogo from '../ui/CoLaunchLogo'
 
 export default function Login() {
   const { goTo, updateCreator, setUserProfile, updateAiKeys } = useForge()
-  const [identifier, setIdentifier] = useState('admin')
-  const [password, setPassword] = useState('creatorforge2026')
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -98,12 +98,21 @@ export default function Login() {
           updateAiKeys(data.ai_keys)
         }
 
+        const isRealEmail = data.email && 
+          data.email !== 'creatorforgeweb@gmail.com' && 
+          !data.email.endsWith('@example.com') &&
+          !data.email.endsWith('@test.com')
+
+        const profileObj = {
+          username: data.username,
+          email: isRealEmail ? data.email : '',
+          password: password,
+          needsCredentials: !isRealEmail || !password
+        }
+        localStorage.setItem('forge_user_profile', JSON.stringify(profileObj))
+
         if (setUserProfile) {
-          setUserProfile({
-            username: data.username,
-            email: data.email,
-            password: password
-          })
+          setUserProfile(profileObj)
         }
 
         setLoading(false)
@@ -113,18 +122,18 @@ export default function Login() {
         // Fallback local auth for demo/offline
         if (
           (identifier.trim() === 'admin' && (password === 'creatorforge2026' || password === 'colaunch2026')) ||
-          (identifier.trim() === 'creatorforgeweb@gmail.com' && (password === 'Upworkproject' || (password === 'creatorforge2026' || password === 'colaunch2026')))
+          (identifier.trim().toLowerCase() === 'admin@colaunch.com' && (password === 'creatorforge2026' || password === 'colaunch2026'))
         ) {
+          const profileObj = {
+            username: identifier.trim(),
+            email: '',
+            password: password,
+            needsCredentials: true
+          }
           localStorage.setItem('forge_active_session', 'true')
           localStorage.setItem('forge_login_timestamp', Date.now().toString())
-          localStorage.setItem(
-            'forge_user_profile',
-            JSON.stringify({
-              username: identifier.trim(),
-              email: 'creatorforgeweb@gmail.com',
-              password: password
-            })
-          )
+          localStorage.setItem('forge_user_profile', JSON.stringify(profileObj))
+          if (setUserProfile) setUserProfile(profileObj)
           setLoading(false)
           goTo('dashboard')
           return

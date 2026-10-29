@@ -277,40 +277,52 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
               key={day}
               className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
                 isToday 
-                  ? 'bg-slate-900/90 border border-cyan-500/70' 
+                  ? 'bg-slate-900/90 border-2 border-cyan-500/80 shadow-[0_0_24px_-2px_rgba(56,189,248,0.35)]' 
                   : 'bg-[#111726]/80 border border-[#1e293b]'
               }`}
             >
               {isToday && (
-                <span className="absolute -top-2.5 right-3 px-1.5 py-0.5 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+                <span className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
                   Today
                 </span>
               )}
 
               {/* Day Header Skeleton */}
               <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
-                <span className={`text-xs font-bold ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>{day}</span>
+                <span className={`text-xs font-extrabold flex items-center gap-1.5 ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>
+                  {day}
+                  {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />}
+                </span>
                 <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>{dateStr}</span>
               </div>
 
               {/* Skeleton Cards with Pulse */}
               <div className="space-y-2 flex-1 animate-pulse">
-                <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 space-y-2">
-                  <div className="w-12 h-2.5 rounded bg-slate-700/80" />
-                  <div className="space-y-1">
-                    <div className="w-full h-2.5 rounded bg-slate-700/60" />
-                    <div className="w-4/5 h-2.5 rounded bg-slate-700/40" />
+                <div className={`p-2.5 rounded-lg space-y-2 border ${
+                  isToday 
+                    ? 'bg-cyan-950/40 border-cyan-500/40' 
+                    : 'bg-slate-800/60 border-slate-700/50'
+                }`}>
+                  <div className={`w-12 h-2.5 rounded ${isToday ? 'bg-cyan-400/40' : 'bg-slate-700/80'}`} />
+                  <div className="space-y-1.5">
+                    <div className={`w-full h-2.5 rounded ${isToday ? 'bg-cyan-400/30' : 'bg-slate-700/60'}`} />
+                    <div className={`w-4/5 h-2.5 rounded ${isToday ? 'bg-cyan-400/20' : 'bg-slate-700/40'}`} />
                   </div>
-                  <div className="w-10 h-3 rounded bg-slate-900/90" />
+                  <div className={`w-10 h-3 rounded ${isToday ? 'bg-cyan-900/60' : 'bg-slate-900/90'}`} />
                 </div>
 
                 {i % 2 === 0 && (
-                  <div className="p-2 rounded-lg bg-slate-800/40 border border-slate-800/80 space-y-2">
+                  <div className="p-2 rounded-lg bg-slate-800/40 border border-slate-800/80 space-y-1.5">
                     <div className="w-14 h-2 rounded bg-slate-700/60" />
                     <div className="w-full h-2 rounded bg-slate-700/40" />
                     <div className="w-9 h-2.5 rounded bg-slate-900/90" />
                   </div>
                 )}
+              </div>
+
+              {/* Add Post Skeleton */}
+              <div className="pt-2 mt-2 border-t border-slate-800/60">
+                <div className="w-16 h-2.5 mx-auto rounded bg-slate-800/50 animate-pulse" />
               </div>
             </div>
           )
@@ -332,20 +344,21 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
             key={`${dayData.day || 'day'}-${i}`}
             className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] transition-all relative ${
               isToday
-                ? 'bg-slate-900/90 border border-cyan-500/70'
+                ? 'bg-slate-900/90 border-2 border-cyan-500/80 shadow-[0_0_24px_-2px_rgba(56,189,248,0.35)]'
                 : 'bg-[#111726] border border-[#1e293b] hover:border-slate-700'
             }`}
           >
             {isToday && (
-              <span className="absolute -top-2.5 right-3 px-1.5 py-0.5 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+              <span className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
                 Today
               </span>
             )}
 
             {/* Header: Day & Date */}
             <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
-              <span className={`text-xs font-bold ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>
+              <span className={`text-xs font-bold flex items-center gap-1.5 ${isToday ? 'text-cyan-300 font-extrabold' : 'text-slate-300'}`}>
                 {dayData.day}
+                {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />}
               </span>
               <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>
                 {dateStr}
