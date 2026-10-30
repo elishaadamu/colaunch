@@ -9,6 +9,7 @@ import Revenue from './Revenue'
 import Accounts from './Accounts'
 import Settings from './Settings'
 import ForgeChat from './ForgeChat'
+import SupportChatPage from './SupportChatPage'
 import { useForge, getAccent } from '../../App'
 import { Sparkles, Laptop, Smartphone, Menu, LogOut, Zap } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
@@ -151,6 +152,7 @@ const TAB_COMPONENTS = {
   community: Community,
   products: Products,
   revenue: Revenue,
+  support: SupportChatPage,
   accounts: Accounts,
   settings: Settings,
 }
@@ -163,6 +165,7 @@ const TAB_LABELS = {
   community: 'Community',
   products: 'Products',
   revenue: 'Revenue',
+  support: 'Customer Support',
   accounts: 'Accounts',
   settings: 'Settings',
 }

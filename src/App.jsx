@@ -23,6 +23,7 @@ import ProjectOSPage from './components/launch/ProjectOSPage'
 import CreatorParticipationManager from './components/launch/CreatorParticipationManager'
 import BetaTestingPortal from './components/launch/BetaTestingPortal'
 import LaunchAuth from './components/launch/LaunchAuth'
+import SupportWidget from './components/support/SupportWidget'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
@@ -1030,6 +1031,31 @@ export default function App() {
     setChatOpen
   }
 
+  // /:creatorhandle/:id route — public creator application & live hub url: {{baseurl}}/creatorhandle/id
+  if (typeof window !== 'undefined') {
+    const rawParts = window.location.pathname.split('/').filter(Boolean)
+    const reservedRoutes = [
+      'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
+      'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
+      'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
+      'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
+      'dashboard', 'login', 'signup', 'api', 'static'
+    ]
+    if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+      return (
+        <ForgeContext.Provider value={ctx}>
+          <div className="min-h-screen bg-forge-bg text-white overflow-x-hidden">
+            <Celebration />
+          </div>
+          <SupportWidget currentStage="celebration" />
+          {globalToast && (
+            <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
+          )}
+        </ForgeContext.Provider>
+      )
+    }
+  }
+
   // /join/:handle route — public community join page (no auth)
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/join/')) {
     const joinHandle = window.location.pathname.replace('/join/', '').replace(/\/$/, '')
@@ -1158,6 +1184,7 @@ export default function App() {
       <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
         {screens[step] || <Welcome />}
       </div>
+      <SupportWidget currentStage={step} />
       <WipeCreatorModal 
         isOpen={wipeModalOpen} 
         onClose={() => setWipeModalOpen(false)} 
