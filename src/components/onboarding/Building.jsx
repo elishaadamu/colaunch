@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge, getAccent } from '../../App'
-import { Check, Layout, Users, BarChart2, Package, Mail, Globe, Clock, Terminal, Trash2 } from 'lucide-react'
+import { Check, Layout, Users, BarChart2, Package, Mail, Globe, Clock, Terminal, Trash2, Volume2, Radio, Play, ShoppingBag, Megaphone } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 
 function isLightColor(hex) {
@@ -13,46 +13,104 @@ function isLightColor(hex) {
 }
 
 function getDynamicBuildArtifacts(blueprint, creatorData) {
-  const type = (blueprint?.type || '').toLowerCase()
-  const name = blueprint?.name || 'Creator Space'
+  const name = blueprint?.name || creatorData?.productName || 'Creator Space'
+  const features = Array.isArray(creatorData?.features) && creatorData.features.length > 0
+    ? creatorData.features
+    : Array.isArray(blueprint?.features) && blueprint.features.length > 0
+      ? blueprint.features
+      : ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
 
-  if (type.includes('member') || type.includes('community')) {
-    return [
-      { id: 'shell', icon: Globe, label: 'Community engine', description: `Core ${name} portal & dynamic member routing`, duration: 1400 },
-      { id: 'billing', icon: BarChart2, label: 'Recurring billing', description: 'Stripe subscription tiers & customer portal live', duration: 1600 },
-      { id: 'forum', icon: Users, label: 'Member discussions', description: 'Gated forum categories, AMA stages & DMs', duration: 1400 },
-      { id: 'onboarding', icon: Layout, label: 'Member onboarding', description: 'Welcome video sequence & profile onboarding flow', duration: 1400 },
-      { id: 'marketing', icon: Mail, label: 'Launch sequences', description: 'Automated invitations & announcement broadcasts', duration: 1200 },
-    ]
-  }
+  const artifacts = []
 
-  if (type.includes('product') || type.includes('store') || type.includes('supplement') || type.includes('drop')) {
-    return [
-      { id: 'catalog', icon: Package, label: 'Product catalog', description: `${name} SKU architecture & inventory sync`, duration: 1400 },
-      { id: 'checkout', icon: Globe, label: 'Checkout gateway', description: 'High-conversion cart & automated tax calculation', duration: 1600 },
-      { id: 'analytics', icon: BarChart2, label: 'Revenue telemetry', description: 'Real-time sales tracking & attribution analytics', duration: 1400 },
-      { id: 'portal', icon: Users, label: 'Customer portal', description: 'Instant order access, downloads & support pipeline', duration: 1400 },
-      { id: 'email', icon: Mail, label: 'Fulfillment emails', description: 'Instant receipts, shipping notifications & upsells', duration: 1200 },
-    ]
-  }
+  // Core shell
+  artifacts.push({
+    id: 'shell',
+    icon: Globe,
+    label: 'Core application engine',
+    description: `Edge-rendered responsive shell for ${name}`,
+    duration: 1300,
+  })
 
-  if (type.includes('course') || type.includes('academy') || type.includes('masterclass')) {
-    return [
-      { id: 'curriculum', icon: Layout, label: 'Curriculum builder', description: `${name} video modules & lesson indexing`, duration: 1400 },
-      { id: 'streaming', icon: Globe, label: 'Video player', description: 'HD adaptive streaming engine & progress tracker', duration: 1600 },
-      { id: 'community', icon: Users, label: 'Student community', description: 'Discussion boards & assignment submission threads', duration: 1400 },
-      { id: 'cert', icon: BarChart2, label: 'Certification & tests', description: 'Completion milestones & certificate engine', duration: 1400 },
-      { id: 'offer', icon: Package, label: 'Enrollment page', description: 'Direct checkout landing page & syllabus preview', duration: 1200 },
-    ]
-  }
+  // Feature-driven artifacts
+  features.forEach((feat, i) => {
+    const fLower = feat.toLowerCase()
+    if (fLower.includes('podcast')) {
+      artifacts.push({
+        id: `podcast-${i}`,
+        icon: Volume2,
+        label: 'Podcast streaming player',
+        description: 'Audio syndication, show notes feed & episode player',
+        duration: 1400,
+      })
+    } else if (fLower.includes('live') || fLower.includes('ama') || fLower.includes('event')) {
+      artifacts.push({
+        id: `live-${i}`,
+        icon: Radio,
+        label: 'Live stage & AMAs',
+        description: 'Live broadcast rooms, event scheduling & audience Q&A',
+        duration: 1400,
+      })
+    } else if (fLower.includes('store') || fLower.includes('product') || fLower.includes('drop')) {
+      artifacts.push({
+        id: `store-${i}`,
+        icon: ShoppingBag,
+        label: 'Digital storefront & vault',
+        description: 'Secure file downloads, checkout flows & product vault',
+        duration: 1400,
+      })
+    } else if (fLower.includes('video') || fLower.includes('vault') || fLower.includes('release')) {
+      artifacts.push({
+        id: `videos-${i}`,
+        icon: Play,
+        label: 'Video archive & player',
+        description: 'YouTube channel feed sync & curated video vault',
+        duration: 1400,
+      })
+    } else if (fLower.includes('forum') || fLower.includes('community') || fLower.includes('discussion')) {
+      artifacts.push({
+        id: `community-${i}`,
+        icon: Users,
+        label: 'Member community feed',
+        description: 'Threaded discussions, real audience comments & profiles',
+        duration: 1300,
+      })
+    } else if (fLower.includes('tier') || fLower.includes('perk') || fLower.includes('membership')) {
+      artifacts.push({
+        id: `billing-${i}`,
+        icon: BarChart2,
+        label: 'Tiered membership gates',
+        description: 'Stripe subscription tiers, member perks & access keys',
+        duration: 1400,
+      })
+    } else if (fLower.includes('announcement')) {
+      artifacts.push({
+        id: `announcements-${i}`,
+        icon: Megaphone,
+        label: 'Official announcements',
+        description: 'Creator broadcast channel & instant push alerts',
+        duration: 1200,
+      })
+    } else if (fLower.includes('course') || fLower.includes('curriculum')) {
+      artifacts.push({
+        id: `curriculum-${i}`,
+        icon: Layout,
+        label: 'Course curriculum builder',
+        description: 'Lesson modules, progress tracking & completion awards',
+        duration: 1400,
+      })
+    }
+  })
 
-  return [
-    { id: 'shell', icon: Globe, label: 'Architecture shell', description: `${name} responsive layout & edge CDN routing`, duration: 1400 },
-    { id: 'dashboard', icon: Layout, label: 'Creator Studio OS', description: 'Command center, member analytics & telemetry', duration: 1600 },
-    { id: 'access', icon: Users, label: 'Access control', description: 'Tokenized member authentication & permissions', duration: 1400 },
-    { id: 'offer', icon: Package, label: 'Offer & launch page', description: 'Sales funnel & subscriber checkout flow', duration: 1400 },
-    { id: 'marketing', icon: Mail, label: 'Broadcast pipelines', description: 'Automated email dispatch & subscriber alerts', duration: 1200 },
-  ]
+  // Readiness step
+  artifacts.push({
+    id: 'launch-portal',
+    icon: Package,
+    label: 'Launch & dashboard readiness',
+    description: `Configuring ${name} modules for Creator Studio`,
+    duration: 1200,
+  })
+
+  return artifacts.slice(0, 6)
 }
 
 function ArtifactPreview({ artifact, isActive, isBuilt, accent, elapsedSec }) {
@@ -96,10 +154,9 @@ function ArtifactPreview({ artifact, isActive, isBuilt, accent, elapsedSec }) {
             {[1, 2, 3].map(i => (
               <div
                 key={i}
-                className="w-1 h-1 rounded-full animate-pulse"
+                className="w-1 h-1 rounded-full opacity-80"
                 style={{
                   background: accent.color,
-                  animationDelay: `${i * 0.2}s`,
                 }}
               />
             ))}

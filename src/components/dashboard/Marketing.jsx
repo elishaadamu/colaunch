@@ -291,7 +291,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
               <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
                 <span className={`text-xs font-extrabold flex items-center gap-1.5 ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>
                   {day}
-                  {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />}
+                  {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />}
                 </span>
                 <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>{dateStr}</span>
               </div>
@@ -358,7 +358,7 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
             <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
               <span className={`text-xs font-bold flex items-center gap-1.5 ${isToday ? 'text-cyan-300 font-extrabold' : 'text-slate-300'}`}>
                 {dayData.day}
-                {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />}
+                {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />}
               </span>
               <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>
                 {dateStr}
@@ -799,7 +799,7 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
         <div className="flex-1">
           <p className="text-[13px] font-semibold text-white">Forge Coach</p>
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span className="text-[10px] text-white/40">Synced & Persistent</span>
           </div>
         </div>
@@ -2407,7 +2407,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
           <div className="flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
               <p className="text-xs font-bold text-slate-300 uppercase tracking-widest font-mono">
                 Today's priorities
               </p>

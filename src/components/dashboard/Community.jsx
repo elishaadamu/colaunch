@@ -882,7 +882,7 @@ export default function Community() {
               <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider m-0">Content Calendar</p>
               {generated && (
                 <span 
-                  className="text-[9px] px-2 py-0.5 rounded-full animate-pulse font-medium"
+                  className="text-[9px] px-2 py-0.5 rounded-full font-medium"
                   style={{
                     background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
                     color: creatorColor,

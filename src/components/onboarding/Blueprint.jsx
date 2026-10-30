@@ -1477,12 +1477,12 @@ export default function Blueprint() {
                     </div>
 
                     {/* Projected Revenue */}
-                    <div className="pt-3 border-t border-[#1f2433] flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                    <div className="pt-3 border-t border-[#1f2433] flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap shrink-0">
                         {(activeBlueprint.revenue || '$17K–$48K').replace(/\s*\/\s*mo/i, '').trim()}
                       </span>
-                      <span className="text-sm font-medium text-slate-400">/ mo</span>
-                      <span className="text-xs text-slate-400 ml-1">estimated potential</span>
+                      <span className="text-sm font-medium text-slate-400 whitespace-nowrap">/ mo</span>
+                      <span className="text-xs text-slate-400 whitespace-nowrap">estimated potential</span>
                     </div>
                   </div>
 
@@ -1496,40 +1496,14 @@ export default function Blueprint() {
                           <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"></span>
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"></span>
                         </div>
-                        {/* Switcher: Member App | Creator OS */}
-                        <div className="flex items-center p-0.5 rounded-md border border-[#1f2433] bg-[#090b10]">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewMode('app')}
-                            className="px-2 py-0.5 rounded text-[8px] font-semibold transition-colors cursor-pointer"
-                            style={{
-                              background: previewMode === 'app' ? accent.color : 'transparent',
-                              color: previewMode === 'app' ? (isLightColor(accent.color) ? '#000000' : '#ffffff') : 'rgba(255,255,255,0.4)',
-                            }}
-                          >
-                            Member App
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPreviewMode('dashboard')}
-                            className="px-2 py-0.5 rounded text-[8px] font-semibold transition-colors cursor-pointer"
-                            style={{
-                              background: previewMode === 'dashboard' ? accent.color : 'transparent',
-                              color: previewMode === 'dashboard' ? (isLightColor(accent.color) ? '#000000' : '#ffffff') : 'rgba(255,255,255,0.4)',
-                            }}
-                          >
-                            Creator OS
-                          </button>
-                        </div>
+                        <span className="text-[9px] font-mono text-slate-500 truncate">
+                          {activeBlueprint.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'app'}.app
+                        </span>
                       </div>
 
                       {/* Inside Mock UI */}
                       <div className="flex-1 overflow-hidden">
-                        {previewMode === 'dashboard' ? (
-                          <DashboardPreview accent={accent} primary={activeBlueprint} creatorData={creatorData} />
-                        ) : (
-                          <PreviewComp accent={accent} primary={activeBlueprint} creatorData={creatorData} />
-                        )}
+                        <PreviewComp accent={accent} primary={activeBlueprint} creatorData={creatorData} />
                       </div>
                     </div>
                   </div>
@@ -1575,10 +1549,10 @@ export default function Blueprint() {
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-[#1f2433]/70 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">
+                        <span className="font-bold text-white whitespace-nowrap">
                           {cleanAltRevenue} <span className="font-normal text-slate-400">/ mo</span>
                         </span>
-                        <span className="text-slate-400 text-[11px]">
+                        <span className="text-slate-400 text-[11px] truncate ml-2">
                           {blueprint.revenueModel || (blueprint.type === 'Membership' ? 'Subscription' : blueprint.type === 'Mobile App' ? 'Subscription' : 'One-time / Bundles')}
                         </span>
                       </div>

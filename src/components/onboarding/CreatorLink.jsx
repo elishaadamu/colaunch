@@ -383,7 +383,7 @@ export default function CreatorLink() {
           
           {/* Stage Pill Tag */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8bae35]/10 border border-[#8bae35]/25 text-[#a8cf44] text-[11px] font-semibold tracking-wider uppercase mb-5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35] animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35]"></span>
             Step 1 of 8 &bull; Intelligence Setup
           </div>
 
@@ -563,7 +563,7 @@ export default function CreatorLink() {
                     </div>
                   ))}
                   <div className="flex items-center gap-2 text-[11px] text-neutral-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35] animate-ping" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35]" />
                     <span className="text-neutral-400 italic">{activeScrapePhase}</span>
                   </div>
                 </div>

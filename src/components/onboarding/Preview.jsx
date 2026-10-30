@@ -5,7 +5,9 @@ import {
   BarChart2, Settings, Radio, Play, Lock, MessageSquare, Calendar, 
   Download, ShoppingBag, Laptop, Smartphone, Volume2, Award, RotateCcw, Trash2,
   Heart, MessageCircle, Share2, MoreHorizontal, Maximize2, Minimize2, Globe, Sparkles,
-  Wand2, Layers, Video, Star, CheckCircle2, ShieldCheck, Rocket, CheckCircle
+  Layers, Video, Star, CheckCircle2, ShieldCheck, Rocket, CheckCircle,
+  Megaphone, Pin, Clock, Headphones, Pause, FastForward, Rewind, Paperclip, Smile,
+  ChevronRight, ThumbsUp, Flame, Music, Eye, ExternalLink, Plus, X
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { parseFollowerCount } from '../../services/ai'
@@ -22,87 +24,87 @@ function isLightColor(hex) {
 }
 
 function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelComments = []) {
-  const niche = (creatorData?.niche || '').toLowerCase()
-  const bpName = (blueprint?.name || '').toLowerCase()
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
+  const creatorDisplayName = (creatorData?.name || '').toLowerCase()
+  const videos = creatorData?.recentPosts || creatorData?.videos || []
+  const creatorUrl = getCreatorChannelUrl(creatorData)
 
-  // If real channel comments exist (from Apify / YouTube channel scraper), use them!
+  // Use strictly genuine audience comments scraped from Apify / YouTube (no handcoded announcements)
   if (Array.isArray(channelComments) && channelComments.length > 0) {
-    const creatorAnnouncement = {
-      id: 'announcement_0',
-      user: `@${handleClean}`,
-      text: `Welcome everyone to ${blueprint?.name || 'our private space'}! Direct masterclasses, drops, and community threads are live. Drop your questions below! 🚀`,
-      isCreator: true,
-      time: 'Just now',
-      likes: 42,
-      replies: channelComments.length
-    }
+    return channelComments.map((c, idx) => {
+      const matchedVid = videos.find(v => 
+        (v.title && c.videoTitle && v.title.toLowerCase().includes(c.videoTitle.toLowerCase())) ||
+        (v.videoId && c.videoId && v.videoId === c.videoId)
+      ) || (videos.length > 0 ? videos[idx % videos.length] : null)
 
-    const realPosts = channelComments.map((c, idx) => ({
-      id: c.id || `comm_${idx}`,
-      user: c.author?.startsWith('@') ? c.author : `@${c.author || 'member'}`,
-      text: c.text || c.quote || '',
-      time: c.published || c.time || 'Recent',
-      likes: parseInt(c.likes) || (Math.floor(Math.random() * 14) + 3),
-      replies: Math.floor(Math.random() * 5) + 1,
-      source: c.source || 'Channel Comment',
-      videoTitle: c.videoTitle || ''
-    })).filter(p => p.text && p.text.trim())
+      const vidTitle = c.videoTitle || matchedVid?.title || ''
+      const vidUrl = c.videoUrl || c.url || (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : null) || matchedVid?.url || (matchedVid?.videoId ? `https://www.youtube.com/watch?v=${matchedVid.videoId}` : null) || creatorUrl
 
-    return [creatorAnnouncement, ...realPosts]
+      const authorRaw = c.author || c.user || 'viewer'
+      const authorClean = authorRaw.replace(/^@/, '')
+      const isCreator = Boolean(
+        c.isCreator || 
+        authorClean.toLowerCase() === handleClean || 
+        (creatorDisplayName && authorClean.toLowerCase() === creatorDisplayName)
+      )
+
+      return {
+        id: c.id || `comm_${idx}`,
+        user: `@${authorClean}`,
+        text: (c.text || c.quote || '').trim(),
+        time: c.published || c.time || 'YouTube Comment',
+        source: 'YouTube Comment',
+        videoTitle: vidTitle,
+        videoUrl: vidUrl,
+        isCreator
+      }
+    }).filter(p => p.text && p.text.trim())
   }
 
-  if (niche.includes('health') || niche.includes('wellness') || bpName.includes('wellness') || bpName.includes('health') || bpName.includes('nutrition') || bpName.includes('truth')) {
-    return [
-      { id: 1, user: `@${handleClean}`, text: `Welcome everyone to the private inner circle! Drop your protocol questions below for tomorrow's live breakdown. 🚀`, isCreator: true, time: '10m ago', likes: 32, replies: 11 },
-      { id: 2, user: '@sarah_k_wellness', text: `The research breakdown on natural detox protocols in the library was eye-opening. Already noticing more energy.`, time: '2h ago', likes: 14, replies: 3 },
-      { id: 3, user: '@david_holistic', text: `Can we get a deep dive on seasonal supplementation next month? Really loving the verified resources here.`, time: '5h ago', likes: 19, replies: 5 }
-    ]
-  }
-
-  if (niche.includes('tech') || niche.includes('code') || niche.includes('developer') || niche.includes('software')) {
-    return [
-      { id: 1, user: `@${handleClean}`, text: `Welcome engineers! Repository templates and architecture notes are posted in the Vault tab. 🚀`, isCreator: true, time: '15m ago', likes: 45, replies: 16 },
-      { id: 2, user: '@dev_jordan', text: `Implemented the clean pipeline pattern from chapter 2 in our prod stack today. Shaved 35% off latency.`, time: '3h ago', likes: 21, replies: 4 },
-      { id: 3, user: '@frontend_dan', text: `The interactive component breakdown was gold. Any recommendations for state management on scale?`, time: '6h ago', likes: 18, replies: 7 }
-    ]
-  }
-
-  if (niche.includes('finance') || niche.includes('business') || niche.includes('invest') || niche.includes('money')) {
-    return [
-      { id: 1, user: `@${handleClean}`, text: `Welcome founders and investors! Market brief and portfolio teardowns are uploaded. 🚀`, isCreator: true, time: '20m ago', likes: 52, replies: 23 },
-      { id: 2, user: '@marcus_invest', text: `The cashflow model from the core vault saved our team weeks of financial modeling.`, time: '1h ago', likes: 27, replies: 6 },
-      { id: 3, user: '@growth_elena', text: `Really excited for the AMA tomorrow. Will submit my unit economics spreadsheet in advance.`, time: '4h ago', likes: 15, replies: 2 }
-    ]
-  }
-
-  return [
-    { id: 1, user: `@${handleClean}`, text: `Welcome everyone to ${blueprint?.name || 'our platform'}! Live AMA streams and member perks are ready. 🚀`, isCreator: true, time: '10m ago', likes: 24, replies: 8 },
-    { id: 2, user: '@community_member', text: `Super impressed with the structure here. Everything is accessible and organized.`, time: '2h ago', likes: 12, replies: 2 },
-    { id: 3, user: '@creative_mind', text: `Can't wait to connect with fellow members here. Exactly what our community needed.`, time: '5h ago', likes: 19, replies: 4 }
-  ]
+  // If no comments found from Apify, return empty list (no mockup data or fake announcements)
+  return []
 }
 
+export const CAPABILITY_PRESETS = [
+  { label: 'Podcast section', icon: Volume2, tab: 'Podcast', desc: 'Audio episodes, show notes & players' },
+  { label: 'Live events & AMAs', icon: Radio, tab: 'Live AMAs', desc: 'Live stage, scheduled streams & Q&A' },
+  { label: 'Digital products & store', icon: ShoppingBag, tab: 'Products', desc: 'Downloadable assets, templates & vault' },
+  { label: 'Video archive & vault', icon: Play, tab: 'Videos', desc: 'Curated uploads & releases' },
+  { label: 'Tiered memberships', icon: Layers, tab: null, desc: 'Recurring Stripe subscription tiers' },
+  { label: 'Exclusive perks', icon: Star, tab: null, desc: 'Verified member badges & rewards' },
+]
+
 const QUICK_PROMPTS = [
-  'Make it more premium',
   'Focus on community',
   'More minimalist',
-  'For women 25-34',
   'Mobile-first',
   'Add a podcast section',
+  'Add live events',
+  'Add digital store',
 ]
 
 const FEATURES = [
   { icon: MessageSquare, label: 'Private forum' },
   { icon: Layers, label: 'Tiered tiers' },
+  { icon: Layers, label: 'Tiered memberships' },
   { icon: Video, label: 'Monthly AMAs' },
+  { icon: Radio, label: 'Live events & AMAs' },
+  { icon: Radio, label: 'Live events' },
   { icon: Star, label: 'Exclusive perks' },
   { icon: Layout, label: 'Course builder' },
   { icon: Users, label: 'Community forum' },
-  { icon: Radio, label: 'Live events' },
+  { icon: MessageCircle, label: 'Member discussions' },
+  { icon: Play, label: 'Video releases' },
+  { icon: Play, label: 'Video archive' },
+  { icon: Play, label: 'Video archive & vault' },
+  { icon: Megaphone, label: 'Official announcements' },
+  { icon: Users, label: 'Verified members' },
+  { icon: Star, label: 'Direct discussions' },
   { icon: BarChart2, label: 'Creator analytics' },
   { icon: Settings, label: 'Member management' },
   { icon: Volume2, label: 'Podcast section' },
+  { icon: ShoppingBag, label: 'Digital products & store' },
+  { icon: ShoppingBag, label: 'Digital products' },
 ]
 
 function getDynamicProducts(blueprint, creatorData) {
@@ -147,46 +149,138 @@ function getDynamicProducts(blueprint, creatorData) {
   ]
 }
 
+export function getCreatorChannelUrl(creatorData) {
+  if (creatorData?.url && typeof creatorData.url === 'string' && creatorData.url.startsWith('http')) {
+    return creatorData.url
+  }
+  if (creatorData?.handle) {
+    const clean = creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`
+    return `https://www.youtube.com/${clean}`
+  }
+  if (creatorData?.name) {
+    return `https://www.youtube.com/@${creatorData.name.replace(/[^a-zA-Z0-9]/g, '')}`
+  }
+  return 'https://www.youtube.com'
+}
+
+export function isEducationalCreator(creatorData) {
+  const videos = creatorData?.recentPosts || creatorData?.videos || []
+  const bio = (creatorData?.description || '').toLowerCase()
+  const niche = (creatorData?.niche || '').toLowerCase()
+  const allTitles = videos.map(v => (v.title || '').toLowerCase()).join(' ')
+  const channelText = `${bio} ${niche} ${allTitles}`
+  return /\b(full course|crash course|coding tutorial|programming tutorial|beginner course|complete course|masterclass series|curriculum|bootcamp|learn python|learn javascript|learn react|step-by-step tutorial)\b/i.test(channelText)
+}
+
+export function getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs = []) {
+  const videos = creatorData?.recentPosts || creatorData?.videos || []
+  const bio = (creatorData?.description || '').toLowerCase()
+  const niche = (creatorData?.niche || '').toLowerCase()
+
+  // Real channel content strictly from Apify (bio, niche, video titles)
+  const allTitles = videos.map(v => (v.title || '').toLowerCase()).join(' ')
+  const channelText = `${bio} ${niche} ${allTitles}`
+
+  // Community is ALWAYS present and primary
+  const tabs = ['Community']
+
+  // Videos / Channel Archive (shows real Apify YouTube videos)
+  if (videos.length > 0) {
+    tabs.push('Videos')
+  }
+
+  // Courses: ONLY if channel actually teaches structured courses or programming/skill tutorials
+  const isEducational = isEducationalCreator(creatorData)
+  if (isEducational) {
+    tabs.push('Courses')
+  }
+
+  // Podcast: ONLY if channel actually has podcast episodes or an interview show
+  const isPodcast = /\b(podcast|podcast episode|the .* podcast|ep\s*\d+|audio podcast)\b/i.test(channelText)
+  if (isPodcast) {
+    tabs.push('Podcast')
+  }
+
+  // Live Streams / AMAs: ONLY if channel explicitly does live streams or live AMAs
+  const isLive = /\b(live stream|livestream|live q&a|live ama\b|ama livestream)\b/i.test(channelText)
+  if (isLive) {
+    tabs.push('Live AMAs')
+  }
+
+  // Include user extraTabs if user explicitly requested/prompted or added via sidebar
+  if (Array.isArray(extraTabs)) {
+    extraTabs.forEach(t => {
+      if (!tabs.includes(t)) tabs.push(t)
+    })
+  }
+
+  return tabs
+}
+
 function getVariationsForCreator(creatorData, extraTabs) {
   const name = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
   const baseTabs = extraTabs.length ? extraTabs : []
+  const isEdu = isEducationalCreator(creatorData)
+
+  if (isEdu) {
+    return [
+      {
+        id: 'academy-course',
+        name: `${name}'s Learning Academy`,
+        type: 'Course Platform',
+        preview: 'webapp',
+        description: `Structured curriculum with step-by-step video tutorials, modules, and community discussions.`,
+        features: ['Course builder', 'Community forum', 'Video vault', 'Creator analytics', ...baseTabs],
+        tagline: 'Structured learning and hands-on video tutorials'
+      },
+      {
+        id: 'community-circle',
+        name: `${name}'s Community Hub`,
+        type: 'Membership Community',
+        preview: 'community',
+        description: `Official audience community platform with member discussions, video archive, and announcements.`,
+        features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements', ...baseTabs],
+        tagline: 'Direct community access & video vault'
+      },
+      {
+        id: 'backstage-app',
+        name: `${name}'s Mobile Backstage`,
+        type: 'Mobile App',
+        preview: 'mobile',
+        description: `Dedicated mobile app with video streaming, push notifications, and member discussions.`,
+        features: ['Push notifications', 'Members feed', 'Video archive', 'Exclusive drops', ...baseTabs],
+        tagline: 'Mobile community and video updates'
+      }
+    ]
+  }
 
   return [
     {
-      id: 'community-circle',
-      name: `${name}'s Inner Circle`,
+      id: 'community-hub',
+      name: `${name}'s Community Hub`,
       type: 'Membership Community',
       preview: 'community',
-      description: `Private high-resonance community platform with member forums, scheduled AMA streams, and perk drops.`,
-      features: ['Private forum', 'Tiered tiers', 'Monthly AMAs', 'Exclusive perks', ...baseTabs],
-      tagline: 'Direct access to masterclasses, visual assets & monthly AMAs'
+      description: `Official audience community platform with member discussions, video archive, and announcements.`,
+      features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements', ...baseTabs],
+      tagline: 'Direct audience connection & official video archive'
     },
     {
-      id: 'masterclass-academy',
-      name: `${name}'s Masterclass Academy`,
-      type: 'Course Platform',
-      preview: 'webapp',
-      description: `Structured video curriculum with interactive chapter checkpoints, exercises, and certification.`,
-      features: ['Course builder', 'Community forum', 'Live events', 'Creator analytics', ...baseTabs],
-      tagline: 'Accelerated curriculum and step-by-step masterclasses'
+      id: 'inner-circle',
+      name: `${name}'s Inner Circle`,
+      type: 'Membership Space',
+      preview: 'community',
+      description: `Private community platform for dedicated viewers with direct discussions and channel archive.`,
+      features: ['Private forum', 'Verified members', 'Direct discussions', 'Official announcements', ...baseTabs],
+      tagline: 'Dedicated space for our most active supporters'
     },
     {
       id: 'backstage-app',
       name: `${name}'s Mobile Backstage`,
       type: 'Mobile App',
       preview: 'mobile',
-      description: `Dedicated handheld experience with instant push notifications, backstage drops, and feeds.`,
-      features: ['Push notifications', 'Members feed', 'Exclusive drops', 'In-app purchases', ...baseTabs],
-      tagline: 'Backstage drops and direct daily mobile engagement'
-    },
-    {
-      id: 'vault-store',
-      name: `${name}'s Digital Vault & Library`,
-      type: 'Digital Products',
-      preview: 'store',
-      description: `Comprehensive digital storefront with verified frameworks, templates, and downloadable assets.`,
-      features: ['Instant delivery', 'Resource library', 'Templates & toolkits', 'Direct consultation', ...baseTabs],
-      tagline: 'Instant delivery digital assets and resource vault'
+      description: `Dedicated mobile application for on-the-go community updates, video streaming, and member discussions.`,
+      features: ['Push notifications', 'Members feed', 'Video archive', 'Exclusive drops', ...baseTabs],
+      tagline: 'Mobile access with instant push notifications'
     }
   ]
 }
@@ -288,9 +382,9 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-5 flex-shrink-0">
         {[
           { label: 'Projected MRR', val: `${cleanMrr}/mo`, badge: '+18.4% MoM', desc: 'Active subscriptions' },
-          { label: 'Active Members', val: '1,280', badge: '94.2% retention', desc: '+48 this week' },
-          { label: 'Curriculum Finish', val: '89.6%', badge: 'High Engagement', desc: 'Avg module progress' },
-          { label: 'Available Payout', val: '$12,420', badge: 'Instant Transfer', desc: 'Next payout today' },
+          { label: 'Subscribers', val: creatorData?.followers || 'Community Reach', badge: 'Official Audience', desc: 'Verified subscriber count' },
+          { label: 'Channel Views', val: creatorData?.totalViews || 'Apify Scraped', badge: 'Total Impact', desc: 'Cumulative video views' },
+          { label: 'Catalog Uploads', val: `${creatorData?.videoCount || recentVideoList.length || '12'} Videos`, badge: 'Official Archive', desc: 'Verified channel videos' },
         ].map((m, i) => (
           <div 
             key={i} 
@@ -313,52 +407,47 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
         ))}
       </div>
 
-      {/* Two Column Layout: Curriculum Pipeline & Live Member Activity */}
+      {/* Two Column Layout: Channel Releases & Live Member Activity */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-5 pb-5 flex-1">
-        {/* Modules / Pipeline (3 cols) */}
+        {/* Releases / Pipeline (3 cols) */}
         <div 
           className="md:col-span-3 p-4 rounded-xl border flex flex-col bg-[#12141c] border-[#222634]"
         >
           <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#222634]">
             <span className="text-xs font-bold uppercase tracking-wider text-white">
-              Curriculum & Asset Modules
+              Official Releases & Video Catalog
             </span>
             <span className="text-xs font-mono font-semibold" style={{ color: dynamicAccent }}>
-              3 Active Pipelines
+              {recentVideoList.length} Uploads
             </span>
           </div>
 
           <div className="space-y-2.5">
-            {[
-              { title: 'Core Masterclass & Strategy', lessons: '12 video modules · Upload ready', progress: '88%', status: 'Active' },
-              { title: 'Resource Vault & Templates', lessons: '14 downloadable toolkits & files', progress: '100%', status: 'Published' },
-              { title: 'VIP Community & Live AMAs', lessons: 'Scheduled streams & weekly chats', progress: '65%', status: 'In Review' },
-            ].map((mod, idx) => (
+            {recentVideoList.slice(0, 3).map((vid, idx) => (
               <div 
                 key={idx} 
-                className="p-3 rounded-xl border bg-[#161922] border-[#222634]"
+                className="p-3 rounded-xl border bg-[#161922] border-[#222634] flex items-center justify-between gap-3"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-white truncate max-w-[200px]">
-                    {mod.title}
-                  </span>
-                  <span 
-                    className="text-[9px] font-bold px-2 py-0.5 rounded uppercase"
-                    style={{ background: dynamicAccentBg, color: dynamicAccent }}
-                  >
-                    {mod.status}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-2">{mod.lessons}</p>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                    <span>Student Completion</span>
-                    <span className="text-white font-semibold">{mod.progress}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-white truncate">
+                      {vid.title}
+                    </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-300" style={{ width: mod.progress, background: dynamicAccent }} />
-                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {vid.views ? `${vid.views} views` : 'Published release'} {vid.published ? `· ${vid.published}` : ''}
+                  </p>
                 </div>
+                <a 
+                  href={vid.url || (vid.videoId ? `https://www.youtube.com/watch?v=${vid.videoId}` : getCreatorChannelUrl(creatorData))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border flex items-center gap-1 shrink-0"
+                  style={{ color: dynamicAccent, background: dynamicAccentBg, borderColor: dynamicAccentBorder }}
+                >
+                  <span>Watch</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
               </div>
             ))}
           </div>
@@ -444,6 +533,19 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
   const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
   const isLight = isLightColor(dynamicAccent)
 
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@','') || 'Creator'
+  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
+
+  const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
+    ? creatorData.recentPosts
+    : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
+      ? creatorData.videos
+      : []
+
+  const topVideoTitle = recentVideoList[0]?.title || ''
+  const secondVideoTitle = recentVideoList[1]?.title || ''
+  const thirdVideoTitle = recentVideoList[2]?.title || ''
+
   const effectiveComments = (Array.isArray(channelComments) && channelComments.length > 0)
     ? channelComments
     : (Array.isArray(creatorData?.comments) && creatorData.comments.length > 0)
@@ -497,6 +599,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
       }
     })
   }
+
+
 
   const themeStyles = {
     dark: {
@@ -572,260 +676,483 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
     )
   }
 
-  const previewType = blueprint.preview || 'webapp'
-  const creatorName = creatorData.name || creatorData.handle?.replace('@','') || 'Creator'
-
-  let defaultTabs = []
-  if (previewType === 'webapp') defaultTabs = ['Courses', 'Community', 'Live AMAs']
-  else if (previewType === 'mobile') defaultTabs = ['Home Feed', 'Group Chat', 'Drops']
-  else if (previewType === 'community') defaultTabs = ['Announcements', 'Chat Room', 'Events']
-  else if (previewType === 'store') defaultTabs = ['All Products', 'Guides', 'Consultation']
-
-  const allTabs = [...defaultTabs, ...(extraTabs || [])]
+  const allTabs = getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs)
+  const creatorUrl = getCreatorChannelUrl(creatorData)
+  const cleanCreatorUrlDisplay = creatorUrl.replace(/^https?:\/\/(www\.)?/, '')
 
   const renderTabContent = () => {
     const tabLower = activeTab.toLowerCase()
-    
-    if (tabLower.includes('course')) {
-      const coursesList = [
-        { title: `${creatorName} Core Method`, lessons: '12 lessons', badge: 'Popular', progress: '85%' },
-        { title: 'Advanced Tactics & Secrets', lessons: '8 lessons', badge: 'Pro Tier', lock: true },
-        { title: 'Quick Start Templates', lessons: '5 lessons', badge: 'Ready', progress: '100%' }
-      ]
 
-      return (
-        <div className={isMobile ? "p-3 space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-6"}>
-          {coursesList.map((c, i) => (
-            <div 
-              key={i} 
-              className={`rounded-2xl border transition-all duration-200 bg-[#12141c] border-[#222634] hover:border-slate-700 shadow-sm flex flex-col justify-between ${
-                isMobile ? "p-3" : "p-4"
-              }`}
-            >
-              <div>
-                <div className={`${isMobile ? "h-20 mb-2.5" : "h-24 mb-3"} rounded-xl flex items-center justify-center relative overflow-hidden bg-[#161922] border border-[#222634]/60`}>
-                  {c.lock ? (
-                    <Lock size={isMobile ? 18 : 20} style={{ color: styles.accent }} />
-                  ) : (
-                    <Play size={isMobile ? 18 : 20} style={{ color: styles.accent }} />
-                  )}
-                  {c.badge && (
-                    <span 
-                      className="absolute top-2 right-2 text-[8.5px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"
-                      style={{ background: styles.accentBg, color: styles.accent, border: `1px solid ${styles.accentBorder}` }}
-                    >
-                      {c.badge}
-                    </span>
-                  )}
-                </div>
-                <h4 className={`${isMobile ? "text-xs" : "text-sm"} font-bold leading-snug mb-1 text-white`}>{c.title}</h4>
-                <p className="text-[11px] mb-2 text-slate-400">{c.lessons}</p>
-              </div>
-              {c.progress && (
-                <div className="space-y-1 pt-2 border-t border-[#222634]/60">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-                    <span className="truncate pr-1">Curriculum Progress</span>
-                    <span className="text-white font-semibold flex-shrink-0">{c.progress}</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-300" style={{ width: c.progress, background: styles.accent }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )
-    }
-
-    if (tabLower.includes('community') || tabLower.includes('chat') || tabLower.includes('feed') || tabLower.includes('room') || tabLower.includes('announcement')) {
-      const posts = getDynamicCommunityPosts(creatorName, blueprint, creatorData, internalComments)
-      return (
-        <div className={isMobile ? "p-3.5 pt-4 space-y-3.5" : "p-6 space-y-4"}>
-          {posts.map((p) => {
-            const isLiked = postLikes[p.id]?.liked
-            const currentLikes = postLikes[p.id]?.count ?? p.likes
-            return (
-              <div 
-                key={p.id} 
-                className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-2xl shadow-sm ${
-                  isMobile ? "p-4 pt-4" : "p-5 pt-5"
-                }`}
+    // 1. VIDEOS TAB (Real Scraped YouTube Videos from Apify)
+    if (tabLower.includes('video') || tabLower.includes('archive') || tabLower.includes('watch') || tabLower.includes('upload')) {
+      if (recentVideoList.length === 0) {
+        return (
+          <div className="p-8 text-center text-slate-400 space-y-2">
+            <p className="text-xs">No video archive loaded for this creator.</p>
+            {creatorUrl && (
+              <a 
+                href={creatorUrl}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs hover:underline"
+                style={{ color: styles.accent }}
               >
-                <div className="flex items-start justify-between gap-3 mb-2.5">
-                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    <div 
-                      className={`${isMobile ? "w-8 h-8 text-xs" : "w-9 h-9 text-sm"} rounded-full font-bold flex items-center justify-center border shadow-sm flex-shrink-0 mt-0.5`}
-                      style={{ 
-                        background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)', 
-                        color: p.isCreator ? styles.accent : '#fff',
-                        borderColor: p.isCreator ? styles.accentBorder : '#222634'
-                      }}
-                    >
-                      {p.user.charAt(1).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-xs sm:text-sm text-white truncate max-w-[140px] sm:max-w-none">{p.user}</span>
-                        {p.isCreator && (
-                          <span 
-                            className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider"
-                            style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
-                          >
-                            HOST
-                          </span>
-                        )}
-                        <span className="text-[10px] text-slate-500">·</span>
-                        <span className="text-[11px] text-slate-500 font-medium">{p.time}</span>
-                      </div>
-                      {!p.isCreator && p.videoTitle && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center text-[9px] text-slate-400 font-mono px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/50 truncate max-w-[170px] sm:max-w-[240px]" title={p.videoTitle}>
-                            via {p.videoTitle}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button className="text-slate-500 hover:text-slate-300 transition-colors p-1 -mr-1 -mt-0.5 flex-shrink-0 cursor-pointer">
-                    <MoreHorizontal className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className={`text-slate-300 leading-relaxed ${isMobile ? "pl-0 text-xs mt-2.5" : "pl-11 text-sm mt-1"}`}>
-                  {p.text}
-                </p>
-                <div className={`mt-3 flex items-center text-xs text-slate-400 ${
-                  isMobile ? "justify-between pl-0" : "space-x-6 pl-12"
-                }`}>
-                  <button 
-                    onClick={() => toggleLike(p.id, p.likes)}
-                    className="flex items-center space-x-1.5 transition-colors cursor-pointer"
-                    style={{ color: isLiked ? styles.accent : undefined }}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
-                    <span>{currentLikes}</span>
-                  </button>
-                  <button className="flex items-center space-x-1.5 hover:text-slate-200 transition-colors cursor-pointer">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>{p.replies} replies</span>
-                  </button>
-                  <button className="flex items-center space-x-1.5 hover:text-slate-200 transition-colors cursor-pointer">
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>Share</span>
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )
-    }
+                <span>Browse channel on YouTube</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        )
+      }
 
-    if (tabLower.includes('live') || tabLower.includes('event')) {
       return (
         <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
-          {[
-            { title: 'Launch Day Live Q&A Stream', desc: `Join ${creatorName} for the live reveal and get early answers.`, status: 'Live in 2 days', action: 'RSVP Now' },
-            { title: 'Weekly Inner Circle Teardowns', desc: 'Host review of community setups & live Q&A.', status: 'Mon at 8:00 PM', action: 'Set Reminder' }
-          ].map((e, i) => (
-            <div 
-              key={i} 
-              className={`rounded-2xl border flex flex-col sm:flex-row gap-3 sm:items-center justify-between bg-[#12141c] border-[#222634] hover:border-slate-700 transition shadow-sm ${
-                isMobile ? "p-3.5" : "p-5"
-              }`}
-            >
-              <div className="space-y-1 flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-red-400">Live Stream Event</span>
-                </div>
-                <h4 className={`${isMobile ? "text-xs" : "text-sm"} font-bold text-white truncate`}>{e.title}</h4>
-                <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">{e.desc}</p>
-              </div>
-              <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-[#222634]/60">
-                <span className="text-[11px] font-mono font-medium text-slate-300">{e.status}</span>
-                <button 
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl transition shadow-sm border"
-                  style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+          <div className="flex items-center justify-between pb-2 border-b border-[#222634]">
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Latest YouTube Releases & Archive</h4>
+              <p className="text-[11px] text-slate-400">{recentVideoList.length} videos from official channel</p>
+            </div>
+            {creatorUrl && (
+              <a 
+                href={creatorUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs hover:underline flex items-center gap-1 font-mono"
+                style={{ color: styles.accent }}
+              >
+                <span>YouTube</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+
+          <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"}>
+            {recentVideoList.map((v, i) => {
+              const videoLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
+              const thumbUrl = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
+
+              return (
+                <div 
+                  key={i} 
+                  className="rounded-2xl border bg-[#12141c] border-[#222634] hover:border-slate-700 transition overflow-hidden shadow-sm flex flex-col justify-between group"
                 >
-                  {e.action}
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div>
+                    {/* Thumbnail */}
+                    <div className="relative aspect-video w-full bg-[#161922] overflow-hidden flex items-center justify-center">
+                      {thumbUrl ? (
+                        <img 
+                          src={thumbUrl} 
+                          alt="" 
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <Play className="w-8 h-8 text-slate-500" />
+                      )}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                          style={{ background: styles.accent, color: isLight ? '#000000' : '#ffffff' }}
+                        >
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-3.5">
+                      <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug transition-colors">
+                        {v.title}
+                      </h5>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 font-mono flex-wrap">
+                        {v.views && <span>{v.views} views</span>}
+                        {v.likes && (
+                          <>
+                            <span>·</span>
+                            <span>{v.likes} likes</span>
+                          </>
+                        )}
+                        {v.published && (
+                          <>
+                            <span>·</span>
+                            <span>{v.published}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Watch Link */}
+                  <div className="px-3.5 pb-3.5 pt-0">
+                    <a 
+                      href={videoLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
+                    >
+                      <span>Watch on YouTube</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )
     }
 
-    if (tabLower.includes('podcast')) {
+    // 2. COMMUNITY TAB (Real Comments Scraped from Apify)
+    if (tabLower.includes('community') || tabLower.includes('feed') || tabLower.includes('forum') || tabLower.includes('discussion')) {
+      const posts = getDynamicCommunityPosts(creatorName, blueprint, creatorData, internalComments)
+
       return (
-        <div className={isMobile ? "p-3 space-y-2.5" : "p-6 space-y-3.5"}>
-          {[
-            { title: `Ep 14: Monetizing Audience & High-Resonance Communities in 2026`, duration: '42 min', plays: '12K listens' },
-            { title: `Ep 13: Secrets of Sustainable Independent Creator Businesses`, duration: '35 min', plays: '8.4K listens' }
-          ].map((p, i) => (
-            <div 
-              key={i} 
-              className={`rounded-2xl border flex gap-3 items-center bg-[#12141c] border-[#222634] hover:border-slate-700 transition shadow-sm ${
-                isMobile ? "p-3" : "p-4"
-              }`}
-            >
+        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
+          {/* Apify Real Channel Stats Banner */}
+          <div className="p-4 rounded-2xl bg-[#12141c] border border-[#222634] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <div 
-                className={`${isMobile ? "w-8 h-8 rounded-lg" : "w-10 h-10 rounded-xl"} flex items-center justify-center flex-shrink-0 shadow-sm border`}
-                style={{ background: styles.accentBg, borderColor: styles.accentBorder }}
+                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm border shadow-sm flex-shrink-0"
+                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
               >
-                <Volume2 className={isMobile ? "w-4 h-4" : "w-5 h-5"} style={{ color: styles.accent }} />
+                {resolvedAvatar ? (
+                  <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{creatorName.charAt(0).toUpperCase()}</span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className={`${isMobile ? "text-xs" : "text-sm"} font-bold truncate text-white`}>{p.title}</h4>
-                <p className="text-[10px] text-slate-400 mt-0.5">{p.duration} · {p.plays}</p>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs sm:text-sm font-bold text-white">{creatorName}</h4>
+                  <span className="text-[10px] text-slate-400 font-mono">@{handleClean}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5 flex-wrap">
+                  {creatorData?.followers && (
+                    <span className="text-slate-300 font-semibold">{creatorData.followers} subscribers</span>
+                  )}
+                  {creatorData?.videoCount && (
+                    <>
+                      <span>·</span>
+                      <span>{creatorData.videoCount} videos</span>
+                    </>
+                  )}
+                  {creatorData?.totalViews && (
+                    <>
+                      <span>·</span>
+                      <span>{creatorData.totalViews} views</span>
+                    </>
+                  )}
+                </div>
               </div>
-              <button 
-                className={`${isMobile ? "w-7 h-7" : "w-9 h-9"} rounded-full flex items-center justify-center border flex-shrink-0 transition-transform active:scale-95 shadow-sm`}
-                style={{ background: styles.accent, color: isLight ? '#000000' : '#ffffff', borderColor: styles.accentBorder }}
-              >
-                <Play className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} fill-current ml-0.5`} />
-              </button>
             </div>
-          ))}
+
+            {creatorUrl && (
+              <a 
+                href={creatorUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer"
+                style={{ 
+                  color: styles.accent, 
+                  background: styles.accentBg, 
+                  borderColor: styles.accentBorder 
+                }}
+              >
+                <span>Channel Link</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+
+          {/* Posts list */}
+          {posts.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 space-y-3 rounded-2xl bg-[#12141c] border border-[#222634]">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center mx-auto border"
+                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+              >
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <p className="text-xs text-slate-300 font-medium">No comments synced yet from Apify.</p>
+              {creatorUrl && (
+                <a 
+                  href={creatorUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs hover:underline font-mono"
+                  style={{ color: styles.accent }}
+                >
+                  <span>Explore discussions on official YouTube channel</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {posts.map((p) => {
+                return (
+                  <div 
+                    key={p.id} 
+                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-2xl shadow-sm ${
+                      isMobile ? "p-3.5" : "p-4 sm:p-5"
+                    }`}
+                  >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <div 
+                        className="w-8 h-8 rounded-full font-bold flex items-center justify-center border shadow-sm flex-shrink-0 text-xs"
+                        style={{ 
+                          background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)', 
+                          color: p.isCreator ? styles.accent : '#fff',
+                          borderColor: p.isCreator ? styles.accentBorder : '#222634'
+                        }}
+                      >
+                        {p.user.replace('@', '').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-xs sm:text-sm text-white truncate">{p.user}</span>
+                          {p.isCreator && (
+                            <span 
+                              className="text-[8.5px] font-bold px-1.5 py-0.2 rounded border uppercase tracking-wider"
+                              style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+                            >
+                              CREATOR
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-500">·</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{p.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-300 leading-relaxed text-xs sm:text-sm mt-1">
+                    {p.text}
+                  </p>
+
+                  {/* Direct Link to the Video on YouTube */}
+                  {p.videoUrl && (
+                    <div className="mt-3 pt-2.5 border-t border-[#222634]/60 flex items-center justify-between gap-2 flex-wrap">
+                      <a 
+                        href={p.videoUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition hover:opacity-90 group/vlink truncate max-w-full"
+                        style={{ 
+                          color: styles.accent, 
+                          background: styles.accentBg, 
+                          borderColor: styles.accentBorder 
+                        }}
+                        title={`Watch "${p.videoTitle || 'YouTube Video'}" on YouTube`}
+                      >
+                        <Play className="w-2.5 h-2.5 fill-current shrink-0" />
+                        <span className="truncate group-hover/vlink:underline font-mono text-[11px]">
+                          {p.videoTitle || 'Watch on YouTube'}
+                        </span>
+                        <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover/vlink:opacity-100" />
+                      </a>
+
+                      {p.source && (
+                        <span className="text-[10px] text-slate-500 font-mono shrink-0 hidden sm:inline ml-auto">
+                          {p.source}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          )}
         </div>
       )
     }
 
-    if (tabLower.includes('product') || tabLower.includes('guide') || tabLower.includes('shop') || tabLower.includes('consult') || tabLower.includes('drop')) {
-      const dynamicProducts = getDynamicProducts(blueprint, creatorData)
+    // 3. ANNOUNCEMENTS TAB (Official updates from creator)
+    if (tabLower.includes('announcement') || tabLower.includes('bulletin') || tabLower.includes('news') || tabLower.includes('update')) {
       return (
-        <div className={isMobile ? "p-3 space-y-2.5" : "grid grid-cols-1 sm:grid-cols-2 gap-4 p-6"}>
-          {dynamicProducts.map((p, i) => (
+        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
+          <div className="rounded-2xl border p-4 sm:p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-xs border"
+                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+              >
+                {resolvedAvatar ? (
+                  <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{creatorName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white block">{creatorName}</span>
+                <span className="text-[10px] text-slate-400 font-mono">@{handleClean}</span>
+              </div>
+            </div>
+
+            <h4 className="text-sm sm:text-base font-bold text-white">
+              Official Channel Announcements & Releases
+            </h4>
+
+            {topVideoTitle ? (
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Latest release from channel: <strong className="text-white">"{topVideoTitle}"</strong>.
+              </p>
+            ) : null}
+
+            {creatorData?.description && (
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {creatorData.description}
+              </p>
+            )}
+
+            {creatorUrl && (
+              <div className="pt-2 border-t border-[#222634]">
+                <a 
+                  href={creatorUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs hover:underline"
+                  style={{ color: styles.accent }}
+                >
+                  <span>Visit @{handleClean} on YouTube</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // 4. COURSES TAB (ONLY IF EDUCATIONAL)
+    if (tabLower.includes('course') || tabLower.includes('lesson') || tabLower.includes('curriculum') || tabLower.includes('academy')) {
+      return (
+        <div className={isMobile ? "p-3 space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-6"}>
+          {recentVideoList.slice(0, 6).map((v, i) => (
             <div 
               key={i} 
-              className={`rounded-2xl border transition-all duration-200 flex flex-col justify-between bg-[#12141c] border-[#222634] hover:border-slate-700 shadow-sm ${
-                isMobile ? "p-3" : "p-4"
-              }`}
+              className="rounded-2xl border bg-[#12141c] border-[#222634] p-4 flex flex-col justify-between shadow-sm"
             >
               <div>
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">{p.type}</span>
-                <h4 className={`${isMobile ? "text-xs" : "text-sm"} font-bold leading-tight mt-0.5 mb-2 truncate text-white`}>{p.title}</h4>
+                <div className="aspect-video w-full rounded-xl bg-[#161922] mb-3 overflow-hidden relative flex items-center justify-center">
+                  {v.thumbnail ? (
+                    <img src={v.thumbnail} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  ) : (
+                    <Play className="w-6 h-6 text-slate-500" />
+                  )}
+                </div>
+                <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{v.title}</h5>
+                <span className="text-[10px] text-slate-400 font-mono mt-1 block">{v.views || 'Tutorial Video'}</span>
               </div>
-              <div className="flex justify-between items-center pt-2.5 border-t border-[#222634]">
-                <span className="text-xs font-mono font-bold text-white">{p.price}</span>
-                <button 
-                  className="px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold border transition"
-                  style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
-                >
-                  <Download className="w-3 h-3" />
-                  <span>Access</span>
-                </button>
-              </div>
+              <a 
+                href={v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="mt-3 w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] border-[#222634]"
+              >
+                <span>Watch Lesson</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           ))}
         </div>
       )
     }
 
+    // 5. PODCAST TAB (ONLY IF PODCAST)
+    if (tabLower.includes('podcast') || tabLower.includes('audio') || tabLower.includes('episode')) {
+      const podcastVids = recentVideoList.filter(v => /podcast|episode|ep\s*\d|interview/i.test(v.title || ''))
+      const listToUse = podcastVids.length > 0 ? podcastVids : recentVideoList.slice(0, 4)
+
+      return (
+        <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
+          <div className="flex items-center justify-between pb-2 border-b border-[#222634]">
+            <h4 className="text-xs sm:text-sm font-bold text-white">Podcast Episodes</h4>
+            {creatorUrl && (
+              <a href={creatorUrl} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline flex items-center gap-1" style={{ color: styles.accent }}>
+                <span>View on YouTube</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+          <div className="space-y-3">
+            {listToUse.map((ep, i) => (
+              <div key={i} className="rounded-2xl border p-4 bg-[#12141c] border-[#222634] flex items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#161922] border border-[#222634] flex items-center justify-center flex-shrink-0">
+                    <Headphones className="w-5 h-5" style={{ color: styles.accent }} />
+                  </div>
+                  <div className="min-w-0">
+                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">{ep.title}</h5>
+                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{ep.views || ''} {ep.published ? `· ${ep.published}` : ''}</span>
+                  </div>
+                </div>
+                <a 
+                  href={ep.url || (ep.videoId ? `https://www.youtube.com/watch?v=${ep.videoId}` : creatorUrl)}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 text-slate-300 hover:text-white bg-[#161922] border-[#222634] flex-shrink-0"
+                >
+                  <Play className="w-3 h-3 fill-current" />
+                  <span>Listen</span>
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    // 6. LIVE AMAS TAB (ONLY IF LIVE)
+    if (tabLower.includes('live') || tabLower.includes('event') || tabLower.includes('ama')) {
+      return (
+        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
+          <div className="rounded-2xl border p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">Live Stage & Broadcasts</span>
+            </div>
+            <h4 className="text-sm sm:text-base font-bold text-white">
+              {topVideoTitle ? `Live Stream: ${topVideoTitle}` : `${creatorName} Live Community Broadcast`}
+            </h4>
+            <p className="text-xs text-slate-300">
+              Join the live stream on YouTube and connect with fellow viewers in real time.
+            </p>
+            {creatorUrl && (
+              <a 
+                href={creatorUrl}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition text-white bg-red-600 hover:bg-red-500"
+              >
+                <span>Open YouTube Live</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // Fallback for Products / other tabs
     return (
-      <div className="p-8 text-center text-slate-400">
-        <p className="text-xs">Selecting new layout modules...</p>
+      <div className="p-8 text-center text-slate-400 space-y-2">
+        <p className="text-xs font-medium text-white">{activeTab}</p>
+        <p className="text-xs text-slate-400">Content directly connected to {creatorName}'s channel.</p>
+        {creatorUrl && (
+          <a 
+            href={creatorUrl}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs hover:underline mt-2"
+            style={{ color: styles.accent }}
+          >
+            <span>Visit channel on YouTube</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
       </div>
     )
   }
@@ -868,10 +1195,12 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           {/* Mobile Hero Banner */}
           <div className="px-3.5 py-3 flex-shrink-0 text-center border-b border-[#222634] bg-gradient-to-b from-[#161922] to-[#12141c]">
             <h3 className="text-sm font-bold leading-tight tracking-tight mb-0.5 text-white">
-              {creatorName}'s Space
+              {blueprint.name}
             </h3>
-            <p className="text-[11px] text-slate-400">
-              Exclusive masterclasses, drops & direct chats.
+            <p className="text-[11px] text-slate-400 line-clamp-2">
+              {creatorData?.description 
+                ? (creatorData.description.length > 100 ? creatorData.description.slice(0, 100) + '...' : creatorData.description)
+                : 'Official community space and latest video releases.'}
             </p>
           </div>
           {renderTabContent()}
@@ -932,7 +1261,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           </div>
           <div>
             <h2 className="font-bold text-lg text-white leading-tight">{blueprint.name}</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Exclusive community & masterclasses</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {creatorData?.niche ? `${creatorData.niche} · ` : ''}Official Member Space & Video Hub
+            </p>
           </div>
         </div>
 
@@ -980,7 +1311,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             Welcome to {blueprint.name}
           </h3>
           <p className="text-sm text-slate-400 leading-relaxed max-w-2xl relative z-10">
-            Get direct access to step-by-step masterclasses, visual assets, and monthly live AMAs hosted by {creatorName}.
+            {creatorData?.description 
+              ? (creatorData.description.length > 220 ? creatorData.description.slice(0, 220) + '...' : creatorData.description)
+              : `Connect with fellow members, explore official releases, and participate in community discussions with ${creatorName}.`}
           </p>
         </div>
       </div>
@@ -1043,6 +1376,9 @@ export default function Preview() {
   const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
   const isLight = isLightColor(dynamicAccent)
 
+  const creatorUrl = getCreatorChannelUrl(creatorData)
+  const cleanCreatorUrlDisplay = creatorUrl.replace(/^https?:\/\/(www\.)?/, '')
+
   const showToast = (msg) => {
     setToastMessage(msg)
     setTimeout(() => {
@@ -1051,36 +1387,46 @@ export default function Preview() {
   }
 
   const [currentBlueprint, setCurrentBlueprint] = useState(() => {
-    return creatorData.blueprint || {
-      name: `${creatorData.name || 'Creator'}'s Space`,
+    const rawBp = creatorData.blueprint
+    const isEdu = isEducationalCreator(creatorData)
+    const creatorName = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
+
+    if (rawBp && !isEdu && (rawBp.name?.includes('Masterclass') || rawBp.name?.includes('Academy') || rawBp.type === 'Course Platform')) {
+      return {
+        ...rawBp,
+        name: `${creatorName}'s Community Hub`,
+        type: 'Membership Community',
+        preview: 'community',
+        features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
+      }
+    }
+    return rawBp || {
+      name: `${creatorName}'s Space`,
       type: 'Membership',
       preview: 'community',
-      features: ['Private forum', 'Tiered tiers', 'Monthly AMAs', 'Exclusive perks']
+      features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
     }
   })
 
-  const [activeTab, setActiveTab] = useState(() => {
-    const p = currentBlueprint.preview || 'community'
-    if (p === 'webapp') return 'Courses'
-    if (p === 'mobile') return 'Home Feed'
-    if (p === 'store') return 'All Products'
-    return 'Announcements'
-  })
-
-  const [viewMode, setViewMode] = useState('desktop') // 'desktop' | 'mobile' | 'dashboard'
+  const [viewMode, setViewMode] = useState('desktop') // 'desktop' | 'mobile'
   const isMobileView = viewMode === 'mobile'
   const [extraTabs, setExtraTabs] = useState(() => creatorData.extraTabs || [])
   const [localFeatures, setLocalFeatures] = useState(() => {
-    return currentBlueprint.features || ['Private forum', 'Tiered tiers', 'Monthly AMAs', 'Exclusive perks']
+    const isEdu = isEducationalCreator(creatorData)
+    if (!isEdu && currentBlueprint.features?.some(f => f.includes('Course') || f.includes('worksheet') || f.includes('Certificate'))) {
+      return ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
+    }
+    return currentBlueprint.features || ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
   })
 
+  const analyzedTabs = getAnalyzedTabsForCreator(creatorData, currentBlueprint, extraTabs)
+  const [activeTab, setActiveTab] = useState(() => analyzedTabs[0] || 'Community')
+
   useEffect(() => {
-    const previewType = currentBlueprint.preview || 'webapp'
-    if (previewType === 'webapp') setActiveTab('Courses')
-    else if (previewType === 'mobile') setActiveTab('Home Feed')
-    else if (previewType === 'community') setActiveTab('Announcements')
-    else if (previewType === 'store') setActiveTab('All Products')
-  }, [currentBlueprint.preview])
+    if (!analyzedTabs.includes(activeTab)) {
+      setActiveTab(analyzedTabs[0] || 'Community')
+    }
+  }, [analyzedTabs, activeTab])
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
@@ -1117,11 +1463,7 @@ export default function Preview() {
       const nextBp = variations[nextIdx]
       setCurrentBlueprint(nextBp)
       setLocalFeatures(nextBp.features)
-
-      if (nextBp.preview === 'webapp') setActiveTab('Courses')
-      else if (nextBp.preview === 'mobile') setActiveTab('Home Feed')
-      else if (nextBp.preview === 'community') setActiveTab('Announcements')
-      else if (nextBp.preview === 'store') setActiveTab('All Products')
+      setActiveTab('Community')
 
       const updated = {
         ...creatorData,
@@ -1140,42 +1482,137 @@ export default function Preview() {
       return
     }
 
-    if (p.includes('premium')) setTheme('premium')
-    else if (p.includes('minimalist') || p.includes('minimal')) setTheme('minimalist')
-    else if (p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25')) setTheme('feminine')
-    else if (p.includes('light') || p.includes('paper')) setTheme('light')
-    else if (p.includes('dark') || p.includes('graphite')) setTheme('dark')
+    let updatedFeatures = [...localFeatures]
+    let updatedTabs = [...extraTabs]
+    let updatedTheme = theme
+    let updatedViewMode = viewMode
+
+    if (p.includes('premium')) {
+      updatedTheme = 'premium'
+      setTheme('premium')
+      if (!updatedFeatures.includes('Exclusive perks')) updatedFeatures.push('Exclusive perks')
+      if (!updatedFeatures.includes('Tiered memberships')) updatedFeatures.push('Tiered memberships')
+    } else if (p.includes('minimalist') || p.includes('minimal')) {
+      updatedTheme = 'minimalist'
+      setTheme('minimalist')
+    } else if (p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25')) {
+      updatedTheme = 'feminine'
+      setTheme('feminine')
+    } else if (p.includes('light') || p.includes('paper')) {
+      updatedTheme = 'light'
+      setTheme('light')
+    } else if (p.includes('dark') || p.includes('graphite')) {
+      updatedTheme = 'dark'
+      setTheme('dark')
+    }
 
     if (p.includes('community')) {
-      setActiveTab('Announcements')
-      showToast("Focused layout on community discussion")
+      setActiveTab('Community')
+      if (!updatedFeatures.includes('Community forum')) updatedFeatures.push('Community forum')
+      if (!updatedFeatures.includes('Member discussions')) updatedFeatures.push('Member discussions')
     }
 
     if (p.includes('mobile') || p.includes('phone') || p.includes('handheld')) {
+      updatedViewMode = 'mobile'
       setViewMode('mobile')
-      showToast("Switched to mobile viewport")
-    } else if (p.includes('dashboard') || p.includes('admin') || p.includes('creator os')) {
-      setViewMode('dashboard')
-      showToast("Switched to Creator OS")
     } else if (p.includes('desktop') || p.includes('web')) {
+      updatedViewMode = 'desktop'
       setViewMode('desktop')
-      showToast("Switched to Member Web")
     }
 
     if (p.includes('podcast')) {
-      if (!extraTabs.includes('Podcast')) {
-        setExtraTabs(prev => [...prev, 'Podcast'])
-        setLocalFeatures(prev => prev.includes('Podcast section') ? prev : [...prev, 'Podcast section'])
-        setActiveTab('Podcast')
-        showToast("Added Podcast section to blueprint")
-      }
+      if (!updatedTabs.includes('Podcast')) updatedTabs.push('Podcast')
+      if (!updatedFeatures.includes('Podcast section')) updatedFeatures.push('Podcast section')
+      setActiveTab('Podcast')
     }
+
+    if (p.includes('live') || p.includes('ama') || p.includes('stream') || p.includes('event')) {
+      if (!updatedTabs.includes('Live AMAs')) updatedTabs.push('Live AMAs')
+      if (!updatedFeatures.includes('Live events & AMAs')) updatedFeatures.push('Live events & AMAs')
+      setActiveTab('Live AMAs')
+    }
+
+    if (p.includes('product') || p.includes('store') || p.includes('merch') || p.includes('download')) {
+      if (!updatedTabs.includes('Products')) updatedTabs.push('Products')
+      if (!updatedFeatures.includes('Digital products & store')) updatedFeatures.push('Digital products & store')
+      setActiveTab('Products')
+    }
+
+    setLocalFeatures(updatedFeatures)
+    setExtraTabs(updatedTabs)
+
+    const updatedBp = {
+      ...currentBlueprint,
+      features: updatedFeatures
+    }
+    setCurrentBlueprint(updatedBp)
+
+    const updatedData = {
+      ...creatorData,
+      blueprint: updatedBp,
+      productName: updatedBp.name,
+      features: updatedFeatures,
+      extraTabs: updatedTabs,
+      theme: updatedTheme,
+      viewMode: updatedViewMode,
+      isMobileView: updatedViewMode === 'mobile'
+    }
+    updateCreator(updatedData)
+    try {
+      localStorage.setItem('forge_creator_data', JSON.stringify(updatedData))
+    } catch {}
   }
+
+  const handleToggleFeature = (label) => {
+    let updatedFeatures;
+    let updatedTabs = [...extraTabs];
+    
+    const matchedPreset = CAPABILITY_PRESETS.find(p => 
+      p.label === label || 
+      label.toLowerCase().includes(p.label.toLowerCase()) ||
+      (p.tab && label.toLowerCase().includes(p.tab.toLowerCase()))
+    );
+    const tabName = matchedPreset?.tab;
+
+    if (localFeatures.includes(label)) {
+      updatedFeatures = localFeatures.filter(f => f !== label);
+      if (tabName && updatedTabs.includes(tabName)) {
+        updatedTabs = updatedTabs.filter(t => t !== tabName);
+        if (activeTab === tabName) setActiveTab('Community');
+      }
+      showToast(`Removed "${label}" from build`);
+    } else {
+      updatedFeatures = [...localFeatures, label];
+      if (tabName && !updatedTabs.includes(tabName)) {
+        updatedTabs.push(tabName);
+        setActiveTab(tabName);
+      }
+      showToast(`Added "${label}" to build`);
+    }
+
+    setLocalFeatures(updatedFeatures);
+    setExtraTabs(updatedTabs);
+
+    const updatedBp = { ...currentBlueprint, features: updatedFeatures };
+    setCurrentBlueprint(updatedBp);
+
+    const updatedData = {
+      ...creatorData,
+      blueprint: updatedBp,
+      features: updatedFeatures,
+      extraTabs: updatedTabs,
+      productName: updatedBp.name
+    };
+    updateCreator(updatedData);
+    try {
+      localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
+    } catch {}
+  };
 
   const handlePromptSend = () => {
     if (!prompt.trim()) return
     setIsRegenerating(true)
-    showToast("Forge AI is applying your changes...")
+    showToast("Applying custom modification...")
     setAppliedPrompts(prev => [...prev, prompt])
     const currentPrompt = prompt
     setPrompt('')
@@ -1183,8 +1620,8 @@ export default function Preview() {
     setTimeout(() => {
       processPrompt(currentPrompt)
       setIsRegenerating(false)
-      showToast("Layout successfully updated!")
-    }, 1000)
+      showToast("Build architecture updated!")
+    }, 400)
   }
 
   const handleQuickPrompt = (p) => {
@@ -1197,12 +1634,21 @@ export default function Preview() {
     setTimeout(() => {
       processPrompt(p)
       setIsRegenerating(false)
-    }, 1000)
+    }, 400)
   }
 
-  const applyChipToInput = (chip) => {
-    setPrompt(chip)
-    showToast(`Added prompt: "${chip}"`)
+  const handleChipClick = (chip) => {
+    setIsRegenerating(true)
+    showToast(`Applying "${chip}"...`)
+
+    setTimeout(() => {
+      processPrompt(chip)
+      if (!appliedPrompts.includes(chip)) {
+        setAppliedPrompts(prev => [...prev, chip])
+      }
+      setIsRegenerating(false)
+      showToast(`Applied: "${chip}"`)
+    }, 350)
   }
 
   const removeAppliedPrompt = (promptText) => {
@@ -1211,35 +1657,69 @@ export default function Preview() {
       setAppliedPrompts(prev => prev.filter(x => x !== promptText))
       const p = promptText.toLowerCase()
       
+      let updatedFeatures = [...localFeatures]
+      let updatedTabs = [...extraTabs]
+
       if (p.includes('premium') || p.includes('minimalist') || p.includes('minimal') || 
           p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25') ||
           p.includes('light') || p.includes('paper') || p.includes('dark') || p.includes('graphite')) {
         setTheme('dark')
       }
 
-      if (p.includes('mobile') || p.includes('phone') || p.includes('handheld') || p.includes('dashboard') || p.includes('admin') || p.includes('creator os')) {
+      if (p.includes('mobile') || p.includes('phone') || p.includes('handheld')) {
         setViewMode('desktop')
       }
 
       if (p.includes('podcast')) {
-        setExtraTabs(prev => prev.filter(x => x !== 'Podcast'))
-        setLocalFeatures(prev => prev.filter(x => x !== 'Podcast section'))
-        setActiveTab('Courses')
+        updatedTabs = updatedTabs.filter(x => x !== 'Podcast')
+        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('podcast'))
+        setExtraTabs(updatedTabs)
+        setLocalFeatures(updatedFeatures)
+        setActiveTab('Community')
       }
+
+      if (p.includes('live') || p.includes('ama') || p.includes('event')) {
+        updatedTabs = updatedTabs.filter(x => x !== 'Live AMAs')
+        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('live') && !x.toLowerCase().includes('ama') && !x.toLowerCase().includes('event'))
+        setExtraTabs(updatedTabs)
+        setLocalFeatures(updatedFeatures)
+        setActiveTab('Community')
+      }
+
+      if (p.includes('product') || p.includes('store') || p.includes('merch')) {
+        updatedTabs = updatedTabs.filter(x => x !== 'Products')
+        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('product') && !x.toLowerCase().includes('store') && !x.toLowerCase().includes('merch'))
+        setExtraTabs(updatedTabs)
+        setLocalFeatures(updatedFeatures)
+        setActiveTab('Community')
+      }
+
+      const updatedBp = { ...currentBlueprint, features: updatedFeatures }
+      setCurrentBlueprint(updatedBp)
+
+      const updatedData = {
+        ...creatorData,
+        blueprint: updatedBp,
+        features: updatedFeatures,
+        extraTabs: updatedTabs
+      }
+      updateCreator(updatedData)
+      try {
+        localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
+      } catch {}
+
       setIsRegenerating(false)
       showToast("Refinement removed")
-    }, 600)
+    }, 350)
   }
 
   const handleSwitchView = (mode) => {
     setViewMode(mode)
     if (mode === 'desktop') {
-      setAppliedPrompts(prev => prev.filter(p => !p.toLowerCase().includes('mobile') && !p.toLowerCase().includes('dashboard')))
+      setAppliedPrompts(prev => prev.filter(p => !p.toLowerCase().includes('mobile')))
       showToast("Switched to Member Web preview")
     } else if (mode === 'mobile') {
       showToast("Switched to Member Mobile preview")
-    } else if (mode === 'creator' || mode === 'dashboard') {
-      showToast("Switched to Creator OS preview")
     }
   }
 
@@ -1297,24 +1777,12 @@ export default function Preview() {
             <Smartphone className="w-3.5 h-3.5" />
             <span>Member Mobile</span>
           </button>
-          <button 
-            onClick={() => handleSwitchView('dashboard')}
-            className="flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer"
-            style={{
-              background: viewMode === 'dashboard' ? dynamicAccent : 'transparent',
-              color: viewMode === 'dashboard' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
-              boxShadow: viewMode === 'dashboard' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
-            }}
-          >
-            <Wand2 className="w-3.5 h-3.5" />
-            <span>Creator OS</span>
-          </button>
         </div>
 
         {/* Right Header Badges & Actions */}
         <div className="flex items-center space-x-3">
           <div className="hidden lg:flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Generated v2.4</span>
           </div>
 
@@ -1381,13 +1849,6 @@ export default function Preview() {
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                 </button>
-                <button 
-                  onClick={() => handleSwitchView('dashboard')}
-                  className="p-1.5 rounded-lg text-xs"
-                  style={{ background: viewMode === 'dashboard' ? dynamicAccent : 'transparent', color: viewMode === 'dashboard' ? '#000' : '#888' }}
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                </button>
               </div>
 
               <button 
@@ -1419,16 +1880,19 @@ export default function Preview() {
               </div>
 
               <div className="flex-1 max-w-md mx-4">
-                <div className="bg-[#0b0c10] border border-[#222634] rounded-lg px-4 py-1.5 text-xs text-slate-400 text-center truncate flex items-center justify-center space-x-2 shadow-inner">
+                <a 
+                  href={creatorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#0b0c10] hover:bg-[#161922] border border-[#222634] hover:border-slate-600 rounded-lg px-4 py-1.5 text-xs text-slate-300 text-center truncate flex items-center justify-center space-x-2 shadow-inner transition cursor-pointer group"
+                  title="Open Creator Channel on YouTube"
+                >
                   <Lock className="w-3 h-3 flex-shrink-0" style={{ color: dynamicAccent }} />
-                  <span id="browser-url" className="truncate font-mono">
-                    {viewMode === 'dashboard' 
-                      ? `${currentBlueprint.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.creator.studio`
-                      : viewMode === 'mobile'
-                        ? `m.${currentBlueprint.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.app`
-                        : `${currentBlueprint.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.forge.app`}
+                  <span id="browser-url" className="truncate font-mono group-hover:underline" style={{ color: dynamicAccent }}>
+                    {cleanCreatorUrlDisplay}
                   </span>
-                </div>
+                  <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-slate-300 flex-shrink-0" />
+                </a>
               </div>
 
               <div className="flex items-center space-x-3 text-slate-400 text-xs">
@@ -1536,50 +2000,125 @@ export default function Preview() {
         <div className="lg:col-span-4 flex flex-col space-y-6">
           
           {/* What's Included Card */}
-          <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-5 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">What's Included</h3>
-              <div className="flex items-center space-x-1.5">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: dynamicAccent }} />
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: dynamicAccent }} />
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: dynamicAccent }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+          <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-5 shadow-lg flex flex-col space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">What's Included</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Active capabilities configured for your build</p>
               </div>
+              <span 
+                className="text-[10px] px-2.5 py-1 rounded-lg font-mono font-bold border"
+                style={{ 
+                  background: dynamicAccentBg, 
+                  color: dynamicAccent,
+                  borderColor: dynamicAccentBorder
+                }}
+              >
+                {localFeatures.length} Active
+              </span>
             </div>
 
-            <div className="space-y-2.5">
+            {/* Active modules list with interactive toggles */}
+            <div className="space-y-2">
               {localFeatures.map(label => {
-                const matched = FEATURES.find(f => f.label === label)
+                const matched = FEATURES.find(f => f.label.toLowerCase() === label.toLowerCase()) ||
+                                CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
                 const Icon = matched ? matched.icon : Layout
                 return (
                   <div 
                     key={label} 
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#161922] border border-[#222634]/60 hover:border-[#222634] transition"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#161922] border border-[#222634] hover:border-slate-700 transition group"
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0 pr-2">
                       <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs shadow-sm border"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs shadow-sm border flex-shrink-0"
                         style={{ 
                           background: dynamicAccentBg, 
                           color: dynamicAccent,
                           borderColor: dynamicAccentBorder
                         }}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-sm font-medium text-slate-200">{label}</span>
+                      <span className="text-xs font-medium text-slate-200 truncate">{label}</span>
                     </div>
-                    <Check className="w-4 h-4 text-emerald-400" />
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeature(label)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer flex-shrink-0"
+                      title={`Remove "${label}" from build`}
+                    >
+                      <X className="w-3.5 h-3.5 group-hover:block hidden" />
+                      <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden block" />
+                    </button>
                   </div>
                 )
               })}
             </div>
+
+            {/* Available Capabilities that can be added */}
+            {(() => {
+              const unadded = CAPABILITY_PRESETS.filter(p => 
+                !localFeatures.some(f => f.toLowerCase() === p.label.toLowerCase() || f.toLowerCase().includes(p.label.toLowerCase()))
+              )
+              if (unadded.length === 0) return null
+              return (
+                <div className="pt-3 border-t border-[#222634]/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Add More Modules
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      Click to include
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {unadded.map(preset => {
+                      const PresetIcon = preset.icon
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => handleToggleFeature(preset.label)}
+                          className="w-full flex items-center justify-between p-2 rounded-xl bg-[#161922]/50 hover:bg-[#161922] border border-[#222634]/60 hover:border-slate-600 transition text-left group cursor-pointer"
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs bg-[#12141c] border border-[#222634] text-slate-400 group-hover:text-white transition flex-shrink-0">
+                              <PresetIcon className="w-3 h-3" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-medium text-slate-300 group-hover:text-white block truncate">
+                                {preset.label}
+                              </span>
+                              <span className="text-[10px] text-slate-500 block truncate">
+                                {preset.desc}
+                              </span>
+                            </div>
+                          </div>
+                          <div 
+                            className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition border group-hover:scale-105"
+                            style={{ 
+                              background: dynamicAccentBg, 
+                              color: dynamicAccent,
+                              borderColor: dynamicAccentBorder
+                            }}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Refine with Forge Card */}
           <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-5 shadow-lg flex flex-col flex-1 justify-between">
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Refine with Forge</h3>
                 <span 
                   className="text-[10px] px-2 py-0.5 rounded-md font-bold border"
@@ -1592,34 +2131,67 @@ export default function Preview() {
                   AI ASSISTANT
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                Click chips to apply instant style modifications or type custom instructions below.
+              <p className="text-xs text-slate-400 mb-3.5 leading-relaxed">
+                Click any refinement chip or type custom commands to instantly tailor your application build.
               </p>
               
-              {/* Prompt Chips */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {QUICK_PROMPTS.map(chip => (
-                  <button 
-                    key={chip}
-                    onClick={() => applyChipToInput(chip)}
-                    className="text-xs px-3 py-1.5 rounded-xl bg-[#161922] hover:bg-[#1f2430] border border-[#222634] hover:border-slate-600 text-slate-300 transition-all cursor-pointer shadow-sm active:scale-95"
-                  >
-                    {chip === 'Make it more premium' && '✨ '}
-                    {chip === 'Focus on community' && '👥 '}
-                    {chip === 'More minimalist' && '⚪ '}
-                    {chip === 'For women 25-34' && '🎯 '}
-                    {chip === 'Mobile-first' && '📱 '}
-                    {chip === 'Add a podcast section' && '🎙️ '}
-                    {chip}
-                  </button>
-                ))}
+              {/* Interactive Dynamic Prompt Chips */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {QUICK_PROMPTS.map(chip => {
+                  const isChipApplied = appliedPrompts.includes(chip)
+                  const isPodcastChip = chip.toLowerCase().includes('podcast') && localFeatures.some(f => f.toLowerCase().includes('podcast'))
+                  const isLiveChip = chip.toLowerCase().includes('live') && localFeatures.some(f => f.toLowerCase().includes('live') || f.toLowerCase().includes('ama'))
+                  const isStoreChip = chip.toLowerCase().includes('store') && localFeatures.some(f => f.toLowerCase().includes('store') || f.toLowerCase().includes('product'))
+                  const isMobileChip = chip.toLowerCase().includes('mobile') && viewMode === 'mobile'
+                  const isCommunityChip = chip.toLowerCase().includes('community') && activeTab === 'Community'
+                  const isPremiumChip = chip.toLowerCase().includes('premium') && theme === 'premium'
+                  const isMinimalistChip = chip.toLowerCase().includes('minimalist') && theme === 'minimalist'
+
+                  const isActive = isChipApplied || isPodcastChip || isLiveChip || isStoreChip || isMobileChip || isCommunityChip || isPremiumChip || isMinimalistChip
+
+                  return (
+                    <button 
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        if (isActive) {
+                          removeAppliedPrompt(chip)
+                        } else {
+                          handleChipClick(chip)
+                        }
+                      }}
+                      className="text-xs px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                      style={isActive ? {
+                        background: dynamicAccentBg,
+                        borderColor: dynamicAccentBorder,
+                        color: dynamicAccent,
+                        fontWeight: 600
+                      } : {
+                        background: '#161922',
+                        borderColor: '#222634',
+                        color: '#cbd5e1'
+                      }}
+                      title={isActive ? `Click to remove "${chip}"` : `Click to apply "${chip}"`}
+                    >
+                      {chip === 'Focus on community' && '👥 '}
+                      {chip === 'More minimalist' && '⚪ '}
+                      {chip === 'For women 25-34' && '🎯 '}
+                      {chip === 'Mobile-first' && '📱 '}
+                      {chip === 'Add a podcast section' && '🎙️ '}
+                      {chip === 'Add live events' && '🔴 '}
+                      {chip === 'Add digital store' && '🛍️ '}
+                      <span>{chip}</span>
+                      {isActive && <Check className="w-3 h-3 stroke-[3]" />}
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Input Area */}
               <div className="relative mb-3">
                 <textarea 
                   rows={3} 
-                  placeholder="Describe a change (e.g. Creator OS, add dark mode toggle...)" 
+                  placeholder="Describe a change (e.g. Add podcast section, switch to mobile, add dark mode...)" 
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
                   onKeyDown={e => {
@@ -1631,6 +2203,7 @@ export default function Preview() {
                   className="w-full bg-[#161922] border border-[#222634] focus:border-slate-500 rounded-xl p-3 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none resize-none shadow-inner transition"
                 />
                 <button 
+                  type="button"
                   onClick={handlePromptSend}
                   disabled={!prompt.trim()}
                   className="absolute right-3 bottom-4 p-2 rounded-lg transition border border-[#222634] bg-[#12141c] hover:bg-[#1f2430] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
@@ -1643,6 +2216,7 @@ export default function Preview() {
 
               {/* Regenerate Button */}
               <button 
+                type="button"
                 onClick={() => handleQuickPrompt('Regenerate')}
                 disabled={isRegenerating}
                 className="w-full bg-[#161922] hover:bg-[#1f2430] font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-sm border cursor-pointer active:scale-95 disabled:opacity-40"
@@ -1659,13 +2233,17 @@ export default function Preview() {
             {/* Final Action CTA Button */}
             <div className="mt-6 pt-4 border-t border-[#222634]">
               <button 
+                type="button"
                 onClick={() => {
                   const finalPayload = {
-                    blueprint: currentBlueprint,
+                    blueprint: {
+                      ...currentBlueprint,
+                      features: localFeatures
+                    },
                     productName: currentBlueprint.name,
                     features: localFeatures,
                     theme,
-                    isMobileView,
+                    isMobileView: viewMode === 'mobile',
                     viewMode,
                     extraTabs,
                   };

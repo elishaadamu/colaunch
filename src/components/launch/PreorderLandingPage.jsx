@@ -464,7 +464,7 @@ export default function PreorderLandingPage({ slug }) {
       {/* Floating Backend Sync Status Pill */}
       {isLoading && (
         <div
-          className="fixed top-4 right-4 z-[9999] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#101419]/90 border backdrop-blur-md shadow-lg shadow-black/50 text-xs font-mono animate-pulse"
+          className="fixed top-4 right-4 z-[9999] flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#101419]/90 border backdrop-blur-md shadow-lg shadow-black/50 text-xs font-mono"
           style={{ borderColor: `${brandColor}60`, color: brandColor }}
         >
           <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: brandColor }} />

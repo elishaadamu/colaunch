@@ -475,7 +475,7 @@ export default function DashboardLayout() {
         onClose={() => setDiyModalOpen(false)}
         project={{
           creatorName: creatorData.name || creatorData.handle,
-          productName: creatorData.productName || 'Creator OS',
+          productName: creatorData.productName || 'Creator Platform',
           diyFee: 50,
           diyPassPrice: 50
         }}
