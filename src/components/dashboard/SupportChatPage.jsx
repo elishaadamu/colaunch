@@ -29,21 +29,29 @@ export default function SupportChatPage() {
   const niche = creatorData?.niche || 'Digital Creator'
   const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'Growing'
 
-  // Load chat history by creatorId
+  // Load and poll chat history by creatorId
   useEffect(() => {
     let active = true
-    fetchSupportHistory(creatorData).then(msgs => {
-      if (active && msgs) {
-        setMessages(msgs)
-      }
-    })
+    const loadHistory = () => {
+      fetchSupportHistory(creatorData).then(msgs => {
+        if (active && msgs) {
+          setMessages(msgs)
+        }
+      })
+    }
+    loadHistory()
+    const pollInterval = setInterval(loadHistory, 3500)
+
     // Also fetch backend status
     fetch('/api/support/status')
       .then(r => r.json())
       .then(d => { if (active) setSupportStatus(d) })
       .catch(() => {})
 
-    return () => { active = false }
+    return () => { 
+      active = false 
+      clearInterval(pollInterval)
+    }
   }, [creatorId, handle])
 
   useEffect(() => {
@@ -311,6 +319,7 @@ export default function SupportChatPage() {
               <>
                 {messages.map((m, idx) => {
                   const isUser = m.sender === 'user'
+                  const isAdmin = m.sender === 'admin'
                   return (
                     <div 
                       key={m.id || idx} 
@@ -322,13 +331,18 @@ export default function SupportChatPage() {
                             <span className="font-bold">{creatorName}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
+                        ) : isAdmin ? (
+                          <>
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="font-bold text-emerald-400">Support Operations (Human Reply)</span>
+                          </>
                         ) : (
                           <>
                             <Bot className="w-3 h-3" style={{ color: accent.color }} />
                             <span className="font-bold" style={{ color: accent.color }}>CoLaunch AI Support</span>
                             {m.escalated && (
                               <span className="text-amber-400 font-bold ml-1.5 px-1.5 py-0.2 rounded bg-amber-950/60 border border-amber-800/40">
-                                Escalated to Admin
+                                Escalated to Team
                               </span>
                             )}
                           </>
@@ -339,7 +353,9 @@ export default function SupportChatPage() {
                         className={`rounded-2xl p-4 text-xs sm:text-[13px] leading-relaxed max-w-[85%] shadow-sm ${
                           isUser 
                             ? 'bg-blue-600 text-white rounded-br-sm' 
-                            : 'bg-[#131824] text-slate-200 border border-[#212b3e] rounded-bl-sm'
+                            : isAdmin
+                              ? 'bg-[#101b24] text-white border border-emerald-500/40 rounded-bl-sm shadow-md'
+                              : 'bg-[#131824] text-slate-200 border border-[#212b3e] rounded-bl-sm'
                         }`}
                         style={isUser ? { background: accent.color, color: '#ffffff' } : {}}
                       >

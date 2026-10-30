@@ -25,15 +25,22 @@ export default function SupportWidget({ currentStage }) {
   const handle = creatorData?.handle || '@creator'
   const creatorId = getCreatorId(creatorData)
 
-  // Load chat history on mount and when creator changes
+  // Load and poll chat history
   useEffect(() => {
     let active = true
-    fetchSupportHistory(creatorData).then(msgs => {
-      if (active && msgs) {
-        setMessages(msgs)
-      }
-    })
-    return () => { active = false }
+    const loadHistory = () => {
+      fetchSupportHistory(creatorData).then(msgs => {
+        if (active && msgs) {
+          setMessages(msgs)
+        }
+      })
+    }
+    loadHistory()
+    const pollTimer = setInterval(loadHistory, 3500)
+    return () => { 
+      active = false 
+      clearInterval(pollTimer)
+    }
   }, [creatorId, creatorData?.handle])
 
   // Scroll to bottom when messages update
@@ -248,6 +255,7 @@ export default function SupportWidget({ currentStage }) {
               <>
                 {messages.map((m, idx) => {
                   const isUser = m.sender === 'user'
+                  const isAdmin = m.sender === 'admin'
                   return (
                     <div 
                       key={m.id || idx} 
@@ -258,6 +266,11 @@ export default function SupportWidget({ currentStage }) {
                           <>
                             <span>You</span>
                             <User className="w-3 h-3 text-slate-400" />
+                          </>
+                        ) : isAdmin ? (
+                          <>
+                            <ShieldAlert className="w-3 h-3 text-emerald-400" />
+                            <span className="font-bold text-emerald-400">Support Team (Human Reply)</span>
                           </>
                         ) : (
                           <>
@@ -274,7 +287,9 @@ export default function SupportWidget({ currentStage }) {
                         className={`rounded-2xl p-3 text-xs leading-relaxed max-w-[88%] shadow-sm ${
                           isUser 
                             ? 'bg-blue-600 text-white rounded-br-sm' 
-                            : 'bg-[#151c29] text-slate-200 border border-[#232d42] rounded-bl-sm'
+                            : isAdmin
+                              ? 'bg-[#121c27] text-white border border-emerald-500/40 rounded-bl-sm shadow-md'
+                              : 'bg-[#151c29] text-slate-200 border border-[#232d42] rounded-bl-sm'
                         }`}
                         style={isUser ? { background: accent.color, color: '#ffffff' } : {}}
                       >
