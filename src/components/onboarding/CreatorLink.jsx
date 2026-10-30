@@ -17,7 +17,8 @@ import {
   Trash2,
   Clock,
   Terminal,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react'
 import { startScrape } from '../../services/scraper'
 
@@ -525,10 +526,7 @@ export default function CreatorLink() {
                 </span>
               ) : (
                 <span className="flex items-center gap-2 font-mono">
-                  <svg className="animate-spin h-4 w-4 text-[#0d1403]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#0d1403]" />
                   <span>Scraping account data · [ 00:0{((scrapeElapsedMs || 0)/1000).toFixed(2)}s ]</span>
                 </span>
               )}
@@ -603,8 +601,7 @@ export default function CreatorLink() {
                     </div>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-[#8bae35]/10 text-[#8bae35] border border-[#8bae35]/30 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35] animate-pulse" />
+                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-[#8bae35]/10 text-[#8bae35] border border-[#8bae35]/30">
                   Live Connected
                 </span>
               </div>
@@ -643,7 +640,6 @@ export default function CreatorLink() {
                     className="text-[#8bae35] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Moving to Step 2</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35] animate-ping" />
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>

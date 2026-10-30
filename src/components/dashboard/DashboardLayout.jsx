@@ -78,25 +78,27 @@ function DashboardAppPreview() {
       <div className="flex-1 w-full max-w-4xl flex items-center justify-center overflow-hidden">
         {isMobileView ? (
           <div
-            className="relative rounded-[36px] border-[8px] shadow-2xl overflow-hidden flex flex-col"
+            className="relative rounded-[40px] p-[8px] shadow-2xl transition-all duration-300 ring-1 ring-white/10"
             style={{
-              width: '300px',
-              height: '520px',
-              borderColor: 'var(--theme-border-color)',
-              background: '#000',
+              width: '320px',
+              height: '540px',
+              background: 'var(--theme-border-color)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)'
             }}
           >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-[#141414] rounded-b-xl z-20" />
-            <div className="flex-1 overflow-hidden">
-              <AppMockup
-                theme={theme}
-                activeTab={mockupActiveTab}
-                setActiveTab={setMockupActiveTab}
-                blueprint={blueprint}
-                creatorData={creatorData}
-                extraTabs={extraTabs}
-                isMobile={true}
-              />
+            <div className="w-full h-full rounded-[32px] overflow-hidden bg-[#0f1117] flex flex-col relative [isolation:isolate]">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-[#141414] rounded-b-xl z-20 pointer-events-none" />
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <AppMockup
+                  theme={theme}
+                  activeTab={mockupActiveTab}
+                  setActiveTab={setMockupActiveTab}
+                  blueprint={blueprint}
+                  creatorData={creatorData}
+                  extraTabs={extraTabs}
+                  isMobile={true}
+                />
+              </div>
             </div>
           </div>
         ) : (

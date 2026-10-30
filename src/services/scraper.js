@@ -250,6 +250,11 @@ async function _doScrape(url, platform) {
     } catch {}
   }
 
+  let channelComments = []
+  try {
+    channelComments = await fetchCreatorComments(handle || url, platform, 10)
+  } catch {}
+
   return {
     platform: scraped.platform || platform,
     handle: scraped.handle?.startsWith('@') ? scraped.handle : `@${scraped.handle || handle}`,
@@ -266,6 +271,8 @@ async function _doScrape(url, platform) {
     heartCount: scraped.heartCount || scraped.heart_count || 0,
     niche: cleanNiche,
     engagementRate: extractDynamicEngagementRate(scraped, parsedFollowers),
+    comments: channelComments,
+    channelComments,
     recentPosts: (rawPosts || []).map(p => ({
       title: p.title || '',
       thumbnail: p.thumbnail || p.thumbnailUrl || '',
@@ -347,6 +354,11 @@ async function _scrapeYouTubeApify(rawUrl, token) {
     engagementRate = parseFloat(Math.min((avgEng / followers) * 100, 25).toFixed(1)) || 3.5
   }
 
+  let channelComments = []
+  try {
+    channelComments = await fetchCreatorComments(handleRaw, 'youtube', 10)
+  } catch {}
+
   return {
     platform:       'youtube',
     handle:         handleRaw.startsWith('@') ? handleRaw : `@${handleRaw}`,
@@ -358,6 +370,8 @@ async function _scrapeYouTubeApify(rawUrl, token) {
     description,
     niche:          inferNicheFromDescription(description),
     engagementRate,
+    comments:       channelComments,
+    channelComments,
     recentPosts: videos.map(v => ({
       title:     v.title     || v.videoTitle  || '',
       thumbnail: v.thumbnailUrl || v.thumbnail || v.videoThumbnail || '',
@@ -876,7 +890,7 @@ export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
  * Fetch real audience comments for a creator's channel uploads across platforms.
  * Can take a creator handle, channel URL, or creator ID.
  */
-export async function fetchCreatorComments(handleOrId, platform = 'youtube', limit = 8) {
+export async function fetchCreatorComments(handleOrId, platform = 'youtube', limit = 10) {
   if (!handleOrId) return []
   const clean = String(handleOrId).replace(/^@/, '').trim()
   const cacheKey = `forge_creator_comments_${clean}`
@@ -889,16 +903,80 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
     }
   } catch (e) {}
 
+  const { apifyToken } = loadKeys()
+
+  // 1. Direct Apify Run if token is available
+  if (apifyToken) {
+    try {
+      let targetUrls = []
+      try {
+        const creatorRaw = localStorage.getItem('forge_creator_data')
+        if (creatorRaw) {
+          const cd = JSON.parse(creatorRaw)
+          if (Array.isArray(cd.recentPosts) && cd.recentPosts.length > 0) {
+            targetUrls = cd.recentPosts
+              .map(p => p.url || (p.videoId ? `https://www.youtube.com/watch?v=${p.videoId}` : null))
+              .filter(Boolean)
+          }
+        }
+      } catch {}
+
+      if (targetUrls.length > 0) {
+        const apifyRes = await apifyRunSync(
+          'streamers~youtube-comments-scraper',
+          { startUrls: targetUrls.slice(0, 2).map(url => ({ url })), maxComments: limit },
+          apifyToken,
+          45
+        )
+        if (Array.isArray(apifyRes) && apifyRes.length > 0) {
+          const formatted = apifyRes.map((c, i) => ({
+            id: c.commentId || c.id || `apify_${i}`,
+            author: c.authorChannelName || c.authorText || c.author || '@viewer',
+            text: (c.text || c.commentText || '').trim(),
+            likes: String(c.likesCount || c.likeCount || 0),
+            published: c.publishedTimeText || 'Recent',
+            time: c.publishedTimeText || 'Recent',
+            source: 'Apify YouTube Comments'
+          })).filter(c => c.text)
+
+          if (formatted.length > 0) {
+            try {
+              sessionStorage.setItem(cacheKey, JSON.stringify(formatted))
+              localStorage.setItem(cacheKey, JSON.stringify(formatted))
+            } catch {}
+            return formatted
+          }
+        }
+      }
+    } catch (apifyErr) {
+      console.warn('[Forge] Apify direct comments scraper error, using backend:', apifyErr)
+    }
+  }
+
+  // 2. FastAPI backend endpoint (backed by Innertube & Apify)
   try {
-    const res = await fetch(`/api/creators/youtube-comments?handle=${encodeURIComponent(clean)}&limit=${limit}`)
+    const headers = apifyToken ? { 'X-Apify-Token': apifyToken } : {}
+    const res = await fetch(`/api/creators/youtube-comments?handle=${encodeURIComponent(clean)}&limit=${limit}`, { headers })
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.comments) && data.comments.length > 0) {
+        const formatted = data.comments.map((c, i) => ({
+          id: c.id || `comm_${i}`,
+          author: c.author || '@viewer',
+          text: (c.text || c.quote || '').trim(),
+          likes: String(c.likes || 0),
+          published: c.published || 'Recent',
+          time: c.published || 'Recent',
+          videoId: c.videoId || '',
+          videoTitle: c.videoTitle || '',
+          source: c.source || 'YouTube'
+        })).filter(c => c.text)
+
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data.comments))
-          localStorage.setItem(cacheKey, JSON.stringify(data.comments))
+          sessionStorage.setItem(cacheKey, JSON.stringify(formatted))
+          localStorage.setItem(cacheKey, JSON.stringify(formatted))
         } catch (e) {}
-        return data.comments
+        return formatted
       }
     }
   } catch (e) {

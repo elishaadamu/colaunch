@@ -124,6 +124,10 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--theme-accent);
   }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @layer components {
