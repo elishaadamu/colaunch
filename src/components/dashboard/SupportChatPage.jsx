@@ -23,7 +23,9 @@ export default function SupportChatPage() {
 
   const accent = getAccent(creatorData)
   const creatorId = getCreatorId(creatorData)
-  const handle = creatorData?.handle || '@creator'
+  const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
+  const cleanHandle = rawHandle.replace(/^@+/, '')
+  const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
   const creatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
   const blueprintName = creatorData?.blueprint?.name || creatorData?.productName || 'Custom Platform'
   const niche = creatorData?.niche || 'Digital Creator'
@@ -174,7 +176,7 @@ export default function SupportChatPage() {
           </div>
 
           <button
-            onClick={() => handleEscalate(`Creator @${handle} clicked Escalate button in Dashboard Support Desk`)}
+            onClick={() => handleEscalate(`Creator ${handle} clicked Escalate button in Dashboard Support Desk`)}
             disabled={escalating}
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition cursor-pointer"
           >

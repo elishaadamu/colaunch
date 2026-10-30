@@ -11,6 +11,55 @@ import { ensureServerAiKeysLoaded } from './ai'
 const SESSION_KEY = 'forge_support_session_id'
 const LOCAL_CACHE_KEY = 'forge_support_messages_cache'
 
+const CORRUPTED_MARKERS = [
+  'CoLaunch Customer Support Alert',
+  'RECENT CONVERSATION HISTORY:',
+  'Dispatched via CoLaunch',
+  'A creator has requested administrator assistance',
+  'Admin Inbox:',
+  'CREATOR DETAILS:',
+]
+
+export function sanitizeMessages(messages) {
+  if (!Array.isArray(messages)) return []
+  const cleanList = []
+  const seenAdminTexts = new Set()
+
+  for (const m of messages) {
+    if (!m) continue
+    const msgText = m.message || ''
+    const msgLower = msgText.toLowerCase()
+
+    // Filter out internal system alert emails
+    const isCorrupted = CORRUPTED_MARKERS.some(marker => msgLower.includes(marker.toLowerCase()))
+    if (isCorrupted) continue
+
+    // Normalize handle
+    const rawHandle = m.creator_handle || ''
+    const cleanHandle = rawHandle.replace(/^@+/, '')
+    const normalizedHandle = cleanHandle ? `@${cleanHandle}` : ''
+
+    // Normalize message text (remove double @@)
+    const normalizedText = msgText.replace(/@@+/g, '@').trim()
+    if (!normalizedText) continue
+
+    // Deduplicate admin replies
+    if (m.sender === 'admin') {
+      const dedupeKey = normalizedText.toLowerCase()
+      if (seenAdminTexts.has(dedupeKey)) continue
+      seenAdminTexts.add(dedupeKey)
+    }
+
+    cleanList.push({
+      ...m,
+      creator_handle: normalizedHandle,
+      message: normalizedText,
+    })
+  }
+
+  return cleanList
+}
+
 export function getSupportSessionId() {
   try {
     let sid = localStorage.getItem(SESSION_KEY)
@@ -29,7 +78,7 @@ export function getCreatorId(creatorData) {
   if (creatorData.id) return creatorData.id
   if (creatorData.channelId) return creatorData.channelId
   if (creatorData._id) return creatorData._id
-  const cleanHandle = (creatorData.handle || creatorData.name || 'creator').replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
+  const cleanHandle = (creatorData.handle || creatorData.name || 'creator').replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
   return 'cr_' + cleanHandle
 }
 
@@ -39,10 +88,11 @@ function getLocalCachedMessages(sessionId, creatorId) {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(m => 
+    const matched = parsed.filter(m => 
       (sessionId && m.session_id === sessionId) ||
       (creatorId && m.creator_id === creatorId)
     )
+    return sanitizeMessages(matched)
   } catch {
     return []
   }
@@ -50,7 +100,8 @@ function getLocalCachedMessages(sessionId, creatorId) {
 
 function saveLocalCachedMessages(messages) {
   try {
-    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(messages.slice(-100)))
+    const cleaned = sanitizeMessages(messages)
+    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(cleaned.slice(-100)))
   } catch {}
 }
 
@@ -72,8 +123,9 @@ export async function fetchSupportHistory(creatorData) {
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.messages)) {
-        saveLocalCachedMessages(data.messages)
-        return data.messages
+        const cleaned = sanitizeMessages(data.messages)
+        saveLocalCachedMessages(cleaned)
+        return cleaned
       }
     }
   } catch (err) {
@@ -153,9 +205,12 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
     created_at: new Date().toISOString()
   }
 
+  const cleanHandle = (creatorHandle || creatorData?.handle || 'creator').replace(/^@+/, '')
+  const displayHandle = cleanHandle ? `@${cleanHandle}` : '@creator'
+
   const fallbackReply = forceEscalate
     ? `Your inquiry has been escalated directly to our dedicated support team. A team member will review your workspace and follow up with you promptly.`
-    : `I am your CoLaunch AI Assistant supporting @${creatorHandle || 'your channel'}. Your ${creatorData?.blueprint?.name || 'custom suite'} is currently configured for ${creatorData?.niche || 'your audience'}. If you need anything escalated to an admin, let me know!`
+    : `I am your CoLaunch AI Assistant supporting ${displayHandle}. Your ${creatorData?.blueprint?.name || 'custom suite'} is currently configured for ${creatorData?.niche || 'your audience'}. If you need anything escalated to an admin, let me know!`
 
   const botMsg = {
     id: 'ast_' + (Date.now() + 1),

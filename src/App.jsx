@@ -637,11 +637,33 @@ export default function App() {
     if (newStep === 'login') path = '/login'
     else if (newStep === 'signup') path = '/signup'
     else if (newStep === 'dashboard') path = '/dashboard'
+    else if (newStep === 'celebration') {
+      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
+        .replace(/^@+/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || 'cr_' + cleanHandle
+      path = `/${cleanHandle}/${cId}`
+    }
 
     if (window.location.pathname !== path) {
       window.history.pushState(null, '', path)
     }
-  }, [])
+  }, [creatorData])
+
+  useEffect(() => {
+    if (step === 'celebration' && typeof window !== 'undefined') {
+      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
+        .replace(/^@+/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || 'cr_' + cleanHandle
+      const targetPath = `/${cleanHandle}/${cId}`
+      if (window.location.pathname !== targetPath && !window.location.pathname.startsWith('/dashboard')) {
+        window.history.replaceState(null, '', targetPath)
+      }
+    }
+  }, [step, creatorData])
 
   const next = () => {
     if (step === 'celebration') {

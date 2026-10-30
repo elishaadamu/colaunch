@@ -22,7 +22,9 @@ export default function SupportWidget({ currentStage }) {
   const messagesEndRef = useRef(null)
 
   const accent = getAccent(creatorData)
-  const handle = creatorData?.handle || '@creator'
+  const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
+  const cleanHandle = rawHandle.replace(/^@+/, '')
+  const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
   const creatorId = getCreatorId(creatorData)
 
   // Load and poll chat history
@@ -92,7 +94,7 @@ export default function SupportWidget({ currentStage }) {
     try {
       const res = await escalateSupportTicket(
         creatorData, 
-        `Creator @${handle} clicked Escalate to Human Admin from Onboarding stage: ${currentStage}`,
+        `Creator ${handle} clicked Escalate to Human Admin from Onboarding stage: ${currentStage}`,
         currentStage
       )
       if (res && res.messages) {
@@ -109,7 +111,7 @@ export default function SupportWidget({ currentStage }) {
   }
 
   const quickChips = [
-    `How does the revenue split work for @${handle.replace('@', '')}?`,
+    `How does the revenue split work for ${handle}?`,
     `Can I change my blueprint features later?`,
     `How do video releases & YouTube sync work?`,
     `Talk to human admin`,
@@ -324,7 +326,7 @@ export default function SupportWidget({ currentStage }) {
           {messages.length > 0 && (
             <div className="px-3 py-2 bg-[#0d111a] border-t border-[#1c2333] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
               <button
-                onClick={() => handleQuickPrompt(`Talk to human admin about @${handle}`)}
+                onClick={() => handleQuickPrompt(`Talk to human admin about ${handle}`)}
                 className="whitespace-nowrap text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
               >
                 Human Admin
