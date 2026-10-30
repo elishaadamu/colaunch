@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   Headphones, Send, Bot, User, ShieldCheck, Mail, Sparkles, 
   CheckCheck, AlertCircle, RefreshCw, FileText, DollarSign, 
-  HelpCircle, ChevronRight, Lock, Check, Loader2, ArrowUpRight, Edit2
+  HelpCircle, ChevronRight, Lock, Check, Loader2, ArrowUpRight, Edit2, RotateCcw
 } from 'lucide-react'
 import { useForge, getAccent } from '../../App'
 import { 
@@ -11,7 +11,8 @@ import {
   escalateSupportTicket, 
   getCreatorId,
   getSupportUserIdentity,
-  setSupportUserIdentity
+  setSupportUserIdentity,
+  clearAllSupportChats
 } from '../../services/supportService'
 
 export default function SupportChatPage() {
@@ -20,6 +21,7 @@ export default function SupportChatPage() {
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
   const [escalating, setEscalating] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [supportStatus, setSupportStatus] = useState(null)
   const messagesEndRef = useRef(null)
 
@@ -155,6 +157,17 @@ export default function SupportChatPage() {
     }
   }
 
+  const handleResetChat = async () => {
+    if (!window.confirm("Start completely fresh? This will delete all support chat history.")) return
+    setClearing(true)
+    try {
+      await clearAllSupportChats(creatorData)
+      setMessages([])
+    } finally {
+      setClearing(false)
+    }
+  }
+
   const categoryPrompts = [
     {
       title: 'Monetization & Payouts',
@@ -244,6 +257,16 @@ export default function SupportChatPage() {
           >
             {escalating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
             {hasEscalation ? 'Admin Already Notified' : 'Escalate to Admin'}
+          </button>
+
+          <button
+            onClick={handleResetChat}
+            disabled={clearing}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition cursor-pointer"
+            title="Delete all chats & start fresh"
+          >
+            {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+            Clear Chat
           </button>
         </div>
       </div>

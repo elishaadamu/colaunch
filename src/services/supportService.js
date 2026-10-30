@@ -327,3 +327,35 @@ export async function escalateSupportTicket(creatorData, reason = 'Creator reque
   }
 }
 
+/**
+ * Clear all support messages (frontend cache + database) to start completely fresh
+ */
+export async function clearAllSupportChats(creatorData = null) {
+  try {
+    localStorage.removeItem(LOCAL_CACHE_KEY)
+    localStorage.removeItem(SESSION_KEY)
+  } catch {}
+
+  const sessionId = getSupportSessionId()
+  const creatorId = creatorData ? getCreatorId(creatorData) : ''
+
+  const params = new URLSearchParams()
+  params.append('all_chats', 'true')
+  if (sessionId) params.append('session_id', sessionId)
+  if (creatorId) params.append('creator_id', creatorId)
+
+  try {
+    const res = await fetch(`/api/support/reset?${params.toString()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch (err) {
+    console.warn('[SupportService] Reset chat API call failed:', err)
+  }
+
+  return { status: 'ok', message: 'Chat cache cleared locally' }
+}
+

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Headphones, X, Send, User, Bot, ShieldAlert, Sparkles, 
-  Mail, CheckCheck, Loader2, MessageSquare, AlertCircle, Edit2, Check
+  Mail, CheckCheck, Loader2, MessageSquare, AlertCircle, Edit2, Check, RotateCcw
 } from 'lucide-react'
 import { useForge, getAccent } from '../../App'
 import { 
@@ -10,7 +10,8 @@ import {
   escalateSupportTicket, 
   getCreatorId,
   getSupportUserIdentity,
-  setSupportUserIdentity
+  setSupportUserIdentity,
+  clearAllSupportChats
 } from '../../services/supportService'
 
 export default function SupportWidget({ currentStage }) {
@@ -20,6 +21,7 @@ export default function SupportWidget({ currentStage }) {
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
   const [escalating, setEscalating] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const messagesEndRef = useRef(null)
 
@@ -162,6 +164,17 @@ export default function SupportWidget({ currentStage }) {
     `Talk to human admin`,
   ]
 
+  const handleResetChat = async () => {
+    if (!window.confirm("Start over with a clean chat? This clears all support messages.")) return
+    setClearing(true)
+    try {
+      await clearAllSupportChats(creatorData)
+      setMessages([])
+    } finally {
+      setClearing(false)
+    }
+  }
+
   const hasEscalation = messages.some(m => m.escalated || m.status === 'escalated_to_admin')
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
   const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
@@ -234,12 +247,22 @@ export default function SupportWidget({ currentStage }) {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleResetChat}
+                disabled={clearing}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                title="Clear all chat messages & start over"
+              >
+                {clearing ? <Loader2 className="w-4 h-4 animate-spin text-rose-400" /> : <RotateCcw className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Context Banner */}
