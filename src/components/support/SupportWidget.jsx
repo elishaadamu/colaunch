@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Headphones, X, Send, User, Bot, ShieldAlert, Sparkles, 
-  Mail, CheckCheck, Loader2, MessageSquare, AlertCircle
+  Mail, CheckCheck, Loader2, MessageSquare, AlertCircle, Edit2, Check
 } from 'lucide-react'
 import { useForge, getAccent } from '../../App'
 import { 
   fetchSupportHistory, 
   sendSupportMessage, 
   escalateSupportTicket, 
-  getCreatorId 
+  getCreatorId,
+  getSupportUserIdentity,
+  setSupportUserIdentity
 } from '../../services/supportService'
 
 export default function SupportWidget({ currentStage }) {
@@ -21,11 +23,19 @@ export default function SupportWidget({ currentStage }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const messagesEndRef = useRef(null)
 
+  // Creator Identity (Name & Email requirement)
+  const [userIdentity, setUserIdentity] = useState(() => getSupportUserIdentity(creatorData))
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false)
+  const [nameInput, setNameInput] = useState(userIdentity.name || '')
+  const [emailInput, setEmailInput] = useState(userIdentity.email || '')
+
   const accent = getAccent(creatorData)
   const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
   const cleanHandle = rawHandle.replace(/^@+/, '')
   const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
   const creatorId = getCreatorId(creatorData)
+
+  const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
 
   // Load and poll chat history
   useEffect(() => {
@@ -45,6 +55,16 @@ export default function SupportWidget({ currentStage }) {
     }
   }, [creatorId, creatorData?.handle])
 
+  // Sync identity changes if creatorData updates
+  useEffect(() => {
+    const existing = getSupportUserIdentity(creatorData)
+    if (existing.name && existing.email) {
+      setUserIdentity(existing)
+      setNameInput(existing.name)
+      setEmailInput(existing.email)
+    }
+  }, [creatorData])
+
   // Scroll to bottom when messages update
   useEffect(() => {
     if (isOpen) {
@@ -53,10 +73,26 @@ export default function SupportWidget({ currentStage }) {
     }
   }, [messages, isOpen])
 
+  const handleSaveIdentity = (e) => {
+    if (e) e.preventDefault()
+    const trimmedName = nameInput.trim()
+    const trimmedEmail = emailInput.trim()
+    if (!trimmedName || !trimmedEmail || !trimmedEmail.includes('@')) return
+
+    setSupportUserIdentity(trimmedName, trimmedEmail)
+    setUserIdentity({ name: trimmedName, email: trimmedEmail })
+    setIsEditingIdentity(false)
+  }
+
   const handleSend = async (e) => {
     if (e) e.preventDefault()
     const text = inputText.trim()
     if (!text || loading) return
+
+    if (!hasIdentity) {
+      setIsEditingIdentity(true)
+      return
+    }
 
     setInputText('')
     setLoading(true)
@@ -73,7 +109,7 @@ export default function SupportWidget({ currentStage }) {
     setMessages(prev => [...prev, optimisticMsg])
 
     try {
-      const res = await sendSupportMessage(text, creatorData, currentStage)
+      const res = await sendSupportMessage(text, creatorData, currentStage, false, userIdentity)
       if (res && res.messages) {
         setMessages(res.messages)
       }
@@ -85,17 +121,26 @@ export default function SupportWidget({ currentStage }) {
   }
 
   const handleQuickPrompt = (promptText) => {
+    if (!hasIdentity) {
+      setIsEditingIdentity(true)
+      return
+    }
     setInputText(promptText)
   }
 
   const handleEscalateToAdmin = async () => {
     if (escalating) return
+    if (!hasIdentity) {
+      setIsEditingIdentity(true)
+      return
+    }
     setEscalating(true)
     try {
       const res = await escalateSupportTicket(
         creatorData, 
-        `Creator ${handle} clicked Escalate to Human Admin from Onboarding stage: ${currentStage}`,
-        currentStage
+        `Creator ${handle} (${userIdentity.name}) requested Human Operations support from Onboarding stage: ${currentStage}`,
+        currentStage,
+        userIdentity
       )
       if (res && res.messages) {
         setMessages(res.messages)
@@ -118,6 +163,8 @@ export default function SupportWidget({ currentStage }) {
   ]
 
   const hasEscalation = messages.some(m => m.escalated || m.status === 'escalated_to_admin')
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
 
   return (
     <>
@@ -197,31 +244,121 @@ export default function SupportWidget({ currentStage }) {
 
           {/* Context Banner */}
           <div className="px-4 py-2 bg-[#131926] border-b border-[#1f273b] flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 text-slate-300">
-              <Bot className="w-3.5 h-3.5" style={{ color: accent.color }} />
-              <span>Grounded in your channel data</span>
+            <div className="flex items-center gap-1.5 text-slate-300 truncate max-w-[230px]">
+              {hasIdentity ? (
+                <>
+                  <User className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-white">{userIdentity.name}</strong> ({userIdentity.email})
+                  </span>
+                  <button 
+                    onClick={() => setIsEditingIdentity(true)} 
+                    className="text-slate-400 hover:text-white ml-0.5 p-1 rounded hover:bg-white/10"
+                    title="Change Name & Email"
+                  >
+                    <Edit2 className="w-2.5 h-2.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Bot className="w-3.5 h-3.5" style={{ color: accent.color }} />
+                  <span>Grounded in {handle}</span>
+                </>
+              )}
             </div>
             {hasEscalation ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-md">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-md flex-shrink-0">
                 <ShieldAlert className="w-3 h-3" />
-                Support Team Notified
+                Team Notified
               </span>
             ) : (
               <button
                 onClick={handleEscalateToAdmin}
                 disabled={escalating}
-                className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded-md border border-white/10 transition cursor-pointer"
+                className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded-md border border-white/10 transition cursor-pointer flex-shrink-0"
                 title="Send ticket to our dedicated operations team"
               >
                 {escalating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Mail className="w-2.5 h-2.5" />}
-                Escalate to Team
+                Escalate
               </button>
             )}
           </div>
 
           {/* Messages Flow */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#0a0d14]">
-            {messages.length === 0 ? (
+            {(!hasIdentity && messages.length === 0) || isEditingIdentity ? (
+              <div className="h-full flex flex-col justify-center p-2">
+                <div className="p-5 rounded-2xl bg-[#111724] border border-[#232f45] shadow-2xl text-left space-y-3.5">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner flex-shrink-0"
+                      style={{
+                        background: `rgba(${accent.rgb}, 0.15)`,
+                        borderColor: `rgba(${accent.rgb}, 0.3)`,
+                        color: accent.color
+                      }}
+                    >
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Introduce Yourself</h4>
+                      <p className="text-[11px] text-slate-400">
+                        Please provide your name & email to begin chatting with AI & support.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSaveIdentity} className="space-y-3 pt-1">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Your Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        placeholder="e.g. Alex Fox"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Your Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={e => setEmailInput(e.target.value)}
+                        placeholder="e.g. alex@example.com"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <span className="text-[10px] text-slate-500 block mt-1">
+                        Used for 2-way email support escalation & dashboard sync.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      {isEditingIdentity && hasIdentity && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingIdentity(false)}
+                          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={!nameInput.trim() || !emailInput.trim() || !emailInput.includes('@')}
+                        className="flex-1 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+                        style={{ background: accent.color }}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save & Start Chat</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-4">
                 <div 
                   className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 border shadow-sm"
@@ -234,7 +371,7 @@ export default function SupportWidget({ currentStage }) {
                   <MessageSquare className="w-6 h-6" />
                 </div>
                 <h4 className="text-sm font-bold text-white mb-1">
-                  How can we help with {handle}?
+                  How can we help, {userIdentity.name || handle}?
                 </h4>
                 <p className="text-xs text-slate-400 max-w-xs mb-4">
                   Ask anything about your custom platform, audience monetization, technical rails, or revenue split.
@@ -255,6 +392,40 @@ export default function SupportWidget({ currentStage }) {
               </div>
             ) : (
               <>
+                {/* 2-Way Email Channel Active Callout Banner */}
+                {hasEscalation && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#121c2c] to-[#0c121d] border border-blue-500/30 text-xs shadow-md space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-blue-300 flex items-center gap-1.5 text-[11px]">
+                        <Mail className="w-3.5 h-3.5 text-blue-400" />
+                        2-Way Email Channel Active
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Email & App Synced
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-slate-300 m-0 leading-relaxed">
+                      Escalation copy sent to <strong className="text-white">{userIdentity.email}</strong>. You can chat right here or <strong>reply directly to that email from your inbox</strong> without opening the app!
+                    </p>
+                    <div className="pt-1.5 flex items-center justify-between border-t border-white/5 text-[10.5px]">
+                      <a 
+                        href={creatorDashboardUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1"
+                      >
+                        Creator Dashboard ↗
+                      </a>
+                      <button 
+                        onClick={() => setIsEditingIdentity(true)} 
+                        className="text-slate-400 hover:text-white underline cursor-pointer"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {messages.map((m, idx) => {
                   const isUser = m.sender === 'user'
                   const isAdmin = m.sender === 'admin'
@@ -266,13 +437,13 @@ export default function SupportWidget({ currentStage }) {
                       <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-500 font-mono">
                         {isUser ? (
                           <>
-                            <span>You</span>
+                            <span>{userIdentity.name || 'You'}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
                         ) : isAdmin ? (
                           <>
                             <ShieldAlert className="w-3 h-3 text-emerald-400" />
-                            <span className="font-bold text-emerald-400">Support Team (Human Reply)</span>
+                            <span className="font-bold text-emerald-400">Support Operations (Human Reply)</span>
                           </>
                         ) : (
                           <>

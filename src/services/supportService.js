@@ -10,6 +10,33 @@ import { ensureServerAiKeysLoaded } from './ai'
 
 const SESSION_KEY = 'forge_support_session_id'
 const LOCAL_CACHE_KEY = 'forge_support_messages_cache'
+const USER_NAME_KEY = 'forge_support_user_name'
+const USER_EMAIL_KEY = 'forge_support_user_email'
+
+export function getSupportUserIdentity(creatorData = null) {
+  try {
+    let name = localStorage.getItem(USER_NAME_KEY) || ''
+    let email = localStorage.getItem(USER_EMAIL_KEY) || ''
+
+    if (!name && creatorData) {
+      name = creatorData.creatorName || creatorData.name || creatorData.channelTitle || ''
+    }
+    if (!email && creatorData) {
+      email = creatorData.email || creatorData.contactEmail || ''
+    }
+
+    return { name, email }
+  } catch {
+    return { name: '', email: '' }
+  }
+}
+
+export function setSupportUserIdentity(name, email) {
+  try {
+    if (name) localStorage.setItem(USER_NAME_KEY, name.trim())
+    if (email) localStorage.setItem(USER_EMAIL_KEY, email.trim())
+  } catch {}
+}
 
 const CORRUPTED_MARKERS = [
   'CoLaunch Customer Support Alert',
@@ -139,16 +166,19 @@ export async function fetchSupportHistory(creatorData) {
 /**
  * Send a message to Customer Support
  */
-export async function sendSupportMessage(text, creatorData, stage = 'onboarding', forceEscalate = false) {
+export async function sendSupportMessage(text, creatorData, stage = 'onboarding', forceEscalate = false, customIdentity = null) {
   await ensureServerAiKeysLoaded()
   const sessionId = getSupportSessionId()
   const creatorId = getCreatorId(creatorData)
   const creatorHandle = creatorData?.handle || ''
-  const creatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
+  const identity = customIdentity || getSupportUserIdentity(creatorData)
+  const creatorName = identity.name || creatorData?.name || creatorData?.channelTitle || 'Creator'
+  const creatorEmail = identity.email || creatorData?.email || ''
 
   const creatorContext = {
     handle: creatorHandle,
     name: creatorName,
+    email: creatorEmail,
     platform: creatorData?.platform || 'YouTube',
     followers: creatorData?.followers || 0,
     niche: creatorData?.niche || 'Digital Creator',
@@ -164,6 +194,7 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
     creator_id: creatorId,
     creator_handle: creatorHandle,
     creator_name: creatorName,
+    creator_email: creatorEmail,
     message: text,
     creator_context: creatorContext,
     force_escalate: forceEscalate,
@@ -198,6 +229,7 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
     creator_id: creatorId,
     creator_handle: creatorHandle,
     creator_name: creatorName,
+    creator_email: creatorEmail,
     sender: 'user',
     message: text,
     status: 'active',
@@ -209,8 +241,8 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
   const displayHandle = cleanHandle ? `@${cleanHandle}` : '@creator'
 
   const fallbackReply = forceEscalate
-    ? `Your inquiry has been escalated directly to our dedicated support team. A team member will review your workspace and follow up with you promptly.`
-    : `I am your CoLaunch AI Assistant supporting ${displayHandle}. Your ${creatorData?.blueprint?.name || 'custom suite'} is currently configured for ${creatorData?.niche || 'your audience'}. If you need anything escalated to an admin, let me know!`
+    ? `Your inquiry has been escalated directly to our dedicated support team. A confirmation has been sent to your email (${creatorEmail || 'registered inbox'}). You can continue chatting right here, or reply directly to the email anytime!`
+    : `Hi ${creatorName}! I am your CoLaunch AI Assistant supporting ${displayHandle}. Your ${creatorData?.blueprint?.name || 'custom suite'} is currently configured for ${creatorData?.niche || 'your audience'}. How can I help you today?`
 
   const botMsg = {
     id: 'ast_' + (Date.now() + 1),
@@ -240,15 +272,18 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
 /**
  * Escalate support thread to human admin team
  */
-export async function escalateSupportTicket(creatorData, reason = 'Creator requested human administrator support', stage = 'dashboard') {
+export async function escalateSupportTicket(creatorData, reason = 'Creator requested human administrator support', stage = 'dashboard', customIdentity = null) {
   const sessionId = getSupportSessionId()
   const creatorId = getCreatorId(creatorData)
   const creatorHandle = creatorData?.handle || ''
-  const creatorName = creatorData?.name || 'Creator'
+  const identity = customIdentity || getSupportUserIdentity(creatorData)
+  const creatorName = identity.name || creatorData?.name || 'Creator'
+  const creatorEmail = identity.email || creatorData?.email || ''
 
   const creatorContext = {
     handle: creatorHandle,
     name: creatorName,
+    email: creatorEmail,
     platform: creatorData?.platform || 'YouTube',
     followers: creatorData?.followers || 0,
     niche: creatorData?.niche || 'Digital Creator',
@@ -267,6 +302,7 @@ export async function escalateSupportTicket(creatorData, reason = 'Creator reque
         creator_id: creatorId,
         creator_handle: creatorHandle,
         creator_name: creatorName,
+        creator_email: creatorEmail,
         reason,
         creator_context: creatorContext,
       })
@@ -287,7 +323,7 @@ export async function escalateSupportTicket(creatorData, reason = 'Creator reque
 
   return {
     success: true,
-    reply: `Your ticket has been dispatched to our dedicated support team. An administrator will review your inquiry and follow up shortly.`
+    reply: `Your ticket has been dispatched to our dedicated support team${creatorEmail ? ` and a confirmation has been sent to ${creatorEmail}` : ''}. An administrator will review your inquiry and follow up shortly.`
   }
 }
 

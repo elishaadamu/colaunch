@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   Headphones, Send, Bot, User, ShieldCheck, Mail, Sparkles, 
   CheckCheck, AlertCircle, RefreshCw, FileText, DollarSign, 
-  HelpCircle, ChevronRight, Lock, Check, Loader2, ArrowUpRight
+  HelpCircle, ChevronRight, Lock, Check, Loader2, ArrowUpRight, Edit2
 } from 'lucide-react'
 import { useForge, getAccent } from '../../App'
 import { 
   fetchSupportHistory, 
   sendSupportMessage, 
   escalateSupportTicket, 
-  getCreatorId 
+  getCreatorId,
+  getSupportUserIdentity,
+  setSupportUserIdentity
 } from '../../services/supportService'
 
 export default function SupportChatPage() {
@@ -21,15 +23,25 @@ export default function SupportChatPage() {
   const [supportStatus, setSupportStatus] = useState(null)
   const messagesEndRef = useRef(null)
 
+  // Creator Identity
+  const [userIdentity, setUserIdentity] = useState(() => getSupportUserIdentity(creatorData))
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false)
+  const [nameInput, setNameInput] = useState(userIdentity.name || '')
+  const [emailInput, setEmailInput] = useState(userIdentity.email || '')
+
   const accent = getAccent(creatorData)
   const creatorId = getCreatorId(creatorData)
   const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
   const cleanHandle = rawHandle.replace(/^@+/, '')
   const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
-  const creatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
+  const creatorName = userIdentity.name || creatorData?.name || creatorData?.channelTitle || 'Creator'
   const blueprintName = creatorData?.blueprint?.name || creatorData?.productName || 'Custom Platform'
   const niche = creatorData?.niche || 'Digital Creator'
   const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'Growing'
+
+  const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
 
   // Load and poll chat history by creatorId
   useEffect(() => {
@@ -56,14 +68,40 @@ export default function SupportChatPage() {
     }
   }, [creatorId, handle])
 
+  // Sync identity changes if creatorData updates
+  useEffect(() => {
+    const existing = getSupportUserIdentity(creatorData)
+    if (existing.name && existing.email) {
+      setUserIdentity(existing)
+      setNameInput(existing.name)
+      setEmailInput(existing.email)
+    }
+  }, [creatorData])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const handleSaveIdentity = (e) => {
+    if (e) e.preventDefault()
+    const trimmedName = nameInput.trim()
+    const trimmedEmail = emailInput.trim()
+    if (!trimmedName || !trimmedEmail || !trimmedEmail.includes('@')) return
+
+    setSupportUserIdentity(trimmedName, trimmedEmail)
+    setUserIdentity({ name: trimmedName, email: trimmedEmail })
+    setIsEditingIdentity(false)
+  }
 
   const handleSend = async (e) => {
     if (e) e.preventDefault()
     const text = inputText.trim()
     if (!text || loading) return
+
+    if (!hasIdentity) {
+      setIsEditingIdentity(true)
+      return
+    }
 
     setInputText('')
     setLoading(true)
@@ -79,7 +117,7 @@ export default function SupportChatPage() {
     setMessages(prev => [...prev, optimistic])
 
     try {
-      const res = await sendSupportMessage(text, creatorData, 'Creator Dashboard')
+      const res = await sendSupportMessage(text, creatorData, 'Creator Dashboard', false, userIdentity)
       if (res && res.messages) {
         setMessages(res.messages)
       }
@@ -92,9 +130,18 @@ export default function SupportChatPage() {
 
   const handleEscalate = async (reason = 'Creator requested direct admin escalation') => {
     if (escalating) return
+    if (!hasIdentity) {
+      setIsEditingIdentity(true)
+      return
+    }
     setEscalating(true)
     try {
-      const res = await escalateSupportTicket(creatorData, reason, 'Creator Dashboard')
+      const res = await escalateSupportTicket(
+        creatorData, 
+        `${reason} (${userIdentity.name} - ${userIdentity.email})`, 
+        'Creator Dashboard', 
+        userIdentity
+      )
       if (res && res.messages) {
         setMessages(res.messages)
       } else {
@@ -163,6 +210,21 @@ export default function SupportChatPage() {
 
         {/* Operational Status Badges */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          {hasIdentity && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
+              <User className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-white font-bold">{userIdentity.name}</span>
+              <span className="text-slate-400 text-[11px]">({userIdentity.email})</span>
+              <button
+                onClick={() => setIsEditingIdentity(true)}
+                className="text-slate-400 hover:text-white ml-1 p-0.5 rounded hover:bg-white/10 cursor-pointer"
+                title="Edit Name & Email"
+              >
+                <Edit2 className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
             <Bot className="w-3.5 h-3.5" style={{ color: accent.color }} />
             <span>AI Desk:</span>
@@ -284,7 +346,79 @@ export default function SupportChatPage() {
 
           {/* Messages Flow Area */}
           <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#090b10]">
-            {messages.length === 0 ? (
+            {(!hasIdentity && messages.length === 0) || isEditingIdentity ? (
+              <div className="h-full flex flex-col justify-center items-center p-4">
+                <div className="max-w-md w-full p-6 sm:p-7 rounded-2xl bg-[#111724] border border-[#232f45] shadow-2xl text-left space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner flex-shrink-0"
+                      style={{
+                        background: `rgba(${accent.rgb}, 0.15)`,
+                        borderColor: `rgba(${accent.rgb}, 0.3)`,
+                        color: accent.color
+                      }}
+                    >
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Introduce Yourself</h3>
+                      <p className="text-xs text-slate-400">
+                        Please provide your name and email to enable personalized AI and 2-way email support.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSaveIdentity} className="space-y-4 pt-2">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-300 block mb-1.5">Your Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        placeholder="e.g. Alex Fox"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-300 block mb-1.5">Your Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={e => setEmailInput(e.target.value)}
+                        placeholder="e.g. alex@example.com"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <span className="text-[11px] text-slate-500 block mt-1">
+                        When escalated, a copy is dispatched here so you can reply directly from your personal inbox!
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 pt-1">
+                      {isEditingIdentity && hasIdentity && (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingIdentity(false)}
+                          className="flex-1 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={!nameInput.trim() || !emailInput.trim() || !emailInput.includes('@')}
+                        className="flex-1 py-3 rounded-xl font-bold text-xs sm:text-sm text-white shadow-md transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
+                        style={{ background: accent.color }}
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Save & Start Support Chat</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div 
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border shadow-md"
@@ -319,6 +453,41 @@ export default function SupportChatPage() {
               </div>
             ) : (
               <>
+                {/* 2-Way Email Channel Active Callout Banner */}
+                {hasEscalation && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#121c2d] to-[#0c121e] border border-blue-500/35 text-xs shadow-lg space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-blue-300 flex items-center gap-2 text-xs sm:text-sm">
+                        <Mail className="w-4 h-4 text-blue-400" />
+                        2-Way Email Channel Active
+                      </span>
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Email & App Synced
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 m-0 leading-relaxed">
+                      This inquiry has been escalated to human administration, and a copy was sent to <strong className="text-white">{userIdentity.email}</strong>. 
+                      You can continue chatting right here, or <strong>reply directly to that email from your inbox</strong> without opening the app!
+                    </p>
+                    <div className="pt-2 flex items-center justify-between border-t border-white/5 text-[11px]">
+                      <a 
+                        href={creatorDashboardUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5"
+                      >
+                        Live Suite URL: <span className="font-mono text-slate-300">{creatorDashboardUrl}</span> ↗
+                      </a>
+                      <button 
+                        onClick={() => setIsEditingIdentity(true)} 
+                        className="text-slate-400 hover:text-white underline cursor-pointer"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {messages.map((m, idx) => {
                   const isUser = m.sender === 'user'
                   const isAdmin = m.sender === 'admin'
@@ -330,7 +499,7 @@ export default function SupportChatPage() {
                       <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-400 font-mono">
                         {isUser ? (
                           <>
-                            <span className="font-bold">{creatorName}</span>
+                            <span className="font-bold">{userIdentity.name || creatorName}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
                         ) : isAdmin ? (
