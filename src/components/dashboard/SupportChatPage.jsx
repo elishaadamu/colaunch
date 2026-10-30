@@ -145,7 +145,7 @@ export default function SupportChatPage() {
                 <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
               </h1>
               <p className="text-xs sm:text-sm text-slate-400">
-                24/7 Creator Intelligence Agent & Direct Human Admin Relay (Brevo & Google SMTP/IMAP)
+                24/7 Creator Intelligence Agent & Direct Operations Desk
               </p>
             </div>
           </div>
@@ -161,8 +161,8 @@ export default function SupportChatPage() {
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
             <Mail className="w-3.5 h-3.5 text-blue-400" />
-            <span>Admin Relay:</span>
-            <span className="text-blue-400 font-bold">Brevo / SMTP</span>
+            <span>Operations Desk:</span>
+            <span className="text-blue-400 font-bold">Active</span>
           </div>
 
           <button
@@ -209,8 +209,8 @@ export default function SupportChatPage() {
                 <span className="font-semibold text-emerald-400">{blueprintName}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">Admin Email</span>
-                <span className="font-mono text-slate-400 text-[11px]">creatorforgeweb@gmail.com</span>
+                <span className="text-slate-400">Response SLA</span>
+                <span className="font-mono text-slate-300 text-[11px]">Priority Queue</span>
               </div>
             </div>
 
@@ -267,7 +267,7 @@ export default function SupportChatPage() {
             {hasEscalation && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Notified via Brevo / SMTP</span>
+                <span>Support Team Notified</span>
               </div>
             )}
           </div>

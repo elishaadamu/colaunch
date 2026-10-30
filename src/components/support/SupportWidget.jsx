@@ -195,17 +195,17 @@ export default function SupportWidget({ currentStage }) {
             {hasEscalation ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-md">
                 <ShieldAlert className="w-3 h-3" />
-                Admin Notified (Brevo/SMTP)
+                Support Team Notified
               </span>
             ) : (
               <button
                 onClick={handleEscalateToAdmin}
                 disabled={escalating}
                 className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded-md border border-white/10 transition cursor-pointer"
-                title="Send ticket to human team via Brevo & Google SMTP"
+                title="Send ticket to our dedicated operations team"
               >
                 {escalating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Mail className="w-2.5 h-2.5" />}
-                Escalate to Admin
+                Escalate to Team
               </button>
             )}
           </div>

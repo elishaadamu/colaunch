@@ -2,8 +2,7 @@
  * CoLaunch Unified Customer Support Service
  * - Connects Onboarding Stages and Creator Dashboard to a general database table.
  * - Answers user queries specifically grounded in that creator's data at that moment.
- * - If question cannot be answered by AI or user asks for admin, triggers escalation
- *   via Brevo & Google SMTP/IMAP to creatorforgeweb@gmail.com.
+ * - Escalates to human support team if question cannot be answered by AI or user asks for human help.
  * - History retrieved by session_id in onboarding, or creator_id in dashboard.
  */
 
@@ -155,7 +154,7 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
   }
 
   const fallbackReply = forceEscalate
-    ? `Your inquiry has been flagged for our team at creatorforgeweb@gmail.com. We're connecting via Brevo and Google SMTP.`
+    ? `Your inquiry has been escalated directly to our dedicated support team. A team member will review your workspace and follow up with you promptly.`
     : `I am your CoLaunch AI Assistant supporting @${creatorHandle || 'your channel'}. Your ${creatorData?.blueprint?.name || 'custom suite'} is currently configured for ${creatorData?.niche || 'your audience'}. If you need anything escalated to an admin, let me know!`
 
   const botMsg = {
@@ -233,7 +232,7 @@ export async function escalateSupportTicket(creatorData, reason = 'Creator reque
 
   return {
     success: true,
-    reply: `Your ticket has been dispatched to creatorforgeweb@gmail.com via Brevo & Google SMTP. An admin will follow up shortly.`
+    reply: `Your ticket has been dispatched to our dedicated support team. An administrator will review your inquiry and follow up shortly.`
   }
 }
 
