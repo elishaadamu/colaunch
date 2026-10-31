@@ -81,7 +81,7 @@ export default function SupportWidget({ currentStage }) {
     const trimmedEmail = emailInput.trim()
     if (!trimmedName || !trimmedEmail || !trimmedEmail.includes('@')) return
 
-    setSupportUserIdentity(trimmedName, trimmedEmail)
+    setSupportUserIdentity(trimmedName, trimmedEmail, creatorData)
     setUserIdentity({ name: trimmedName, email: trimmedEmail })
     setIsEditingIdentity(false)
   }
@@ -175,7 +175,20 @@ export default function SupportWidget({ currentStage }) {
     }
   }
 
-  const hasEscalation = messages.some(m => m.escalated || m.status === 'escalated_to_admin')
+  // Strictly filter messages so only this creator's conversation is shown
+  const displayedMessages = messages.filter(m => {
+    if (!m) return false
+    if (creatorId && m.creator_id && m.creator_id !== creatorId) return false
+    if (cleanHandle && m.creator_handle) {
+      const mHandle = m.creator_handle.replace(/^@+/, '').toLowerCase()
+      if (mHandle && mHandle !== cleanHandle.toLowerCase() && m.creator_id !== creatorId) {
+        return false
+      }
+    }
+    return true
+  })
+
+  const hasEscalation = displayedMessages.some(m => m.escalated || m.status === 'escalated_to_admin')
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
   const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
 
@@ -381,7 +394,7 @@ export default function SupportWidget({ currentStage }) {
                   </form>
                 </div>
               </div>
-            ) : messages.length === 0 ? (
+            ) : displayedMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-4">
                 <div 
                   className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 border shadow-sm"
@@ -449,7 +462,7 @@ export default function SupportWidget({ currentStage }) {
                   </div>
                 )}
 
-                {messages.map((m, idx) => {
+                {displayedMessages.map((m, idx) => {
                   const isUser = m.sender === 'user'
                   const isAdmin = m.sender === 'admin'
                   return (
@@ -460,7 +473,7 @@ export default function SupportWidget({ currentStage }) {
                       <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-500 font-mono">
                         {isUser ? (
                           <>
-                            <span>{userIdentity.name || 'You'}</span>
+                            <span>{m.creator_name || userIdentity.name || 'You'}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
                         ) : isAdmin ? (

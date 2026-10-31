@@ -25,18 +25,20 @@ export default function SupportChatPage() {
   const [supportStatus, setSupportStatus] = useState(null)
   const messagesEndRef = useRef(null)
 
-  // Creator Identity
-  const [userIdentity, setUserIdentity] = useState(() => getSupportUserIdentity(creatorData))
-  const [isEditingIdentity, setIsEditingIdentity] = useState(false)
-  const [nameInput, setNameInput] = useState(userIdentity.name || '')
-  const [emailInput, setEmailInput] = useState(userIdentity.email || '')
-
   const accent = getAccent(creatorData)
   const creatorId = getCreatorId(creatorData)
+  const authenticCreatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
   const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
   const cleanHandle = rawHandle.replace(/^@+/, '')
   const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
-  const creatorName = userIdentity.name || creatorData?.name || creatorData?.channelTitle || 'Creator'
+
+  // Creator Identity - scoped strictly to this creator
+  const [userIdentity, setUserIdentity] = useState(() => getSupportUserIdentity(creatorData))
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false)
+  const [nameInput, setNameInput] = useState(() => userIdentity.name || authenticCreatorName)
+  const [emailInput, setEmailInput] = useState(() => userIdentity.email || '')
+
+  const creatorName = userIdentity.name || authenticCreatorName
   const blueprintName = creatorData?.blueprint?.name || creatorData?.productName || 'Custom Platform'
   const niche = creatorData?.niche || 'Digital Creator'
   const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'Growing'
@@ -73,12 +75,10 @@ export default function SupportChatPage() {
   // Sync identity changes if creatorData updates
   useEffect(() => {
     const existing = getSupportUserIdentity(creatorData)
-    if (existing.name && existing.email) {
-      setUserIdentity(existing)
-      setNameInput(existing.name)
-      setEmailInput(existing.email)
-    }
-  }, [creatorData])
+    setUserIdentity(existing)
+    setNameInput(existing.name || authenticCreatorName)
+    setEmailInput(existing.email || '')
+  }, [creatorId, authenticCreatorName, handle])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -90,7 +90,7 @@ export default function SupportChatPage() {
     const trimmedEmail = emailInput.trim()
     if (!trimmedName || !trimmedEmail || !trimmedEmail.includes('@')) return
 
-    setSupportUserIdentity(trimmedName, trimmedEmail)
+    setSupportUserIdentity(trimmedName, trimmedEmail, creatorData)
     setUserIdentity({ name: trimmedName, email: trimmedEmail })
     setIsEditingIdentity(false)
   }
@@ -191,7 +191,25 @@ export default function SupportChatPage() {
     }
   ]
 
-  const hasEscalation = messages.some(m => m.escalated || m.status === 'escalated_to_admin')
+  // Strictly filter messages so only this creator's conversation is shown
+  const displayedMessages = messages.filter(m => {
+    if (!m) return false
+    if (creatorId && m.creator_id && m.creator_id !== creatorId) return false
+    if (cleanHandle && m.creator_handle) {
+      const mHandle = m.creator_handle.replace(/^@+/, '').toLowerCase().trim()
+      if (mHandle && mHandle !== cleanHandle.toLowerCase().trim() && m.creator_id !== creatorId) {
+        return false
+      }
+    }
+    // Cross-contamination safeguard: if viewing a creator other than bawad, filter out messages referencing @bawad
+    if (cleanHandle && cleanHandle.toLowerCase() !== 'bawad') {
+      const msgLower = (m.message || '').toLowerCase()
+      if (msgLower.includes('@bawad')) return false
+    }
+    return true
+  })
+
+  const hasEscalation = displayedMessages.some(m => m.escalated || m.status === 'escalated_to_admin')
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -441,7 +459,7 @@ export default function SupportChatPage() {
                   </form>
                 </div>
               </div>
-            ) : messages.length === 0 ? (
+            ) : displayedMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div 
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border shadow-md"
@@ -511,7 +529,7 @@ export default function SupportChatPage() {
                   </div>
                 )}
 
-                {messages.map((m, idx) => {
+                {displayedMessages.map((m, idx) => {
                   const isUser = m.sender === 'user'
                   const isAdmin = m.sender === 'admin'
                   return (
@@ -522,7 +540,7 @@ export default function SupportChatPage() {
                       <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-400 font-mono">
                         {isUser ? (
                           <>
-                            <span className="font-bold">{userIdentity.name || creatorName}</span>
+                            <span className="font-bold">{m.creator_name || (userIdentity.name || creatorName)}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
                         ) : isAdmin ? (

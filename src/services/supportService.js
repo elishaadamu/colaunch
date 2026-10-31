@@ -13,28 +13,78 @@ const LOCAL_CACHE_KEY = 'forge_support_messages_cache'
 const USER_NAME_KEY = 'forge_support_user_name'
 const USER_EMAIL_KEY = 'forge_support_user_email'
 
-export function getSupportUserIdentity(creatorData = null) {
+export function getCreatorId(creatorData) {
+  if (!creatorData) return ''
+  if (creatorData.id) return creatorData.id
+  if (creatorData.channelId) return creatorData.channelId
+  if (creatorData._id) return creatorData._id
+  const cleanHandle = (creatorData.handle || creatorData.name || 'creator').replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
+  return 'cr_' + cleanHandle
+}
+
+export function getSupportSessionId(creatorData = null) {
+  const cid = getCreatorId(creatorData) || 'global'
+  const key = `${SESSION_KEY}_${cid}`
   try {
-    let name = localStorage.getItem(USER_NAME_KEY) || ''
-    let email = localStorage.getItem(USER_EMAIL_KEY) || ''
-
-    if (!name && creatorData) {
-      name = creatorData.creatorName || creatorData.name || creatorData.channelTitle || ''
+    let sid = localStorage.getItem(key)
+    if (!sid) {
+      sid = 'ses_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
+      localStorage.setItem(key, sid)
     }
-    if (!email && creatorData) {
-      email = creatorData.email || creatorData.contactEmail || ''
-    }
-
-    return { name, email }
+    return sid
   } catch {
-    return { name: '', email: '' }
+    return 'ses_' + Date.now()
   }
 }
 
-export function setSupportUserIdentity(name, email) {
+export function getSupportUserIdentity(creatorData = null) {
+  const cid = getCreatorId(creatorData) || 'global'
+  const authenticName = creatorData?.name || creatorData?.creatorName || creatorData?.channelTitle || ''
+  const authenticEmail = creatorData?.email || creatorData?.contactEmail || ''
+
   try {
-    if (name) localStorage.setItem(USER_NAME_KEY, name.trim())
-    if (email) localStorage.setItem(USER_EMAIL_KEY, email.trim())
+    // 1. Check creator-scoped identity first
+    let name = localStorage.getItem(`${USER_NAME_KEY}_${cid}`) || ''
+    let email = localStorage.getItem(`${USER_EMAIL_KEY}_${cid}`) || ''
+
+    // 2. If no scoped name, check legacy global key ONLY IF it matches this creator's name
+    if (!name) {
+      const legacyName = localStorage.getItem(USER_NAME_KEY) || ''
+      if (legacyName && authenticName) {
+        const normLegacy = legacyName.toLowerCase().trim()
+        const normAuth = authenticName.toLowerCase().trim()
+        if (normLegacy === normAuth || normLegacy.includes(normAuth) || normAuth.includes(normLegacy)) {
+          name = legacyName
+        }
+      }
+    }
+
+    // 3. Fallback to authentic creator name (never leak another creator's name)
+    if (!name) {
+      name = authenticName
+    }
+
+    if (!email) {
+      email = authenticEmail || localStorage.getItem(USER_EMAIL_KEY) || ''
+    }
+
+    return { name: name || authenticName, email: email || '' }
+  } catch {
+    return { name: authenticName, email: authenticEmail }
+  }
+}
+
+export function setSupportUserIdentity(name, email, creatorData = null) {
+  const cid = getCreatorId(creatorData) || 'global'
+  try {
+    if (name) {
+      localStorage.setItem(`${USER_NAME_KEY}_${cid}`, name.trim())
+      localStorage.setItem(USER_NAME_KEY, name.trim())
+    }
+    if (email) {
+      localStorage.setItem(`${USER_EMAIL_KEY}_${cid}`, email.trim())
+      localStorage.setItem(USER_EMAIL_KEY, email.trim())
+    }
   } catch {}
 }
 
@@ -87,38 +137,20 @@ export function sanitizeMessages(messages) {
   return cleanList
 }
 
-export function getSupportSessionId() {
-  try {
-    let sid = localStorage.getItem(SESSION_KEY)
-    if (!sid) {
-      sid = 'ses_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
-      localStorage.setItem(SESSION_KEY, sid)
-    }
-    return sid
-  } catch {
-    return 'ses_' + Date.now()
-  }
-}
-
-export function getCreatorId(creatorData) {
-  if (!creatorData) return ''
-  if (creatorData.id) return creatorData.id
-  if (creatorData.channelId) return creatorData.channelId
-  if (creatorData._id) return creatorData._id
-  const cleanHandle = (creatorData.handle || creatorData.name || 'creator').replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
-  return 'cr_' + cleanHandle
-}
-
 function getLocalCachedMessages(sessionId, creatorId) {
   try {
     const raw = localStorage.getItem(LOCAL_CACHE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    const matched = parsed.filter(m => 
-      (sessionId && m.session_id === sessionId) ||
-      (creatorId && m.creator_id === creatorId)
-    )
+    const matched = parsed.filter(m => {
+      // If creatorId is known, strictly isolate messages for this creator
+      if (creatorId) {
+        if (m.creator_id) return m.creator_id === creatorId
+        return sessionId && m.session_id === sessionId
+      }
+      return sessionId && m.session_id === sessionId
+    })
     return sanitizeMessages(matched)
   } catch {
     return []
@@ -136,12 +168,14 @@ function saveLocalCachedMessages(messages) {
  * Fetch unified support history by sessionId or creatorId
  */
 export async function fetchSupportHistory(creatorData) {
-  const sessionId = getSupportSessionId()
+  const sessionId = getSupportSessionId(creatorData)
   const creatorId = getCreatorId(creatorData)
+  const cleanHandle = (creatorData?.handle || '').replace(/^@+/, '').trim()
 
   const params = new URLSearchParams()
-  if (sessionId) params.append('session_id', sessionId)
   if (creatorId) params.append('creator_id', creatorId)
+  if (sessionId) params.append('session_id', sessionId)
+  if (cleanHandle) params.append('creator_handle', cleanHandle)
 
   try {
     const res = await fetch(`/api/support/history?${params.toString()}`, {
@@ -168,7 +202,7 @@ export async function fetchSupportHistory(creatorData) {
  */
 export async function sendSupportMessage(text, creatorData, stage = 'onboarding', forceEscalate = false, customIdentity = null) {
   await ensureServerAiKeysLoaded()
-  const sessionId = getSupportSessionId()
+  const sessionId = getSupportSessionId(creatorData)
   const creatorId = getCreatorId(creatorData)
   const creatorHandle = creatorData?.handle || ''
   const identity = customIdentity || getSupportUserIdentity(creatorData)
@@ -273,7 +307,7 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
  * Escalate support thread to human admin team
  */
 export async function escalateSupportTicket(creatorData, reason = 'Creator requested human administrator support', stage = 'dashboard', customIdentity = null) {
-  const sessionId = getSupportSessionId()
+  const sessionId = getSupportSessionId(creatorData)
   const creatorId = getCreatorId(creatorData)
   const creatorHandle = creatorData?.handle || ''
   const identity = customIdentity || getSupportUserIdentity(creatorData)
@@ -331,12 +365,18 @@ export async function escalateSupportTicket(creatorData, reason = 'Creator reque
  * Clear all support messages (frontend cache + database) to start completely fresh
  */
 export async function clearAllSupportChats(creatorData = null) {
+  const cid = getCreatorId(creatorData) || 'global'
   try {
     localStorage.removeItem(LOCAL_CACHE_KEY)
     localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(`${SESSION_KEY}_${cid}`)
+    localStorage.removeItem(USER_NAME_KEY)
+    localStorage.removeItem(USER_EMAIL_KEY)
+    localStorage.removeItem(`${USER_NAME_KEY}_${cid}`)
+    localStorage.removeItem(`${USER_EMAIL_KEY}_${cid}`)
   } catch {}
 
-  const sessionId = getSupportSessionId()
+  const sessionId = getSupportSessionId(creatorData)
   const creatorId = creatorData ? getCreatorId(creatorData) : ''
 
   const params = new URLSearchParams()
