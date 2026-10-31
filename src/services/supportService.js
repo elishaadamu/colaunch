@@ -139,7 +139,8 @@ export function sanitizeMessages(messages) {
 
 function getLocalCachedMessages(sessionId, creatorId) {
   try {
-    const raw = localStorage.getItem(LOCAL_CACHE_KEY)
+    const key = creatorId ? `${LOCAL_CACHE_KEY}_${creatorId}` : LOCAL_CACHE_KEY
+    const raw = localStorage.getItem(key) || localStorage.getItem(LOCAL_CACHE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -157,10 +158,14 @@ function getLocalCachedMessages(sessionId, creatorId) {
   }
 }
 
-function saveLocalCachedMessages(messages) {
+function saveLocalCachedMessages(messages, creatorId = null) {
   try {
     const cleaned = sanitizeMessages(messages)
-    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(cleaned.slice(-100)))
+    const jsonStr = JSON.stringify(cleaned.slice(-100))
+    localStorage.setItem(LOCAL_CACHE_KEY, jsonStr)
+    if (creatorId) {
+      localStorage.setItem(`${LOCAL_CACHE_KEY}_${creatorId}`, jsonStr)
+    }
   } catch {}
 }
 
@@ -185,7 +190,7 @@ export async function fetchSupportHistory(creatorData) {
       const data = await res.json()
       if (Array.isArray(data.messages)) {
         const cleaned = sanitizeMessages(data.messages)
-        saveLocalCachedMessages(cleaned)
+        saveLocalCachedMessages(cleaned, creatorId)
         return cleaned
       }
     }
@@ -243,8 +248,35 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
 
     if (res.ok) {
       const data = await res.json()
-      // Refresh history
-      const history = await fetchSupportHistory(creatorData)
+      // Use messages directly from response if returned, or fetch latest
+      let history = Array.isArray(data.messages) && data.messages.length > 0
+        ? sanitizeMessages(data.messages)
+        : await fetchSupportHistory(creatorData)
+
+      // Guarantee the assistant reply is never missing from history!
+      if (data.reply) {
+        const hasBot = history.some(m => 
+          (m.id && (m.id === data.message_id || m.id === data.id)) ||
+          (m.sender === 'assistant' && m.message === data.reply)
+        )
+        if (!hasBot) {
+          const botRecord = {
+            id: data.message_id || ('ast_' + Date.now()),
+            session_id: data.session_id || sessionId,
+            creator_id: data.creator_id || creatorId,
+            creator_handle: creatorHandle,
+            creator_name: creatorName,
+            sender: 'assistant',
+            message: data.reply,
+            status: data.escalated ? 'escalated_to_admin' : 'ai_resolved',
+            escalated: Boolean(data.escalated),
+            created_at: new Date().toISOString()
+          }
+          history = [...history, botRecord]
+        }
+      }
+
+      saveLocalCachedMessages(history, creatorId)
       return {
         reply: data.reply,
         escalated: data.escalated,
@@ -293,7 +325,7 @@ export async function sendSupportMessage(text, creatorData, stage = 'onboarding'
 
   const existing = getLocalCachedMessages(sessionId, creatorId)
   const updated = [...existing, userMsg, botMsg]
-  saveLocalCachedMessages(updated)
+  saveLocalCachedMessages(updated, creatorId)
 
   return {
     reply: fallbackReply,

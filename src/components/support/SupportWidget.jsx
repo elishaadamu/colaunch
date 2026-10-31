@@ -39,13 +39,42 @@ export default function SupportWidget({ currentStage }) {
 
   const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
 
+  const mergeMessages = (prevMsgs, incomingMsgs) => {
+    if (!Array.isArray(incomingMsgs)) return prevMsgs
+    if (!Array.isArray(prevMsgs) || prevMsgs.length === 0) return incomingMsgs
+
+    const incomingIds = new Set(incomingMsgs.map(m => m.id).filter(Boolean))
+    const merged = [...incomingMsgs]
+
+    for (const p of prevMsgs) {
+      if (!p) continue
+      if (p.id && incomingIds.has(p.id)) continue
+      const isDuplicate = incomingMsgs.some(inc => 
+        inc.sender === p.sender && 
+        inc.message && p.message && 
+        inc.message.trim() === p.message.trim()
+      )
+      if (!isDuplicate) {
+        merged.push(p)
+      }
+    }
+
+    merged.sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+      return ta - tb
+    })
+
+    return merged
+  }
+
   // Load and poll chat history
   useEffect(() => {
     let active = true
     const loadHistory = () => {
       fetchSupportHistory(creatorData).then(msgs => {
         if (active && msgs) {
-          setMessages(msgs)
+          setMessages(prev => mergeMessages(prev, msgs))
         }
       })
     }
@@ -103,6 +132,10 @@ export default function SupportWidget({ currentStage }) {
     const tempId = 'temp_' + Date.now()
     const optimisticMsg = {
       id: tempId,
+      session_id: creatorData ? getSupportSessionId(creatorData) : '',
+      creator_id: creatorId,
+      creator_handle: handle,
+      creator_name: userIdentity.name || 'Creator',
       sender: 'user',
       message: text,
       status: 'active',
@@ -113,7 +146,7 @@ export default function SupportWidget({ currentStage }) {
     try {
       const res = await sendSupportMessage(text, creatorData, currentStage, false, userIdentity)
       if (res && res.messages) {
-        setMessages(res.messages)
+        setMessages(prev => mergeMessages(prev, res.messages))
       }
     } catch (err) {
       console.error('[SupportWidget] Send failed:', err)
@@ -145,10 +178,10 @@ export default function SupportWidget({ currentStage }) {
         userIdentity
       )
       if (res && res.messages) {
-        setMessages(res.messages)
+        setMessages(prev => mergeMessages(prev, res.messages))
       } else {
         const refreshed = await fetchSupportHistory(creatorData)
-        setMessages(refreshed)
+        setMessages(prev => mergeMessages(prev, refreshed))
       }
     } catch (err) {
       console.error('[SupportWidget] Escalation error:', err)
