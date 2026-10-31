@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useForge, useBgJob } from '../../App'
+import { useForge, useBgJob, getAccent } from '../../App'
+import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 import {
   RefreshCw,
   Copy,
@@ -307,15 +308,27 @@ function SkeletonDayColumn({ day, dateStr, isToday }) {
     <div
       className={`p-3 rounded-2xl flex flex-col justify-between min-h-[240px] transition-all ${
         isToday
-          ? 'border-2 border-cyan-500/80 bg-[#0c1424]'
+          ? 'bg-[#0c1424]'
           : 'bg-[#0d1424]/80 border border-slate-800/80'
       }`}
+      style={isToday ? {
+        border: '2px solid var(--theme-accent, #10B981)',
+        boxShadow: '0 0 24px -2px var(--theme-accent-bg, rgba(16,185,129,0.35))'
+      } : {}}
     >
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
         <div className="flex items-center gap-1.5">
-          <span className={`text-xs font-bold ${isToday ? 'text-cyan-400' : 'text-slate-300'}`}>{day}</span>
+          <span 
+            className={`text-xs font-bold ${isToday ? '' : 'text-slate-300'}`}
+            style={isToday ? { color: 'var(--theme-accent, #10B981)' } : {}}
+          >
+            {day}
+          </span>
           {isToday && (
-            <span className="inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
+            <span 
+              className="inline-flex rounded-full h-1.5 w-1.5" 
+              style={{ background: 'var(--theme-accent, #10B981)' }}
+            />
           )}
         </div>
         <span className="text-[10px] font-mono text-slate-500">{dateStr}</span>
@@ -558,6 +571,36 @@ export default function ContentCalendar() {
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const niche = creatorData?.niche || 'creator community'
   const productName = creatorData?.productName || 'VIP Launch'
+
+  const detectedBrandColor = useMemo(() => {
+    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
+    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
+    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
+    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
+    try {
+      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
+      if (rawMap) {
+        const map = JSON.parse(rawMap)
+        const id = creatorData?.id
+        const handleClean = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
+        const name = (creatorData?.name || '').toLowerCase()
+        if (id && map[id]?.primaryHex) return map[id].primaryHex
+        if (handleClean && map[handleClean]?.primaryHex) return map[handleClean].primaryHex
+        if (name && map[name]?.primaryHex) return map[name].primaryHex
+      }
+    } catch {}
+    const det = getDeterministicBrandColor(creatorData)
+    if (det?.primaryHex) return det.primaryHex
+    return '#10B981'
+  }, [creatorData])
+
+  const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
+  const brandTextColor = useMemo(() => getContrastTextColor(detectedBrandColor), [detectedBrandColor])
+  const accent = useMemo(() => ({
+    color: detectedBrandColor,
+    rgb: `${cr},${cg},${cb}`,
+    contrastText: brandTextColor
+  }), [detectedBrandColor, cr, cg, cb, brandTextColor])
 
   // View mode: 'grid' (7-day columns) or 'feed' (chronological timeline)
   const [viewMode, setViewMode] = useState('grid')
@@ -1044,8 +1087,15 @@ export default function ContentCalendar() {
           {/* Left Title & Strategy Context */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-cyan-950/60 text-cyan-400 border border-cyan-800/50">
-                <Sparkles size={11} className="text-cyan-400 animate-pulse" />
+              <span 
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold"
+                style={{
+                  color: accent.color,
+                  background: `rgba(${accent.rgb}, 0.12)`,
+                  border: `1px solid rgba(${accent.rgb}, 0.35)`
+                }}
+              >
+                <Sparkles size={11} className="animate-pulse" style={{ color: accent.color }} />
                 CONTENT CALENDAR & CADENCE ENGINE
               </span>
               <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">
@@ -1061,16 +1111,22 @@ export default function ContentCalendar() {
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
-              Forge engineered a strategic 7-day multi-channel roadmap for <strong className="text-slate-200">{creatorName}</strong> around <strong className="text-cyan-300">"{productName}"</strong>. Click any card to customize or generate full captions with AI.
+              Forge engineered a strategic 7-day multi-channel roadmap for <strong className="text-slate-200">{creatorName}</strong> around <strong style={{ color: accent.color }}>"{productName}"</strong>. Click any card to customize or generate full captions with AI.
             </p>
           </div>
 
           {/* Right Action Cluster */}
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
             {calJob.status === 'running' && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/40 border border-cyan-800/60">
-                <span className="inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
-                <span className="text-xs font-mono text-cyan-300">AI generating schedule…</span>
+              <div 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                style={{
+                  background: `rgba(${accent.rgb}, 0.12)`,
+                  border: `1px solid rgba(${accent.rgb}, 0.35)`
+                }}
+              >
+                <span className="inline-flex rounded-full h-2 w-2" style={{ background: accent.color }}></span>
+                <span className="text-xs font-mono" style={{ color: accent.color }}>AI generating schedule…</span>
                 <button
                   type="button"
                   onClick={() => cancelBgJob(calJobId)}
@@ -1085,7 +1141,12 @@ export default function ContentCalendar() {
               type="button"
               onClick={handleRegenerateWeek}
               disabled={calJob.status === 'running' || isLoading}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50 shadow-sm hover:brightness-110 active:scale-[0.98]"
+              style={{
+                background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.88) 100%)`,
+                color: accent.contrastText || '#090d16',
+                boxShadow: `0 2px 14px rgba(${accent.rgb}, 0.28)`
+              }}
             >
               <Wand2 size={13} className={calJob.status === 'running' || isLoading ? 'animate-spin' : ''} />
               <span>{calJob.status === 'running' ? 'Crafting Week…' : 'Auto-fill Week with AI'}</span>
@@ -1413,19 +1474,29 @@ export default function ContentCalendar() {
                     key={dayData.day}
                     className={`p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between min-h-[230px] transition-all duration-200 ${
                       isToday
-                        ? 'border-2 border-cyan-500/80 bg-[#0c1527]'
+                        ? 'bg-[#0c1527]'
                         : 'bg-[#0d1424] border border-slate-800/80 hover:border-slate-700'
                     }`}
+                    style={isToday ? {
+                      border: `2px solid rgba(${accent.rgb}, 0.85)`,
+                      boxShadow: `0 0 24px -2px rgba(${accent.rgb}, 0.35)`
+                    } : {}}
                   >
                     {/* Day Column Header */}
                     <div>
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-bold ${isToday ? 'text-cyan-400' : 'text-slate-300'}`}>
+                          <span 
+                            className={`text-xs font-bold ${isToday ? '' : 'text-slate-300'}`}
+                            style={isToday ? { color: accent.color } : {}}
+                          >
                             {dayData.day}
                           </span>
                           {isToday && (
-                            <span className="inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
+                            <span 
+                              className="inline-flex rounded-full h-1.5 w-1.5"
+                              style={{ background: accent.color }}
+                            />
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">

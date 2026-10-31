@@ -197,7 +197,7 @@ function getPlatformColor(platform) {
   if (p.includes('tik')) return { text: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' }
   if (p.includes('link')) return { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' }
   if (p.includes('x') || p.includes('twit')) return { text: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/30' }
-  return { text: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' }
+  return { text: 'text-slate-300', bg: 'bg-slate-500/10', border: 'border-slate-500/30' }
 }
 
 function isMockupCalendar(result) {
@@ -244,7 +244,11 @@ function buildFallbackWeek(creatorData) {
   ]
 }
 
-function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chatOpen }) {
+function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardClick, chatOpen }) {
+  const dynamicColor = accent?.color || (accentRgb ? `rgb(${accentRgb})` : 'var(--theme-accent, #10B981)')
+  const dynamicRgb = accent?.rgb || accentRgb || '16,185,129'
+  const contrastText = accent?.contrastText || 'var(--theme-btn-primary-text, #090d16)'
+
   const getWeekDates = () => {
     const dates = []
     const today = new Date()
@@ -277,38 +281,78 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
               key={day}
               className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
                 isToday 
-                  ? 'bg-slate-900/90 border-2 border-cyan-500/80 shadow-[0_0_24px_-2px_rgba(56,189,248,0.35)]' 
+                  ? 'bg-slate-900/90' 
                   : 'bg-[#111726]/80 border border-[#1e293b]'
               }`}
+              style={isToday ? {
+                border: `2px solid rgba(${dynamicRgb}, 0.85)`,
+                boxShadow: `0 0 24px -2px rgba(${dynamicRgb}, 0.35)`
+              } : {}}
             >
               {isToday && (
-                <span className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+                <span 
+                  className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded font-bold text-[9px] uppercase tracking-wider shadow-sm"
+                  style={{ background: dynamicColor, color: contrastText }}
+                >
                   Today
                 </span>
               )}
 
               {/* Day Header Skeleton */}
-              <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
-                <span className={`text-xs font-extrabold flex items-center gap-1.5 ${isToday ? 'text-cyan-300' : 'text-slate-300'}`}>
+              <div 
+                className="flex items-center justify-between pb-2 mb-2 border-b"
+                style={{ borderColor: isToday ? `rgba(${dynamicRgb}, 0.3)` : 'rgba(255,255,255,0.06)' }}
+              >
+                <span 
+                  className="text-xs font-extrabold flex items-center gap-1.5"
+                  style={{ color: isToday ? dynamicColor : '#cbd5e1' }}
+                >
                   {day}
-                  {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />}
+                  {isToday && (
+                    <span 
+                      className="w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ background: dynamicColor }}
+                    />
+                  )}
                 </span>
-                <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>{dateStr}</span>
+                <span 
+                  className="text-[10px] font-mono"
+                  style={{ color: isToday ? `rgba(${dynamicRgb}, 0.85)` : '#64748b' }}
+                >
+                  {dateStr}
+                </span>
               </div>
 
               {/* Skeleton Cards with Pulse */}
               <div className="space-y-2 flex-1 animate-pulse">
-                <div className={`p-2.5 rounded-lg space-y-2 border ${
-                  isToday 
-                    ? 'bg-cyan-950/40 border-cyan-500/40' 
-                    : 'bg-slate-800/60 border-slate-700/50'
-                }`}>
-                  <div className={`w-12 h-2.5 rounded ${isToday ? 'bg-cyan-400/40' : 'bg-slate-700/80'}`} />
+                <div 
+                  className="p-2.5 rounded-lg space-y-2 border"
+                  style={isToday ? {
+                    background: `rgba(${dynamicRgb}, 0.12)`,
+                    borderColor: `rgba(${dynamicRgb}, 0.35)`
+                  } : {
+                    background: 'rgba(30, 41, 59, 0.6)',
+                    borderColor: 'rgba(51, 65, 85, 0.5)'
+                  }}
+                >
+                  <div 
+                    className="w-12 h-2.5 rounded" 
+                    style={{ background: isToday ? `rgba(${dynamicRgb}, 0.4)` : 'rgba(51, 65, 85, 0.8)' }} 
+                  />
                   <div className="space-y-1.5">
-                    <div className={`w-full h-2.5 rounded ${isToday ? 'bg-cyan-400/30' : 'bg-slate-700/60'}`} />
-                    <div className={`w-4/5 h-2.5 rounded ${isToday ? 'bg-cyan-400/20' : 'bg-slate-700/40'}`} />
+                    <div 
+                      className="w-full h-2.5 rounded" 
+                      style={{ background: isToday ? `rgba(${dynamicRgb}, 0.3)` : 'rgba(51, 65, 85, 0.6)' }} 
+                    />
+                    <div 
+                      className="w-4/5 h-2.5 rounded" 
+                      style={{ background: isToday ? `rgba(${dynamicRgb}, 0.2)` : 'rgba(51, 65, 85, 0.4)' }} 
+                    />
                   </div>
-                  <div className={`w-10 h-3 rounded ${isToday ? 'bg-cyan-900/60' : 'bg-slate-900/90'}`} />
+                  <div 
+                    className="w-10 h-3 rounded" 
+                    style={{ background: isToday ? `rgba(${dynamicRgb}, 0.25)` : '#0f172a' }} 
+                  />
                 </div>
 
                 {i % 2 === 0 && (
@@ -344,23 +388,44 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
             key={`${dayData.day || 'day'}-${i}`}
             className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] transition-all relative ${
               isToday
-                ? 'bg-slate-900/90 border-2 border-cyan-500/80 shadow-[0_0_24px_-2px_rgba(56,189,248,0.35)]'
+                ? 'bg-slate-900/90'
                 : 'bg-[#111726] border border-[#1e293b] hover:border-slate-700'
             }`}
+            style={isToday ? {
+              border: `2px solid rgba(${dynamicRgb}, 0.85)`,
+              boxShadow: `0 0 24px -2px rgba(${dynamicRgb}, 0.35)`
+            } : {}}
           >
             {isToday && (
-              <span className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded bg-cyan-500 text-[#090d16] font-bold text-[9px] uppercase tracking-wider">
+              <span 
+                className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded font-bold text-[9px] uppercase tracking-wider shadow-sm"
+                style={{ background: dynamicColor, color: contrastText }}
+              >
                 Today
               </span>
             )}
 
             {/* Header: Day & Date */}
-            <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-cyan-500/30' : 'border-slate-800'}`}>
-              <span className={`text-xs font-bold flex items-center gap-1.5 ${isToday ? 'text-cyan-300 font-extrabold' : 'text-slate-300'}`}>
+            <div 
+              className="flex items-center justify-between pb-2 mb-2 border-b"
+              style={{ borderColor: isToday ? `rgba(${dynamicRgb}, 0.3)` : 'rgba(255,255,255,0.06)' }}
+            >
+              <span 
+                className="text-xs font-bold flex items-center gap-1.5"
+                style={{ color: isToday ? dynamicColor : '#cbd5e1' }}
+              >
                 {dayData.day}
-                {isToday && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />}
+                {isToday && (
+                  <span 
+                    className="w-1.5 h-1.5 rounded-full inline-block"
+                    style={{ background: dynamicColor }}
+                  />
+                )}
               </span>
-              <span className={`text-[10px] font-mono ${isToday ? 'text-cyan-300/80 font-bold' : 'text-slate-500'}`}>
+              <span 
+                className="text-[10px] font-mono"
+                style={{ color: isToday ? `rgba(${dynamicRgb}, 0.85)` : '#64748b' }}
+              >
                 {dateStr}
               </span>
             </div>
@@ -375,9 +440,13 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
                     onClick={() => onCardClick && onCardClick(post, dayData.day)}
                     className={`p-2.5 rounded-lg border transition-all cursor-pointer group hover:border-slate-600 ${
                       isToday
-                        ? 'bg-cyan-950/40 border-cyan-500/40 hover:border-cyan-400'
+                        ? ''
                         : 'bg-slate-800/80 border-slate-700/60 hover:border-slate-600'
                     }`}
+                    style={isToday ? {
+                      background: `rgba(${dynamicRgb}, 0.12)`,
+                      border: `1px solid rgba(${dynamicRgb}, 0.35)`,
+                    } : {}}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className={`text-[9px] uppercase font-bold tracking-wider ${colors.text} block`}>
@@ -401,9 +470,17 @@ function WeekCalendar({ week, onAddPost, accentRgb, isLoading, onCardClick, chat
                     </p>
 
                     {post.type && (
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-mono uppercase ${
-                        isToday ? 'bg-cyan-900/60 text-cyan-200' : 'bg-slate-900 text-slate-400'
-                      }`}>
+                      <span 
+                        className="inline-block px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider"
+                        style={isToday ? {
+                          background: `rgba(${dynamicRgb}, 0.22)`,
+                          color: dynamicColor,
+                          border: `1px solid rgba(${dynamicRgb}, 0.35)`
+                        } : {
+                          background: '#0f172a',
+                          color: '#94a3b8'
+                        }}
+                      >
                         {post.type}
                       </span>
                     )}
@@ -2361,8 +2438,8 @@ export default function Marketing({ chatOpen: propChatOpen }) {
           <div className="flex items-center gap-2">
             {autofillJob.status === 'running' && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5">
-                  <Sparkles size={11} className="animate-spin text-cyan-400" />
+                <span className="text-[11px] font-mono flex items-center gap-1.5" style={{ color: accent.color }}>
+                  <Sparkles size={11} className="animate-spin" style={{ color: accent.color }} />
                   Generating custom plan…
                 </span>
                 <button
@@ -2383,9 +2460,14 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleAutoFillWeek}
               disabled={autofillJob.status === 'running'}
-              className="flex items-center gap-1.5 text-xs font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-950/70 border border-cyan-800/60 px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              style={{
+                color: accent.color,
+                background: `rgba(${accent.rgb}, 0.12)`,
+                border: `1px solid rgba(${accent.rgb}, 0.35)`
+              }}
             >
-              <Sparkles size={11} className={autofillJob.status === 'running' ? "animate-pulse" : ""} />
+              <Sparkles size={11} className={autofillJob.status === 'running' ? "animate-pulse" : ""} style={{ color: accent.color }} />
               <span>{autofillJob.status === 'running' ? "AI working…" : "Auto-fill Week"}</span>
             </button>
           </div>
@@ -2393,6 +2475,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         <WeekCalendar 
           week={week} 
           onAddPost={handleAddPost} 
+          accent={accent}
           accentRgb={accent.rgb} 
           isLoading={autofillJob.status === 'running' || !week || week.length === 0} 
           onCardClick={(post, day) => { setSelectedPost(post); setSelectedPostDay(day) }} 
@@ -2407,7 +2490,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
           <div className="flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
               <p className="text-xs font-bold text-slate-300 uppercase tracking-widest font-mono">
                 Today's priorities
               </p>
@@ -2421,8 +2504,8 @@ export default function Marketing({ chatOpen: propChatOpen }) {
             )}
 
             {isPrioritiesGenerating && (
-              <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1.5 animate-pulse">
-                <Sparkles size={11} className="animate-spin text-cyan-400" />
+              <span className="text-[11px] font-mono flex items-center gap-1.5 animate-pulse" style={{ color: accent.color }}>
+                <Sparkles size={11} className="animate-spin" style={{ color: accent.color }} />
                 Forge AI tailoring priorities…
               </span>
             )}
@@ -2433,10 +2516,15 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleRegeneratePriorities}
               disabled={isPrioritiesGenerating}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/60 border border-cyan-800/50 px-2.5 py-1 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              style={{
+                color: accent.color,
+                background: `rgba(${accent.rgb}, 0.12)`,
+                border: `1px solid rgba(${accent.rgb}, 0.35)`
+              }}
               title="Regenerate dynamic priorities with AI"
             >
-              <RefreshCw size={11} className={isPrioritiesGenerating ? "animate-spin" : ""} />
+              <RefreshCw size={11} className={isPrioritiesGenerating ? "animate-spin" : ""} style={{ color: accent.color }} />
               <span>{isPrioritiesGenerating ? "Tailoring…" : "AI Refresh"}</span>
             </button>
 
@@ -2481,7 +2569,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                       className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0 transition-all cursor-pointer ${
                         isStruck
                           ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
-                          : 'bg-slate-900/90 border border-slate-700/80 hover:border-cyan-400 text-transparent hover:text-cyan-400/60'
+                          : 'bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-transparent'
                       }`}
                     >
                       <Check size={13} className={isStruck ? "stroke-[2.5]" : "stroke-[2]"} />
@@ -2548,7 +2636,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                           type="button"
                           onClick={() => handleToggleStrikeAction(action.id)}
                           title="Restore task to active list"
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-cyan-300 bg-slate-900/60 hover:bg-slate-800 border border-slate-800/80 transition-all cursor-pointer"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 border border-slate-800/80 transition-all cursor-pointer"
                         >
                           <RotateCcw size={11} />
                           <span>Restore</span>
@@ -2560,7 +2648,12 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                           type="button"
                           onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action)}
                           disabled={generating === action.id}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-sm hover:brightness-110 active:scale-[0.98]"
+                          style={{
+                            background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.88) 100%)`,
+                            color: accent.contrastText || '#090d16',
+                            boxShadow: `0 2px 14px rgba(${accent.rgb}, 0.28)`
+                          }}
                         >
                           {generating === action.id ? (
                             <RefreshCw size={12} className="animate-spin" />
