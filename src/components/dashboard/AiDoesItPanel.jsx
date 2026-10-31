@@ -374,6 +374,28 @@ function ProductMockup({ creatorData, accent }) {
   )
 }
 
+// Helper to keep slide categories crisp and single-line in tight grid cards
+function formatCategory(cat = '') {
+  const c = cat.toUpperCase().trim()
+  if (c.includes('EXECUTIVE')) return 'EXEC SUMMARY'
+  if (c.includes('PROBLEM')) return 'MARKET PROBLEM'
+  if (c.includes('PROPRIETARY') || c.includes('SOLUTION')) return 'SOLUTION'
+  if (c.includes('ARCHITECTURE') || c.includes('DELIVERABLES')) return 'ARCHITECTURE'
+  if (c.includes('AUDIENCE') || c.includes('PERSONA')) return 'TARGET AUDIENCE'
+  if (c.includes('ECONOMICS') || c.includes('FINANCIAL') || c.includes('MONETIZATION')) return 'UNIT ECONOMICS'
+  if (c.includes('GO-TO-MARKET') || c.includes('GTM') || c.includes('CONVERSION') || c.includes('RUNWAY')) return 'GO-TO-MARKET'
+  if (c.includes('OFFER') || c.includes('INCENTIVE') || c.includes('FOUNDING')) return 'THE OFFER'
+  return c.split('&')[0].trim().slice(0, 15)
+}
+
+function formatMetric(m = '') {
+  if (!m) return ''
+  return m.replace(' Global Community', ' Community')
+          .replace(' Engagement Multiplier', ' Multiplier')
+          .replace(' Modular Pillars', ' Pillars')
+          .replace(' Commercial Readiness', ' Intent')
+}
+
 // ── 8-Slide Executive Pitch Deck Presenter ──────────────────────────────────────
 
 function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onUpdateSlide }) {
@@ -469,70 +491,70 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
         boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
       }}
     >
-      {/* Deck Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0e0e13' }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
-            <BarChart2 size={14} />
+      {/* Deck Toolbar - Tight, sleek */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0c0c10' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
+            <BarChart2 size={13} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-white tracking-wide">Executive Pitch Deck</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[12px] font-bold text-white tracking-wide">Executive Pitch Deck</span>
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">
                 {totalSlides} SLIDES
               </span>
             </div>
-            <p className="text-[10px] text-white/40">16:9 Presentation Studio · Built for {creatorName}</p>
+            <p className="text-[9.5px] text-white/40 leading-none">16:9 Presentation Studio · {creatorName}</p>
           </div>
         </div>
 
         {/* View Mode & Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Slideshow vs Grid Mode */}
           <div className="flex items-center rounded-lg p-0.5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
             <button
               onClick={() => setViewMode('presenter')}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-[9.5px] font-medium transition-all"
               style={{
                 background: viewMode === 'presenter' ? `rgba(${accent.rgb},0.2)` : 'transparent',
                 color: viewMode === 'presenter' ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <Eye size={11} /> Presenter
+              <Eye size={10} /> Presenter
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-[9.5px] font-medium transition-all"
               style={{
                 background: viewMode === 'grid' ? `rgba(${accent.rgb},0.2)` : 'transparent',
                 color: viewMode === 'grid' ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <LayoutGrid size={11} /> Grid (8-up)
+              <LayoutGrid size={10} /> Grid (8-up)
             </button>
           </div>
 
           {/* Download Markdown */}
           <button
             onClick={handleDownloadMarkdown}
-            className="flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg border text-white/70 hover:text-white transition-all"
+            className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-lg border text-white/70 hover:text-white transition-all"
             style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             title="Download formatted pitch deck (.md)"
           >
-            <Download size={11} /> Export
+            <Download size={10} /> Export
           </button>
 
           {/* Copy Deck */}
-          <CopyBtn text={allDeckText} label="Copy Deck" small />
+          <CopyBtn text={allDeckText} label="Copy" small />
 
           {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 rounded-lg border text-white/50 hover:text-white transition-all"
+            className="p-1 rounded-lg border text-white/50 hover:text-white transition-all"
             style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             title={fullscreen ? "Exit fullscreen" : "Present fullscreen"}
           >
-            {fullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+            {fullscreen ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
           </button>
 
           {/* Rewrite with AI */}
@@ -540,10 +562,10 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             <button
               onClick={onRegen}
               disabled={regenning}
-              className="flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-30 border"
+              className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-lg transition-all disabled:opacity-30 border"
               style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.25)' }}
             >
-              <RefreshCw size={10} className={regenning ? 'animate-spin' : ''} />
+              <RefreshCw size={9} className={regenning ? 'animate-spin' : ''} />
               {regenning ? 'Rewriting…' : 'Rewrite'}
             </button>
           )}
@@ -552,22 +574,22 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
 
       {/* ── MODE 1: PRESENTER CANVAS ─────────────────────────────────────────── */}
       {viewMode === 'presenter' && (
-        <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+        <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
           {/* Main 16:9 Slide Canvas */}
           <div
-            className="relative rounded-2xl p-6 sm:p-8 border shadow-2xl flex flex-col justify-between transition-all duration-300"
+            className="relative rounded-xl p-5 sm:p-6 border shadow-2xl flex flex-col justify-between transition-all duration-300"
             style={{
-              minHeight: fullscreen ? '60vh' : '360px',
+              minHeight: fullscreen ? '65vh' : '310px',
               background: 'linear-gradient(145deg, #101016 0%, #08080b 100%)',
               borderColor: `rgba(${accent.rgb}, 0.22)`,
               boxShadow: `0 12px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)`
             }}
           >
             {/* Top Slide Meta: Category Badge + Slide Counter */}
-            <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className="text-[10px] sm:text-[11px] font-mono font-bold tracking-widest px-3 py-1 rounded-full uppercase"
+                  className="text-[9.5px] font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-full uppercase"
                   style={{
                     background: `rgba(${accent.rgb}, 0.18)`,
                     color: accent.color,
@@ -577,46 +599,46 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                   {currentSlide.category || `SLIDE ${currentSlideIdx + 1}`}
                 </span>
                 {currentSlide.metricBadge && (
-                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     {currentSlide.metricBadge}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono font-semibold text-white/40">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-semibold text-white/40">
                   Slide <span className="text-white font-bold">{currentSlideIdx + 1}</span> / {totalSlides}
                 </span>
               </div>
             </div>
 
             {/* Slide Body: Title, Subtitle, Bullets */}
-            <div className="my-auto py-2">
-              <h3 className="text-[18px] sm:text-[24px] font-black text-white tracking-tight leading-snug mb-2">
+            <div className="my-auto py-1">
+              <h3 className="text-[16px] sm:text-[20px] font-black text-white tracking-tight leading-snug mb-1.5">
                 {currentSlide.title || `${productName} Overview`}
               </h3>
               {currentSlide.subtitle && (
-                <p className="text-[13px] sm:text-[14px] text-white/50 mb-5 leading-relaxed max-w-2xl font-medium">
+                <p className="text-[12px] sm:text-[13px] text-white/50 mb-3 leading-relaxed max-w-2xl font-medium">
                   {currentSlide.subtitle}
                 </p>
               )}
 
               {/* Bullet points */}
-              <div className="space-y-3 max-w-3xl">
+              <div className="space-y-2 max-w-3xl">
                 {(currentSlide.bullets || []).map((bullet, bIdx) => (
-                  <div key={bIdx} className="flex items-start gap-3 group">
+                  <div key={bIdx} className="flex items-start gap-2.5 group">
                     <div
-                      className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
+                      className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 mt-0.5"
                       style={{
                         background: `rgba(${accent.rgb}, 0.15)`,
                         color: accent.color,
                         border: `1px solid rgba(${accent.rgb}, 0.25)`
                       }}
                     >
-                      <Check size={11} strokeWidth={3} />
+                      <Check size={9} strokeWidth={3} />
                     </div>
-                    <p className="text-[13px] sm:text-[14px] text-white/80 leading-relaxed font-normal">
+                    <p className="text-[12.5px] sm:text-[13px] text-white/80 leading-relaxed font-normal">
                       {bullet}
                     </p>
                   </div>
@@ -627,16 +649,16 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             {/* Bottom Key Takeaway Callout */}
             {currentSlide.takeaway && (
               <div
-                className="mt-6 pt-4 border-t flex items-center justify-between flex-wrap gap-2"
+                className="mt-4 pt-3 border-t flex items-center justify-between flex-wrap gap-2"
                 style={{ borderColor: 'rgba(255,255,255,0.06)' }}
               >
-                <div className="flex items-center gap-2 text-[11px] sm:text-[12px] text-white/60">
-                  <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: accent.color }}>
+                <div className="flex items-center gap-2 text-[10.5px] text-white/60">
+                  <span className="font-bold uppercase tracking-wider text-[9.5px]" style={{ color: accent.color }}>
                     Takeaway:
                   </span>
                   <span>{currentSlide.takeaway}</span>
                 </div>
-                <div className="text-[10px] text-white/20 font-mono">
+                <div className="text-[9px] text-white/20 font-mono">
                   {creatorName} · Confidential Launch
                 </div>
               </div>
@@ -644,37 +666,37 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
           </div>
 
           {/* Presenter Navigation Controls */}
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="mt-3 flex flex-col sm:flex-row items-center justify-between gap-2.5">
             {/* Prev / Next Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentSlideIdx(p => Math.max(p - 1, 0))}
                 disabled={currentSlideIdx === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-semibold text-white/70 hover:text-white transition-all disabled:opacity-20"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-white/70 hover:text-white transition-all disabled:opacity-20"
                 style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
               >
-                <ChevronLeft size={13} /> Previous
+                <ChevronLeft size={11} /> Prev
               </button>
               <button
                 onClick={() => setCurrentSlideIdx(p => Math.min(p + 1, totalSlides - 1))}
                 disabled={currentSlideIdx === totalSlides - 1}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border text-[11px] font-bold text-white transition-all disabled:opacity-20 shadow-md"
+                className="flex items-center gap-1 px-3 py-1 rounded-lg border text-[10px] font-bold text-white transition-all disabled:opacity-20 shadow-md"
                 style={{
                   background: `linear-gradient(135deg, rgba(${accent.rgb}, 0.35), rgba(${accent.rgb}, 0.2))`,
                   borderColor: `rgba(${accent.rgb}, 0.4)`
                 }}
               >
-                Next <ChevronRight size={13} />
+                Next <ChevronRight size={11} />
               </button>
             </div>
 
             {/* Slide Track Dots & Jump Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full">
+            <div className="flex items-center gap-1 overflow-x-auto py-0.5 max-w-full">
               {slides.map((s, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlideIdx(idx)}
-                  className="group relative flex items-center justify-center p-1.5 rounded-lg transition-all"
+                  className="group relative flex items-center justify-center p-1 rounded-md transition-all"
                   style={{
                     background: currentSlideIdx === idx ? `rgba(${accent.rgb}, 0.25)` : 'rgba(255,255,255,0.03)',
                     border: currentSlideIdx === idx ? `1px solid ${accent.color}` : '1px solid rgba(255,255,255,0.06)'
@@ -682,7 +704,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                   title={`Slide ${idx + 1}: ${s.category || s.title}`}
                 >
                   <span
-                    className="text-[9px] font-mono font-bold px-1.5"
+                    className="text-[8.5px] font-mono font-bold px-1"
                     style={{ color: currentSlideIdx === idx ? '#fff' : 'rgba(255,255,255,0.4)' }}
                   >
                     0{idx + 1}
@@ -691,16 +713,16 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
               ))}
             </div>
 
-            <div className="text-[10px] text-white/30 hidden md:block">
-              Use <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[9px]">←</kbd> <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[9px]">→</kbd> keys to present
+            <div className="text-[9.5px] text-white/30 hidden md:block">
+              <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[8.5px]">←</kbd> <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[8.5px]">→</kbd> to present
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODE 2: 8-UP GRID OVERVIEW ──────────────────────────────────────── */}
+      {/* ── MODE 2: 8-UP GRID OVERVIEW (TIGHT & COMPACT) ────────────────────── */}
       {viewMode === 'grid' && (
-        <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-2.5 sm:p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
           {slides.map((s, idx) => (
             <div
               key={idx}
@@ -708,43 +730,81 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 setCurrentSlideIdx(idx)
                 setViewMode('presenter')
               }}
-              className="rounded-xl p-4 border cursor-pointer transition-all duration-200 hover:scale-[1.02] flex flex-col justify-between"
+              className="group rounded-xl p-2.5 sm:p-3 border cursor-pointer transition-all duration-150 hover:border-white/20 flex flex-col justify-between"
               style={{
-                background: currentSlideIdx === idx ? `rgba(${accent.rgb}, 0.1)` : '#0c0c10',
-                borderColor: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.08)',
-                minHeight: '200px'
+                background: currentSlideIdx === idx ? `rgba(${accent.rgb}, 0.1)` : '#0b0b0e',
+                borderColor: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.07)',
+                boxShadow: currentSlideIdx === idx ? `0 0 14px rgba(${accent.rgb}, 0.15)` : 'none',
+                minHeight: '138px'
               }}
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded" style={{ background: `rgba(${accent.rgb}, 0.18)`, color: accent.color }}>
-                    0{idx + 1} · {s.category || 'SLIDE'}
-                  </span>
+                {/* Header row: tight slide number + single-line category pill + clean metric */}
+                <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{
+                        background: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.07)',
+                        color: currentSlideIdx === idx ? '#000' : 'rgba(255,255,255,0.7)',
+                        border: currentSlideIdx === idx ? 'none' : '1px solid rgba(255,255,255,0.08)'
+                      }}
+                    >
+                      0{idx + 1}
+                    </span>
+                    <span
+                      className="text-[8.5px] font-mono font-bold tracking-wider uppercase truncate"
+                      style={{ color: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.45)' }}
+                    >
+                      {formatCategory(s.category)}
+                    </span>
+                  </div>
                   {s.metricBadge && (
-                    <span className="text-[8px] font-mono text-emerald-400 font-semibold truncate max-w-[100px]">
-                      {s.metricBadge}
+                    <span
+                      className="text-[7.5px] font-mono font-semibold px-1.5 py-0.5 rounded flex-shrink-0 border"
+                      style={{
+                        background: 'rgba(52, 211, 153, 0.08)',
+                        color: '#34d399',
+                        borderColor: 'rgba(52, 211, 153, 0.2)'
+                      }}
+                    >
+                      {formatMetric(s.metricBadge)}
                     </span>
                   )}
                 </div>
-                <h5 className="text-[12px] font-bold text-white line-clamp-2 leading-snug mb-1">
+
+                {/* Title */}
+                <h5 className="text-[11.5px] font-bold text-white line-clamp-1 leading-snug mb-0.5 group-hover:text-white transition-colors">
                   {s.title}
                 </h5>
-                <p className="text-[10px] text-white/40 line-clamp-2 mb-2 leading-relaxed">
-                  {s.subtitle || ''}
-                </p>
-                <div className="space-y-1">
+
+                {/* Subtitle */}
+                {s.subtitle && (
+                  <p className="text-[9.5px] text-white/40 line-clamp-1 leading-tight mb-1.5">
+                    {s.subtitle}
+                  </p>
+                )}
+
+                {/* Bullets (tight single-line preview) */}
+                <div className="space-y-0.5 my-1">
                   {(s.bullets || []).slice(0, 2).map((b, bIdx) => (
-                    <div key={bIdx} className="flex items-start gap-1.5 text-[9px] text-white/60">
-                      <span className="text-white/30">•</span>
+                    <div key={bIdx} className="flex items-start gap-1 text-[8.5px] text-white/55 leading-tight">
+                      <span className="text-white/25 select-none leading-none mt-0.5">•</span>
                       <span className="line-clamp-1">{b}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t flex items-center justify-between text-[9px]" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                <span className="text-white/30">Click to present</span>
-                <ChevronRight size={11} className="text-white/40" />
+              {/* Bottom bar */}
+              <div
+                className="mt-2 pt-1.5 border-t flex items-center justify-between text-[8px] font-mono"
+                style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+              >
+                <span className="text-white/30 group-hover:text-white/60 transition-colors">
+                  {currentSlideIdx === idx ? '● Current slide' : 'Present slide'}
+                </span>
+                <ChevronRight size={10} className="text-white/30 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
               </div>
             </div>
           ))}
@@ -1365,13 +1425,13 @@ export default function AiDoesItPanel({ onClose }) {
 
         {/* ── 4. DONE STATE: COMPLETE LAUNCH PACK ────────────── */}
         {phase === 'done' && pack && (
-          <div className="space-y-5">
-            {/* Navigation Tabs Bar */}
+          <div className="space-y-3.5">
+            {/* Navigation Tabs Bar - Tight & sleek */}
             <div
-              className="flex items-center justify-between border-b pb-2 overflow-x-auto gap-2"
-              style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+              className="flex items-center justify-between border-b pb-1.5 overflow-x-auto gap-2"
+              style={{ borderColor: 'rgba(255,255,255,0.07)' }}
             >
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {[
                   { id: 'deck',   label: 'Pitch Deck (8 Slides)', icon: BarChart2, color: '#f59e0b' },
                   { id: 'mockup', label: 'Product & Visuals',     icon: Image,     color: '#a78bfa' },
@@ -1382,21 +1442,21 @@ export default function AiDoesItPanel({ onClose }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold transition-all whitespace-nowrap"
                     style={{
                       background: activeTab === tab.id ? `rgba(${accent.rgb}, 0.18)` : 'transparent',
                       color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.45)',
                       border: activeTab === tab.id ? `1px solid rgba(${accent.rgb}, 0.35)` : '1px solid transparent'
                     }}
                   >
-                    <tab.icon size={12} style={{ color: activeTab === tab.id ? accent.color : tab.color }} />
+                    <tab.icon size={11} style={{ color: activeTab === tab.id ? accent.color : tab.color }} />
                     {tab.label}
                   </button>
                 ))}
               </div>
 
-              <div className="text-[10px] text-white/30 hidden lg:block font-mono">
-                Grounding: {handle} · {niche}
+              <div className="text-[9.5px] text-white/30 hidden lg:block font-mono">
+                {handle} · {niche}
               </div>
             </div>
 
