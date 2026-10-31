@@ -78,7 +78,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-none transition-colors"
                 style={{ color: 'var(--theme-text-muted)' }}
               >
                 <X size={18} />
@@ -94,7 +94,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                     <button
                       key={id}
                       onClick={() => handleNavClick(id)}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-none transition-all duration-150"
                       style={{
                         background: isActive ? 'var(--theme-accent-bg)' : 'transparent',
                       }}
@@ -112,7 +112,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                       </span>
                       {badge && (
                         <span
-                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 tracking-tight leading-none"
+                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-none flex-shrink-0 tracking-tight leading-none"
                           style={{ background: 'var(--theme-accent)', color: 'var(--theme-btn-primary-text)' }}
                         >
                           {badge}
@@ -129,7 +129,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               <div className="px-2 pb-2 flex-shrink-0">
                 <button
                   onClick={() => { goTo('signup'); setIsOpen(false) }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group border"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-none transition-all duration-300 relative overflow-hidden group border"
                   style={{
                     background: 'linear-gradient(135deg, var(--theme-accent-bg) 0%, rgba(255, 255, 255, 0.02) 100%)',
                     borderColor: 'var(--theme-accent-border)',
@@ -139,7 +139,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                   <span className="text-[13px] font-semibold text-white text-left flex-1">
                     Register Account
                   </span>
-                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
+                  <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-none" style={{ background: 'var(--theme-accent)' }} />
                 </button>
               </div>
             )}
@@ -154,7 +154,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                     logout()
                   }
                 }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-none transition-all duration-150"
                 style={{ background: 'transparent', color: 'var(--theme-text-muted)' }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'
@@ -226,7 +226,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
             <button
               onClick={() => window.location.href = '/launch'}
               title={!isOpen ? 'Creator Launch OS' : undefined}
-              className="w-full flex items-center rounded-xl transition-all duration-200 group overflow-hidden mb-2"
+              className="w-full flex items-center rounded-none transition-all duration-200 group overflow-hidden mb-2"
               style={{
                 padding: isOpen ? '9px 10px' : '9px 0',
                 justifyContent: isOpen ? 'flex-start' : 'center',
@@ -242,7 +242,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                     Creator Launch
                   </span>
                   <span 
-                    className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full"
+                    className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-none"
                     style={{
                       background: 'var(--theme-accent-bg)',
                       color: 'var(--theme-accent)',
@@ -261,7 +261,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                   key={id}
                   onClick={() => setActiveTab(id)}
                   title={!isOpen ? label : undefined}
-                  className="w-full flex items-center rounded-xl transition-all duration-150 group overflow-hidden"
+                  className="w-full flex items-center rounded-none transition-all duration-150 group overflow-hidden"
                   style={{
                     padding: isOpen ? '9px 10px' : '9px 0',
                     justifyContent: isOpen ? 'flex-start' : 'center',
@@ -293,7 +293,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                       </span>
                       {badge && (
                         <span
-                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 tracking-tight leading-none"
+                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-none flex-shrink-0 tracking-tight leading-none"
                           style={{ background: 'var(--theme-accent)', color: 'var(--theme-btn-primary-text)' }}
                         >
                           {badge}
@@ -313,7 +313,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
             <button
               onClick={() => goTo('signup')}
               title={!isOpen ? "Register Console Account" : undefined}
-              className="w-full flex items-center rounded-xl transition-all duration-300 relative overflow-hidden group border"
+              className="w-full flex items-center rounded-none transition-all duration-300 relative overflow-hidden group border"
               style={{
                 padding: isOpen ? '10px 10px' : '10px 0',
                 justifyContent: isOpen ? 'flex-start' : 'center',
@@ -333,7 +333,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                 </span>
               )}
               {/* Subtle accent dot */}
-              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
+              <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-none" style={{ background: 'var(--theme-accent)' }} />
             </button>
           </div>
         )}
@@ -349,7 +349,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               }
             }}
             title={!isOpen ? "Logout" : undefined}
-            className="w-full flex items-center rounded-xl transition-all duration-150 group overflow-hidden"
+            className="w-full flex items-center rounded-none transition-all duration-150 group overflow-hidden"
             style={{
               padding: isOpen ? '9px 10px' : '9px 0',
               justifyContent: isOpen ? 'flex-start' : 'center',
@@ -383,7 +383,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
           <button
             onClick={() => setIsOpen(o => !o)}
             title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-            className="w-full flex items-center justify-center py-2 rounded-xl transition-all duration-150"
+            className="w-full flex items-center justify-center py-2 rounded-none transition-all duration-150"
             style={{ color: 'var(--theme-text-muted)' }}
             onMouseEnter={e => {
               e.currentTarget.style.background = 'var(--theme-accent-bg)'
@@ -414,7 +414,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
 function LogoutModal({ onRegister, onLogout, onCancel }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
-      <div className="w-full max-w-sm rounded-2xl border p-6 space-y-6 shadow-2xl text-left bg-[#0e0e0e]" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="w-full max-w-sm rounded-none border p-6 space-y-6 shadow-2xl text-left bg-[#0e0e0e]" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 text-amber-500">
           <ShieldAlert size={22} className="animate-bounce" />
           <h3 className="text-[16px] font-bold text-white">Discard Guest Progress?</h3>
@@ -425,19 +425,19 @@ function LogoutModal({ onRegister, onLogout, onCancel }) {
         <div className="flex flex-col gap-2 pt-2">
           <button
             onClick={onRegister}
-            className="forge-btn-primary w-full text-[13px] py-2.5 font-semibold"
+            className="forge-btn-primary w-full text-[13px] py-2.5 font-semibold rounded-none"
           >
             Register Account & Save
           </button>
           <button
             onClick={onLogout}
-            className="w-full py-2.5 text-[12px] font-medium rounded-full border border-white/5 hover:border-red-500/20 hover:bg-red-500/5 text-white/40 hover:text-red-400 transition-all text-center"
+            className="w-full py-2.5 text-[12px] font-medium rounded-none border border-white/5 hover:border-red-500/20 hover:bg-red-500/5 text-white/40 hover:text-red-400 transition-all text-center"
           >
             Logout anyway (Discard all data)
           </button>
           <button
             onClick={onCancel}
-            className="w-full py-2 text-[12px] font-medium text-white/40 hover:text-white/60 transition-colors text-center"
+            className="w-full py-2 text-[12px] font-medium rounded-none text-white/40 hover:text-white/60 transition-colors text-center"
           >
             Cancel
           </button>

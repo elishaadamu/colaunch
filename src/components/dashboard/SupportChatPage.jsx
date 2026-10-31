@@ -45,7 +45,7 @@ export default function SupportChatPage() {
 
   const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
-  const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
+  const creatorDashboardUrl = `${baseUrl}/dashboard/${creatorId}`
 
   // Non-destructive message merging: prevents poller from deleting optimistic or recent responses
   const mergeMessages = (prevMsgs, incomingMsgs) => {
@@ -254,7 +254,7 @@ export default function SupportChatPage() {
         <div>
           <div className="flex items-center gap-3 mb-1.5">
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner"
+              className="w-10 h-10 rounded-none flex items-center justify-center border"
               style={{
                 background: `rgba(${accent.rgb}, 0.12)`,
                 borderColor: `rgba(${accent.rgb}, 0.3)`,
@@ -266,7 +266,7 @@ export default function SupportChatPage() {
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
                 Customer Support Desk
-                <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
+                <span className="w-2 h-2 rounded-none" style={{ background: accent.color }} />
               </h1>
               <p className="text-xs sm:text-sm text-slate-400">
                 24/7 Creator Intelligence Agent & Direct Operations Desk
@@ -278,13 +278,13 @@ export default function SupportChatPage() {
         {/* Operational Status Badges */}
         <div className="flex items-center gap-2.5 flex-wrap">
           {hasIdentity && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
               <User className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-white font-bold">{userIdentity.name}</span>
               <span className="text-slate-400 text-[11px]">({userIdentity.email})</span>
               <button
                 onClick={() => setIsEditingIdentity(true)}
-                className="text-slate-400 hover:text-white ml-1 p-0.5 rounded hover:bg-white/10 cursor-pointer"
+                className="text-slate-400 hover:text-white ml-1 p-0.5 rounded-none hover:bg-white/10 cursor-pointer"
                 title="Edit Name & Email"
               >
                 <Edit2 className="w-3 h-3" />
@@ -292,13 +292,13 @@ export default function SupportChatPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
             <Bot className="w-3.5 h-3.5" style={{ color: accent.color }} />
             <span>AI Desk:</span>
             <span className="text-emerald-400 font-bold">Online</span>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-[#121722] border border-[#232d42] text-xs font-mono text-slate-300">
             <Mail className="w-3.5 h-3.5 text-blue-400" />
             <span>Operations Desk:</span>
             <span className="text-blue-400 font-bold">Active</span>
@@ -307,7 +307,7 @@ export default function SupportChatPage() {
           <button
             onClick={() => handleEscalate(`Creator ${handle} clicked Escalate button in Dashboard Support Desk`)}
             disabled={escalating}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition cursor-pointer"
           >
             {escalating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
             {hasEscalation ? 'Admin Already Notified' : 'Escalate to Admin'}
@@ -316,7 +316,7 @@ export default function SupportChatPage() {
           <button
             onClick={handleResetChat}
             disabled={clearing}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition cursor-pointer"
             title="Delete all chats & start fresh"
           >
             {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
@@ -332,7 +332,7 @@ export default function SupportChatPage() {
         <div className="lg:col-span-4 space-y-4">
           
           {/* Creator Active Snapshot Card */}
-          <div className="p-5 rounded-2xl bg-[#0f141f] border border-[#1f283d] shadow-sm space-y-4">
+          <div className="p-5 rounded-none bg-[#0f141f] border border-[#1f283d] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#1b2336]">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Active Grounding Data
@@ -363,7 +363,7 @@ export default function SupportChatPage() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[#141a29] border border-[#232d42] text-[11.5px] text-slate-300 leading-relaxed">
+            <div className="p-3 rounded-none bg-[#141a29] border border-[#232d42] text-[11.5px] text-slate-300 leading-relaxed">
               <p className="m-0">
                 All inquiries are answered using your live channel telemetry. Questions requiring human intervention are forwarded immediately to our team.
               </p>
@@ -379,7 +379,7 @@ export default function SupportChatPage() {
               <button
                 key={idx}
                 onClick={() => setInputText(cat.prompt)}
-                className="w-full p-3 rounded-xl bg-[#101522] hover:bg-[#161d2f] border border-[#1f293d] hover:border-[#2d3a54] text-left transition group cursor-pointer"
+                className="w-full p-3 rounded-none bg-[#101522] hover:bg-[#161d2f] border border-[#1f293d] hover:border-[#2d3a54] text-left transition group cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="text-xs font-bold text-white group-hover:text-blue-400 transition">
@@ -397,7 +397,7 @@ export default function SupportChatPage() {
         </div>
 
         {/* Right Column: Full-Height Interactive Chat Interface */}
-        <div className="lg:col-span-8 flex flex-col h-[650px] rounded-2xl bg-[#0b0e14] border border-[#1f283d] shadow-xl overflow-hidden">
+        <div className="lg:col-span-8 flex flex-col h-[650px] rounded-none bg-[#0b0e14] border border-[#1f283d] overflow-hidden">
           
           {/* Chat Window Top Bar */}
           <div className="p-4 bg-[#111622] border-b border-[#1c2436] flex items-center justify-between">
@@ -414,7 +414,7 @@ export default function SupportChatPage() {
             </div>
 
             {hasEscalation && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-none bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Support Team Notified</span>
               </div>
@@ -425,10 +425,10 @@ export default function SupportChatPage() {
           <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#090b10]">
             {(!hasIdentity && messages.length === 0) || isEditingIdentity ? (
               <div className="h-full flex flex-col justify-center items-center p-4">
-                <div className="max-w-md w-full p-6 sm:p-7 rounded-2xl bg-[#111724] border border-[#232f45] shadow-2xl text-left space-y-4">
+                <div className="max-w-md w-full p-6 sm:p-7 rounded-none bg-[#111724] border border-[#232f45] text-left space-y-4">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner flex-shrink-0"
+                      className="w-12 h-12 rounded-none flex items-center justify-center border flex-shrink-0"
                       style={{
                         background: `rgba(${accent.rgb}, 0.15)`,
                         borderColor: `rgba(${accent.rgb}, 0.3)`,
@@ -454,7 +454,7 @@ export default function SupportChatPage() {
                         value={nameInput}
                         onChange={e => setNameInput(e.target.value)}
                         placeholder="e.g. Alex Fox"
-                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-none px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -465,7 +465,7 @@ export default function SupportChatPage() {
                         value={emailInput}
                         onChange={e => setEmailInput(e.target.value)}
                         placeholder="e.g. alex@example.com"
-                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-none px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                       <span className="text-[11px] text-slate-500 block mt-1">
                         When escalated, a copy is dispatched here so you can reply directly from your personal inbox!
@@ -477,7 +477,7 @@ export default function SupportChatPage() {
                         <button
                           type="button"
                           onClick={() => setIsEditingIdentity(false)}
-                          className="flex-1 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                          className="flex-1 py-3 rounded-none text-xs sm:text-sm font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -485,7 +485,7 @@ export default function SupportChatPage() {
                       <button
                         type="submit"
                         disabled={!nameInput.trim() || !emailInput.trim() || !emailInput.includes('@')}
-                        className="flex-1 py-3 rounded-xl font-bold text-xs sm:text-sm text-white shadow-md transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
+                        className="flex-1 py-3 rounded-none font-bold text-xs sm:text-sm text-white transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
                         style={{ background: accent.color }}
                       >
                         <Check className="w-4 h-4" />
@@ -498,7 +498,7 @@ export default function SupportChatPage() {
             ) : displayedMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <div 
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border shadow-md"
+                  className="w-14 h-14 rounded-none flex items-center justify-center mb-3 border"
                   style={{
                     background: `rgba(${accent.rgb}, 0.1)`,
                     borderColor: `rgba(${accent.rgb}, 0.3)`,
@@ -520,7 +520,7 @@ export default function SupportChatPage() {
                     <button
                       key={i}
                       onClick={() => setInputText(cp.prompt)}
-                      className="p-2.5 rounded-xl bg-[#121722] hover:bg-[#1a2233] border border-[#222a3d] text-left text-xs text-slate-300 hover:text-white transition cursor-pointer"
+                      className="p-2.5 rounded-none bg-[#121722] hover:bg-[#1a2233] border border-[#222a3d] text-left text-xs text-slate-300 hover:text-white transition cursor-pointer"
                     >
                       <div className="font-semibold text-white mb-0.5">{cp.title}</div>
                       <div className="text-[10.5px] text-slate-400 truncate">{cp.desc}</div>
@@ -532,13 +532,13 @@ export default function SupportChatPage() {
               <>
                 {/* 2-Way Email Channel Active Callout Banner */}
                 {hasEscalation && (
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#121c2d] to-[#0c121e] border border-blue-500/35 text-xs shadow-lg space-y-2.5">
+                  <div className="p-4 rounded-none bg-[#111724] border border-blue-500/35 text-xs space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-blue-300 flex items-center gap-2 text-xs sm:text-sm">
                         <Mail className="w-4 h-4 text-blue-400" />
                         2-Way Email Channel Active
                       </span>
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-blue-500/20 text-blue-300 border border-blue-500/30">
                         Email & App Synced
                       </span>
                     </div>
@@ -589,7 +589,7 @@ export default function SupportChatPage() {
                             <Bot className="w-3 h-3" style={{ color: accent.color }} />
                             <span className="font-bold" style={{ color: accent.color }}>CoLaunch AI Support</span>
                             {m.escalated && (
-                              <span className="text-amber-400 font-bold ml-1.5 px-1.5 py-0.2 rounded bg-amber-950/60 border border-amber-800/40">
+                              <span className="text-amber-400 font-bold ml-1.5 px-1.5 py-0.2 rounded-none bg-amber-950/60 border border-amber-800/40">
                                 Escalated to Team
                               </span>
                             )}
@@ -598,12 +598,12 @@ export default function SupportChatPage() {
                       </div>
 
                       <div 
-                        className={`rounded-2xl p-4 text-xs sm:text-[13px] leading-relaxed max-w-[85%] shadow-sm ${
+                        className={`rounded-none p-4 text-xs sm:text-[13px] leading-relaxed max-w-[85%] ${
                           isUser 
-                            ? 'bg-blue-600 text-white rounded-br-sm' 
+                            ? 'bg-blue-600 text-white' 
                             : isAdmin
-                              ? 'bg-[#101b24] text-white border border-emerald-500/40 rounded-bl-sm shadow-md'
-                              : 'bg-[#131824] text-slate-200 border border-[#212b3e] rounded-bl-sm'
+                              ? 'bg-[#101b24] text-white border border-emerald-500/40'
+                              : 'bg-[#131824] text-slate-200 border border-[#212b3e]'
                         }`}
                         style={isUser ? { background: accent.color, color: '#ffffff' } : {}}
                       >
@@ -623,7 +623,7 @@ export default function SupportChatPage() {
                       <Bot className="w-3 h-3" style={{ color: accent.color }} />
                       <span style={{ color: accent.color }}>CoLaunch AI analyzing for {handle}...</span>
                     </div>
-                    <div className="rounded-2xl p-4 text-xs bg-[#131824] text-slate-400 border border-[#212b3e] rounded-bl-sm flex items-center gap-2.5">
+                    <div className="rounded-none p-4 text-xs bg-[#131824] text-slate-400 border border-[#212b3e] flex items-center gap-2.5">
                       <Loader2 className="w-4 h-4 animate-spin" style={{ color: accent.color }} />
                       <span>Formulating grounded response based on your channel metrics...</span>
                     </div>
@@ -644,12 +644,12 @@ export default function SupportChatPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={`Ask anything about your platform for ${handle}...`}
-              className="flex-1 bg-[#0b0e14] border border-[#222c40] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-[#0b0e14] border border-[#222c40] rounded-none px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || loading}
-              className="px-5 py-3 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm text-white disabled:opacity-40 transition cursor-pointer"
+              className="px-5 py-3 rounded-none flex items-center gap-2 font-bold text-xs sm:text-sm text-white disabled:opacity-40 transition cursor-pointer"
               style={{ background: accent.color }}
             >
               <span>Send</span>

@@ -279,7 +279,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
           return (
             <div
               key={day}
-              className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
+              className={`p-3 rounded-none flex flex-col justify-between min-h-[220px] relative overflow-hidden transition-all ${
                 isToday 
                   ? 'bg-slate-900/90' 
                   : 'bg-[#111726]/80 border border-[#1e293b]'
@@ -291,7 +291,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
             >
               {isToday && (
                 <span 
-                  className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded font-bold text-[9px] uppercase tracking-wider shadow-sm"
+                  className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm"
                   style={{ background: dynamicColor, color: contrastText }}
                 >
                   Today
@@ -310,7 +310,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
                   {day}
                   {isToday && (
                     <span 
-                      className="w-1.5 h-1.5 rounded-full inline-block"
+                      className="w-1.5 h-1.5 rounded-none inline-block"
                       style={{ background: dynamicColor }}
                     />
                   )}
@@ -326,7 +326,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
               {/* Skeleton Cards with Pulse */}
               <div className="space-y-2 flex-1 animate-pulse">
                 <div 
-                  className="p-2.5 rounded-lg space-y-2 border"
+                  className="p-2.5 rounded-none space-y-2 border"
                   style={isToday ? {
                     background: `rgba(${dynamicRgb}, 0.12)`,
                     borderColor: `rgba(${dynamicRgb}, 0.35)`
@@ -336,37 +336,37 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
                   }}
                 >
                   <div 
-                    className="w-12 h-2.5 rounded" 
+                    className="w-12 h-2.5 rounded-none" 
                     style={{ background: isToday ? `rgba(${dynamicRgb}, 0.4)` : 'rgba(51, 65, 85, 0.8)' }} 
                   />
                   <div className="space-y-1.5">
                     <div 
-                      className="w-full h-2.5 rounded" 
+                      className="w-full h-2.5 rounded-none" 
                       style={{ background: isToday ? `rgba(${dynamicRgb}, 0.3)` : 'rgba(51, 65, 85, 0.6)' }} 
                     />
                     <div 
-                      className="w-4/5 h-2.5 rounded" 
+                      className="w-4/5 h-2.5 rounded-none" 
                       style={{ background: isToday ? `rgba(${dynamicRgb}, 0.2)` : 'rgba(51, 65, 85, 0.4)' }} 
                     />
                   </div>
                   <div 
-                    className="w-10 h-3 rounded" 
+                    className="w-10 h-3 rounded-none" 
                     style={{ background: isToday ? `rgba(${dynamicRgb}, 0.25)` : '#0f172a' }} 
                   />
                 </div>
 
                 {i % 2 === 0 && (
-                  <div className="p-2 rounded-lg bg-slate-800/40 border border-slate-800/80 space-y-1.5">
-                    <div className="w-14 h-2 rounded bg-slate-700/60" />
-                    <div className="w-full h-2 rounded bg-slate-700/40" />
-                    <div className="w-9 h-2.5 rounded bg-slate-900/90" />
+                  <div className="p-2 rounded-none bg-slate-800/40 border border-slate-800/80 space-y-1.5">
+                    <div className="w-14 h-2 rounded-none bg-slate-700/60" />
+                    <div className="w-full h-2 rounded-none bg-slate-700/40" />
+                    <div className="w-9 h-2.5 rounded-none bg-slate-900/90" />
                   </div>
                 )}
               </div>
 
               {/* Add Post Skeleton */}
               <div className="pt-2 mt-2 border-t border-slate-800/60">
-                <div className="w-16 h-2.5 mx-auto rounded bg-slate-800/50 animate-pulse" />
+                <div className="w-16 h-2.5 mx-auto rounded-none bg-slate-800/50 animate-pulse" />
               </div>
             </div>
           )
@@ -386,7 +386,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
         return (
           <div
             key={`${dayData.day || 'day'}-${i}`}
-            className={`p-3 rounded-xl flex flex-col justify-between min-h-[220px] transition-all relative ${
+            className={`p-3 rounded-none flex flex-col justify-between min-h-[220px] transition-all relative ${
               isToday
                 ? 'bg-slate-900/90'
                 : 'bg-[#111726] border border-[#1e293b] hover:border-slate-700'
@@ -398,7 +398,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
           >
             {isToday && (
               <span 
-                className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded font-bold text-[9px] uppercase tracking-wider shadow-sm"
+                className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm"
                 style={{ background: dynamicColor, color: contrastText }}
               >
                 Today
@@ -417,7 +417,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
                 {dayData.day}
                 {isToday && (
                   <span 
-                    className="w-1.5 h-1.5 rounded-full inline-block"
+                    className="w-1.5 h-1.5 rounded-none inline-block"
                     style={{ background: dynamicColor }}
                   />
                 )}
@@ -438,7 +438,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
                   <div
                     key={post.id ? `post-id-${post.id}-${j}` : `post-idx-${dayData.day}-${j}`}
                     onClick={() => onCardClick && onCardClick(post, dayData.day)}
-                    className={`p-2.5 rounded-lg border transition-all cursor-pointer group hover:border-slate-600 ${
+                    className={`p-2.5 rounded-none border transition-all cursor-pointer group hover:border-slate-600 ${
                       isToday
                         ? ''
                         : 'bg-slate-800/80 border-slate-700/60 hover:border-slate-600'
@@ -471,7 +471,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
 
                     {post.type && (
                       <span 
-                        className="inline-block px-1.5 py-0.5 rounded text-[8px] font-mono uppercase tracking-wider"
+                        className="inline-block px-1.5 py-0.5 rounded-none text-[8px] font-mono uppercase tracking-wider"
                         style={isToday ? {
                           background: `rgba(${dynamicRgb}, 0.22)`,
                           color: dynamicColor,
@@ -500,7 +500,7 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
               <button
                 type="button"
                 onClick={() => onAddPost(i)}
-                className="w-full py-1 text-center text-[10px] text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 rounded transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full py-1 text-center text-[10px] text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 rounded-none transition-colors flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Plus size={10} />
                 <span>Add post</span>
@@ -2433,7 +2433,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">This Week's Launch Plan</h3>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Week {getWeekNumber()}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-none bg-slate-800 text-slate-400 font-mono">Week {getWeekNumber()}</span>
           </div>
           <div className="flex items-center gap-2">
             {autofillJob.status === 'running' && (
@@ -2445,7 +2445,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                 <button
                   type="button"
                   onClick={() => cancelBgJob(AUTOFILL_JOB)}
-                  className="text-[10px] font-semibold text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-2 py-0.5 rounded transition-all cursor-pointer"
+                  className="text-[10px] font-semibold text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-2 py-0.5 rounded-none transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2460,7 +2460,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleAutoFillWeek}
               disabled={autofillJob.status === 'running'}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-none transition-all cursor-pointer disabled:opacity-50"
               style={{
                 color: accent.color,
                 background: `rgba(${accent.rgb}, 0.12)`,
@@ -2490,14 +2490,14 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
           <div className="flex items-center gap-2.5 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
+              <span className="w-2 h-2 rounded-none" style={{ background: accent.color }} />
               <p className="text-xs font-bold text-slate-300 uppercase tracking-widest font-mono">
                 Today's priorities
               </p>
             </div>
 
             {completedCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-none">
                 <Check size={10} className="stroke-[3]" />
                 {completedCount} of {todayActions.length} completed
               </span>
@@ -2516,7 +2516,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleRegeneratePriorities}
               disabled={isPrioritiesGenerating}
-              className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-none transition-all cursor-pointer disabled:opacity-50"
               style={{
                 color: accent.color,
                 background: `rgba(${accent.rgb}, 0.12)`,
@@ -2528,7 +2528,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               <span>{isPrioritiesGenerating ? "Tailoring…" : "AI Refresh"}</span>
             </button>
 
-            <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-none bg-slate-900 border border-slate-800 text-slate-400">
               {remainingCount} remaining
             </span>
           </div>
@@ -2552,7 +2552,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
             return (
               <div key={action.id} className="transition-all duration-200">
                 <div
-                  className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 ${
+                  className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-none border transition-all duration-200 ${
                     isStruck
                       ? 'bg-[#090d16]/70 border-slate-800/50 opacity-60 hover:opacity-95'
                       : 'bg-[#0d1424] hover:bg-[#10192e] border-slate-800/80 hover:border-slate-700'
@@ -2566,7 +2566,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                       type="button"
                       onClick={() => handleToggleStrikeAction(action.id)}
                       title={isStruck ? "Mark incomplete / restore to top" : "Mark completed & strike to bottom"}
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0 transition-all cursor-pointer ${
+                      className={`w-7 h-7 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0 transition-all cursor-pointer ${
                         isStruck
                           ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
                           : 'bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 text-transparent'
@@ -2589,19 +2589,19 @@ export default function Marketing({ chatOpen: propChatOpen }) {
 
                         {/* Priority / Completed Tag */}
                         {isStruck ? (
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-none bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                             <Check size={10} className="stroke-[3]" /> Completed
                           </span>
                         ) : isHighPriority ? (
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-none bg-rose-500/15 text-rose-400 border border-rose-500/30">
                             High
                           </span>
                         ) : isMediumPriority ? (
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-none bg-amber-500/15 text-amber-400 border border-amber-500/30">
                             Medium
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-none bg-slate-800 text-slate-400 border border-slate-700">
                             {action.priority || 'Normal'}
                           </span>
                         )}
@@ -2626,7 +2626,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                         <button
                           type="button"
                           onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action)}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-none text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
                         >
                           <Eye size={12} className="text-slate-400" />
                           <span>{openOutputId === action.id ? 'Hide Output' : 'Review Output'}</span>
@@ -2636,7 +2636,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                           type="button"
                           onClick={() => handleToggleStrikeAction(action.id)}
                           title="Restore task to active list"
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 border border-slate-800/80 transition-all cursor-pointer"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-none text-xs font-medium text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 border border-slate-800/80 transition-all cursor-pointer"
                         >
                           <RotateCcw size={11} />
                           <span>Restore</span>
@@ -2648,11 +2648,10 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                           type="button"
                           onClick={() => openOutputId === action.id ? setOpenOutputId(null) : handleGenerate(action)}
                           disabled={generating === action.id}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-sm hover:brightness-110 active:scale-[0.98]"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-none text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shrink-0 hover:brightness-110 active:scale-[0.98]"
                           style={{
                             background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.88) 100%)`,
                             color: accent.contrastText || '#090d16',
-                            boxShadow: `0 2px 14px rgba(${accent.rgb}, 0.28)`
                           }}
                         >
                           {generating === action.id ? (
@@ -2669,7 +2668,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                           type="button"
                           onClick={() => handleToggleStrikeAction(action.id)}
                           title="Dismiss & move to bottom"
-                          className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-slate-800/80 transition-all cursor-pointer"
+                          className="opacity-0 group-hover:opacity-100 p-2 rounded-none text-slate-500 hover:text-slate-300 hover:bg-slate-800/80 transition-all cursor-pointer"
                         >
                           <X size={13} />
                         </button>

@@ -511,10 +511,10 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
         {/* View Mode & Actions */}
         <div className="flex items-center gap-1.5">
           {/* Slideshow vs Grid Mode */}
-          <div className="flex items-center rounded-lg p-0.5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center rounded-none p-0.5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
             <button
               onClick={() => setViewMode('presenter')}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[9.5px] font-medium transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-none text-[9.5px] font-medium transition-all"
               style={{
                 background: viewMode === 'presenter' ? `rgba(${accent.rgb},0.2)` : 'transparent',
                 color: viewMode === 'presenter' ? '#fff' : 'rgba(255,255,255,0.4)',
@@ -524,7 +524,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[9.5px] font-medium transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-none text-[9.5px] font-medium transition-all"
               style={{
                 background: viewMode === 'grid' ? `rgba(${accent.rgb},0.2)` : 'transparent',
                 color: viewMode === 'grid' ? '#fff' : 'rgba(255,255,255,0.4)',
@@ -537,7 +537,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
           {/* Download Markdown */}
           <button
             onClick={handleDownloadMarkdown}
-            className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-lg border text-white/70 hover:text-white transition-all"
+            className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-none border text-white/70 hover:text-white transition-all"
             style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             title="Download formatted pitch deck (.md)"
           >
@@ -550,7 +550,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
           {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
-            className="p-1 rounded-lg border text-white/50 hover:text-white transition-all"
+            className="p-1 rounded-none border text-white/50 hover:text-white transition-all"
             style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             title={fullscreen ? "Exit fullscreen" : "Present fullscreen"}
           >
@@ -562,7 +562,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             <button
               onClick={onRegen}
               disabled={regenning}
-              className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-lg transition-all disabled:opacity-30 border"
+              className="flex items-center gap-1 text-[9.5px] px-2 py-1 rounded-none transition-all disabled:opacity-30 border"
               style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.25)' }}
             >
               <RefreshCw size={9} className={regenning ? 'animate-spin' : ''} />
@@ -577,7 +577,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
         <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
           {/* Main 16:9 Slide Canvas */}
           <div
-            className="relative rounded-xl p-5 sm:p-6 border shadow-2xl flex flex-col justify-between transition-all duration-300"
+            className="relative rounded-none p-5 sm:p-6 border shadow-2xl flex flex-col justify-between transition-all duration-300"
             style={{
               minHeight: fullscreen ? '65vh' : '310px',
               background: 'linear-gradient(145deg, #101016 0%, #08080b 100%)',
@@ -589,7 +589,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className="text-[9.5px] font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-full uppercase"
+                  className="text-[9.5px] font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-none uppercase"
                   style={{
                     background: `rgba(${accent.rgb}, 0.18)`,
                     color: accent.color,
@@ -599,8 +599,8 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                   {currentSlide.category || `SLIDE ${currentSlideIdx + 1}`}
                 </span>
                 {currentSlide.metricBadge && (
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-none bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
                     {currentSlide.metricBadge}
                   </span>
                 )}
@@ -629,7 +629,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 {(currentSlide.bullets || []).map((bullet, bIdx) => (
                   <div key={bIdx} className="flex items-start gap-2.5 group">
                     <div
-                      className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 mt-0.5"
+                      className="w-4 h-4 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5"
                       style={{
                         background: `rgba(${accent.rgb}, 0.15)`,
                         color: accent.color,
@@ -672,7 +672,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
               <button
                 onClick={() => setCurrentSlideIdx(p => Math.max(p - 1, 0))}
                 disabled={currentSlideIdx === 0}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-semibold text-white/70 hover:text-white transition-all disabled:opacity-20"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-none border text-[10px] font-semibold text-white/70 hover:text-white transition-all disabled:opacity-20"
                 style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
               >
                 <ChevronLeft size={11} /> Prev
@@ -680,7 +680,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
               <button
                 onClick={() => setCurrentSlideIdx(p => Math.min(p + 1, totalSlides - 1))}
                 disabled={currentSlideIdx === totalSlides - 1}
-                className="flex items-center gap-1 px-3 py-1 rounded-lg border text-[10px] font-bold text-white transition-all disabled:opacity-20 shadow-md"
+                className="flex items-center gap-1 px-3 py-1 rounded-none border text-[10px] font-bold text-white transition-all disabled:opacity-20 shadow-md"
                 style={{
                   background: `linear-gradient(135deg, rgba(${accent.rgb}, 0.35), rgba(${accent.rgb}, 0.2))`,
                   borderColor: `rgba(${accent.rgb}, 0.4)`
@@ -696,7 +696,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 <button
                   key={idx}
                   onClick={() => setCurrentSlideIdx(idx)}
-                  className="group relative flex items-center justify-center p-1 rounded-md transition-all"
+                  className="group relative flex items-center justify-center p-1 rounded-none transition-all"
                   style={{
                     background: currentSlideIdx === idx ? `rgba(${accent.rgb}, 0.25)` : 'rgba(255,255,255,0.03)',
                     border: currentSlideIdx === idx ? `1px solid ${accent.color}` : '1px solid rgba(255,255,255,0.06)'
@@ -714,7 +714,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
             </div>
 
             <div className="text-[9.5px] text-white/30 hidden md:block">
-              <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[8.5px]">←</kbd> <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[8.5px]">→</kbd> to present
+              <kbd className="px-1 py-0.5 rounded-none bg-white/10 text-white/60 font-mono text-[8.5px]">←</kbd> <kbd className="px-1 py-0.5 rounded-none bg-white/10 text-white/60 font-mono text-[8.5px]">→</kbd> to present
             </div>
           </div>
         </div>
@@ -730,7 +730,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 setCurrentSlideIdx(idx)
                 setViewMode('presenter')
               }}
-              className="group rounded-xl p-2.5 sm:p-3 border cursor-pointer transition-all duration-150 hover:border-white/20 flex flex-col justify-between"
+              className="group rounded-none p-2.5 sm:p-3 border cursor-pointer transition-all duration-150 hover:border-white/20 flex flex-col justify-between"
               style={{
                 background: currentSlideIdx === idx ? `rgba(${accent.rgb}, 0.1)` : '#0b0b0e',
                 borderColor: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.07)',
@@ -743,7 +743,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 <div className="flex items-center justify-between gap-1.5 mb-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                      className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-none flex-shrink-0"
                       style={{
                         background: currentSlideIdx === idx ? accent.color : 'rgba(255,255,255,0.07)',
                         color: currentSlideIdx === idx ? '#000' : 'rgba(255,255,255,0.7)',
@@ -761,7 +761,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                   </div>
                   {s.metricBadge && (
                     <span
-                      className="text-[7.5px] font-mono font-semibold px-1.5 py-0.5 rounded flex-shrink-0 border"
+                      className="text-[7.5px] font-mono font-semibold px-1.5 py-0.5 rounded-none flex-shrink-0 border"
                       style={{
                         background: 'rgba(52, 211, 153, 0.08)',
                         color: '#34d399',
@@ -1188,7 +1188,7 @@ export default function AiDoesItPanel({ onClose }) {
       >
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+            className="w-9 h-9 rounded-none flex items-center justify-center shadow-lg"
             style={{
               background: `linear-gradient(135deg, rgba(${accent.rgb},0.3), rgba(${accent.rgb},0.15))`,
               border: `1px solid rgba(${accent.rgb},0.3)`
@@ -1200,7 +1200,7 @@ export default function AiDoesItPanel({ onClose }) {
             <div className="flex items-center gap-2">
               <h3 className="text-[14px] font-bold text-white tracking-wide">AI Launch Studio</h3>
               <span
-                className="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold"
+                className="text-[9px] px-2 py-0.5 rounded-none font-mono font-bold"
                 style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
               >
                 {handle}
@@ -1219,7 +1219,7 @@ export default function AiDoesItPanel({ onClose }) {
           {phase === 'done' && (
             <button
               onClick={() => { setPhase('idle'); setPack(null); setEdits({}) }}
-              className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-xl border text-white/60 hover:text-white transition-all"
+              className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-none border text-white/60 hover:text-white transition-all"
               style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             >
               <RefreshCw size={11} /> Reset
@@ -1228,7 +1228,7 @@ export default function AiDoesItPanel({ onClose }) {
 
           <button
             onClick={() => setApiModalOpen(true)}
-            className="p-2 rounded-xl border transition-all text-white/40 hover:text-white"
+            className="p-2 rounded-none border transition-all text-white/40 hover:text-white"
             style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             title="Configure AI API Keys"
           >
@@ -1238,7 +1238,7 @@ export default function AiDoesItPanel({ onClose }) {
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl border transition-all text-white/40 hover:text-white"
+              className="p-2 rounded-none border transition-all text-white/40 hover:text-white"
               style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}
             >
               <X size={13} />
@@ -1254,7 +1254,7 @@ export default function AiDoesItPanel({ onClose }) {
           <div className="space-y-6 py-2">
             {/* Grounding Telemetry Banner */}
             <div
-              className="rounded-2xl p-5 border flex flex-col md:flex-row items-center justify-between gap-4"
+              className="rounded-none p-5 border flex flex-col md:flex-row items-center justify-between gap-4"
               style={{
                 background: 'linear-gradient(145deg, #121217 0%, #0a0a0e 100%)',
                 borderColor: `rgba(${accent.rgb}, 0.2)`
@@ -1262,9 +1262,9 @@ export default function AiDoesItPanel({ onClose }) {
             >
               <div className="flex items-center gap-4">
                 {creatorData.avatarUrl ? (
-                  <img src={creatorData.avatarUrl} alt="" className="w-14 h-14 rounded-2xl object-cover border border-white/10" />
+                  <img src={creatorData.avatarUrl} alt="" className="w-14 h-14 rounded-none object-cover border border-white/10" />
                 ) : (
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-[18px]"
+                  <div className="w-14 h-14 rounded-none flex items-center justify-center font-bold text-[18px]"
                     style={{ background: `rgba(${accent.rgb}, 0.2)`, color: accent.color }}>
                     {creatorName.slice(0, 2).toUpperCase()}
                   </div>
@@ -1272,7 +1272,7 @@ export default function AiDoesItPanel({ onClose }) {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[16px] font-black text-white">{creatorName}</span>
-                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-none font-mono font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
                       {creatorData.platform || 'YouTube'} · {niche}
                     </span>
                   </div>
@@ -1289,7 +1289,7 @@ export default function AiDoesItPanel({ onClose }) {
               <div className="flex items-center gap-2.5 w-full md:w-auto">
                 <button
                   onClick={loadInstantStudio}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-[12px] font-bold text-white/80 hover:text-white transition-all"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-none border text-[12px] font-bold text-white/80 hover:text-white transition-all"
                   style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
                   title="Instantly view tailored pitch deck and assets without waiting"
                 >
@@ -1298,7 +1298,7 @@ export default function AiDoesItPanel({ onClose }) {
 
                 <button
                   onClick={run}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                   style={{
                     background: `linear-gradient(135deg, ${accent.color}, rgba(${accent.rgb}, 0.8))`,
                     boxShadow: `0 8px 24px rgba(${accent.rgb}, 0.35)`,
@@ -1340,11 +1340,11 @@ export default function AiDoesItPanel({ onClose }) {
               ].map(card => (
                 <div
                   key={card.title}
-                  className="rounded-xl p-4 border flex flex-col justify-between"
+                  className="rounded-none p-4 border flex flex-col justify-between"
                   style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
                 >
                   <div>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: `${card.color}15` }}>
+                    <div className="w-8 h-8 rounded-none flex items-center justify-center mb-3" style={{ background: `${card.color}15` }}>
                       <card.icon size={16} style={{ color: card.color }} />
                     </div>
                     <h5 className="text-[12px] font-bold text-white mb-1">{card.title}</h5>

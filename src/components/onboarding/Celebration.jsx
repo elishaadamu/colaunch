@@ -216,14 +216,14 @@ export default function Celebration() {
       >
         {/* Milestone Status Pill */}
         <div 
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold tracking-wide uppercase mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none border text-xs font-semibold tracking-wide uppercase mb-6"
           style={{
             background: `rgba(${accent.rgb}, 0.1)`,
             borderColor: `rgba(${accent.rgb}, 0.3)`,
             color: accent.color
           }}
         >
-          <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
+          <span className="w-2 h-2" style={{ background: accent.color }} />
           <span>Platform Live on Edge · Deployment Complete</span>
         </div>
 
@@ -231,11 +231,10 @@ export default function Celebration() {
         <div className="text-center max-w-3xl mb-8 sm:mb-10">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl border overflow-hidden relative"
+              className="w-14 h-14 rounded-none flex items-center justify-center border overflow-hidden relative"
               style={{
                 background: `rgba(${accent.rgb}, 0.12)`,
                 borderColor: `rgba(${accent.rgb}, 0.35)`,
-                boxShadow: `0 8px 30px -4px rgba(${accent.rgb}, 0.3)`
               }}
             >
               {resolvedAvatar ? (
@@ -257,7 +256,7 @@ export default function Celebration() {
           </p>
 
           {/* Public URL Link Banner */}
-          <div className="mt-5 inline-flex items-center gap-2.5 p-1.5 pl-4 rounded-xl bg-[#12141c] border border-[#222634] shadow-inner max-w-full">
+          <div className="mt-5 inline-flex items-center gap-2.5 p-1.5 pl-4 rounded-none bg-[#12141c] border border-[#222634] max-w-full">
             <Globe className="w-4 h-4 flex-shrink-0" style={{ color: accent.color }} />
             <span className="font-mono text-xs sm:text-sm text-slate-300 truncate select-all">
               {publicUrl}
@@ -265,7 +264,7 @@ export default function Celebration() {
             <button
               type="button"
               onClick={handleCopyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-semibold transition cursor-pointer"
               style={{
                 background: copied ? 'rgba(16, 185, 129, 0.15)' : `rgba(${accent.rgb}, 0.15)`,
                 color: copied ? '#34D399' : accent.color,
@@ -283,7 +282,7 @@ export default function Celebration() {
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Left Column: What Forge Built (Span 7) */}
-          <div className="lg:col-span-7 bg-[#12141c] border border-[#222634] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+          <div className="lg:col-span-7 bg-[#12141c] border border-[#222634] rounded-none p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#222634]">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" style={{ color: accent.color }} />
@@ -292,7 +291,7 @@ export default function Celebration() {
                 </h3>
               </div>
               <span 
-                className="text-[10px] font-mono px-2 py-0.5 rounded-md font-bold border"
+                className="text-[10px] font-mono px-2 py-0.5 rounded-none font-bold border"
                 style={{ 
                   background: `rgba(${accent.rgb}, 0.1)`, 
                   color: accent.color,
@@ -309,11 +308,11 @@ export default function Celebration() {
                 return (
                   <div 
                     key={m.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#161922] border border-[#222634] hover:border-slate-700 transition group"
+                    className="flex items-center justify-between p-3 rounded-none bg-[#161922] border border-[#222634] hover:border-slate-700 transition group"
                   >
                     <div className="flex items-center space-x-3.5 min-w-0 pr-3">
                       <div 
-                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border"
+                        className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
                         style={{
                           background: `rgba(${accent.rgb}, 0.1)`,
                           color: accent.color,
@@ -333,8 +332,9 @@ export default function Celebration() {
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                        ✓ {m.status}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>{m.status}</span>
                       </span>
                     </div>
                   </div>
@@ -361,7 +361,7 @@ export default function Celebration() {
           <div className="lg:col-span-5 flex flex-col space-y-6">
             
             {/* Quick Launch Checklist */}
-            <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-6 shadow-xl">
+            <div className="bg-[#12141c] border border-[#222634] rounded-none p-6">
               <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#222634]">
                 <Rocket className="w-4 h-4" style={{ color: accent.color }} />
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
@@ -370,9 +370,9 @@ export default function Celebration() {
               </div>
 
               <div className="space-y-3.5">
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#161922] border border-[#222634]">
+                <div className="flex items-start gap-3 p-3 rounded-none bg-[#161922] border border-[#222634]">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
+                    className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5 border"
                     style={{
                       background: `rgba(${accent.rgb}, 0.1)`,
                       color: accent.color,
@@ -389,9 +389,9 @@ export default function Celebration() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#161922] border border-[#222634]">
+                <div className="flex items-start gap-3 p-3 rounded-none bg-[#161922] border border-[#222634]">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
+                    className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5 border"
                     style={{
                       background: `rgba(${accent.rgb}, 0.1)`,
                       color: accent.color,
@@ -408,9 +408,9 @@ export default function Celebration() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#161922] border border-[#222634]">
+                <div className="flex items-start gap-3 p-3 rounded-none bg-[#161922] border border-[#222634]">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border"
+                    className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5 border"
                     style={{
                       background: `rgba(${accent.rgb}, 0.1)`,
                       color: accent.color,
@@ -430,15 +430,14 @@ export default function Celebration() {
             </div>
 
             {/* Primary CTA Card */}
-            <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div className="bg-[#12141c] border border-[#222634] rounded-none p-6 flex flex-col justify-between">
               <button
                 type="button"
                 onClick={next}
-                className="w-full font-extrabold py-4 px-6 rounded-xl text-sm transition shadow-2xl flex items-center justify-center space-x-2.5 group cursor-pointer active:scale-98"
+                className="w-full font-bold py-4 px-6 rounded-none text-sm transition flex items-center justify-center space-x-2.5 group cursor-pointer border border-white/10"
                 style={{
                   background: accent.color,
                   color: isLight ? '#000000' : '#ffffff',
-                  boxShadow: `0 10px 30px -5px rgba(${accent.rgb}, 0.45)`
                 }}
               >
                 <span>Enter your dashboard</span>

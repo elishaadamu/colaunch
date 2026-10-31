@@ -81,7 +81,7 @@ export default function PricingPointModal({
 
       {/* Modal Dialog */}
       <div 
-        className="relative w-full max-w-4xl rounded-3xl border shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden my-auto text-left animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-4xl rounded-none border shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden my-auto text-left animate-in fade-in zoom-in-95 duration-200"
         style={{
           background: '#0c101a',
           borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -89,14 +89,14 @@ export default function PricingPointModal({
       >
         {/* Ambient Top Glow in Creator Brand Color */}
         <div 
-          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[550px] h-48 rounded-full blur-[100px] pointer-events-none opacity-40"
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[550px] h-48 rounded-none blur-[100px] pointer-events-none opacity-40"
           style={{ background: creatorBrandColor }}
         />
 
         {/* Modal Header */}
         <div className="relative px-6 pt-6 pb-4 sm:px-8 sm:pt-8 flex items-start justify-between border-b border-white/5">
           <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase"
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none text-[11px] font-bold tracking-wider uppercase"
               style={{
                 background: `rgba(255, 255, 255, 0.05)`,
                 border: `1px solid rgba(255, 255, 255, 0.1)`,
@@ -116,7 +116,7 @@ export default function PricingPointModal({
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-none flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
           >
             <X size={16} />
           </button>
@@ -125,8 +125,8 @@ export default function PricingPointModal({
         {/* Pricing Cards Grid */}
         <div className="p-6 sm:p-8 space-y-6">
           {activatedSuccess ? (
-            <div className="text-center py-10 px-4 space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+            <div className="text-center py-10 px-4 space-y-4 rounded-none border border-emerald-500/30 bg-emerald-500/10">
+              <div className="w-16 h-16 rounded-none bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
                 <CheckCircle2 size={36} />
               </div>
               <h3 className="text-2xl font-bold text-white">
@@ -137,7 +137,7 @@ export default function PricingPointModal({
               </p>
               <button
                 onClick={onClose}
-                className="forge-btn-primary px-8 py-3 text-sm font-semibold rounded-full shadow-sm"
+                className="forge-btn-primary px-8 py-3 text-sm font-semibold rounded-none shadow-sm"
                 style={{ background: creatorBrandColor, color: brandTextColor }}
               >
                 <span style={{ color: brandTextColor }}>Return to Dashboard & Launch</span>
@@ -148,7 +148,7 @@ export default function PricingPointModal({
               
               {/* Option 1: 50/50 Co-Launch Track (Recommended) */}
               <div 
-                className={`relative rounded-2xl p-6 transition-all border flex flex-col justify-between ${
+                className={`relative rounded-none p-6 transition-all border flex flex-col justify-between ${
                   selectedTrack === '50_50' 
                     ? 'shadow-2xl ring-2' 
                     : 'hover:border-white/20'
@@ -161,7 +161,7 @@ export default function PricingPointModal({
               >
                 {/* Popular Pill */}
                 <div 
-                  className="absolute -top-3 left-6 px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest shadow-md flex items-center gap-1.5"
+                  className="absolute -top-3 left-6 px-3 py-0.5 rounded-none text-[10px] font-extrabold uppercase tracking-widest shadow-md flex items-center gap-1.5"
                   style={{
                     background: creatorBrandColor,
                     color: brandTextColor,
@@ -182,7 +182,7 @@ export default function PricingPointModal({
                       </p>
                     </div>
                     <div 
-                      className="w-8 h-8 rounded-xl flex items-center justify-center border"
+                      className="w-8 h-8 rounded-none flex items-center justify-center border"
                       style={{
                         background: `${creatorBrandColor}18`,
                         color: creatorBrandColor,
@@ -194,7 +194,7 @@ export default function PricingPointModal({
                   </div>
 
                   {/* Pricing Display */}
-                  <div className="py-2.5 px-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+                  <div className="py-2.5 px-3.5 rounded-none bg-white/[0.03] border border-white/5">
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl font-extrabold text-white tracking-tight">$0</span>
                       <span className="text-xs text-slate-400 font-semibold uppercase">Upfront cost</span>
@@ -226,7 +226,7 @@ export default function PricingPointModal({
                   <button
                     onClick={handleActivate5050}
                     disabled={isActivating}
-                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-none font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                     style={{ background: creatorBrandColor, color: brandTextColor }}
                   >
                     <span style={{ color: brandTextColor }}>{isActivating ? 'Activating Partnership...' : 'Claim 50/50 Partnership Track ($0 Upfront)'}</span>
@@ -240,7 +240,7 @@ export default function PricingPointModal({
 
               {/* Option 2: Co-Builder DIY License ($50 One-Time) */}
               <div 
-                className={`relative rounded-2xl p-6 transition-all border flex flex-col justify-between ${
+                className={`relative rounded-none p-6 transition-all border flex flex-col justify-between ${
                   selectedTrack === 'diy_pass' 
                     ? 'shadow-2xl ring-2' 
                     : 'hover:border-white/20'
@@ -252,7 +252,7 @@ export default function PricingPointModal({
                 }}
               >
                 {/* 100% Revenue Pill */}
-                <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-sky-500/20 text-sky-300 border border-sky-400/30 flex items-center gap-1.5">
+                <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-none text-[10px] font-extrabold uppercase tracking-widest bg-sky-500/20 text-sky-300 border border-sky-400/30 flex items-center gap-1.5">
                   <DollarSign size={11} /> 100% Revenue Retention
                 </div>
 
@@ -266,13 +266,13 @@ export default function PricingPointModal({
                         Keep 100% of revenue. Self-host & control.
                       </p>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+                    <div className="w-8 h-8 rounded-none bg-sky-500/10 flex items-center justify-center text-sky-400">
                       <Lock size={18} />
                     </div>
                   </div>
 
                   {/* Pricing Display */}
-                  <div className="py-2.5 px-3.5 rounded-xl bg-white/[0.03] border border-white/5">
+                  <div className="py-2.5 px-3.5 rounded-none bg-white/[0.03] border border-white/5">
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl font-extrabold text-white tracking-tight">$50</span>
                       <span className="text-xs text-slate-400 font-semibold uppercase">USD • One-time fee</span>
@@ -303,7 +303,7 @@ export default function PricingPointModal({
                 <div className="pt-6">
                   <button
                     onClick={handleChooseDiy}
-                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm text-slate-900 bg-white hover:bg-slate-100 shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                    className="w-full py-3.5 px-4 rounded-none font-bold text-sm text-slate-900 bg-white hover:bg-slate-100 shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99]"
                   >
                     Unlock Co-Builder Pass ($50 USD)
                     <ArrowRight size={15} />
@@ -338,7 +338,7 @@ export default function PricingPointModal({
             ].map((faq, idx) => (
               <div 
                 key={idx}
-                className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs"
+                className="rounded-none border border-white/5 bg-white/[0.02] p-3 text-xs"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}

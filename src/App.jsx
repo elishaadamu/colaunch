@@ -317,7 +317,7 @@ export default function App() {
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
-      if (path === '/dashboard') return 'dashboard'
+      if (path === '/dashboard' || path.startsWith('/dashboard/')) return 'dashboard'
       if (path === '/login') return 'login'
       if (path === '/signup') return 'signup'
 
@@ -636,8 +636,14 @@ export default function App() {
     let path = '/'
     if (newStep === 'login') path = '/login'
     else if (newStep === 'signup') path = '/signup'
-    else if (newStep === 'dashboard') path = '/dashboard'
-    else if (newStep === 'celebration') {
+    else if (newStep === 'dashboard') {
+      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
+        .replace(/^@+/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || ('cr_' + cleanHandle)
+      path = cId ? `/dashboard/${cId}` : '/dashboard'
+    } else if (newStep === 'celebration') {
       const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
         .replace(/^@+/, '')
         .toLowerCase()
@@ -662,8 +668,20 @@ export default function App() {
       if (window.location.pathname !== targetPath && !window.location.pathname.startsWith('/dashboard')) {
         window.history.replaceState(null, '', targetPath)
       }
+    } else if (step === 'dashboard' && typeof window !== 'undefined') {
+      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
+        .replace(/^@+/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || ('cr_' + cleanHandle)
+      if (cId) {
+        const targetPath = `/dashboard/${cId}`
+        if (window.location.pathname !== targetPath) {
+          window.history.replaceState(null, '', targetPath)
+        }
+      }
     }
-  }, [step, creatorData])
+  }, [step, creatorData?.id, creatorData?.channelId, creatorData?._id, creatorData?.handle, creatorData?.name])
 
   const next = () => {
     if (step === 'celebration') {
@@ -837,8 +855,18 @@ export default function App() {
         setStep('login')
       } else if (path === '/signup') {
         setStep('signup')
-      } else if (path === '/dashboard') {
+      } else if (path === '/dashboard' || path.startsWith('/dashboard/')) {
         setStep('dashboard')
+        const pathParts = path.split('/').filter(Boolean)
+        if (pathParts[0] === 'dashboard' && pathParts[1]) {
+          const routeCreatorId = pathParts[1]
+          setCreatorData(prev => {
+            if (prev && prev.id === routeCreatorId) return prev
+            const updated = { ...(prev || {}), id: routeCreatorId }
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            return updated
+          })
+        }
       } else {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         if (savedStep && STEPS.includes(savedStep) && cachedCreator) {

@@ -160,7 +160,7 @@
   }
 
   .forge-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none text-sm font-semibold transition-all duration-200 cursor-pointer select-none;
     background: var(--theme-accent);
     color: var(--theme-btn-primary-text);
     letter-spacing: -0.01em;
@@ -176,7 +176,7 @@
   }
 
   .forge-btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none text-sm font-medium transition-all duration-200 cursor-pointer select-none;
     background: var(--theme-accent-bg);
     border: 1px solid var(--theme-accent-border);
     color: var(--theme-text);
@@ -1203,7 +1203,7 @@
   padding: 4px;
   background: #F1F5F9;
   border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  border-radius: 0;
   margin-bottom: 22px;
 }
 
@@ -1219,7 +1219,7 @@
   color: #64748B;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1245,7 +1245,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 0;
   background: #FEF2F2;
   border: 1px solid #FECACA;
   margin-bottom: 16px;
@@ -1366,7 +1366,7 @@
   color: #080A0C;
   background: #C8FF3D;
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: inherit;
@@ -1427,7 +1427,7 @@
   color: #334155;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: inherit;

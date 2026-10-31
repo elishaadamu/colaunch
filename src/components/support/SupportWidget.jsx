@@ -223,7 +223,7 @@ export default function SupportWidget({ currentStage }) {
 
   const hasEscalation = displayedMessages.some(m => m.escalated || m.status === 'escalated_to_admin')
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
-  const creatorDashboardUrl = `${baseUrl}/${cleanHandle.toLowerCase()}/${creatorId}`
+  const creatorDashboardUrl = `${baseUrl}/dashboard/${creatorId}`
 
   return (
     <>
@@ -231,7 +231,7 @@ export default function SupportWidget({ currentStage }) {
       <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#121722] hover:bg-[#1a2233] text-white border border-[#2b354c] shadow-2xl transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+          className="flex items-center gap-2.5 px-4 py-2.5 rounded-none bg-[#121722] hover:bg-[#1a2233] text-white border border-[#2b354c] shadow-2xl transition-all duration-200 cursor-pointer"
           style={{
             borderColor: isOpen ? accent.color : 'rgba(255,255,255,0.12)',
             boxShadow: isOpen ? `0 0 25px -5px ${accent.color}40` : '0 10px 30px rgba(0,0,0,0.6)'
@@ -239,7 +239,7 @@ export default function SupportWidget({ currentStage }) {
           aria-label="Toggle Customer Support"
         >
           <div 
-            className="w-7 h-7 rounded-full flex items-center justify-center"
+            className="w-7 h-7 rounded-none flex items-center justify-center"
             style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
           >
             <Headphones className="w-4 h-4" />
@@ -247,14 +247,14 @@ export default function SupportWidget({ currentStage }) {
           <div className="flex flex-col text-left">
             <span className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
               Support
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
+              <span className="w-1.5 h-1.5 rounded-none" style={{ background: accent.color }} />
             </span>
             <span className="text-[10px] text-slate-400 font-medium">
               AI & Admin Desk
             </span>
           </div>
           {unreadCount > 0 && (
-            <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ml-1">
+            <span className="w-5 h-5 rounded-none bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ml-1">
               {unreadCount}
             </span>
           )}
@@ -264,14 +264,14 @@ export default function SupportWidget({ currentStage }) {
       {/* Slide-over Right Chat Panel */}
       {isOpen && (
         <div 
-          className="fixed bottom-20 right-6 z-50 w-[92vw] sm:w-[420px] max-h-[80vh] h-[640px] flex flex-col rounded-2xl bg-[#0c1017] border border-[#232b3e] shadow-2xl overflow-hidden animate-fadeIn"
+          className="fixed bottom-20 right-6 z-50 w-[92vw] sm:w-[420px] max-h-[80vh] h-[640px] flex flex-col rounded-none bg-[#0c1017] border border-[#232b3e] shadow-2xl overflow-hidden animate-fadeIn"
           style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85)' }}
         >
           {/* Header */}
           <div className="p-4 border-b border-[#1c2333] bg-[#101520] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <div 
-                className="w-9 h-9 rounded-xl flex items-center justify-center border shadow-inner"
+                className="w-9 h-9 rounded-none flex items-center justify-center border shadow-inner"
                 style={{
                   background: `rgba(${accent.rgb}, 0.12)`,
                   borderColor: `rgba(${accent.rgb}, 0.3)`,
@@ -283,7 +283,7 @@ export default function SupportWidget({ currentStage }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white tracking-tight">CoLaunch Support</h3>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-none bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                     24/7 AI Desk
                   </span>
                 </div>
@@ -297,14 +297,14 @@ export default function SupportWidget({ currentStage }) {
               <button
                 onClick={handleResetChat}
                 disabled={clearing}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                className="p-1.5 rounded-none text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                 title="Clear all chat messages & start over"
               >
                 {clearing ? <Loader2 className="w-4 h-4 animate-spin text-rose-400" /> : <RotateCcw className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                className="p-1.5 rounded-none text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -322,7 +322,7 @@ export default function SupportWidget({ currentStage }) {
                   </span>
                   <button 
                     onClick={() => setIsEditingIdentity(true)} 
-                    className="text-slate-400 hover:text-white ml-0.5 p-1 rounded hover:bg-white/10"
+                    className="text-slate-400 hover:text-white ml-0.5 p-1 rounded-none hover:bg-white/10"
                     title="Change Name & Email"
                   >
                     <Edit2 className="w-2.5 h-2.5" />
@@ -336,7 +336,7 @@ export default function SupportWidget({ currentStage }) {
               )}
             </div>
             {hasEscalation ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-md flex-shrink-0">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-none flex-shrink-0">
                 <ShieldAlert className="w-3 h-3" />
                 Team Notified
               </span>
@@ -344,7 +344,7 @@ export default function SupportWidget({ currentStage }) {
               <button
                 onClick={handleEscalateToAdmin}
                 disabled={escalating}
-                className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded-md border border-white/10 transition cursor-pointer flex-shrink-0"
+                className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded-none border border-white/10 transition cursor-pointer flex-shrink-0"
                 title="Send ticket to our dedicated operations team"
               >
                 {escalating ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Mail className="w-2.5 h-2.5" />}
@@ -357,10 +357,10 @@ export default function SupportWidget({ currentStage }) {
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#0a0d14]">
             {(!hasIdentity && messages.length === 0) || isEditingIdentity ? (
               <div className="h-full flex flex-col justify-center p-2">
-                <div className="p-5 rounded-2xl bg-[#111724] border border-[#232f45] shadow-2xl text-left space-y-3.5">
+                <div className="p-5 rounded-none bg-[#111724] border border-[#232f45] text-left space-y-3.5">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner flex-shrink-0"
+                      className="w-10 h-10 rounded-none flex items-center justify-center border flex-shrink-0"
                       style={{
                         background: `rgba(${accent.rgb}, 0.15)`,
                         borderColor: `rgba(${accent.rgb}, 0.3)`,
@@ -386,7 +386,7 @@ export default function SupportWidget({ currentStage }) {
                         value={nameInput}
                         onChange={e => setNameInput(e.target.value)}
                         placeholder="e.g. Alex Fox"
-                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-none px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                     </div>
                     <div>
@@ -397,7 +397,7 @@ export default function SupportWidget({ currentStage }) {
                         value={emailInput}
                         onChange={e => setEmailInput(e.target.value)}
                         placeholder="e.g. alex@example.com"
-                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-[#090c13] border border-[#232c3f] rounded-none px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                       <span className="text-[10px] text-slate-500 block mt-1">
                         Used for 2-way email support escalation & dashboard sync.
@@ -409,7 +409,7 @@ export default function SupportWidget({ currentStage }) {
                         <button
                           type="button"
                           onClick={() => setIsEditingIdentity(false)}
-                          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                          className="flex-1 py-2.5 rounded-none text-xs font-semibold text-slate-400 bg-white/5 hover:bg-white/10 transition cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -417,7 +417,7 @@ export default function SupportWidget({ currentStage }) {
                       <button
                         type="submit"
                         disabled={!nameInput.trim() || !emailInput.trim() || !emailInput.includes('@')}
-                        className="flex-1 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2.5 rounded-none font-bold text-xs text-white transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
                         style={{ background: accent.color }}
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -430,7 +430,7 @@ export default function SupportWidget({ currentStage }) {
             ) : displayedMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-4">
                 <div 
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 border shadow-sm"
+                  className="w-12 h-12 rounded-none flex items-center justify-center mb-3 border shadow-sm"
                   style={{
                     background: `rgba(${accent.rgb}, 0.1)`,
                     borderColor: `rgba(${accent.rgb}, 0.25)`,
@@ -452,7 +452,7 @@ export default function SupportWidget({ currentStage }) {
                     <button
                       key={idx}
                       onClick={() => handleQuickPrompt(chip)}
-                      className="w-full text-left text-xs p-2 rounded-xl bg-[#121722] hover:bg-[#182030] text-slate-300 hover:text-white border border-[#20283a] transition cursor-pointer"
+                      className="w-full text-left text-xs p-2 rounded-none bg-[#121722] hover:bg-[#182030] text-slate-300 hover:text-white border border-[#20283a] transition cursor-pointer"
                     >
                       {chip}
                     </button>
@@ -463,13 +463,13 @@ export default function SupportWidget({ currentStage }) {
               <>
                 {/* 2-Way Email Channel Active Callout Banner */}
                 {hasEscalation && (
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#121c2c] to-[#0c121d] border border-blue-500/30 text-xs shadow-md space-y-2">
+                  <div className="p-3.5 rounded-none bg-[#111724] border border-blue-500/30 text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-blue-300 flex items-center gap-1.5 text-[11px]">
                         <Mail className="w-3.5 h-3.5 text-blue-400" />
                         2-Way Email Channel Active
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-blue-500/20 text-blue-300 border border-blue-500/30">
                         Email & App Synced
                       </span>
                     </div>
@@ -526,12 +526,12 @@ export default function SupportWidget({ currentStage }) {
                       </div>
 
                       <div 
-                        className={`rounded-2xl p-3 text-xs leading-relaxed max-w-[88%] shadow-sm ${
+                        className={`rounded-none p-3 text-xs leading-relaxed max-w-[88%] ${
                           isUser 
-                            ? 'bg-blue-600 text-white rounded-br-sm' 
+                            ? 'bg-blue-600 text-white' 
                             : isAdmin
-                              ? 'bg-[#121c27] text-white border border-emerald-500/40 rounded-bl-sm shadow-md'
-                              : 'bg-[#151c29] text-slate-200 border border-[#232d42] rounded-bl-sm'
+                              ? 'bg-[#121c27] text-white border border-emerald-500/40'
+                              : 'bg-[#151c29] text-slate-200 border border-[#232d42]'
                         }`}
                         style={isUser ? { background: accent.color, color: '#ffffff' } : {}}
                       >
@@ -551,7 +551,7 @@ export default function SupportWidget({ currentStage }) {
                       <Bot className="w-3 h-3" style={{ color: accent.color }} />
                       <span style={{ color: accent.color }}>CoLaunch AI analyzing for {handle}...</span>
                     </div>
-                    <div className="rounded-2xl p-3 text-xs bg-[#151c29] text-slate-400 border border-[#232d42] rounded-bl-sm flex items-center gap-2">
+                    <div className="rounded-none p-3 text-xs bg-[#151c29] text-slate-400 border border-[#232d42] flex items-center gap-2">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: accent.color }} />
                       <span>Generating tailored response...</span>
                     </div>
@@ -567,19 +567,19 @@ export default function SupportWidget({ currentStage }) {
             <div className="px-3 py-2 bg-[#0d111a] border-t border-[#1c2333] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
               <button
                 onClick={() => handleQuickPrompt(`Talk to human admin about ${handle}`)}
-                className="whitespace-nowrap text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
+                className="whitespace-nowrap text-[10px] font-semibold px-2.5 py-1 rounded-none bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
               >
                 Human Admin
               </button>
               <button
                 onClick={() => handleQuickPrompt(`Explain my revenue projections & pricing`)}
-                className="whitespace-nowrap text-[10px] px-2.5 py-1 rounded-lg bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition cursor-pointer"
+                className="whitespace-nowrap text-[10px] px-2.5 py-1 rounded-none bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition cursor-pointer"
               >
                 Revenue & Pricing
               </button>
               <button
                 onClick={() => handleQuickPrompt(`What features are built for my audience?`)}
-                className="whitespace-nowrap text-[10px] px-2.5 py-1 rounded-lg bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition cursor-pointer"
+                className="whitespace-nowrap text-[10px] px-2.5 py-1 rounded-none bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition cursor-pointer"
               >
                 Features Built
               </button>
@@ -596,12 +596,12 @@ export default function SupportWidget({ currentStage }) {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={`Ask anything about ${handle}...`}
-              className="flex-1 bg-[#0b0e14] border border-[#20293d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-[#0b0e14] border border-[#20293d] rounded-none px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || loading}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition cursor-pointer"
+              className="w-9 h-9 rounded-none flex items-center justify-center text-white disabled:opacity-40 transition cursor-pointer"
               style={{ background: accent.color }}
             >
               <Send className="w-4 h-4" />

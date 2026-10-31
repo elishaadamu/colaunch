@@ -286,7 +286,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSidebarOpen(o => !o)}
-              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors"
+              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-none transition-colors"
               style={{ color: 'var(--theme-text-muted)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
@@ -304,7 +304,7 @@ export default function DashboardLayout() {
             {/* Commercial Launch & Pricing Point Button */}
             <button
               onClick={() => setPricingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all hover:opacity-90 active:scale-95 cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-[12px] font-bold transition-all hover:opacity-90 active:scale-98 cursor-pointer border border-white/10"
               style={{
                 background: creatorBrandColor,
                 color: brandTextColor,
@@ -317,13 +317,13 @@ export default function DashboardLayout() {
 
             {/* Live status pill */}
             <div
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border"
               style={{ 
                 background: `rgba(${cr}, ${cg}, ${cb}, 0.1)`, 
                 borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
               <span className="text-[12px] text-slate-200">
                 {creatorData.productName || 'Creator Academy'} live
               </span>
@@ -332,7 +332,7 @@ export default function DashboardLayout() {
             {/* Forge Chat toggle */}
             <button
               onClick={() => setChatOpen(o => !o)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-150 border"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-none transition-all duration-150 border"
               style={{
                 background: chatOpen ? `rgba(${cr}, ${cg}, ${cb}, 0.15)` : 'rgba(255,255,255,0.05)',
                 borderColor: chatOpen ? creatorBrandColor : 'rgba(255,255,255,0.08)',
@@ -351,7 +351,7 @@ export default function DashboardLayout() {
                 </span>
               )}
               <div
-                className="w-8 h-8 rounded-full border overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
+                className="w-8 h-8 rounded-none border overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
                 style={{
                   background: '#121722',
                   borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
@@ -375,7 +375,7 @@ export default function DashboardLayout() {
             <button
               onClick={logout}
               title={`Logout ${userProfile?.username || userProfile?.email || 'User'}`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
             >
               <LogOut size={13} className="text-rose-400" />
               <span className="hidden md:inline">Logout</span>
