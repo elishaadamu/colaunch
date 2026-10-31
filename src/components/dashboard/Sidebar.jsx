@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { id: 'studio',     icon: Layers,     label: 'Studio',            badge: null },
   { id: 'products',   icon: Package,    label: 'Products',          badge: null },
   { id: 'revenue',    icon: DollarSign, label: 'Revenue',           badge: null },
-  { id: 'support',    icon: Headphones, label: 'Customer Support',  badge: 'AI & Desk' },
+  { id: 'support',    icon: Headphones, label: 'Customer Support',  badge: 'AI' },
   { id: 'accounts',   icon: Link,       label: 'Accounts',          badge: null },
   { id: 'settings',   icon: Settings,   label: 'Settings',          badge: null },
 ]
@@ -112,7 +112,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                       </span>
                       {badge && (
                         <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 tracking-tight leading-none"
                           style={{ background: 'var(--theme-accent)', color: 'var(--theme-btn-primary-text)' }}
                         >
                           {badge}
@@ -190,7 +190,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
       <aside
         className="relative z-30 flex flex-col border-r flex-shrink-0 transition-all duration-300"
         style={{
-          width: isOpen ? '220px' : '60px',
+          width: isOpen ? '228px' : '60px',
           borderColor: 'var(--theme-border-color)',
           background: 'var(--theme-sidebar-bg)',
         }}
@@ -293,7 +293,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
                       </span>
                       {badge && (
                         <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 tracking-tight leading-none"
                           style={{ background: 'var(--theme-accent)', color: 'var(--theme-btn-primary-text)' }}
                         >
                           {badge}
