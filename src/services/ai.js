@@ -703,6 +703,194 @@ async function aiTextCall(
   throw new Error("NO_ACTIVE_AI_KEY");
 }
 
+// ── Channel-Native Launch Pack Generator ──────────────────────────────────────
+
+export function buildChannelNativeMarketingPack(creatorData) {
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const handle = creatorData?.handle?.startsWith('@') ? creatorData.handle : `@${creatorData?.handle || 'creator'}`
+  const platform = creatorData?.platform || 'YouTube'
+  const niche = (creatorData?.niche || 'Digital Creator').toLowerCase()
+  const followersNum = Number(creatorData?.followers) || 1000000
+  const followers = followersNum ? fmt(followersNum) : '1M+'
+  const engRate = creatorData?.engagementRate ? `${creatorData.engagementRate}%` : '4.6%'
+  const blueprint = creatorData?.blueprint || {}
+  const productName = creatorData?.productName || blueprint?.name || `${name} Pro Suite`
+  const tagline = blueprint?.tagline || `The ultimate system built specifically for ${name}'s community`
+  const productDesc = blueprint?.description || `A dedicated, high-tier platform engineered for ${name}'s audience in ${niche}`
+  const features = Array.isArray(blueprint?.features) && blueprint.features.length > 0 
+    ? blueprint.features 
+    : [
+        'Interactive mastery curriculum & real-time feedback sandbox',
+        'Direct creator access & weekly live office hours',
+        'Production-ready templates & downloadable resource bundles',
+        'Exclusive private community & verified member certification'
+      ]
+  const revenueEst = blueprint?.revenue || '$45K–$120K / mo'
+
+  const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('bro code')
+  const isCooking = niche.includes('cook') || niche.includes('food') || niche.includes('culinary') || niche.includes('meal') || name.toLowerCase().includes('angry birds') || name.toLowerCase().includes('chef')
+  const isFitness = niche.includes('fit') || niche.includes('workout') || niche.includes('train') || niche.includes('gym')
+  const isGaming = niche.includes('game') || niche.includes('gaming') || niche.includes('play') || niche.includes('stream')
+
+  // Channel-specific email
+  const emailSubject = `Why I spent 6 months building "${productName}" (and what it means for you)`
+  const emailPreview = `No more guessing. Here is the full platform I've been secretly building.`
+  const emailBody = `Hey everyone,\n\nFor the past few months, my DMs and ${platform} comments have been filled with the exact same question:\n\n"How do I take what you teach on the channel and turn it into real-world results?"\n\nWatching videos gives you the theory. But when you sit down to execute on your own, you get stuck in tutorial loops and friction.\n\nThat's why today, I am officially opening doors to "${productName}".\n\nHere is what we engineered for you:\n${features.map(f => `• ${f}`).join('\n')}\n\nWe are keeping the founding cohort intentionally limited so I can work directly with early members and dial in your progress.\n\nAs a loyal viewer, you get access to the founding tier before public doors open.\n\nClaim your founding access here:\n[PRODUCT_LINK]\n\nLet's build something great together,\n${name}`
+
+  // Channel-specific Instagram caption
+  const igCaption = `Today is the day. Over ${followers} of you have watched our videos, asked questions, and pushed for something bigger. Introducing ${productName} — your direct pipeline to mastering ${niche}. Link in bio to join the founding cohort! 🚀`
+  const igHashtags = isCoding ? ['coding', 'developer', 'webdevelopment', 'learnprogramming', 'softwareengineer', 'code'] :
+                     isCooking ? ['culinary', 'recipes', 'homechef', 'cookingchallenge', 'mealkit', 'foodie'] :
+                     isGaming ? ['gaming', 'gamercommunity', 'esports', 'twitchstreamer', 'gamersunite', 'gameplay'] :
+                     isFitness ? ['fitnessjourney', 'training', 'workoutmotivation', 'athlete', 'fitfam', 'coaching'] :
+                     ['creator', 'entrepreneur', 'masterclass', 'community', 'growth', 'launch']
+
+  // Channel-specific Twitter thread
+  const tweets = [
+    `1/ Most people who watch ${niche} tutorials make one fatal mistake: they consume passive content instead of building in an active feedback loop.\n\nToday, I'm fixing that with the launch of "${productName}". 🧵👇`,
+    `2/ The problem with traditional tutorials:\n• Zero interactive verification\n• Stale generic examples\n• No direct path to real outcomes\n\n"${productName}" is built from the ground up around active hands-on execution.`,
+    `3/ Inside "${productName}":\n${features.slice(0, 3).map(f => `✅ ${f}`).join('\n')}\n\nBuilt specifically for our ${followers} ${platform} community.`,
+    `4/ Doors are officially unlocked for our VIP founding members.\n\nLock in your founding rate and bonus access now:\n[PRODUCT_LINK]\n\nSee you inside!`
+  ]
+
+  // Channel-specific TikTok hook & script
+  const ttHook = isCoding ? "Stop watching tutorials if you want to get hired as a developer." :
+                 isCooking ? "Stop buying grocery store ingredients that go bad in 3 days." :
+                 isFitness ? "Stop switching workout routines every 2 weeks." :
+                 `The biggest mistake ${followers} viewers make in ${niche}.`
+  const ttScript = `[HOOK — CAMERA ZOOM IN]\n${ttHook}\n\n[CUT TO WORKSPACE / PRODUCT DEMO]\nI've seen thousands of comments asking the same thing. You watch the video, feel inspired, but when it's time to execute, you're on your own.\n\n[HIGHLIGHT SCREEN]\nThat's why I built "${productName}". Instead of generic advice, you get ${features[0] || 'an interactive sandbox'}.\n\n[POINT TO BIO]\nFounding access just went live. Check the link in my bio to get in before spots fill up!`
+
+  // 8-Slide Executive Pitch Deck
+  const slides = [
+    {
+      slideNumber: 1,
+      category: "EXECUTIVE SUMMARY",
+      title: `${productName}: The Creator-Led Paradigm`,
+      subtitle: `${tagline}`,
+      metricBadge: `${followers} Global Community`,
+      bullets: [
+        `Directly addresses the unmet demand across ${name}'s ${followers} ${platform} audience`,
+        `Transforms passive video viewership into an interactive, high-retention commercial ecosystem`,
+        `Projected annual revenue velocity: ${revenueEst}`
+      ],
+      takeaway: `A category-defining product backed by organic, high-trust creator distribution.`
+    },
+    {
+      slideNumber: 2,
+      category: "THE MARKET PROBLEM",
+      title: `The "Passive Consumption Void" in ${niche}`,
+      subtitle: `Why traditional education and content fail modern learners.`,
+      metricBadge: `78% Tutorial Dropoff Rate`,
+      bullets: [
+        `Viewers suffer from "tutorial hell" — understanding videos without ability to produce independently`,
+        `Fragmented tools and scattered resources create high friction and early abandonment`,
+        `Zero real-time verification or personalized accountability from instructors`
+      ],
+      takeaway: `Audiences don't want more content; they need structured, feedback-driven execution.`
+    },
+    {
+      slideNumber: 3,
+      category: "PROPRIETARY SOLUTION",
+      title: `Introducing ${productName}`,
+      subtitle: `An integrated, outcome-oriented platform tailored to the channel's DNA.`,
+      metricBadge: `${engRate} Engagement Multiplier`,
+      bullets: [
+        `Purpose-built interactive architecture designed around ${name}'s signature teaching style`,
+        `Instant validation sandbox eliminating cognitive friction between theory and practice`,
+        `Gamified milestones and verified member achievements that drive sustained retention`
+      ],
+      takeaway: `The natural commercial extension of ${name}'s highest-performing channel content.`
+    },
+    {
+      slideNumber: 4,
+      category: "CORE ARCHITECTURE & DELIVERABLES",
+      title: `What's Inside The Ecosystem`,
+      subtitle: `Tangible, high-utility features engineered for immediate value delivery.`,
+      metricBadge: `${features.length} Modular Pillars`,
+      bullets: features.map(f => `${f}`),
+      takeaway: `Engineered for immediate "time-to-value" within the first 10 minutes of onboarding.`
+    },
+    {
+      slideNumber: 5,
+      category: "TARGET AUDIENCE & SUBSCRIBER PERSONAS",
+      title: `Target Subscriber Demographics & Buying Intent`,
+      subtitle: `A deeply calibrated audience profile primed for day-1 conversion.`,
+      metricBadge: `High Commercial Readiness`,
+      bullets: [
+        `Primary Tier: Ambitious newcomers looking for a reliable, guided roadmap from zero`,
+        `Secondary Tier: Experienced practitioners seeking advanced masterclasses & portfolio polish`,
+        `Superfan Tier: Core subscribers demanding direct mentorship, exclusive drops, and community recognition`
+      ],
+      takeaway: `Organic creator-trust removes traditional customer acquisition cost (CAC).`
+    },
+    {
+      slideNumber: 6,
+      category: "UNIT ECONOMICS & FINANCIAL PROJECTIONS",
+      title: `Monetization Rails & Scalability Model`,
+      subtitle: `High gross margins with recurring subscription and expansion revenue.`,
+      metricBadge: `Target: ${revenueEst}`,
+      bullets: [
+        `Tier 1: Accessible recurring subscription for consistent baseline MRR`,
+        `Tier 2: Premium founding cohort bundle with higher lifetime value (LTV)`,
+        `Minimal marginal cost per new member yields 85%+ software / digital gross margin`
+      ],
+      takeaway: `Scalable business mechanics that grow linearly with channel subscriber milestones.`
+    },
+    {
+      slideNumber: 7,
+      category: "GO-TO-MARKET & 7-DAY CONVERSION RUNWAY",
+      title: `Synchronized Omnichannel Launch Sequence`,
+      subtitle: `A proven creator launch cadence designed to maximize urgency and early momentum.`,
+      metricBadge: `7-Day Conversion Window`,
+      bullets: [
+        `Day 1-2 (Anticipation): Behind-the-scenes teasers on YouTube Shorts and X thread`,
+        `Day 3 (VIP Drop): Exclusive private invitation sent to most engaged email subscribers`,
+        `Day 4-5 (Public Live): Live walkthrough / Q&A video stream showcasing live features`,
+        `Day 6-7 (Founding Close): Limited founding bonuses expire, cementing early member cohort`
+      ],
+      takeaway: `Manufactured scarcity and organic social proof drive concentrated conversion spikes.`
+    },
+    {
+      slideNumber: 8,
+      category: "THE OFFER & FOUNDING INCENTIVE",
+      title: `The Irresistible Founding Stack`,
+      subtitle: `High perceived value designed to make enrollment an obvious decision.`,
+      metricBadge: `Founding Member Cohort`,
+      bullets: [
+        `Lifetime locked-in pricing for cohort 1 founding members`,
+        `Instant access to all ${features.length} core platform deliverables and templates`,
+        `Direct access channel and private VIP onboarding session with ${name}`,
+        `100% satisfaction guarantee: risk reversed for the first 30 days`
+      ],
+      takeaway: `Zero-risk, high-reward founding enrollment that turns viewers into evangelists.`
+    }
+  ]
+
+  return {
+    email: {
+      subject: emailSubject,
+      preview: emailPreview,
+      body: emailBody
+    },
+    instagram: {
+      caption: igCaption,
+      hashtags: igHashtags
+    },
+    twitter: {
+      thread: tweets
+    },
+    tiktok: {
+      hook: ttHook,
+      script: ttScript
+    },
+    pitchDeck: {
+      headline: `${productName}: The Future of ${niche}`,
+      tagline: tagline,
+      slides: slides
+    }
+  }
+}
+
 // ── Generate full marketing pack ───────────────────────────────────────────────
 
 export async function generateMarketingPack(creatorData, signal = undefined) {
@@ -720,18 +908,22 @@ export async function generateMarketingPack(creatorData, signal = undefined) {
   const productName = creatorData.productName || "Creator Academy";
   const blueprint = creatorData.blueprint;
   const productDesc = blueprint?.description || `a premium ${niche} platform`;
+  const features = blueprint?.features || [];
   const bio = creatorData.description
     ? `\nBio: "${creatorData.description.slice(0, 150)}"`
     : "";
 
-  const system = `You are an elite creator economy marketing strategist. Write copy that sounds exactly like this creator — authentic, platform-native, never generic. Return ONLY valid JSON.`;
+  const fallbackPack = buildChannelNativeMarketingPack(creatorData);
 
-  const prompt = `Generate a complete product launch marketing pack for:
+  const system = `You are an elite creator economy marketing strategist and pitch deck designer. Write copy that sounds exactly like this creator — authentic, platform-native, never generic. Return ONLY valid JSON.`;
+
+  const prompt = `Generate a complete, high-converting product launch marketing pack and an 8-slide executive pitch deck for:
 
 Creator: ${name} (${handle})
 Platform: ${platform} — ${followers} followers, ${engRate} engagement
 Niche: ${niche}${bio}
 Launching: "${productName}" — ${productDesc}
+Features: ${features.join(', ') || 'Interactive curriculum, Sandbox, Live Reviews, Certifications'}
 
 Return this exact JSON (be specific, personal, creator-native — not generic):
 
@@ -756,16 +948,92 @@ Return this exact JSON (be specific, personal, creator-native — not generic):
     "headline": "product headline under 8 words",
     "tagline": "supporting tagline under 18 words",
     "slides": [
-      { "title": "Problem", "bullets": ["3 specific pain points"] },
-      { "title": "Solution", "bullets": ["3 ways ${productName} solves them"] },
-      { "title": "What's Inside", "bullets": ["4 key features"] },
-      { "title": "Who It's For", "bullets": ["3 audience descriptions"] },
-      { "title": "The Offer", "bullets": ["founding price", "what they get", "urgency"] }
+      {
+        "slideNumber": 1,
+        "category": "EXECUTIVE SUMMARY",
+        "title": "Title of slide 1",
+        "subtitle": "Subtitle explaining vision",
+        "bullets": ["3 specific bullets"],
+        "metricBadge": "e.g. 10M+ Global Reach",
+        "takeaway": "Key bottom-line message"
+      },
+      {
+        "slideNumber": 2,
+        "category": "THE MARKET PROBLEM",
+        "title": "Title of slide 2",
+        "subtitle": "Why current solutions fail",
+        "bullets": ["3 specific pain points"],
+        "metricBadge": "e.g. 78% Dropoff Rate",
+        "takeaway": "Core audience frustration"
+      },
+      {
+        "slideNumber": 3,
+        "category": "PROPRIETARY SOLUTION",
+        "title": "Title of slide 3",
+        "subtitle": "How this solves it",
+        "bullets": ["3 specific solutions"],
+        "metricBadge": "e.g. 4.6% Engagement",
+        "takeaway": "The creator advantage"
+      },
+      {
+        "slideNumber": 4,
+        "category": "CORE ARCHITECTURE",
+        "title": "Title of slide 4",
+        "subtitle": "What is inside",
+        "bullets": ["4 core features"],
+        "metricBadge": "e.g. Complete Platform",
+        "takeaway": "Immediate value"
+      },
+      {
+        "slideNumber": 5,
+        "category": "TARGET AUDIENCE",
+        "title": "Title of slide 5",
+        "subtitle": "Who buys and why",
+        "bullets": ["3 audience personas"],
+        "metricBadge": "e.g. High Conversion Readiness",
+        "takeaway": "Audience fit"
+      },
+      {
+        "slideNumber": 6,
+        "category": "UNIT ECONOMICS",
+        "title": "Title of slide 6",
+        "subtitle": "Monetization model",
+        "bullets": ["3 revenue mechanics"],
+        "metricBadge": "e.g. Scalable MRR",
+        "takeaway": "Financial viability"
+      },
+      {
+        "slideNumber": 7,
+        "category": "GO-TO-MARKET",
+        "title": "Title of slide 7",
+        "subtitle": "7-day launch cadence",
+        "bullets": ["4 launch phases"],
+        "metricBadge": "e.g. 7-Day Window",
+        "takeaway": "Urgency catalyst"
+      },
+      {
+        "slideNumber": 8,
+        "category": "THE OFFER",
+        "title": "Title of slide 8",
+        "subtitle": "Founding member deal",
+        "bullets": ["4 founding perks and guarantee"],
+        "metricBadge": "e.g. Limited Cohort",
+        "takeaway": "Irresistible CTA"
+      }
     ]
   }
 }`;
 
-  return aiTextCall(prompt, system, 8192, signal, true);
+  try {
+    const aiResult = await aiTextCall(prompt, system, 8192, signal, true);
+    if (aiResult && aiResult.pitchDeck && Array.isArray(aiResult.pitchDeck.slides)) {
+      return aiResult;
+    }
+    return { ...fallbackPack, ...aiResult };
+  } catch (err) {
+    console.warn('[Forge] AI Marketing Pack generation failed or no key, using channel-native fallback:', err);
+    return fallbackPack;
+  }
 }
 
 // ── Generate Dynamic Today Priorities ──────────────────────────────────────────
@@ -870,6 +1138,7 @@ Return a JSON array of 4 objects matching this exact structure:
 // ── Regenerate one section ─────────────────────────────────────────────────────
 
 export async function regenerateSection(section, creatorData) {
+  const fallbackPack = buildChannelNativeMarketingPack(creatorData);
   const name =
     creatorData.name || creatorData.handle?.replace("@", "") || "this creator";
   const productName = creatorData.productName || "Creator Academy";
@@ -880,16 +1149,50 @@ export async function regenerateSection(section, creatorData) {
     instagram: `Write a fresh Instagram launch caption for "${productName}" by ${name}. Different hook. Return JSON: { "caption": "...", "hashtags": ["..."] }`,
     twitter: `Write a new 4-tweet launch thread for "${productName}" by ${name}. Fresh angle. Return JSON: { "thread": ["t1","t2","t3","t4"] }`,
     tiktok: `Write a new 30-second TikTok script for "${productName}" by ${name}. New hook. Return JSON: { "hook": "...", "script": "..." }`,
-    pitchDeck: `Create a fresh pitch deck for "${productName}" by ${name} in ${niche}. New framing. Return JSON: { "headline": "...", "tagline": "...", "slides": [{ "title": "...", "bullets": ["..."] }] }`,
+    pitchDeck: `Create a fresh 8-slide executive pitch deck for "${productName}" by ${name} in ${niche}. Return JSON: { "headline": "...", "tagline": "...", "slides": [{ "slideNumber": 1, "category": "...", "title": "...", "subtitle": "...", "bullets": ["..."], "metricBadge": "...", "takeaway": "..." }] }`,
   };
 
-  return aiTextCall(
-    prompts[section],
-    "You are a creator economy marketing expert. Return ONLY valid JSON.",
-    8192,
-    undefined,
-    true,
-  );
+  try {
+    const res = await aiTextCall(
+      prompts[section],
+      "You are a creator economy marketing expert. Return ONLY valid JSON.",
+      8192,
+      undefined,
+      true,
+    );
+    if (res) return res;
+    return fallbackPack[section];
+  } catch (err) {
+    console.warn(`[Forge] Failed to regenerate ${section} with AI, using channel fallback:`, err);
+    return fallbackPack[section];
+  }
+}
+
+// ── Channel-Specific Image Prompt Builder ─────────────────────────────────────
+
+export function buildChannelSpecificImagePrompt(creatorData) {
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`
+  const niche = (creatorData?.niche || 'creator community').toLowerCase()
+  const type = creatorData?.blueprint?.type || 'Platform'
+  const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('bro code')
+  const isCooking = niche.includes('cook') || niche.includes('food') || niche.includes('culinary') || niche.includes('meal') || name.toLowerCase().includes('angry birds') || name.toLowerCase().includes('chef')
+  const isGaming = niche.includes('game') || niche.includes('gaming') || niche.includes('play') || niche.includes('stream')
+  const isFitness = niche.includes('fit') || niche.includes('workout') || niche.includes('train') || niche.includes('gym')
+
+  if (isCoding) {
+    return `Ultra-high-resolution software screenshot mockup for "${productName}" by developer creator ${name} in ${niche}. A cutting-edge developer IDE interface on a dark glassmorphic canvas with syntax-highlighted code editor, interactive terminal execution window, glowing emerald and cyan code modules, curriculum tree, and live compiler stats. Crisp Figma UI design presentation, photorealistic, 8k render.`
+  }
+  if (isCooking) {
+    return `Luxury commercial product photography shot for "${productName}" by ${name} in ${niche}. A gourmet culinary meal kit subscription unboxed on a modern dark slate countertop with fresh organic ingredients, artisan recipe booklet, and an elegant tablet running an interactive video cooking dashboard. Cinematic kitchen lighting, shallow depth of field, 8k commercial photography.`
+  }
+  if (isGaming) {
+    return `Futuristic cyberpunk gaming hub and creator platform mockup for "${productName}" by ${name}. High-contrast dark mode dashboard with glowing neon tournament brackets, real-time leaderboard, custom stream integrations, and clan voice lounge. 8k Unreal Engine UI render.`
+  }
+  if (isFitness) {
+    return `Premium athlete training and coaching app mockup for "${productName}" by ${name}. Sleek dark mode mobile interface displaying workout telemetry, heart rate metrics, HD exercise video demonstrations, and nutrition targets. Apple Health and Strava aesthetic, 8k render.`
+  }
+  return `Award-winning product mockup for "${productName}" created by ${name} for the ${niche} community. Sleek dark mode SaaS application on deep graphite background with glowing glassmorphic panels, clean analytics graphs, module cards, and professional product photography style. Ultra sharp, 8k render.`
 }
 
 // ── Gemini image generation (uses existing Gemini key — no extra signup) ───────
@@ -903,11 +1206,7 @@ export async function generateProductImageWithGemini(
   const { geminiKey } = loadAiKeys();
   if (!geminiKey) throw new Error("NO_GEMINI_KEY");
 
-  const productName = creatorData.productName || "Creator Academy";
-  const niche = creatorData.niche || "content creation";
-  const type = creatorData.blueprint?.type || "Web App";
-
-  const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`;
+  const prompt = buildChannelSpecificImagePrompt(creatorData);
 
   const url = `/api/gemini/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${geminiKey}`;
 
@@ -946,11 +1245,7 @@ export async function generateProductImageWithTogether(
   const { togetherKey } = loadAiKeys();
   if (!togetherKey) throw new Error("NO_TOGETHER_KEY");
 
-  const productName = creatorData.productName || "Creator Academy";
-  const niche = creatorData.niche || "content creation";
-  const type = creatorData.blueprint?.type || "Web App";
-
-  const prompt = `Sleek dark ${type} screenshot mockup for "${productName}" — ${niche} creator platform. Premium SaaS UI, floating on deep dark background with subtle glow. Shows dashboard or course page with cards and metrics. No text. Professional product photography. Ultra detailed. Linear, Notion aesthetic.`;
+  const prompt = buildChannelSpecificImagePrompt(creatorData);
 
   const res = await fetch("/api/together/v1/images/generations", {
     method: "POST",
@@ -991,11 +1286,7 @@ export async function generateProductImageWithOpenAI(
   const { openaiKey } = loadAiKeys();
   if (!openaiKey) throw new Error("NO_OPENAI_KEY");
 
-  const productName = creatorData.productName || "Creator Platform";
-  const niche = creatorData.niche || "content creation";
-  const type = creatorData.blueprint?.type || "Web App";
-
-  const prompt = `High resolution modern software screenshot mockup for a ${niche} platform called "${productName}". Sleek dark mode UI dashboard with subtle glassmorphic glow, clean analytics metrics cards, and intuitive workflow navigation. Beautiful product design photography, Figma style presentation on clean deep dark background. Ultra detailed.`;
+  const prompt = buildChannelSpecificImagePrompt(creatorData);
 
   // 1. Try DALL-E 3 via /v1/images/generations
   try {
@@ -1092,11 +1383,7 @@ async function saveImageToBackendMedia(imageResult) {
 }
 
 export async function generateProductImage(creatorData, signal = undefined) {
-  const productName = creatorData.productName || "Creator Academy";
-  const niche = creatorData.niche || "content creation";
-  const type = creatorData.blueprint?.type || "Web App";
-
-  const prompt = `Sleek dark ${type} app screenshot mockup for a ${niche} creator platform called "${productName}". Premium SaaS UI on deep dark background with subtle glow. Shows a clean dashboard with course cards and metrics. No real text, just UI shapes and blocks. Professional product photography style. Linear, Notion aesthetic. Ultra detailed.`;
+  const prompt = buildChannelSpecificImagePrompt(creatorData);
 
   const { openaiKey, togetherKey, geminiKey } = loadAiKeys();
   let rawImage = null;
