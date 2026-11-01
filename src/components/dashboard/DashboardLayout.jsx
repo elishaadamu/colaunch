@@ -190,27 +190,10 @@ export default function DashboardLayout() {
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
 
-  // Extract and apply avatar brand color dynamically if not set or if defaulted to red
-  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url
-  useEffect(() => {
-    let active = true
-    const currentBrand = creatorData?.brandColor || creatorData?.brand_color || creatorData?.brandHex
-    if (resolvedAvatar && (!currentBrand || currentBrand.toLowerCase() === '#ff3b30' || currentBrand === '#7C5CFC')) {
-      extractBrandColorFromAvatar(resolvedAvatar, creatorData).then(res => {
-        if (active && res?.primaryHex && res.primaryHex.toLowerCase() !== '#ff3b30') {
-          updateCreator({ brandColor: res.primaryHex, brandHex: res.primaryHex })
-        }
-      }).catch(err => {
-        console.warn('[DashboardLayout] Avatar color extraction notice:', err)
-      })
-    }
-    return () => { active = false }
-  }, [resolvedAvatar, creatorData?.brandColor, creatorData?.brand_color, creatorData?.brandHex])
-
-  // Unified single brand color across the entire application
-  const creatorBrandColor = '#8bae35'
-  const [cr, cg, cb] = [139, 174, 53]
-  const brandTextColor = '#0d1403'
+  // Unified single brand color across the entire application (co-launch.app brand red)
+  const creatorBrandColor = '#c81e3c'
+  const [cr, cg, cb] = [200, 30, 60]
+  const brandTextColor = '#ffffff'
 
   // Listen for pricing events from child tabs (Revenue, Marketing, etc.)
   useEffect(() => {

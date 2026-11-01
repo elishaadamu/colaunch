@@ -1321,14 +1321,14 @@ export default function Marketing({ chatOpen: propChatOpen }) {
   } = useForge()
   const isChatOpen = propChatOpen ?? contextChatOpen
   
-  // Unified single brand color across the entire application
-  const detectedBrandColor = '#8bae35'
-  const [cr, cg, cb] = [139, 174, 53]
-  const brandTextColor = '#0d1403'
+  // Unified single brand color across the entire application (co-launch.app brand red)
+  const detectedBrandColor = '#c81e3c'
+  const [cr, cg, cb] = [200, 30, 60]
+  const brandTextColor = '#ffffff'
   const accent = useMemo(() => ({
-    color: '#8bae35',
-    rgb: '139, 174, 53',
-    contrastText: '#0d1403'
+    color: '#c81e3c',
+    rgb: '200, 30, 60',
+    contrastText: '#ffffff'
   }), [])
 
   // Resolve creator's latest videos (from real scraped posts or tailored high-production fallbacks)

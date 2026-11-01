@@ -306,14 +306,14 @@ export default function CreatorLink() {
   const displayHandle = activeData.handle ? (activeData.handle.startsWith('@') ? activeData.handle : `@${activeData.handle}`) : '@creator'
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#090a0c] text-neutral-200 font-sans relative overflow-x-hidden selection:bg-[#8bae35]/30 selection:text-[#d4f870]">
+    <div className="min-h-screen flex flex-col justify-between bg-[#090a0c] text-neutral-200 font-sans relative overflow-x-hidden selection:bg-[#c81e3c]/30 selection:text-white">
 
       {/* Ambient subtle top gradient aura */}
       <div 
         className="pointer-events-none fixed inset-0 z-0" 
-        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(139, 174, 53, 0.08) 0%, rgba(9, 10, 12, 0) 70%)' }} 
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(200, 30, 60, 0.12) 0%, rgba(9, 10, 12, 0) 70%)' }} 
       />
-      <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-[#8bae35]/5 blur-[120px] rounded-full z-0" />
+      <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-[#c81e3c]/10 blur-[130px] rounded-full z-0" />
 
       {/* TOP NAVIGATION BAR */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
@@ -337,11 +337,11 @@ export default function CreatorLink() {
             className="inline-flex items-center gap-2.5 group cursor-pointer transition-opacity hover:opacity-90 select-none"
             title="Back to Home"
           >
-            <div className="grid grid-cols-2 gap-1 p-1 bg-[#111317] border border-[#1f242c] rounded-lg transition-colors group-hover:border-[#8bae35]/40">
-              <div className="w-1.5 h-1.5 rounded-sm bg-[#8bae35] transition-colors"></div>
+            <div className="grid grid-cols-2 gap-1 p-1 bg-[#111317] border border-[#1f242c] rounded-lg transition-colors group-hover:border-[#c81e3c]/40">
+              <div className="w-1.5 h-1.5 rounded-sm bg-[#c81e3c] transition-colors"></div>
               <div className="w-1.5 h-1.5 rounded-sm bg-neutral-300 group-hover:bg-white transition-colors"></div>
               <div className="w-1.5 h-1.5 rounded-sm bg-neutral-300 group-hover:bg-white transition-colors"></div>
-              <div className="w-1.5 h-1.5 rounded-sm bg-[#8bae35] transition-colors"></div>
+              <div className="w-1.5 h-1.5 rounded-sm bg-[#c81e3c] transition-colors"></div>
             </div>
             <span className="text-sm font-bold tracking-tight text-white group-hover:text-neutral-100">CoLaunch</span>
           </div>
@@ -367,7 +367,7 @@ export default function CreatorLink() {
             </span>
             <div className="flex items-center gap-1.5">
               {/* Active pill */}
-              <span className="w-5 h-1.5 rounded-full bg-[#8bae35] shadow-sm shadow-[#8bae35]/50"></span>
+              <span className="w-5 h-1.5 rounded-full bg-[#c81e3c] shadow-sm shadow-[#c81e3c]/50"></span>
               {/* Inactive dots */}
               <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
               <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
@@ -386,8 +386,8 @@ export default function CreatorLink() {
         <div className="flex flex-col items-center sm:items-start text-left">
           
           {/* Stage Pill Tag */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8bae35]/10 border border-[#8bae35]/25 text-[#a8cf44] text-[11px] font-semibold tracking-wider uppercase mb-5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35]"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c81e3c]/10 border border-[#c81e3c]/25 text-[#ff8068] text-[11px] font-semibold tracking-wider uppercase mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#c81e3c]"></span>
             Step 1 of 8 &bull; Intelligence Setup
           </div>
 
@@ -409,7 +409,7 @@ export default function CreatorLink() {
             
             {/* Feature 1 */}
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#8bae35]/10 border border-[#8bae35]/20 flex items-center justify-center text-[#8bae35] text-xs mt-0.5">
+              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <TrendingUp className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -420,7 +420,7 @@ export default function CreatorLink() {
 
             {/* Feature 2 */}
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#8bae35]/10 border border-[#8bae35]/20 flex items-center justify-center text-[#8bae35] text-xs mt-0.5">
+              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <Camera className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -431,7 +431,7 @@ export default function CreatorLink() {
 
             {/* Feature 3 */}
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#8bae35]/10 border border-[#8bae35]/20 flex items-center justify-center text-[#8bae35] text-xs mt-0.5">
+              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <Zap className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -447,21 +447,21 @@ export default function CreatorLink() {
             <button 
               type="button" 
               onClick={() => setPreset('https://youtube.com/@Akvofoundation')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#8bae35]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Youtube className="w-3 h-3 text-red-400" /> youtube.com/@handle
             </button>
             <button 
               type="button" 
               onClick={() => setPreset('https://tiktok.com/@khaby.lame')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#8bae35]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <TikTokIcon className="w-3 h-3 text-teal-400" /> tiktok.com/@creator
             </button>
             <button 
               type="button" 
               onClick={() => setPreset('https://instagram.com/hubermanlab')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#8bae35]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Instagram className="w-3 h-3 text-pink-400" /> instagram.com/name
             </button>
@@ -472,11 +472,11 @@ export default function CreatorLink() {
             
             {/* Input field wrapper with glowing active outline */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8bae35]/20 via-[#8bae35]/40 to-[#8bae35]/20 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#c81e3c]/20 via-[#c81e3c]/40 to-[#c81e3c]/20 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               
-              <div className="relative flex items-center w-full bg-[#111317] border border-[#1f242c] group-focus-within:border-[#8bae35] rounded-xl overflow-hidden transition-all duration-200 shadow-inner">
+              <div className="relative flex items-center w-full bg-[#111317] border border-[#1f242c] group-focus-within:border-[#c81e3c] rounded-xl overflow-hidden transition-all duration-200 shadow-inner">
                 {/* Dynamic Icon on left */}
-                <div className={`pl-4 pr-3 ${platformColorClass} group-focus-within:text-[#8bae35] transition-colors duration-200`}>
+                <div className={`pl-4 pr-3 ${platformColorClass} group-focus-within:text-[#c81e3c] transition-colors duration-200`}>
                   <PlatformIcon className="w-4 h-4" />
                 </div>
 
@@ -508,17 +508,17 @@ export default function CreatorLink() {
 
             {/* Validation Feedback message */}
             {url.trim().length > 3 && (
-              <div className="text-xs text-[#8bae35] font-medium flex items-center gap-2 pl-1 animate-fadeIn">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#8bae35]" />
+              <div className="text-xs text-[#c81e3c] font-medium flex items-center gap-2 pl-1 animate-fadeIn">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#c81e3c]" />
                 <span>Valid creator profile handle detected</span>
               </div>
             )}
 
-            {/* Submit Button (Lime tone with shimmer hover sweep) */}
+            {/* Submit Button (co-launch brand red) */}
             <button
               type="submit"
               disabled={!url.trim() || isAnalyzing}
-              className="relative w-full py-4 px-6 rounded-xl bg-[#8bae35] hover:bg-[#9ec43d] text-[#0d1403] font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#8bae35]/20 hover:shadow-[#8bae35]/35 active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed group overflow-hidden cursor-pointer"
+              className="relative w-full py-4 px-6 rounded-xl bg-[#c81e3c] hover:bg-[#d92546] text-white font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#c81e3c]/25 hover:shadow-[#c81e3c]/40 active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed group overflow-hidden cursor-pointer"
             >
               {/* Shimmer sweep effect on hover */}
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
@@ -530,7 +530,7 @@ export default function CreatorLink() {
                 </span>
               ) : (
                 <span className="flex items-center gap-2 font-mono">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#0d1403]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Scraping account data · [ 00:0{((scrapeElapsedMs || 0)/1000).toFixed(2)}s ]</span>
                 </span>
               )}
@@ -538,14 +538,14 @@ export default function CreatorLink() {
 
             {/* Live Telemetry Build Process HUD */}
             {isAnalyzing && (
-              <div className="w-full mt-4 p-4 rounded-xl bg-[#0b0d10] border border-[#8bae35]/35 font-mono text-xs animate-fadeIn shadow-lg shadow-black/50">
+              <div className="w-full mt-4 p-4 rounded-xl bg-[#0b0d10] border border-[#c81e3c]/35 font-mono text-xs animate-fadeIn shadow-lg shadow-black/50">
                 <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1f242c]">
-                  <div className="flex items-center gap-2 text-[#8bae35]">
+                  <div className="flex items-center gap-2 text-[#c81e3c]">
                     <Terminal className="w-3.5 h-3.5 animate-pulse" />
                     <span className="font-semibold text-[11px] tracking-wider uppercase">Live Account Scraper Telemetry</span>
                   </div>
                   <div className="flex items-center gap-2 text-neutral-400 font-mono text-[11px]">
-                    <Clock className="w-3.5 h-3.5 text-[#8bae35]" />
+                    <Clock className="w-3.5 h-3.5 text-[#c81e3c]" />
                     <span className="text-white font-bold">00:0{((scrapeElapsedMs || 0)/1000).toFixed(2)}s</span>
                   </div>
                 </div>
@@ -553,7 +553,7 @@ export default function CreatorLink() {
                 {/* Micro progress meter */}
                 <div className="w-full h-1 bg-[#1a202c] rounded-full overflow-hidden mb-3">
                   <div 
-                    className="h-full bg-gradient-to-r from-[#8bae35] to-[#d4f870] transition-all duration-100"
+                    className="h-full bg-gradient-to-r from-[#c81e3c] to-[#ff8068] transition-all duration-100"
                     style={{ width: `${Math.min(Math.round(((scrapeElapsedMs || 0) / 2300) * 98), 98)}%` }}
                   />
                 </div>
@@ -562,12 +562,12 @@ export default function CreatorLink() {
                 <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                   {scrapeTelemetryLogs.map((log, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-[11px] leading-tight text-neutral-300">
-                      <span className="text-[#8bae35] flex-shrink-0">›</span>
+                      <span className="text-[#c81e3c] flex-shrink-0">›</span>
                       <span>{log}</span>
                     </div>
                   ))}
                   <div className="flex items-center gap-2 text-[11px] text-neutral-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#8bae35]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#c81e3c]" />
                     <span className="text-neutral-400 italic">{activeScrapePhase}</span>
                   </div>
                 </div>
@@ -578,7 +578,7 @@ export default function CreatorLink() {
 
           {/* SIMULATION / CONNECTED PROFILE RESULT CARD */}
           {showPreview && (
-            <div className="w-full mt-6 p-5 rounded-2xl bg-[#15181e] border border-[#8bae35]/35 shadow-[0_0_28px_-4px_rgba(139,174,53,0.32)] transition-all duration-300 animate-fadeIn">
+            <div className="w-full mt-6 p-5 rounded-2xl bg-[#15181e] border border-[#c81e3c]/35 shadow-[0_0_28px_-4px_rgba(200,30,60,0.32)] transition-all duration-300 animate-fadeIn">
               <div className="flex items-center justify-between pb-4 border-b border-[#1f242c]">
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -589,9 +589,9 @@ export default function CreatorLink() {
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
                       }}
-                      className="w-11 h-11 rounded-full object-cover border-2 border-[#8bae35]" 
+                      className="w-11 h-11 rounded-full object-cover border-2 border-[#c81e3c]" 
                     />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#8bae35] rounded-full flex items-center justify-center text-[9px] text-[#0d1403] font-black shadow">
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-full flex items-center justify-center text-[9px] text-white font-black shadow">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>
                   </div>
@@ -605,7 +605,7 @@ export default function CreatorLink() {
                     </div>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-[#8bae35]/10 text-[#8bae35] border border-[#8bae35]/30">
+                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-[#c81e3c]/10 text-[#c81e3c] border border-[#c81e3c]/30">
                   Live Connected
                 </span>
               </div>
@@ -617,7 +617,7 @@ export default function CreatorLink() {
                 </div>
                 <div className="text-left">
                   <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-medium">Avg Engagement</div>
-                  <div className="text-base font-bold text-[#8bae35] mt-0.5">{displayEngagement}%</div>
+                  <div className="text-base font-bold text-[#c81e3c] mt-0.5">{displayEngagement}%</div>
                 </div>
                 <div className="text-left">
                   <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-medium">Top Format</div>
@@ -641,7 +641,7 @@ export default function CreatorLink() {
                   <button 
                     type="button" 
                     onClick={handleProceedToStep2} 
-                    className="text-[#8bae35] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer"
+                    className="text-[#c81e3c] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Moving to Step 2</span>
                     <ArrowRight className="w-3 h-3" />

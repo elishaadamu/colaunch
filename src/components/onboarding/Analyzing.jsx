@@ -200,19 +200,8 @@ export default function Analyzing() {
     { hue: 195, likes: '', views: '', thumbnail: '' },
   ]
 
-  // Dynamically compute hue from the detected creator avatar / brand color
-  const activeBrandHex = liveData?.brandColor || creatorData?.brandColor || creatorData?.brandHex
-  const hue = useMemo(() => {
-    if (activeBrandHex && activeBrandHex.toLowerCase() !== '#ff3b30') {
-      const [r, g, b] = hexToRgb(activeBrandHex)
-      const [h] = rgbToHsl(r, g, b)
-      return h
-    }
-    const det = getDeterministicBrandColor(liveData || creatorData)
-    const [r, g, b] = hexToRgb(det.primaryHex)
-    const [h] = rgbToHsl(r, g, b)
-    return h
-  }, [activeBrandHex, liveData, creatorData])
+  // Unified brand hue (crimson red matching co-launch.app brand)
+  const hue = 350
 
   const INSIGHTS = [
     liveData
@@ -245,10 +234,7 @@ export default function Analyzing() {
     
     if (!promise) {
       scrapeDoneRef.current = true
-      const fallbackColor = getDeterministicBrandColor(creatorData).primaryHex
-      if (!creatorData.brandColor || creatorData.brandColor === '#ff3b30') {
-        updateCreator({ brandColor: fallbackColor, brandHex: fallbackColor })
-      }
+      updateCreator({ brandColor: '#c81e3c', brandHex: '#c81e3c' })
       startBgJob('onboarding-recs', async (sig) => {
         const aiRecs = await generateRecommendationsAI(creatorData, sig)
         if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
@@ -262,25 +248,10 @@ export default function Analyzing() {
     promise
       .then(async data => {
         scrapeDoneRef.current = true
-        let detectedBrandColor = null
-        if (data?.avatarUrl) {
-          try {
-            const colorRes = await extractBrandColorFromAvatar(data.avatarUrl, data)
-            if (colorRes?.primaryHex && colorRes.primaryHex.toLowerCase() !== '#ff3b30') {
-              detectedBrandColor = colorRes.primaryHex
-            }
-          } catch (e) {
-            console.warn('[Analyzing] Avatar color extraction notice:', e)
-          }
-        }
-        if (!detectedBrandColor) {
-          detectedBrandColor = getDeterministicBrandColor(data).primaryHex
-        }
-
         const enrichedData = {
           ...data,
-          brandColor: detectedBrandColor,
-          brandHex: detectedBrandColor,
+          brandColor: '#c81e3c',
+          brandHex: '#c81e3c',
           recommendations: null
         }
         setLiveData(enrichedData)

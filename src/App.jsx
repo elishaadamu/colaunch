@@ -56,18 +56,17 @@ const STEPS = [
   'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
 ]
 
-// Subtle accent colors per platform — fallback only if creator has no avatar color
-// Unified single brand color across the entire application (from scraping URL to dashboard)
-const SINGLE_BRAND_COLOR = '#8bae35'
-const SINGLE_BRAND_RGB = '139, 174, 53'
-const SINGLE_BRAND_CONTRAST = '#0d1403'
+// Unified CoLaunch brand red color from co-launch.app/#apply
+const SINGLE_BRAND_COLOR = '#c81e3c'
+const SINGLE_BRAND_RGB = '200, 30, 60'
+const SINGLE_BRAND_CONTRAST = '#ffffff'
 
 export function getAccent(platformOrCreator = null, brandColorOverride = null) {
   return {
     color: SINGLE_BRAND_COLOR,
     rgb: SINGLE_BRAND_RGB,
     contrastText: SINGLE_BRAND_CONTRAST,
-    gradient: 'linear-gradient(135deg, #8bae35 0%, #9ec43d 100%)'
+    gradient: 'linear-gradient(135deg, #c81e3c 0%, #e11d48 100%)'
   }
 }
 
@@ -1028,20 +1027,7 @@ export default function App() {
     navigate('login')
   }, [navigate])
 
-  // Automatically extract and set brandColor from creator's avatar image
-  useEffect(() => {
-    const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url
-    if (avatar && (!creatorData.brandColor || creatorData.brandColor === '#ff3b30')) {
-      let active = true
-      extractBrandColorFromAvatar(avatar, creatorData).then((res) => {
-        if (active && res && res.primaryHex && res.primaryHex !== '#ff3b30') {
-          updateCreator({ brandColor: res.primaryHex, brandHex: res.primaryHex })
-        }
-      }).catch(() => {})
-      return () => { active = false }
-    }
-  }, [creatorData?.avatarUrl, creatorData?.avatar, creatorData?.avatar_url, creatorData?.brandColor])
-
+  // Unified brand color is applied consistently across all portal & dashboard pages
   const accent = getAccent(creatorData)
   const ctx = {
     step,
