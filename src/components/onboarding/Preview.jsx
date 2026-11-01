@@ -559,7 +559,7 @@ function extractYouTubeId(video) {
   return null;
 }
 
-function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight }) {
+export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight }) {
   if (!video) return null;
 
   const videoId = extractYouTubeId(video);
@@ -841,32 +841,32 @@ function ProductLandingPage({
 
         {/* Anchor Links with Controlled Scroll */}
         {!isMobile && (
-          <div className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-6 text-xs font-semibold text-slate-300 shrink-0">
             <button 
               type="button" 
               onClick={scrollToSection('#featured')} 
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Featured Video
             </button>
             <button 
               type="button" 
               onClick={scrollToSection('#archive')} 
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Video Archive
             </button>
             <button 
               type="button" 
               onClick={scrollToSection('#discussions')} 
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Community Voices
             </button>
             <button 
               type="button" 
               onClick={scrollToSection('#resources')} 
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Resources
             </button>
@@ -874,7 +874,7 @@ function ProductLandingPage({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onSwitchToProduct}
@@ -1028,10 +1028,10 @@ function ProductLandingPage({
                   type="button"
                   onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
                   className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
-                  style={{ background: dynamicAccent, color: isLight ? '#000000' : '#ffffff' }}
+                  style={{ background: dynamicAccent, color: '#ffffff' }}
                   title="Play video in preview"
                 >
-                  <Play className="w-7 h-7 fill-current ml-1" />
+                  <Play className="w-7 h-7 fill-current ml-1 text-white" />
                 </button>
               </div>
 
@@ -1124,9 +1124,9 @@ function ProductLandingPage({
                         <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
                           <div
                             className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110"
-                            style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
+                            style={{ background: dynamicAccent, color: '#ffffff' }}
                           >
-                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                            <Play className="w-6 h-6 fill-current ml-0.5 text-white" />
                           </div>
                         </div>
                       </div>
@@ -1593,10 +1593,10 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                           type="button"
                           onClick={() => onPlayVideo ? onPlayVideo(v) : null}
                           className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
-                          style={{ background: styles.accent, color: isLight ? '#000000' : '#ffffff' }}
+                          style={{ background: styles.accent, color: '#ffffff' }}
                           title="Play in Preview"
                         >
-                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                          <Play className="w-5 h-5 fill-current ml-0.5 text-white" />
                         </button>
                       </div>
                     </div>
@@ -1697,17 +1697,17 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 href={creatorUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider border flex items-center gap-1 transition shrink-0 whitespace-nowrap cursor-pointer rounded-none"
+                className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider border flex items-center gap-1 transition shrink-0 whitespace-nowrap cursor-pointer rounded-none text-white shadow-sm"
                 style={{ 
-                  color: styles.accent, 
-                  background: styles.accentBg, 
-                  borderColor: styles.accentBorder,
+                  color: '#ffffff', 
+                  background: styles.accent, 
+                  borderColor: styles.accent,
                   borderRadius: '0px'
                 }}
                 title="Open Channel on YouTube"
               >
-                <span>Channel</span>
-                <ExternalLink className="w-3 h-3 shrink-0" />
+                <span>Channel Link</span>
+                <ExternalLink className="w-3 h-3 shrink-0 text-white" />
               </a>
             )}
           </div>
@@ -2127,16 +2127,16 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             </button>
           )}
           <button 
-            className="font-bold px-5 py-2 rounded-none text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95"
+            className="font-bold px-5 py-2 rounded-none text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95 text-white"
             style={{ 
               background: styles.accent, 
-              color: isLight ? '#000000' : '#ffffff',
+              color: '#ffffff',
               boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.25)`,
               borderRadius: '0px'
             }}
           >
-            <span>SIGN IN</span>
-            <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+            <span className="text-white">SIGN IN</span>
+            <ArrowRight className="w-3 h-3 stroke-[2.5] text-white" />
           </button>
         </div>
       </div>
@@ -2655,7 +2655,7 @@ export default function Preview() {
             className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
               background: viewMode === 'landing' ? dynamicAccent : 'transparent',
-              color: viewMode === 'landing' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
+              color: viewMode === 'landing' ? '#ffffff' : '#94a3b8',
               boxShadow: viewMode === 'landing' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
             }}
           >
@@ -2667,7 +2667,7 @@ export default function Preview() {
             className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
               background: (viewMode === 'product' || viewMode === 'desktop') ? dynamicAccent : 'transparent',
-              color: (viewMode === 'product' || viewMode === 'desktop') ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
+              color: (viewMode === 'product' || viewMode === 'desktop') ? '#ffffff' : '#94a3b8',
               boxShadow: (viewMode === 'product' || viewMode === 'desktop') ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
             }}
           >
@@ -2679,7 +2679,7 @@ export default function Preview() {
             className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
               background: viewMode === 'mobile' ? dynamicAccent : 'transparent',
-              color: viewMode === 'mobile' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
+              color: viewMode === 'mobile' ? '#ffffff' : '#94a3b8',
               boxShadow: viewMode === 'mobile' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
             }}
           >

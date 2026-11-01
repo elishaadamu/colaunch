@@ -289,7 +289,7 @@ function WebAppPreview({ accent, primary, creatorData }) {
           <div className="px-2 py-0.5 rounded-full text-[7px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0 leading-tight"
             style={{ 
               background: accent.color, 
-              color: isLightColor(accent.color) ? '#000000' : '#ffffff' 
+              color: '#ffffff' 
             }}>
             Sign In
           </div>
@@ -1591,7 +1591,7 @@ export default function Blueprint() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group"
               style={{
                 background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : accent.color,
-                color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : (isLightColor(accent.color) ? '#000000' : '#ffffff'),
+                color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : '#ffffff',
                 border: '1px solid rgba(255,255,255,0.1)'
               }}
             >

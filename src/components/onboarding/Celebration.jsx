@@ -441,7 +441,7 @@ export default function Celebration() {
                 className="w-full font-bold py-4 px-6 rounded-none text-sm transition flex items-center justify-center space-x-2.5 group cursor-pointer border border-white/10"
                 style={{
                   background: accent.color,
-                  color: isLight ? '#000000' : '#ffffff',
+                  color: '#ffffff',
                 }}
               >
                 <span>Enter your dashboard</span>

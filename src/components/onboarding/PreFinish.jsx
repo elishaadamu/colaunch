@@ -232,7 +232,7 @@ export default function PreFinish() {
           className="text-[15px] px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer"
           style={{
             background: isApplying ? 'rgba(255,255,255,0.08)' : accent.color,
-            color: isApplying ? 'rgba(255,255,255,0.4)' : (isLight ? '#000000' : '#ffffff'),
+            color: isApplying ? 'rgba(255,255,255,0.4)' : '#ffffff',
             border: '1px solid rgba(255,255,255,0.1)'
           }}
         >

@@ -27,7 +27,7 @@ import SupportWidget from './components/support/SupportWidget'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
-import { CheckCircle, AlertCircle, X, XCircle, Trash2, RefreshCw, Info } from 'lucide-react'
+import { Check, CheckCircle, AlertCircle, X, XCircle, Trash2, RefreshCw, Info } from 'lucide-react'
 import { 
   hexToRgb, 
   extractBrandColorFromAvatar, 
@@ -72,145 +72,102 @@ export function getAccent(platformOrCreator = null, brandColorOverride = null) {
 
 
 function GlobalToast({ toast, onClose }) {
-  const [progress, setProgress] = useState(100)
   const DURATION = 4200
 
   useEffect(() => {
     const timer = setTimeout(onClose, DURATION)
-    // Shrink progress bar smoothly
-    const interval = setInterval(() => {
-      setProgress(p => Math.max(0, p - (100 / (DURATION / 50))))
-    }, 50)
-    return () => { clearTimeout(timer); clearInterval(interval) }
+    return () => clearTimeout(timer)
   }, [onClose])
 
   const isSuccess = toast.type === 'success'
   const isError = toast.type === 'error'
 
-  const accent = isSuccess
+  // Clean solid theme accents (NO gradients, NO progress bar, matching user reference)
+  const theme = isSuccess
     ? {
-      rgb: '52,211,153', // emerald-400
-      gradient: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)',
-      iconColor: '#34d399',
-      border: 'rgba(52,211,153,0.15)',
-      bgGlow: 'rgba(52,211,153,0.06)'
-    }
+        accent: '#10b981', // solid emerald
+        title: toast.title || 'Success',
+      }
     : isError
       ? {
-        rgb: '248,113,113', // red-400
-        gradient: 'linear-gradient(90deg, #f87171 0%, #ef4444 100%)',
-        iconColor: '#f87171',
-        border: 'rgba(248,113,113,0.15)',
-        bgGlow: 'rgba(248,113,113,0.06)'
-      }
+          accent: '#ef4444', // solid red
+          title: toast.title || 'Error',
+        }
       : {
-        rgb: '96,165,250', // blue-400
-        gradient: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%)',
-        iconColor: '#60a5fa',
-        border: 'rgba(96,165,250,0.15)',
-        bgGlow: 'rgba(96,165,250,0.06)'
-      }
+          accent: '#3b82f6', // solid blue / info
+          title: toast.title || 'Information',
+        }
 
   return (
     <div
       className="fixed bottom-6 right-6 z-[9999] pointer-events-auto"
       style={{
-        animation: 'toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+        animation: 'toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
       }}
     >
       <style>{`
         @keyframes toastSlideIn {
-          0% { opacity: 0; transform: translateY(30px) scale(0.92) rotate(0.5deg); filter: blur(5px); }
-          100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: blur(0); }
+          0% { opacity: 0; transform: translateY(16px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
+      {/* Solid card with solid left accent stripe, zero gradients, zero progress bar */}
       <div
-        className="relative flex items-center gap-3.5 rounded-2xl border shadow-[0_24px_64px_rgba(0,0,0,0.7)] overflow-hidden"
+        className="relative flex items-stretch rounded-xl border shadow-[0_20px_48px_rgba(0,0,0,0.7)] overflow-hidden"
         style={{
-          background: `radial-gradient(circle at 0% 0%, rgba(${accent.rgb}, 0.12) 0%, transparent 60%), rgba(13, 13, 13, 0.85)`,
-          borderColor: 'rgba(255,255,255,0.08)',
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05)`,
-          backdropFilter: 'blur(20px) saturate(190%)',
+          background: '#0f121a',
+          borderColor: '#232a3d',
           minWidth: 320,
-          maxWidth: 420,
-          padding: '14px 16px',
+          maxWidth: 440,
         }}
       >
-        {/* Top border glow segment */}
+        {/* Solid left accent vertical stripe */}
         <div
-          className="absolute inset-x-0 top-0 h-[1px]"
-          style={{
-            background: `linear-gradient(90deg, transparent 0%, rgba(${accent.rgb},0.35) 15%, rgba(${accent.rgb},0.08) 50%, transparent 100%)`
-          }}
+          className="w-1.5 shrink-0"
+          style={{ background: theme.accent }}
         />
 
-        {/* Icon container */}
-        <div
-          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border"
-          style={{
-            background: accent.bgGlow,
-            borderColor: accent.border,
-            boxShadow: `0 4px 12px rgba(${accent.rgb}, 0.05)`
-          }}
-        >
-          {isSuccess
-            ? <CheckCircle size={17} style={{ color: accent.iconColor }} />
-            : <AlertCircle size={17} style={{ color: accent.iconColor }} />
-          }
-        </div>
-
-        {/* Text content */}
-        <div className="flex-1 min-w-0 pr-6">
-          <p
-            className="text-[13px] font-medium tracking-wide leading-snug"
-            style={{ color: 'rgba(255,255,255,0.92)' }}
-          >
-            {toast.message}
-          </p>
-          {toast.subtitle && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              {toast.subtitle}
-            </p>
-          )}
-        </div>
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3.5 right-3.5 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            color: 'rgba(255,255,255,0.4)',
-            border: '1px solid rgba(255,255,255,0.05)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-            e.currentTarget.style.color = '#fff'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-            e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-          }}
-        >
-          <X size={11} />
-        </button>
-
-        {/* Progress bar */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[2.5px]"
-          style={{ background: 'rgba(255,255,255,0.03)' }}
-        >
+        {/* Inner Content */}
+        <div className="flex items-center gap-3.5 px-4 py-3.5 flex-1 min-w-0">
+          {/* Solid circular badge with white icon */}
           <div
-            className="h-full rounded-full transition-[width] duration-50 linear"
-            style={{
-              width: `${progress}%`,
-              background: accent.gradient,
-              boxShadow: `0 0 8px rgba(${accent.rgb}, 0.45)`
-            }}
-          />
+            className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm"
+            style={{ background: theme.accent }}
+          >
+            {isSuccess ? (
+              <Check size={14} strokeWidth={3} className="text-white" />
+            ) : isError ? (
+              <AlertCircle size={14} strokeWidth={2.5} className="text-white" />
+            ) : (
+              <Info size={14} strokeWidth={2.5} className="text-white" />
+            )}
+          </div>
+
+          {/* Text content */}
+          <div className="flex-1 min-w-0 pr-1">
+            <h5 className="text-[13px] font-bold text-white tracking-tight leading-snug truncate">
+              {theme.title}
+            </h5>
+            <p className="text-[12px] text-slate-300 leading-snug mt-0.5">
+              {toast.message}
+            </p>
+            {toast.subtitle && (
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {toast.subtitle}
+              </p>
+            )}
+          </div>
+
+          {/* Minimal close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-1"
+            title="Dismiss notification"
+          >
+            <X size={13} />
+          </button>
         </div>
       </div>
     </div>
