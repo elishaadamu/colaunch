@@ -2642,7 +2642,7 @@ export default function Preview() {
       </header>
 
       {/* Main Workspace Layout (Full Width, No Sidebar) */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-28 max-w-[1500px] mx-auto w-full">
+      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-64 sm:pb-72 max-w-[1440px] mx-auto w-full">
 
         <div className="w-full flex-1 flex flex-col space-y-4">
           
@@ -2960,12 +2960,13 @@ export default function Preview() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {unadded.map(preset => {
+                      {unadded.map((preset, idx) => {
                         const PresetIcon = preset.icon
+                        const isOddLast = idx === unadded.length - 1 && unadded.length % 2 !== 0
                         return (
                           <div
                             key={preset.label}
-                            className="flex items-center justify-between p-3 bg-[#141824]/60 hover:bg-[#141824] border border-[#222a3d]/80 hover:border-slate-600 transition group"
+                            className={`flex items-center justify-between p-3 bg-[#141824]/60 hover:bg-[#141824] border border-[#222a3d]/80 hover:border-slate-600 transition group min-h-[62px] ${isOddLast ? 'sm:col-span-2' : ''}`}
                             style={{ borderRadius: '0px' }}
                           >
                             <div className="flex items-center space-x-2.5 min-w-0 pr-2">
@@ -2973,10 +2974,10 @@ export default function Preview() {
                                 <PresetIcon className="w-3.5 h-3.5" />
                               </div>
                               <div className="min-w-0">
-                                <span className="text-xs font-medium text-slate-200 group-hover:text-white block truncate">
+                                <span className="text-xs font-semibold text-slate-200 group-hover:text-white block truncate">
                                   {preset.label}
                                 </span>
-                                <span className="text-[10px] text-slate-500 block truncate">
+                                <span className="text-[10.5px] text-slate-400 block truncate">
                                   {preset.desc}
                                 </span>
                               </div>
@@ -2984,7 +2985,7 @@ export default function Preview() {
                             <button
                               type="button"
                               onClick={() => handleToggleFeature(preset.label)}
-                              className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition border flex items-center gap-1 shrink-0 cursor-pointer text-white active:scale-95"
+                              className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition border flex items-center gap-1 shrink-0 cursor-pointer text-white active:scale-95"
                               style={{ 
                                 background: dynamicAccent, 
                                 borderColor: dynamicAccentBorder,
@@ -3137,6 +3138,9 @@ export default function Preview() {
 
           </div>
         </section>
+
+        {/* Generous bottom clearance spacer so all cards and buttons scroll completely above sticky bars */}
+        <div className="h-48 w-full flex-shrink-0 pointer-events-none" aria-hidden="true" />
 
       </main>
 
