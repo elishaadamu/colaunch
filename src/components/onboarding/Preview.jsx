@@ -537,13 +537,151 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
   )
 }
 
+function extractYouTubeId(video) {
+  if (!video) return null;
+  if (video.videoId && typeof video.videoId === 'string' && video.videoId.length === 11) {
+    return video.videoId;
+  }
+  const str = video.url || video.link || video.id || '';
+  if (typeof str === 'string') {
+    const match = str.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (match && match[1]) return match[1];
+  }
+  return null;
+}
+
+function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight }) {
+  if (!video) return null;
+
+  const videoId = extractYouTubeId(video);
+  const videoTitle = video.title || 'Official Channel Video';
+  const creatorUrl = getCreatorChannelUrl(creatorData);
+  const videoUrl = video.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : creatorUrl);
+  const thumbUrl = video.thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden"
+        style={{ borderRadius: '0px' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Top Modal Header */}
+        <div className="bg-[#131622] px-4 py-3 border-b border-[#232a3d] flex items-center justify-between select-none">
+          <div className="flex items-center gap-2.5 min-w-0 pr-4">
+            <span className="w-2 h-2 shrink-0 animate-pulse" style={{ backgroundColor: dynamicAccent }} />
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
+              Live Preview Player · @{(creatorData?.handle || 'creator').replace('@','')}
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-xs font-bold text-white truncate">
+              {videoTitle}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer shrink-0"
+            style={{ borderRadius: '0px' }}
+            title="Close video player (Esc)"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Video Player Frame */}
+        <div className="relative aspect-video w-full bg-black flex items-center justify-center">
+          {videoId ? (
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+              title={videoTitle}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          ) : (
+            <div className="w-full h-full relative flex items-center justify-center bg-[#111420]">
+              {thumbUrl && (
+                <img src={thumbUrl} alt="" className="w-full h-full object-cover opacity-40" />
+              )}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <Video className="w-12 h-12 text-slate-400" />
+                <p className="text-sm font-semibold text-white max-w-md">{videoTitle}</p>
+                {videoUrl && (
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition flex items-center gap-2"
+                    style={{ background: dynamicAccent, borderRadius: '0px' }}
+                  >
+                    <span>Watch Directly on YouTube</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Modal Metadata & Actions */}
+        <div className="bg-[#10131d] px-4 py-3 border-t border-[#1f2433] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
+          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
+            {video.views && <span>{video.views} views</span>}
+            {video.likes && (
+              <>
+                <span>·</span>
+                <span>{video.likes} likes</span>
+              </>
+            )}
+            {video.published && (
+              <>
+                <span>·</span>
+                <span>{video.published}</span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {videoUrl && (
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs font-mono text-slate-300 hover:text-white bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] transition flex items-center gap-1.5"
+                style={{ borderRadius: '0px' }}
+              >
+                <span>Open in YouTube</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer"
+              style={{ background: dynamicAccent, borderRadius: '0px' }}
+            >
+              Done Playing
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductLandingPage({ 
   styles, 
   creatorData, 
   blueprint, 
   onSwitchToProduct, 
   channelComments = [], 
-  isMobile = false 
+  isMobile = false,
+  onPlayVideo
 }) {
   const accent = getAccent(creatorData)
   const dynamicAccent = accent.color
@@ -722,13 +860,16 @@ function ProductLandingPage({
               <span>Explore Platform & Videos</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-            <a
-              href="#featured"
-              className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
-              <span>Watch Featured Video</span>
-            </a>
+            {topVideo ? (
+              <button
+                type="button"
+                onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
+                className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
+                <span>Play Featured Video</span>
+              </button>
+            ) : null}
           </div>
 
         </div>
@@ -779,10 +920,10 @@ function ProductLandingPage({
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                 <button
                   type="button"
-                  onClick={onSwitchToProduct}
+                  onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
                   className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
                   style={{ background: dynamicAccent, color: isLight ? '#000000' : '#ffffff' }}
-                  title="Play video inside member player"
+                  title="Play video in preview"
                 >
                   <Play className="w-7 h-7 fill-current ml-1" />
                 </button>
@@ -807,10 +948,10 @@ function ProductLandingPage({
                 </div>
                 <button
                   type="button"
-                  onClick={onSwitchToProduct}
+                  onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
                   className="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer"
                 >
-                  Stream inside Platform →
+                  Play in Preview →
                 </button>
               </div>
             </div>
@@ -873,9 +1014,10 @@ function ProductLandingPage({
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button
                             type="button"
-                            onClick={onSwitchToProduct}
-                            className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                            onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                            className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
                             style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
+                            title="Play video in preview"
                           >
                             <Play className="w-5 h-5 fill-current ml-0.5" />
                           </button>
@@ -903,10 +1045,10 @@ function ProductLandingPage({
                     <div className="p-3 pt-0 flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={onSwitchToProduct}
-                        className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center"
+                        onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                        className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center cursor-pointer"
                       >
-                        Play in Hub
+                        Play in Preview
                       </button>
                       <a
                         href={vidLink}
@@ -1095,7 +1237,7 @@ function ProductLandingPage({
   )
 }
 
-export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorData, extraTabs, isMobile, viewMode = 'landing', onSwitchView, channelComments = [] }) {
+export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorData, extraTabs, isMobile, viewMode = 'landing', onSwitchView, channelComments = [], onPlayVideo }) {
   const isDark = theme === 'dark' || theme === 'premium' || theme === 'minimalist' || !theme
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const accent = getAccent(creatorData)
@@ -1243,6 +1385,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
         onSwitchToProduct={() => onSwitchView ? onSwitchView('product') : setActiveTab(defaultTab)}
         channelComments={internalComments}
         isMobile={isMobile}
+        onPlayVideo={onPlayVideo}
       />
     )
   }
@@ -1335,12 +1478,15 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                         <Play className="w-8 h-8 text-slate-500" />
                       )}
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                        <button
+                          type="button"
+                          onClick={() => onPlayVideo ? onPlayVideo(v) : null}
+                          className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
                           style={{ background: styles.accent, color: isLight ? '#000000' : '#ffffff' }}
+                          title="Play in Preview"
                         >
                           <Play className="w-5 h-5 fill-current ml-0.5" />
-                        </div>
+                        </button>
                       </div>
                     </div>
 
@@ -1367,15 +1513,25 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                     </div>
                   </div>
 
-                  {/* Watch Link */}
-                  <div className="px-3.5 pb-3.5 pt-0">
+                  {/* Actions */}
+                  <div className="px-3.5 pb-3.5 pt-0 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onPlayVideo ? onPlayVideo(v) : null}
+                      className="flex-1 py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-white hover:brightness-110 cursor-pointer"
+                      style={{ background: dynamicAccent, borderColor: dynamicAccentBorder, borderRadius: '0px' }}
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Play in Preview</span>
+                    </button>
                     <a 
                       href={videoLink} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
+                      className="py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
+                      style={{ borderRadius: '0px' }}
+                      title="Watch on YouTube"
                     >
-                      <span>Watch on YouTube</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -1934,6 +2090,7 @@ export default function Preview() {
   const [variationIndex, setVariationIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [playingVideo, setPlayingVideo] = useState(null)
   const [channelComments, setChannelComments] = useState(() => {
     return creatorData?.comments || creatorData?.channelComments || []
   })
@@ -2035,6 +2192,16 @@ export default function Preview() {
     const handleFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', handleFsChange)
     return () => document.removeEventListener('fullscreenchange', handleFsChange)
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPlayingVideo(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const toggleFullscreenPreview = () => {
@@ -2603,6 +2770,7 @@ export default function Preview() {
                         viewMode={viewMode === 'landing' ? 'landing' : 'mobile'}
                         onSwitchView={handleSwitchView}
                         channelComments={channelComments}
+                        onPlayVideo={(v) => setPlayingVideo(v)}
                       />
                     </div>
                   </div>
@@ -2621,6 +2789,7 @@ export default function Preview() {
                     viewMode={viewMode}
                     onSwitchView={handleSwitchView}
                     channelComments={channelComments}
+                    onPlayVideo={(v) => setPlayingVideo(v)}
                   />
                 </div>
               )}
@@ -2635,7 +2804,8 @@ export default function Preview() {
                 <button
                   key={i}
                   onClick={() => removeAppliedPrompt(p)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs bg-[#161922] hover:bg-rose-500/10 hover:text-rose-400 border border-[#222634] hover:border-rose-500/30 text-slate-300 group transition-all duration-150 cursor-pointer shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs bg-[#161922] hover:bg-rose-500/10 hover:text-rose-400 border border-[#222634] hover:border-rose-500/30 text-slate-300 group transition-all duration-150 cursor-pointer shadow-sm"
+                  style={{ borderRadius: '0px' }}
                   title="Click to remove refinement"
                 >
                   <Check className="w-3 h-3 group-hover:hidden text-emerald-400" />
@@ -2648,7 +2818,325 @@ export default function Preview() {
 
         </div>
 
+        {/* ========================================================= */}
+        {/* PLATFORM ARCHITECTURE & FORGE AI STUDIO (REFINED DESIGN)  */}
+        {/* ========================================================= */}
+        <section className="w-full mt-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#1f2433] gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+                <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-white">
+                  Platform Architecture & Forge Studio
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Configure active capabilities and use Forge AI to refine your application in real time.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-[11px]">
+              <span className="px-2.5 py-1 bg-[#12141c] border border-[#222634] text-slate-300">
+                Build: <strong className="text-white">{currentBlueprint?.name}</strong>
+              </span>
+              <span 
+                className="px-2.5 py-1 border font-bold"
+                style={{ background: dynamicAccentBg, color: dynamicAccent, borderColor: dynamicAccentBorder }}
+              >
+                {localFeatures.length} Active Modules
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* LEFT COLUMN: What's Included & Add More Modules (Span 7) */}
+            <div className="lg:col-span-7 flex flex-col space-y-4">
+              
+              {/* 1. What's Included Card */}
+              <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <h3 className="font-bold text-xs uppercase tracking-wider text-white font-mono">
+                        What's Included
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Active capabilities configured for your build
+                    </p>
+                  </div>
+                  <span 
+                    className="text-[10px] px-2.5 py-1 font-mono font-bold border"
+                    style={{ 
+                      background: dynamicAccentBg, 
+                      color: dynamicAccent,
+                      borderColor: dynamicAccentBorder
+                    }}
+                  >
+                    {localFeatures.length} Active
+                  </span>
+                </div>
+
+                {/* Active modules grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {localFeatures.map(label => {
+                    const matched = FEATURES.find(f => f.label.toLowerCase() === label.toLowerCase()) ||
+                                    CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
+                    const Icon = matched ? matched.icon : Layout
+                    return (
+                      <div 
+                        key={label} 
+                        className="flex items-center justify-between p-3 bg-[#141824] border border-[#222a3d] hover:border-slate-600 transition group"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <div className="flex items-center space-x-3 min-w-0 pr-2">
+                          <div 
+                            className="w-7 h-7 flex items-center justify-center text-xs shadow-sm border flex-shrink-0"
+                            style={{ 
+                              background: dynamicAccentBg, 
+                              color: dynamicAccent,
+                              borderColor: dynamicAccentBorder,
+                              borderRadius: '0px'
+                            }}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-semibold text-slate-200 block truncate">{label}</span>
+                            <span className="text-[10px] text-emerald-400 font-mono block">Enabled in build</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeature(label)}
+                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer flex-shrink-0"
+                          title={`Remove "${label}" from build`}
+                          style={{ borderRadius: '0px' }}
+                        >
+                          <X className="w-3.5 h-3.5 group-hover:block hidden" />
+                          <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden block" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* 2. Add More Modules Card */}
+              {(() => {
+                const unadded = CAPABILITY_PRESETS.filter(p => 
+                  !localFeatures.some(f => f.toLowerCase() === p.label.toLowerCase() || f.toLowerCase().includes(p.label.toLowerCase()))
+                )
+                if (unadded.length === 0) return null
+                return (
+                  <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#1f2433]">
+                      <div>
+                        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 font-mono">
+                          Add More Modules
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Click to include additional capabilities in your platform
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {unadded.length} Available
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {unadded.map(preset => {
+                        const PresetIcon = preset.icon
+                        return (
+                          <div
+                            key={preset.label}
+                            className="flex items-center justify-between p-3 bg-[#141824]/60 hover:bg-[#141824] border border-[#222a3d]/80 hover:border-slate-600 transition group"
+                            style={{ borderRadius: '0px' }}
+                          >
+                            <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                              <div className="w-7 h-7 flex items-center justify-center text-xs bg-[#0e111a] border border-[#222a3d] text-slate-400 group-hover:text-white transition flex-shrink-0">
+                                <PresetIcon className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-xs font-medium text-slate-200 group-hover:text-white block truncate">
+                                  {preset.label}
+                                </span>
+                                <span className="text-[10px] text-slate-500 block truncate">
+                                  {preset.desc}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeature(preset.label)}
+                              className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition border flex items-center gap-1 shrink-0 cursor-pointer text-white active:scale-95"
+                              style={{ 
+                                background: dynamicAccent, 
+                                borderColor: dynamicAccentBorder,
+                                borderRadius: '0px'
+                              }}
+                              title={`Add ${preset.label}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add</span>
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+
+            </div>
+
+            {/* RIGHT COLUMN: Refine with Forge (Span 5) */}
+            <div className="lg:col-span-5 flex flex-col">
+              <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col h-full justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5" style={{ color: dynamicAccent }} />
+                      <h3 className="font-bold text-xs uppercase tracking-wider text-white font-mono">
+                        Refine with Forge
+                      </h3>
+                    </div>
+                    <span 
+                      className="text-[10px] px-2 py-0.5 font-mono font-bold border"
+                      style={{ 
+                        background: dynamicAccentBg, 
+                        color: dynamicAccent,
+                        borderColor: dynamicAccentBorder
+                      }}
+                    >
+                      AI ASSISTANT
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                    Click any refinement chip or type custom commands to instantly tailor your application build.
+                  </p>
+                  
+                  {/* Interactive Dynamic Prompt Chips (ZERO EMOJIS, CLEAN ICONS) */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {QUICK_PROMPTS.map(chip => {
+                      const isChipApplied = appliedPrompts.includes(chip)
+                      const isPodcastChip = chip.toLowerCase().includes('podcast') && localFeatures.some(f => f.toLowerCase().includes('podcast'))
+                      const isLiveChip = chip.toLowerCase().includes('live') && localFeatures.some(f => f.toLowerCase().includes('live') || f.toLowerCase().includes('ama'))
+                      const isStoreChip = chip.toLowerCase().includes('store') && localFeatures.some(f => f.toLowerCase().includes('store') || f.toLowerCase().includes('product'))
+                      const isMobileChip = chip.toLowerCase().includes('mobile') && viewMode === 'mobile'
+                      const isCommunityChip = chip.toLowerCase().includes('community') && activeTab === 'Community'
+                      const isPremiumChip = chip.toLowerCase().includes('premium') && theme === 'premium'
+                      const isMinimalistChip = chip.toLowerCase().includes('minimalist') && theme === 'minimalist'
+
+                      const isActive = isChipApplied || isPodcastChip || isLiveChip || isStoreChip || isMobileChip || isCommunityChip || isPremiumChip || isMinimalistChip
+
+                      // Dynamic clean icon
+                      let ChipIcon = Sparkles
+                      if (chip.toLowerCase().includes('community')) ChipIcon = Users
+                      else if (chip.toLowerCase().includes('minimalist')) ChipIcon = Layout
+                      else if (chip.toLowerCase().includes('mobile')) ChipIcon = Smartphone
+                      else if (chip.toLowerCase().includes('podcast')) ChipIcon = Volume2
+                      else if (chip.toLowerCase().includes('live')) ChipIcon = Radio
+                      else if (chip.toLowerCase().includes('store')) ChipIcon = ShoppingBag
+
+                      return (
+                        <button 
+                          key={chip}
+                          type="button"
+                          onClick={() => {
+                            if (isActive) {
+                              removeAppliedPrompt(chip)
+                            } else {
+                              handleChipClick(chip)
+                            }
+                          }}
+                          className="text-xs p-2.5 border transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-between gap-1.5 text-left"
+                          style={{
+                            background: isActive ? dynamicAccentBg : '#141824',
+                            borderColor: isActive ? dynamicAccentBorder : '#222a3d',
+                            color: isActive ? '#ffffff' : '#cbd5e1',
+                            fontWeight: isActive ? 600 : 400,
+                            borderRadius: '0px'
+                          }}
+                          title={isActive ? `Click to remove "${chip}"` : `Click to apply "${chip}"`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <ChipIcon className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? dynamicAccent : '#94a3b8' }} />
+                            <span className="truncate">{chip}</span>
+                          </div>
+                          {isActive ? (
+                            <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" style={{ color: dynamicAccent }} />
+                          ) : (
+                            <Plus className="w-3 h-3 shrink-0 text-slate-500" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="relative mb-3">
+                    <textarea 
+                      rows={3} 
+                      placeholder="Describe a change (e.g. Add podcast section, switch to mobile, customize layout...)" 
+                      value={prompt}
+                      onChange={e => setPrompt(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handlePromptSend()
+                        }
+                      }}
+                      className="w-full bg-[#141824] border border-[#222a3d] focus:border-slate-500 p-3 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none resize-none shadow-inner transition"
+                      style={{ borderRadius: '0px' }}
+                    />
+                    <button 
+                      type="button"
+                      onClick={handlePromptSend}
+                      disabled={!prompt.trim()}
+                      className="absolute right-3 bottom-4 p-2 transition border border-[#222a3d] bg-[#0d0f17] hover:bg-[#1a1f2e] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      style={{ color: dynamicAccent, borderRadius: '0px' }}
+                      title="Send instruction"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Regenerate Button */}
+                  <button 
+                    type="button"
+                    onClick={() => handleQuickPrompt('Regenerate')}
+                    disabled={isRegenerating}
+                    className="w-full bg-[#141824] hover:bg-[#1c2233] font-bold py-2.5 text-xs transition flex items-center justify-center space-x-2 shadow-sm border border-[#222a3d] cursor-pointer active:scale-95 disabled:opacity-40"
+                    style={{
+                      color: dynamicAccent,
+                      borderRadius: '0px'
+                    }}
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
+                    <span>{isRegenerating ? 'Regenerating Component...' : 'Regenerate Component'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
       </main>
+
+      {/* Video Player Modal */}
+      {playingVideo && (
+        <VideoPlayerModal
+          video={playingVideo}
+          onClose={() => setPlayingVideo(null)}
+          creatorData={creatorData}
+          dynamicAccent={dynamicAccent}
+          isLight={isLight}
+        />
+      )}
 
       {/* Sticky Bottom Action Bar */}
       <aside className="fixed bottom-0 left-0 right-0 z-40 bg-[#08090c]/95 border-t border-[#1f2433] py-3.5 px-4 sm:px-6 backdrop-blur-md">
