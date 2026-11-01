@@ -537,15 +537,24 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
   )
 }
 
+function formatViewsString(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/views?$/i.test(s)) return s;
+  return `${s} views`;
+}
+
 function extractYouTubeId(video) {
   if (!video) return null;
-  if (video.videoId && typeof video.videoId === 'string' && video.videoId.length === 11) {
-    return video.videoId;
+  if (video.videoId && typeof video.videoId === 'string' && video.videoId.trim().length === 11) {
+    return video.videoId.trim();
   }
-  const str = video.url || video.link || video.id || '';
-  if (typeof str === 'string') {
-    const match = str.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
-    if (match && match[1]) return match[1];
+  const candidates = [video.url, video.link, video.id, video.videoId, video.thumbnail];
+  for (const c of candidates) {
+    if (typeof c === 'string') {
+      const match = c.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/|\/vi\/|\/vi_webp\/)([a-zA-Z0-9_-]{11})/);
+      if (match && match[1]) return match[1];
+    }
   }
   return null;
 }
@@ -561,7 +570,7 @@ function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight 
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div 
@@ -631,7 +640,7 @@ function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight 
         {/* Bottom Modal Metadata & Actions */}
         <div className="bg-[#10131d] px-4 py-3 border-t border-[#1f2433] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
           <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
-            {video.views && <span>{video.views} views</span>}
+            {video.views && <span>{formatViewsString(video.views)}</span>}
             {video.likes && (
               <>
                 <span>·</span>
@@ -932,7 +941,7 @@ function ProductLandingPage({
               {/* Bottom Video Meta Bar */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
                 <div className="flex items-center gap-3 font-mono">
-                  {topVideo.views && <span>{topVideo.views} views</span>}
+                  {topVideo.views && <span>{formatViewsString(topVideo.views)}</span>}
                   {topVideo.likes && (
                     <>
                       <span>·</span>
@@ -999,38 +1008,42 @@ function ProductLandingPage({
                     className="bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition overflow-hidden flex flex-col justify-between group shadow-sm"
                   >
                     <div>
-                      {/* Thumbnail */}
-                      <div className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center">
+                      {/* Thumbnail Clickable */}
+                      <div 
+                        onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                        className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center cursor-pointer group/thumb"
+                        title="Click to play video in preview modal"
+                      >
                         {vidThumb ? (
                           <img 
                             src={vidThumb} 
                             alt="" 
                             referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
                           />
                         ) : (
                           <Video className="w-8 h-8 text-slate-600" />
                         )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                            className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                        <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110"
                             style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
-                            title="Play video in preview"
                           >
-                            <Play className="w-5 h-5 fill-current ml-0.5" />
-                          </button>
+                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                          </div>
                         </div>
                       </div>
 
                       {/* Content */}
                       <div className="p-3.5 space-y-1.5">
-                        <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-slate-200">
+                        <h5 
+                          onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                          className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug hover:underline cursor-pointer"
+                        >
                           {v.title}
                         </h5>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
-                          {v.views && <span>{v.views} views</span>}
+                          {v.views && <span>{formatViewsString(v.views)}</span>}
                           {v.published && (
                             <>
                               <span>·</span>
@@ -3164,8 +3177,8 @@ export default function Preview() {
       {/* Floating Notification Toast */}
       {toastMessage && (
         <div 
-          className="fixed bottom-6 right-6 z-50 bg-[#161922] border px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 animate-fade-in"
-          style={{ borderColor: dynamicAccentBorder }}
+          className="fixed bottom-24 right-6 z-50 bg-[#161922] border px-4 py-3 rounded-none shadow-2xl flex items-center space-x-3 animate-fade-in"
+          style={{ borderColor: dynamicAccentBorder, borderRadius: '0px' }}
         >
           <div 
             className="w-7 h-7 rounded-xl flex items-center justify-center text-xs shadow-sm"

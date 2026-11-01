@@ -227,8 +227,8 @@ export default function SupportWidget({ currentStage }) {
 
   return (
     <>
-      {/* Floating Right Support Button */}
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
+      {/* Floating Right Support Button - Positioned above sticky bottom action bars */}
+      <div className="fixed bottom-24 right-6 z-50 flex items-center gap-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2.5 px-4 py-2.5 rounded-none bg-[#121722] hover:bg-[#1a2233] text-white border border-[#2b354c] shadow-2xl transition-all duration-200 cursor-pointer"
@@ -264,7 +264,7 @@ export default function SupportWidget({ currentStage }) {
       {/* Slide-over Right Chat Panel */}
       {isOpen && (
         <div 
-          className="fixed bottom-20 right-6 z-50 w-[92vw] sm:w-[420px] max-h-[80vh] h-[640px] flex flex-col rounded-none bg-[#0c1017] border border-[#232b3e] shadow-2xl overflow-hidden animate-fadeIn"
+          className="fixed bottom-36 right-6 z-50 w-[92vw] sm:w-[420px] max-h-[75vh] h-[600px] flex flex-col rounded-none bg-[#0c1017] border border-[#232b3e] shadow-2xl overflow-hidden animate-fadeIn"
           style={{ boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85)' }}
         >
           {/* Header */}
