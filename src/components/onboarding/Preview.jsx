@@ -1561,13 +1561,13 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
       const posts = getDynamicCommunityPosts(creatorName, blueprint, creatorData, internalComments)
 
       return (
-        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
+        <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
           {/* Apify Real Channel Stats Banner */}
-          <div className="p-4 rounded-2xl bg-[#12141c] border border-[#222634] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+          <div className="p-3 bg-[#12141c] border border-[#222634] shadow-sm flex items-center justify-between gap-2.5 rounded-none">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div 
-                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm border shadow-sm flex-shrink-0"
-                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+                className="w-9 h-9 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs flex-shrink-0"
+                style={{ background: styles.accentBg, color: styles.accent }}
               >
                 {resolvedAvatar ? (
                   <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
@@ -1575,25 +1575,19 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   <span>{creatorName.charAt(0).toUpperCase()}</span>
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs sm:text-sm font-bold text-white">{creatorName}</h4>
-                  <span className="text-[10px] text-slate-400 font-mono">@{handleClean}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 truncate">
+                  <h4 className="text-xs font-bold text-white truncate">{creatorName}</h4>
+                  <span className="text-[10px] text-slate-400 font-mono truncate">@{handleClean}</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5 flex-wrap">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 truncate">
                   {creatorData?.followers && (
-                    <span className="text-slate-300 font-semibold">{creatorData.followers} subscribers</span>
+                    <span className="text-slate-300 font-semibold">{fmt(creatorData.followers)} subscribers</span>
                   )}
                   {creatorData?.videoCount && (
                     <>
                       <span>·</span>
                       <span>{creatorData.videoCount} videos</span>
-                    </>
-                  )}
-                  {creatorData?.totalViews && (
-                    <>
-                      <span>·</span>
-                      <span>{creatorData.totalViews} views</span>
                     </>
                   )}
                 </div>
@@ -1605,25 +1599,27 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 href={creatorUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer"
+                className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider border flex items-center gap-1 transition shrink-0 whitespace-nowrap cursor-pointer rounded-none"
                 style={{ 
                   color: styles.accent, 
                   background: styles.accentBg, 
-                  borderColor: styles.accentBorder 
+                  borderColor: styles.accentBorder,
+                  borderRadius: '0px'
                 }}
+                title="Open Channel on YouTube"
               >
-                <span>Channel Link</span>
-                <ExternalLink className="w-3 h-3" />
+                <span>Channel</span>
+                <ExternalLink className="w-3 h-3 shrink-0" />
               </a>
             )}
           </div>
 
           {/* Posts list */}
           {posts.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 space-y-3 rounded-2xl bg-[#12141c] border border-[#222634]">
+            <div className="p-8 text-center text-slate-400 space-y-3 rounded-none bg-[#12141c] border border-[#222634]">
               <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center mx-auto border"
-                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+                className="w-10 h-10 rounded-none flex items-center justify-center mx-auto"
+                style={{ background: styles.accentBg, color: styles.accent }}
               >
                 <MessageSquare className="w-5 h-5" />
               </div>
@@ -1647,18 +1643,17 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 return (
                   <div 
                     key={p.id} 
-                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-2xl shadow-sm ${
+                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-none shadow-sm ${
                       isMobile ? "p-3.5" : "p-4 sm:p-5"
                     }`}
                   >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-start gap-2.5 min-w-0 flex-1">
                       <div 
-                        className="w-8 h-8 rounded-full font-bold flex items-center justify-center border shadow-sm flex-shrink-0 text-xs"
+                        className="w-8 h-8 rounded-none font-bold flex items-center justify-center flex-shrink-0 text-xs"
                         style={{ 
                           background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)', 
-                          color: p.isCreator ? styles.accent : '#fff',
-                          borderColor: p.isCreator ? styles.accentBorder : '#222634'
+                          color: p.isCreator ? styles.accent : '#fff'
                         }}
                       >
                         {p.user.replace('@', '').charAt(0).toUpperCase()}
@@ -1668,8 +1663,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                           <span className="font-semibold text-xs sm:text-sm text-white truncate">{p.user}</span>
                           {p.isCreator && (
                             <span 
-                              className="text-[8.5px] font-bold px-1.5 py-0.2 rounded border uppercase tracking-wider"
-                              style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+                              className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-none border uppercase tracking-wider"
+                              style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder, borderRadius: '0px' }}
                             >
                               CREATOR
                             </span>
@@ -1692,11 +1687,12 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                         href={p.videoUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition hover:opacity-90 group/vlink truncate max-w-full"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-none border transition hover:opacity-90 group/vlink truncate max-w-full"
                         style={{ 
                           color: styles.accent, 
                           background: styles.accentBg, 
-                          borderColor: styles.accentBorder 
+                          borderColor: styles.accentBorder,
+                          borderRadius: '0px'
                         }}
                         title={`Watch "${p.videoTitle || 'YouTube Video'}" on YouTube`}
                       >
@@ -1727,11 +1723,11 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
     if (tabLower.includes('announcement') || tabLower.includes('bulletin') || tabLower.includes('news') || tabLower.includes('update')) {
       return (
         <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
-          <div className="rounded-2xl border p-4 sm:p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
+          <div className="rounded-none border p-4 sm:p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
             <div className="flex items-center gap-2">
               <div 
-                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-xs border"
-                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder }}
+                className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs"
+                style={{ background: styles.accentBg, color: styles.accent }}
               >
                 {resolvedAvatar ? (
                   <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
@@ -1921,7 +1917,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             {blueprint.name.split("'")[0]}
           </span>
           <div 
-            className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-bold text-[10px] flex-shrink-0 relative shadow-sm border border-[#222634]"
+            className="w-7 h-7 rounded-none overflow-hidden flex items-center justify-center font-bold text-[10px] flex-shrink-0 relative shadow-sm"
             style={{ background: styles.accentBg, color: styles.accent }}
           >
             <span>{creatorName.charAt(0).toUpperCase()}</span>
