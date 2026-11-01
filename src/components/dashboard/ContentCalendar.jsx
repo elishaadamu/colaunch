@@ -1,2246 +1,1514 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useForge, useBgJob, getAccent } from '../../App'
-import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useForge } from '../../App'
 import {
-  RefreshCw,
-  Copy,
-  Check,
-  Plus,
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  Calendar,
-  AlertCircle,
-  X,
-  Pencil,
-  Trash2,
-  LayoutGrid,
-  List,
-  Filter,
-  Eye,
-  Send,
-  Share2,
-  Video,
-  MessageSquare,
+  Trophy,
   Flame,
-  TrendingUp,
-  Layers,
+  Sparkles,
+  Zap,
+  Target,
   CheckCircle2,
-  ChevronDown,
-  Wand2,
-  Compass,
+  Share2,
+  Send,
+  Volume2,
+  Lightbulb,
+  Plus,
   Play,
   ArrowRight,
   Clock,
   ExternalLink,
-  Zap,
-  Users,
-  Rocket,
-  HelpCircle,
-  FileText,
-  CheckCircle
+  Calendar,
+  Columns,
+  RefreshCw,
+  Copy,
+  Check,
+  X,
+  Pencil,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  Wand2,
+  ShieldCheck,
+  Gauge,
+  Youtube,
+  Instagram,
+  Twitter,
+  Eye,
+  MessageSquare,
+  Video
 } from 'lucide-react'
-import {
-  generateContentCalendar,
-  generateSingleCalendarPost,
-  hasTextKey,
-  generateStudioContent
-} from '../../services/ai'
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+// Lightweight particle burst celebration for gamified publishing
+function triggerConfettiBurst(originX, originY) {
+  if (typeof window === 'undefined') return
+  const count = 35
+  const colors = ['#e11d48', '#38bdf8', '#34d399', '#fbbf24', '#a855f7', '#ffffff']
+  const startX = originX ?? window.innerWidth * 0.75
+  const startY = originY ?? window.innerHeight * 0.65
 
-// Content theme categories with visual styling and conversion rationale
-const THEMES = {
-  launch: {
-    label: 'Launch',
-    tag: 'CONVERSION',
-    color: '#38bdf8',
-    bg: 'rgba(56, 189, 248, 0.12)',
-    border: 'rgba(56, 189, 248, 0.28)',
-    why: 'High-urgency direct conversion hooks to drive checkout & waitlist volume.'
-  },
-  value: {
-    label: 'Value',
-    tag: 'AUTHORITY',
-    color: '#34d399',
-    bg: 'rgba(52, 211, 153, 0.12)',
-    border: 'rgba(52, 211, 153, 0.28)',
-    why: 'High-signal educational breakdowns that build trust and viral bookmarks.'
-  },
-  bts: {
-    label: 'BTS',
-    tag: 'HUMANITY',
-    color: '#fbbf24',
-    bg: 'rgba(251, 191, 36, 0.12)',
-    border: 'rgba(251, 191, 36, 0.28)',
-    why: 'Unfiltered build-in-public moments that forge deep creator-fan emotional connection.'
-  },
-  proof: {
-    label: 'Proof',
-    tag: 'CREDIBILITY',
-    color: '#818cf8',
-    bg: 'rgba(129, 140, 248, 0.12)',
-    border: 'rgba(129, 140, 248, 0.28)',
-    why: 'Case studies, test results, and reviews that eliminate customer purchasing hesitation.'
-  },
-  cta: {
-    label: 'CTA',
-    tag: 'REVENUE',
-    color: '#f43f5e',
-    bg: 'rgba(244, 63, 94, 0.12)',
-    border: 'rgba(244, 63, 94, 0.28)',
-    why: 'Unapologetic call-to-actions targeting warm followers ready to buy now.'
-  },
-  community: {
-    label: 'Community',
-    tag: 'ENGAGEMENT',
-    color: '#c084fc',
-    bg: 'rgba(192, 132, 252, 0.12)',
-    border: 'rgba(192, 132, 252, 0.28)',
-    why: 'Open-ended questions & community polls that fuel algorithmic comment velocity.'
-  },
-  story: {
-    label: 'Story',
-    tag: 'RETENTION',
-    color: '#fb7185',
-    bg: 'rgba(251, 113, 133, 0.12)',
-    border: 'rgba(251, 113, 133, 0.28)',
-    why: 'Personal vulnerability and origin stories that turn casual viewers into loyal advocates.'
-  },
-}
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div')
+    const size = Math.random() * 7 + 4
+    el.style.position = 'fixed'
+    el.style.zIndex = '99999'
+    el.style.left = `${startX + (Math.random() * 40 - 20)}px`
+    el.style.top = `${startY + (Math.random() * 40 - 20)}px`
+    el.style.width = `${size}px`
+    el.style.height = `${size * 0.6}px`
+    el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+    el.style.borderRadius = '2px'
+    el.style.pointerEvents = 'none'
+    el.style.transform = `rotate(${Math.random() * 360}deg)`
+    el.style.transition = 'all 0.9s cubic-bezier(0.22, 1, 0.36, 1)'
+    document.body.appendChild(el)
 
-const STATUS_STYLES = {
-  draft: {
-    bg: 'rgba(148, 163, 184, 0.1)',
-    color: '#94a3b8',
-    border: 'rgba(148, 163, 184, 0.25)',
-    dot: '#64748b',
-    label: 'Draft'
-  },
-  scheduled: {
-    bg: 'rgba(56, 189, 248, 0.15)',
-    color: '#38bdf8',
-    border: 'rgba(56, 189, 248, 0.35)',
-    dot: '#38bdf8',
-    label: 'Scheduled'
-  },
-  posted: {
-    bg: 'rgba(52, 211, 153, 0.15)',
-    color: '#34d399',
-    border: 'rgba(52, 211, 153, 0.35)',
-    dot: '#34d399',
-    label: 'Posted'
-  },
-  failed: {
-    bg: 'rgba(244, 63, 94, 0.15)',
-    color: '#f43f5e',
-    border: 'rgba(244, 63, 94, 0.35)',
-    dot: '#f43f5e',
-    label: 'Failed'
-  },
-}
+    const vx = (Math.random() - 0.5) * 320
+    const vy = -Math.random() * 260 - 80
 
-const PLATFORM_CONFIG = {
-  YouTube: {
-    abbr: 'YT',
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.1)',
-    border: 'rgba(239, 68, 68, 0.25)',
-    badgeBg: 'rgba(239, 68, 68, 0.18)',
-    badgeColor: '#fca5a5',
-    types: ['Video', 'Shorts', 'Community', 'Live'],
-    icon: Video,
-  },
-  Instagram: {
-    abbr: 'IG',
-    color: '#ec4899',
-    bg: 'rgba(236, 72, 153, 0.1)',
-    border: 'rgba(236, 72, 153, 0.25)',
-    badgeBg: 'rgba(236, 72, 153, 0.18)',
-    badgeColor: '#f472b6',
-    types: ['Reel', 'Post', 'Story', 'Carousel'],
-    icon: Sparkles,
-  },
-  Twitter: {
-    abbr: 'X',
-    color: '#38bdf8',
-    bg: 'rgba(56, 189, 248, 0.1)',
-    border: 'rgba(56, 189, 248, 0.25)',
-    badgeBg: 'rgba(56, 189, 248, 0.18)',
-    badgeColor: '#7dd3fc',
-    types: ['Post', 'Thread'],
-    icon: Share2,
-  },
-  TikTok: {
-    abbr: 'TT',
-    color: '#2dd4bf',
-    bg: 'rgba(45, 212, 191, 0.1)',
-    border: 'rgba(45, 212, 191, 0.25)',
-    badgeBg: 'rgba(45, 212, 191, 0.18)',
-    badgeColor: '#5eead4',
-    types: ['Video'],
-    icon: Play,
-  },
-  Email: {
-    abbr: 'Email',
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.1)',
-    border: 'rgba(245, 158, 11, 0.25)',
-    badgeBg: 'rgba(245, 158, 11, 0.18)',
-    badgeColor: '#fcd34d',
-    types: ['Broadcast', 'Newsletter', 'VIP Early Access'],
-    icon: Send,
-  },
-  LinkedIn: {
-    abbr: 'LI',
-    color: '#60a5fa',
-    bg: 'rgba(96, 165, 250, 0.1)',
-    border: 'rgba(96, 165, 250, 0.25)',
-    badgeBg: 'rgba(96, 165, 250, 0.18)',
-    badgeColor: '#93c5fd',
-    types: ['Post', 'Article'],
-    icon: Layers,
-  },
-  Podcast: {
-    abbr: 'Pod',
-    color: '#a855f7',
-    bg: 'rgba(168, 85, 247, 0.1)',
-    border: 'rgba(168, 85, 247, 0.25)',
-    badgeBg: 'rgba(168, 85, 247, 0.18)',
-    badgeColor: '#c084fc',
-    types: ['Episode', 'Clip'],
-    icon: MessageSquare,
-  },
-}
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(${vx}px, ${vy + 380}px) rotate(${Math.random() * 720}deg)`
+      el.style.opacity = '0'
+    })
 
-const GOAL_CONFIG = {
-  launch: {
-    label: 'Launch',
-    tagline: 'Conversion & checkout urgency',
-    icon: Rocket,
-    color: '#38bdf8',
-    gradient: 'from-cyan-500/20 to-blue-600/10',
-    border: 'border-cyan-500/40',
-    desc: 'Primed to drive high checkout velocity, waitlist conversions, and day-1 sales.'
-  },
-  growth: {
-    label: 'Growth',
-    tagline: 'Algorithm reach & viral discovery',
-    icon: TrendingUp,
-    color: '#34d399',
-    gradient: 'from-emerald-500/20 to-teal-600/10',
-    border: 'border-emerald-500/40',
-    desc: 'Engineered for viral hooks, shareability, and maximum non-follower discovery.'
-  },
-  engagement: {
-    label: 'Engagement',
-    tagline: 'Comment velocity & replies',
-    icon: MessageSquare,
-    color: '#fbbf24',
-    gradient: 'from-amber-500/20 to-orange-600/10',
-    border: 'border-amber-500/40',
-    desc: 'Sparks high-energy debates, audience questions, and direct inbox replies.'
-  },
-  community: {
-    label: 'Community',
-    tagline: 'Fan loyalty & behind-the-scenes',
-    icon: Users,
-    color: '#c084fc',
-    gradient: 'from-purple-500/20 to-pink-600/10',
-    border: 'border-purple-500/40',
-    desc: 'Builds intimacy, shows unfiltered creation, and bonds long-term super-fans.'
-  },
-}
-
-const INITIAL_CALENDAR = [
-  {
-    day: 'Mon',
-    posts: [
-      { id: 1, platform: 'YouTube', type: 'Video', title: 'Why most creators fail at digital product launches (and the fix)', theme: 'value', status: 'scheduled' },
-      { id: 2, platform: 'Instagram', type: 'Reel', title: 'Teaser: Something big is dropping this Friday link in bio', theme: 'launch', status: 'draft' },
-    ],
-  },
-  {
-    day: 'Tue',
-    posts: [
-      { id: 3, platform: 'Email', type: 'Broadcast', title: 'Private Invitation: VIP Founding Member Early Access', theme: 'launch', status: 'scheduled' },
-      { id: 4, platform: 'Twitter', type: 'Thread', title: '5 systems I built to automate customer onboarding from scratch', theme: 'proof', status: 'draft' },
-    ],
-  },
-  {
-    day: 'Wed',
-    posts: [
-      { id: 5, platform: 'YouTube', type: 'Shorts', title: '3 quick mistakes that kill conversions before day 1', theme: 'value', status: 'draft' },
-      { id: 6, platform: 'Instagram', type: 'Story', title: 'Raw BTS: packing the welcome kits and testing the hub', theme: 'bts', status: 'scheduled' },
-    ],
-  },
-  {
-    day: 'Thu',
-    posts: [
-      { id: 7, platform: 'Instagram', type: 'Carousel', title: 'From zero to full launch breakdown step by step', theme: 'proof', status: 'draft' },
-      { id: 8, platform: 'Twitter', type: 'Post', title: 'What is the #1 obstacle keeping you from launching your offer?', theme: 'community', status: 'draft' },
-    ],
-  },
-  {
-    day: 'Fri',
-    posts: [
-      { id: 9, platform: 'YouTube', type: 'Live', title: 'OFFICIAL LAUNCH LIVESTREAM: Q&A + Live Access Walkthrough', theme: 'launch', status: 'draft' },
-      { id: 10, platform: 'Email', type: 'VIP Early Access', title: 'DOORS ARE OPEN: Access is now live for founders', theme: 'cta', status: 'scheduled' },
-    ],
-  },
-  {
-    day: 'Sat',
-    posts: [
-      { id: 11, platform: 'Instagram', type: 'Reel', title: 'First 24 hour milestone recap + answering top community DMs', theme: 'proof', status: 'draft' },
-    ],
-  },
-  {
-    day: 'Sun',
-    posts: [
-      { id: 12, platform: 'Twitter', type: 'Thread', title: 'Week 1 launch lessons learned: What worked vs what flopped', theme: 'story', status: 'draft' },
-    ],
-  },
-]
-
-function SkeletonDayColumn({ day, dateStr, isToday }) {
-  return (
-    <div
-      className={`p-3 rounded-2xl flex flex-col justify-between min-h-[240px] transition-all ${
-        isToday
-          ? 'bg-[#0c1424]'
-          : 'bg-[#0d1424]/80 border border-slate-800/80'
-      }`}
-      style={isToday ? {
-        border: '2px solid var(--theme-accent, #10B981)',
-        boxShadow: '0 0 24px -2px var(--theme-accent-bg, rgba(16,185,129,0.35))'
-      } : {}}
-    >
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
-        <div className="flex items-center gap-1.5">
-          <span 
-            className={`text-xs font-bold ${isToday ? '' : 'text-slate-300'}`}
-            style={isToday ? { color: 'var(--theme-accent, #10B981)' } : {}}
-          >
-            {day}
-          </span>
-          {isToday && (
-            <span 
-              className="inline-flex rounded-full h-1.5 w-1.5" 
-              style={{ background: 'var(--theme-accent, #10B981)' }}
-            />
-          )}
-        </div>
-        <span className="text-[10px] font-mono text-slate-500">{dateStr}</span>
-      </div>
-
-      <div className="space-y-2 flex-1 animate-pulse">
-        <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="w-12 h-3 bg-slate-700 rounded" />
-            <div className="w-8 h-3 bg-slate-700 rounded-full" />
-          </div>
-          <div className="w-full h-3 bg-slate-700/80 rounded" />
-          <div className="w-3/4 h-3 bg-slate-700/60 rounded" />
-          <div className="w-10 h-2.5 bg-slate-800 rounded mt-1" />
-        </div>
-
-        <div className="p-2.5 rounded-xl bg-slate-800/30 border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-3 bg-slate-700/70 rounded" />
-            <div className="w-8 h-3 bg-slate-700/70 rounded-full" />
-          </div>
-          <div className="w-4/5 h-3 bg-slate-700/60 rounded" />
-        </div>
-      </div>
-
-      <div className="mt-3 pt-2 border-t border-slate-800/60">
-        <div className="w-full h-8 rounded-xl bg-slate-800/40 border border-dashed border-slate-700/40 animate-pulse" />
-      </div>
-    </div>
-  )
-}
-
-function PostCard({
-  post,
-  day,
-  onCopy,
-  onSchedule,
-  onRegenerate,
-  isRegenerating,
-  copiedId,
-  onOpen,
-  onDelete
-}) {
-  const [showWhy, setShowWhy] = useState(false)
-  const theme = THEMES[post.theme] || THEMES.value
-  const status = STATUS_STYLES[post.status] || STATUS_STYLES.draft
-  const plat = PLATFORM_CONFIG[post.platform] || PLATFORM_CONFIG.Instagram
-  const PlatformIcon = plat.icon || Sparkles
-
-  if (isRegenerating) {
-    return (
-      <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 space-y-2 animate-pulse">
-        <div className="flex justify-between items-center">
-          <div className="w-14 h-3 bg-slate-700 rounded" />
-          <div className="w-10 h-3 bg-slate-700 rounded-full" />
-        </div>
-        <div className="w-full h-3 bg-slate-700/80 rounded" />
-        <div className="w-2/3 h-3 bg-slate-700/50 rounded" />
-      </div>
-    )
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el)
+    }, 950)
   }
-
-  return (
-    <div
-      onClick={() => onOpen && onOpen(post)}
-      className="group relative p-2.5 sm:p-3 rounded-xl bg-[#0f172a]/90 hover:bg-[#15213b] border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 overflow-hidden"
-    >
-      {/* Top subtle platform color edge accent */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2px] opacity-70 group-hover:opacity-100 transition-opacity"
-        style={{
-          background: `linear-gradient(90deg, ${plat.color} 0%, transparent 80%)`
-        }}
-      />
-
-      {/* Card Header: Platform + Format Type + Theme */}
-      <div>
-        <div className="flex items-center justify-between gap-1 mb-1.5">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span
-              className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded font-mono flex items-center gap-1 shrink-0"
-              style={{ background: plat.badgeBg, color: plat.badgeColor }}
-            >
-              <PlatformIcon size={9} />
-              {plat.abbr}
-            </span>
-            <span className="text-[9px] font-mono text-slate-400 uppercase tracking-tight truncate">
-              {post.type}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            <span
-              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-              style={{ background: theme.bg, color: theme.color, border: `1px solid ${theme.border}` }}
-            >
-              {theme.label}
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowWhy(w => !w)
-              }}
-              title="View post strategy rationale"
-              className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-slate-300 transition-opacity p-0.5"
-            >
-              <Info size={10} />
-            </button>
-          </div>
-        </div>
-
-        {/* Post Title / Hook */}
-        <p className="text-[11px] sm:text-[12px] text-slate-200 group-hover:text-white font-medium leading-snug line-clamp-2 transition-colors">
-          {post.title}
-        </p>
-
-        {/* Why Strategy Tooltip */}
-        {showWhy && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="mt-2 p-2 rounded-lg text-[10px] leading-relaxed text-slate-300 border border-slate-700/80 bg-slate-900/95 animate-fade-in"
-          >
-            <span className="font-semibold text-cyan-400 block mb-0.5">{theme.tag} STRATEGY</span>
-            {theme.why}
-          </div>
-        )}
-      </div>
-
-      {/* Card Footer: Status + Hover Action Toolbar */}
-      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 mt-1">
-        <span
-          className="text-[9px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1.5 border"
-          style={{ background: status.bg, color: status.color, borderColor: status.border }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.dot }} />
-          {status.label}
-        </span>
-
-        {/* Quick action buttons on hover */}
-        <div className="flex items-center gap-0.5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onCopy(post.id, post.title)
-            }}
-            title={copiedId === post.id ? 'Copied hook!' : 'Copy hook text'}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            {copiedId === post.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRegenerate(post.id, day)
-            }}
-            disabled={isRegenerating}
-            title="Regenerate this specific post with AI"
-            className="p-1 rounded-md text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors disabled:opacity-40"
-          >
-            <RefreshCw size={11} className={isRegenerating ? 'animate-spin text-cyan-400' : ''} />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSchedule(post.id)
-            }}
-            title={post.status === 'scheduled' ? 'Mark as Draft' : 'Mark as Scheduled'}
-            className={`p-1 rounded-md transition-colors ${
-              post.status === 'scheduled'
-                ? 'text-cyan-400 bg-cyan-950/40 hover:bg-cyan-950/70'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Calendar size={11} />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              if (window.confirm('Delete this post draft from your calendar?')) {
-                onDelete(post.id)
-              }
-            }}
-            title="Delete post"
-            className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
-          >
-            <Trash2 size={11} />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
-function EmptySlot({ day, onGenerate, isGenerating }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onGenerate(day)}
-      disabled={isGenerating}
-      title={`Ask Forge AI to craft a strategic ${day} post`}
-      className="w-full rounded-xl border border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-900/30 hover:bg-cyan-950/20 p-2.5 sm:p-3 flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer group disabled:opacity-50"
-    >
-      {isGenerating ? (
-        <RefreshCw size={12} className="text-cyan-400 animate-spin" />
-      ) : (
-        <>
-          <Sparkles size={12} className="text-slate-500 group-hover:text-cyan-400 transition-colors" />
-          <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 transition-colors">
-            AI Post Suggestion
-          </span>
-        </>
-      )}
-    </button>
-  )
+// Strategy color tokens tailored for flat dark canvas with zero borders
+const STRATEGY_CONFIG = {
+  LAUNCH: { bg: 'bg-sky-500/15', text: 'text-sky-300', tag: 'CONVERSION', desc: 'High-urgency direct conversion hooks & checkout waitlist.' },
+  VALUE: { bg: 'bg-emerald-500/15', text: 'text-emerald-300', tag: 'AUTHORITY', desc: 'High-signal educational breakdowns & viral tips.' },
+  BTS: { bg: 'bg-amber-500/15', text: 'text-amber-300', tag: 'HUMANITY', desc: 'Unfiltered build-in-public raw moments.' },
+  PROOF: { bg: 'bg-purple-500/15', text: 'text-purple-300', tag: 'CREDIBILITY', desc: 'Case studies, testimonials, and user receipts.' },
+  CTA: { bg: 'bg-rose-500/15', text: 'text-rose-300', tag: 'REVENUE', desc: 'Unapologetic call-to-actions targeting warm buyers.' },
+  COMMUNITY: { bg: 'bg-fuchsia-500/15', text: 'text-fuchsia-300', tag: 'ENGAGEMENT', desc: 'Polls & questions that trigger algorithmic comments.' },
+  STORY: { bg: 'bg-orange-500/15', text: 'text-orange-300', tag: 'RELATABILITY', desc: 'Personal storytelling connecting audience pain to solution.' }
 }
 
 export default function ContentCalendar() {
-  const {
-    creatorData,
-    startBgJob,
-    cancelBgJob,
-    clearBgJob,
-    incrementAiActions,
-    setApiModalOpen,
-    triggerToast,
-    syncSessionToDb,
-    dbLoadedTimestamp,
-    userProfile
-  } = useForge()
+  const { creatorData, triggerToast } = useForge()
 
-  const handle = creatorData?.handle || 'default'
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const niche = creatorData?.niche || 'creator community'
-  const productName = creatorData?.productName || 'VIP Launch'
+  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
+  const productName = creatorData?.productName || 'WorshipLeader+ Membership'
 
-  // Unified single brand color across the entire application (co-launch.app brand red)
-  const detectedBrandColor = '#c81e3c'
-  const [cr, cg, cb] = [200, 30, 60]
-  const brandTextColor = '#ffffff'
-  const accent = useMemo(() => ({
-    color: '#c81e3c',
-    rgb: '200, 30, 60',
-    contrastText: '#ffffff'
-  }), [])
+  // Brand Red styling with guaranteed white text
+  const brandRed = '#c81e3c'
 
-  // View mode: 'grid' (7-day columns) or 'feed' (chronological timeline)
-  const [viewMode, setViewMode] = useState('grid')
+  // Gamification State (XP, Streak, Level)
+  const [xp, setXp] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`forge_calendar_xp_${handleClean}`)
+      return saved ? parseInt(saved, 10) : 720
+    } catch {
+      return 720
+    }
+  })
 
-  // Filter state: 'all' or specific platform
+  const [streak, setStreak] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`forge_calendar_streak_${handleClean}`)
+      return saved ? parseInt(saved, 10) : 4
+    } catch {
+      return 4
+    }
+  })
+
+  // Level computation: Level 3 (0-999), Level 4 (1000-1499), Level 5 (1500+)
+  const currentLevel = xp >= 1500 ? 5 : xp >= 1000 ? 4 : 3
+  const targetXp = currentLevel === 3 ? 1000 : currentLevel === 4 ? 1500 : 2000
+  const xpPercent = Math.min(100, Math.round((xp / targetXp) * 100))
+
+  const addXP = (amount, reason, e) => {
+    const nextXp = xp + amount
+    setXp(nextXp)
+    try {
+      localStorage.setItem(`forge_calendar_xp_${handleClean}`, String(nextXp))
+    } catch {}
+
+    const rect = e?.currentTarget?.getBoundingClientRect()
+    triggerConfettiBurst(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top : undefined)
+
+    if (triggerToast) {
+      triggerToast(`${reason} (+${amount} XP)`, 'success')
+    }
+  }
+
+  // Active View Mode: 'sprint' (7-day board) vs 'calendar' (monthly grid)
+  const [viewMode, setViewMode] = useState('sprint')
   const [platformFilter, setPlatformFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
 
-  const [activeGoal, setActiveGoal] = useState(() => {
-    return localStorage.getItem(`forge_${handle}_calendar_active_goal`) || 'launch'
+  // Week offset state (0 = current week)
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  // Modals state
+  const [aiModalOpen, setAiModalOpen] = useState(false)
+  const [newDraftModalOpen, setNewDraftModalOpen] = useState(false)
+  const [isTweakingAi, setIsTweakingAi] = useState(false)
+  const [isGeneratingHooks, setIsGeneratingHooks] = useState(false)
+
+  // AI Modal Inputs
+  const [aiProductName, setAiProductName] = useState(productName)
+  const [aiProductUsp, setAiProductUsp] = useState(`Save 4 hours every week planning church gatherings with instant chord charts and stems. $29/mo with 7-day free trial.`)
+  const [aiCampaignGoal, setAiCampaignGoal] = useState('LaunchUrgency')
+
+  // New Draft Modal Inputs
+  const [modalDraftDay, setModalDraftDay] = useState(0)
+  const [modalDraftChannel, setModalDraftChannel] = useState('YouTube')
+  const [modalDraftStrategy, setModalDraftStrategy] = useState('LAUNCH')
+  const [modalDraftTitle, setModalDraftTitle] = useState('')
+  const [modalDraftCaption, setModalDraftCaption] = useState('')
+
+  // 7-Day Campaign Post Dataset
+  const [posts, setPosts] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`forge_campaign_posts_${handleClean}`)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+
+    return [
+      {
+        id: 'post-1',
+        dayIndex: 0,
+        dayName: 'Mon',
+        dateLabel: '10/26',
+        fullDateStr: 'Oct 26, 2026',
+        channel: 'YouTube',
+        format: 'VIDEO',
+        strategy: 'LAUNCH',
+        title: `How ${productName} Can Transform Your Sunday Service`,
+        caption: `Sunday mornings shouldn't come with panic over missing audio stems or incorrect chords.\n\nToday, we're officially unveiling the brand-new ${productName} Session Engine. See how our members prepare a full 5-song set in under 20 minutes.\n\nLink in description to start your 7-day free trial.\n\n#ChurchTech #WorshipLeader #MusicDirector`,
+        status: 'Draft',
+        time: '9:00 AM'
+      },
+      {
+        id: 'post-2',
+        dayIndex: 1,
+        dayName: 'Tue',
+        dateLabel: '10/27',
+        fullDateStr: 'Oct 27, 2026',
+        channel: 'Instagram',
+        format: 'REEL',
+        strategy: 'BTS',
+        title: 'Sneak Peek: Upcoming Exclusive Songs for Members!',
+        caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you. Worship leaders asked, and we delivered the full chord charts + stem downloads.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #worshiptips #excited`,
+        status: 'Draft',
+        time: '11:30 AM'
+      },
+      {
+        id: 'post-3',
+        dayIndex: 2,
+        dayName: 'Wed',
+        dateLabel: '10/28',
+        fullDateStr: 'Oct 28, 2026',
+        channel: 'YouTube',
+        format: 'SHORTS',
+        strategy: 'PROOF',
+        title: `3 Reasons ${productName} is a Game Changer`,
+        caption: `Watch how Pastor Dave cut rehearsal time by 50% using our chord chart transpose feature. Proof that preparation beats talent when stress is on the line.\n\nDrop a comment if your band needs this!\n\n#Shorts #Productivity #ChurchLife`,
+        status: 'Draft',
+        time: '1:00 PM'
+      },
+      {
+        id: 'post-3b',
+        dayIndex: 2,
+        dayName: 'Wed',
+        dateLabel: '10/28',
+        fullDateStr: 'Oct 28, 2026',
+        channel: 'Instagram',
+        format: 'STORY',
+        strategy: 'COMMUNITY',
+        title: `Poll: What's Your Favorite Part of ${productName}?`,
+        caption: `Quick question for our crew: Chord transpose or multitrack audio isolation? Vote in the sticker below!`,
+        status: 'Draft',
+        time: '3:00 PM'
+      },
+      {
+        id: 'post-4',
+        dayIndex: 3,
+        dayName: 'Thu',
+        dateLabel: '10/29',
+        fullDateStr: 'Oct 29, 2026',
+        channel: 'YouTube',
+        format: 'COMMUNITY',
+        strategy: 'STORY',
+        title: `Q&A: How Our Members Use ${productName} Every Week`,
+        caption: `Real vulnerability: 3 years ago I was burned out running 3 campuses with handwritten paper sheets. Here's why we built this software.\n\nRead the full founder note in the community tab.`,
+        status: 'Draft',
+        time: '10:00 AM'
+      },
+      {
+        id: 'post-5',
+        dayIndex: 4,
+        dayName: 'Fri',
+        dateLabel: '10/30',
+        fullDateStr: 'Oct 30, 2026',
+        channel: 'YouTube',
+        format: 'VIDEO',
+        strategy: 'CTA',
+        title: 'Before and After: Elevate Your Worship Sessions',
+        caption: `Doors to our Founding Member tier close this Sunday at midnight! Lock in $29/mo before prices go up.\n\nClick the link in description now.`,
+        status: 'Scheduled',
+        time: '4:00 PM'
+      },
+      {
+        id: 'post-6',
+        dayIndex: 5,
+        dayName: 'Sat',
+        dateLabel: '10/31',
+        fullDateStr: 'Oct 31, 2026',
+        channel: 'Instagram',
+        format: 'REEL',
+        strategy: 'PROOF',
+        title: `User Testament: Life Changing Benefits of ${productName}`,
+        caption: `"I got my Saturday nights back with my family instead of transposing keys at 11 PM." - Sarah M.\n\nYour time is worth it.`,
+        status: 'Draft',
+        time: '12:00 PM'
+      },
+      {
+        id: 'post-7',
+        dayIndex: 6,
+        dayName: 'Sun',
+        dateLabel: '11/1',
+        fullDateStr: 'Nov 1, 2026',
+        channel: 'YouTube',
+        format: 'SHORTS',
+        strategy: 'VALUE',
+        title: `Quick Tips: Making the Most of ${productName}`,
+        caption: `Happy Sunday everyone! Here are 3 micro-hacks in our mobile app for quick audio monitoring.\n\nHave an amazing service today!`,
+        status: 'Posted',
+        time: '8:00 AM'
+      }
+    ]
   })
 
-  const [week, setWeek] = useState(0)
-
-  const [calendar, setCalendar] = useState(() => {
-    const initialGoal = localStorage.getItem(`forge_${handle}_calendar_active_goal`) || 'launch'
-    const cacheKey = `forge_calendar_${handle}_${initialGoal}_w0`
-    const cacheKeyLower = `forge_calendar_${handle.toLowerCase()}_${initialGoal.toLowerCase()}_w0`
-    try {
-      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
-      if (cached) return JSON.parse(cached)
-    } catch (e) {
-      console.error('Failed to parse cached calendar:', e)
-    }
-    return null
-  })
-
-  // Save activeGoal selection to localStorage
+  // Persist posts
   useEffect(() => {
-    localStorage.setItem(`forge_${handle}_calendar_active_goal`, activeGoal)
-  }, [activeGoal, handle])
+    try {
+      localStorage.setItem(`forge_campaign_posts_${handleClean}`, JSON.stringify(posts))
+    } catch {}
+  }, [posts, handleClean])
 
-  const [copiedId, setCopiedId] = useState(null)
-  const [regeneratingPostId, setRegeneratingPostId] = useState(null)
-  const [generatingSlot, setGeneratingSlot] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [selectedPost, setSelectedPost] = useState(null)
-  const [selectedDay, setSelectedDay] = useState(null)
+  // Active Post for Right Inspector Studio
+  const [selectedPostId, setSelectedPostId] = useState('post-2')
+  const activePost = posts.find(p => p.id === selectedPostId) || posts[0]
 
-  // Modals
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [newPostData, setNewPostData] = useState({
-    title: '',
-    day: 'Mon',
-    platform: 'YouTube',
-    type: 'Video',
-    theme: 'launch',
-    status: 'draft'
-  })
+  // Suggested hooks state
+  const [suggestedHooks, setSuggestedHooks] = useState([
+    `Stop spending 3 hours every Saturday fixing chord charts...`,
+    `Here is why 1,400 worship leaders joined our VIP beta yesterday...`
+  ])
 
-  // Calculate dynamic week dates
-  const getWeekDates = (weekOffset) => {
-    const dates = []
-    const today = new Date()
-    const currentDay = today.getDay()
-    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today)
-      d.setDate(today.getDate() + distanceToMonday + i + (weekOffset * 7))
-      dates.push(d)
-    }
-    return dates
+  // Caption input ref for "Edit Script" action
+  const captionRef = useRef(null)
+
+  // Metrics
+  const totalPostsCount = posts.length
+  const readyPostsCount = posts.filter(p => p.status === 'Scheduled' || p.status === 'Posted').length
+  const readinessPercent = totalPostsCount > 0 ? Math.round((readyPostsCount / totalPostsCount) * 100) : 0
+  const draftPostsCount = posts.filter(p => p.status === 'Draft').length
+
+  const ytCount = posts.filter(p => p.channel === 'YouTube').length
+  const igCount = posts.filter(p => p.channel === 'Instagram').length
+  const xCount = posts.filter(p => p.channel === 'X').length
+  const ttCount = posts.filter(p => p.channel === 'TikTok').length
+
+  // Handlers for Right Inspector Studio
+  const updateActivePostTitle = (title) => {
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, title } : p))
   }
-  const weekDates = useMemo(() => getWeekDates(week), [week])
 
-  // Derive stable job id from current goal + week
-  const calJobId = `calendar-week-${activeGoal}-${week}`
-  const calJob = useBgJob(calJobId)
+  const updateActivePostCaption = (caption) => {
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, caption } : p))
+  }
 
-  // Week number & header label
-  const weekLabel = useMemo(() => {
-    const monday = weekDates[0]
-    const sunday = weekDates[6]
-    if (!monday || !sunday) return 'Current Week'
-    const monStr = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const sunStr = sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const weekNum = Math.ceil((((monday - new Date(monday.getFullYear(), 0, 1)) / 86400000) + 1) / 7)
-    return `Week ${weekNum} • ${monStr} – ${sunStr}`
-  }, [weekDates])
+  const handleApproveAndSchedule = (e) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Scheduled' } : p))
+    addXP(50, `Scheduled "${activePost.title.slice(0, 24)}..." for ${activePost.fullDateStr}`, e)
+  }
 
-  const loadOrGenerateCalendar = async (goal, forceRegenerate = false) => {
-    const h = creatorData?.handle || 'default'
-    const cacheKey = `forge_calendar_${h}_${goal}_w${week}`
+  const handleInstantPostLive = (e) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted' } : p))
+    addXP(100, `Published live to ${activePost.channel}`, e)
+  }
 
-    if (!forceRegenerate) {
-      const cacheKeyLower = `forge_calendar_${h.toLowerCase()}_${goal.toLowerCase()}_w${week}`
-      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached)
-          setCalendar(parsed)
-          setError(null)
-          return
-        } catch (e) {
-          console.error('Failed to parse cached calendar:', e)
-        }
-      }
-    }
-
-    if (!hasTextKey()) {
-      // Offline fallback: adapt initial calendar
-      const adaptedMock = INITIAL_CALENDAR.map(day => ({
-        ...day,
-        posts: day.posts.map(post => {
-          let newTheme = post.theme
-          if (goal === 'community' && post.theme === 'launch') newTheme = 'community'
-          if (goal === 'engagement' && post.theme === 'launch') newTheme = 'value'
-          if (goal === 'growth' && post.theme === 'launch') newTheme = 'proof'
-          return {
-            ...post,
-            theme: newTheme,
-            title: post.title.replace(/Launch/i, goal.charAt(0).toUpperCase() + goal.slice(1))
-          }
-        })
-      }))
-      setCalendar(adaptedMock)
-      localStorage.setItem(cacheKey, JSON.stringify(adaptedMock))
-      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+  const handleScheduleAllReady = (e) => {
+    const drafts = posts.filter(p => p.status === 'Draft')
+    if (drafts.length === 0) {
+      if (triggerToast) triggerToast('All posts are already scheduled or published!', 'info')
       return
     }
+    setPosts(prev => prev.map(p => p.status === 'Draft' ? { ...p, status: 'Scheduled' } : p))
+    addXP(drafts.length * 40, `All ${drafts.length} drafts approved and scheduled to pipeline`, e)
+  }
 
-    setIsLoading(true)
-    setError(null)
+  const handleShareDraftPreview = () => {
+    if (!activePost) return
     try {
-      const result = await generateContentCalendar(creatorData, goal)
-      if (result && Array.isArray(result)) {
-        let idCounter = 1
-        const normalized = result.map(day => ({
-          day: day.day,
-          posts: (day.posts || []).map(post => ({
-            id: `post-gen-${Date.now()}-${idCounter++}`,
-            platform: post.platform || 'YouTube',
-            type: post.type || 'Video',
-            title: post.title || 'Untitled Hook',
-            theme: THEMES[post.theme] ? post.theme : 'value',
-            status: STATUS_STYLES[post.status] ? post.status : 'draft'
-          }))
-        }))
-        setCalendar(normalized)
-        localStorage.setItem(cacheKey, JSON.stringify(normalized))
-        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-      } else {
-        throw new Error("Invalid response format received from AI.")
-      }
-    } catch (err) {
-      console.error(err)
-      setError("AI generation failed. Using cached or fallback schedule.")
-      const fallback = localStorage.getItem(cacheKey)
-      if (fallback) {
-        setCalendar(JSON.parse(fallback))
-      } else {
-        setCalendar(INITIAL_CALENDAR)
-      }
-    } finally {
-      setIsLoading(false)
+      navigator.clipboard.writeText(activePost.caption)
+      if (triggerToast) triggerToast('Draft caption copied to clipboard!', 'success')
+    } catch {
+      if (triggerToast) triggerToast('Failed to copy to clipboard', 'error')
     }
   }
 
-  useEffect(() => {
-    if (userProfile?.username && dbLoadedTimestamp === 0) return
-    const h = creatorData?.handle
-    if (!h || h === 'default') {
-      setCalendar(INITIAL_CALENDAR)
-      return
-    }
-    loadOrGenerateCalendar(activeGoal, false)
-  }, [activeGoal, week, creatorData?.handle, dbLoadedTimestamp, userProfile?.username])
-
-  // Reload activeGoal when database loads
-  useEffect(() => {
-    const h = creatorData?.handle || 'default'
-    const cachedGoal = localStorage.getItem(`forge_${h}_calendar_active_goal`) || 'launch'
-    if (cachedGoal !== activeGoal) {
-      setActiveGoal(cachedGoal)
-    }
-  }, [dbLoadedTimestamp, creatorData?.handle])
-
-  const handleCopy = (id, text) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    if (triggerToast) triggerToast('Post hook copied to clipboard!', 'success')
-    setTimeout(() => setCopiedId(null), 2000)
+  const handleVoicePreview = () => {
+    if (triggerToast) triggerToast('Voice Synthesizer: Generating fast audio preview hook...', 'info')
   }
 
-  const handleSchedule = (id) => {
-    setCalendar(prev => {
-      if (!prev) return null
-      const updated = prev.map(day => ({
-        ...day,
-        posts: day.posts.map(p => {
-          if (p.id === id) {
-            const nextStatus = p.status === 'scheduled' ? 'draft' : 'scheduled'
-            return { ...p, status: nextStatus }
-          }
-          return p
-        }),
-      }))
-      const h = creatorData?.handle || 'default'
-      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-      localStorage.setItem(cacheKey, JSON.stringify(updated))
-      return updated
-    })
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+  // AI Actions
+  const handleTweakWithAi = () => {
+    if (!activePost) return
+    setIsTweakingAi(true)
+
+    setTimeout(() => {
+      setIsTweakingAi(false)
+      const elevatedCaption = `Here is the truth about running a high-impact Sunday service:\n\nPreparation beats talent when stress is on the line. We spent 6 months building the ${productName} session toolkit to automate stems and chord transposition in 1 click.\n\nTap the link in bio to claim your 7-day founding pass.\n\n#WorshipLeader #ChurchMusic #FoundingPass #SundayService`
+      updateActivePostCaption(elevatedCaption)
+      if (triggerToast) triggerToast('Caption refined with AI creative parameters!', 'success')
+    }, 850)
   }
 
-  // Handle background job result
-  useEffect(() => {
-    if (calJob.status === 'done' && calJob.result) {
-      const result = calJob.result
-      if (Array.isArray(result)) {
-        let idCounter = 1
-        const normalized = result.map(day => ({
-          day: day.day,
-          posts: (day.posts || []).map(post => ({
-            id: `post-gen-${Date.now()}-${idCounter++}`,
-            platform: post.platform || 'YouTube',
-            type: post.type || 'Video',
-            title: post.title || 'Untitled Post',
-            theme: THEMES[post.theme] ? post.theme : 'value',
-            status: STATUS_STYLES[post.status] ? post.status : 'draft'
-          }))
-        }))
-        const h = creatorData?.handle || 'default'
-        const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-        setCalendar(normalized)
-        localStorage.setItem(cacheKey, JSON.stringify(normalized))
-        clearBgJob(calJobId)
-        if (triggerToast) triggerToast(`7-Day ${activeGoal} plan auto-filled!`, 'success')
-        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-      } else {
-        clearBgJob(calJobId)
+  const handleGenerateHookIdeas = () => {
+    setIsGeneratingHooks(true)
+    setTimeout(() => {
+      setIsGeneratingHooks(false)
+      setSuggestedHooks([
+        `The single biggest mistake church directors make with chord charts...`,
+        `How 1 click transposes an entire Sunday 5-song set...`,
+        `Inside look: Why our members save 4 hours every rehearsal...`
+      ])
+      if (triggerToast) triggerToast('Generated fresh viral opening hooks!', 'success')
+    }, 600)
+  }
+
+  const handleApplyHook = (hook) => {
+    updateActivePostTitle(hook)
+    if (triggerToast) triggerToast('Hook applied to headline!', 'success')
+  }
+
+  // Auto-Fill 7-Day Strategy
+  const handleExecuteAiWeekFill = (e) => {
+    const generated = [
+      {
+        id: `gen-${Date.now()}-1`,
+        dayIndex: 0,
+        dayName: 'Mon',
+        dateLabel: '10/26',
+        fullDateStr: 'Oct 26, 2026',
+        channel: 'YouTube',
+        format: 'VIDEO',
+        strategy: 'LAUNCH',
+        title: `Official Launch: How ${aiProductName} Transforms Your Workflow`,
+        caption: `Stop spending your weekends fixing chord charts. Today, ${aiProductName} officially opens for early members.\n\n${aiProductUsp}\n\nStart your 7-day trial now.\n\n#Launch #Creator #SundayService`,
+        status: 'Draft',
+        time: '9:00 AM'
+      },
+      {
+        id: `gen-${Date.now()}-2`,
+        dayIndex: 1,
+        dayName: 'Tue',
+        dateLabel: '10/27',
+        fullDateStr: 'Oct 27, 2026',
+        channel: 'Instagram',
+        format: 'REEL',
+        strategy: 'BTS',
+        title: `Behind The Scenes: Crafting ${aiProductName}`,
+        caption: `Unfiltered moment: We built this tool because 3 years ago I was burned out transposing charts by hand at 11 PM.\n\nCheck out the member space today!\n\n#BTS #Founders #Productivity`,
+        status: 'Draft',
+        time: '11:30 AM'
+      },
+      {
+        id: `gen-${Date.now()}-3`,
+        dayIndex: 2,
+        dayName: 'Wed',
+        dateLabel: '10/28',
+        fullDateStr: 'Oct 28, 2026',
+        channel: 'YouTube',
+        format: 'SHORTS',
+        strategy: 'PROOF',
+        title: `3 Reasons Directors Are Switching to ${aiProductName}`,
+        caption: `Watch how our members cut set preparation time by 50% in the first week.\n\nFull case breakdown in link in bio!\n\n#Proof #Shorts #CaseStudy`,
+        status: 'Draft',
+        time: '1:00 PM'
+      },
+      {
+        id: `gen-${Date.now()}-4`,
+        dayIndex: 3,
+        dayName: 'Thu',
+        dateLabel: '10/29',
+        fullDateStr: 'Oct 29, 2026',
+        channel: 'TikTok',
+        format: 'VIDEO',
+        strategy: 'VALUE',
+        title: `The 5-Minute Sunday Planning Framework`,
+        caption: `Here is the exact step-by-step framework our community uses every Thursday.\n\nSave this video for your next rehearsal!\n\n#Tutorial #LifeHack #MusicTips`,
+        status: 'Draft',
+        time: '2:30 PM'
+      },
+      {
+        id: `gen-${Date.now()}-5`,
+        dayIndex: 4,
+        dayName: 'Fri',
+        dateLabel: '10/30',
+        fullDateStr: 'Oct 30, 2026',
+        channel: 'YouTube',
+        format: 'VIDEO',
+        strategy: 'CTA',
+        title: `Founding Member Pass: Pricing Ends This Weekend`,
+        caption: `Lock in founding tier pricing before standard rates apply on Monday.\n\n${aiProductUsp}\n\nJoin through the official link in bio.\n\n#Discount #VIPAccess #Limited`,
+        status: 'Draft',
+        time: '4:00 PM'
+      },
+      {
+        id: `gen-${Date.now()}-6`,
+        dayIndex: 5,
+        dayName: 'Sat',
+        dateLabel: '10/31',
+        fullDateStr: 'Oct 31, 2026',
+        channel: 'Instagram',
+        format: 'REEL',
+        strategy: 'COMMUNITY',
+        title: `Live Community Voice: Member Spotlight`,
+        caption: `Shoutout to our incredible community members leading services across 14 countries this weekend.\n\nWhat song are you playing tomorrow? Drop it in comments!\n\n#Community #WorshipCommunity`,
+        status: 'Draft',
+        time: '12:00 PM'
+      },
+      {
+        id: `gen-${Date.now()}-7`,
+        dayIndex: 6,
+        dayName: 'Sun',
+        dateLabel: '11/1',
+        fullDateStr: 'Nov 1, 2026',
+        channel: 'YouTube',
+        format: 'SHORTS',
+        strategy: 'STORY',
+        title: `Sunday Wrap-Up: Sunday Service Walkthrough`,
+        caption: `Happy Sunday! Here is a micro-breakdown of how seamless today's set ran with instant stem playback.\n\nHave a blessed week ahead!\n\n#SundayService #Gospel #Worship`,
+        status: 'Draft',
+        time: '8:00 AM'
       }
-    }
-    if (calJob.status === 'error' || calJob.status === 'cancelled') {
-      setError(calJob.status === 'cancelled' ? 'AI generation cancelled.' : 'AI generation error.')
-      clearBgJob(calJobId)
-    }
-  }, [calJob.status, calJob.result])
+    ]
 
-  const handleRegenerateWeek = () => {
-    if (calJob.status === 'running') return
-    if (!hasTextKey()) {
-      setApiModalOpen(true)
-      return
-    }
-    if (incrementAiActions) incrementAiActions()
-    setCalendar(null) // trigger skeleton loader immediately
-    startBgJob(calJobId, (sig) => generateContentCalendar(creatorData, activeGoal, sig))
+    setPosts(generated)
+    setSelectedPostId(generated[0].id)
+    setAiModalOpen(false)
+    addXP(150, `Generated 7-day campaign strategy for "${aiProductName}"`, e)
   }
 
-  const handleGenerateSlot = async (day) => {
-    setGeneratingSlot(day)
-    if (incrementAiActions) incrementAiActions()
-    try {
-      if (!hasTextKey()) {
-        setApiModalOpen(true)
-        setGeneratingSlot(null)
-        return
-      }
-      const postData = await generateSingleCalendarPost(creatorData, day, activeGoal)
-      const newPost = {
-        id: `slot-gen-${Date.now()}`,
-        platform: postData.platform || 'YouTube',
-        type: postData.type || 'Video',
-        title: postData.title || `Strategic ${day} hook for ${creatorName}`,
-        theme: THEMES[postData.theme] ? postData.theme : 'value',
-        status: postData.status || 'draft',
-      }
-      setCalendar(prev => {
-        if (!prev) return null
-        const updated = prev.map(d =>
-          d.day === day ? { ...d, posts: [...d.posts, newPost] } : d
-        )
-        const h = creatorData?.handle || 'default'
-        const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-        localStorage.setItem(cacheKey, JSON.stringify(updated))
-        if (triggerToast) triggerToast(`Generated custom post for ${day}!`, 'success')
-        return updated
-      })
-      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-    } catch (err) {
-      console.error(err)
-      alert("Failed to generate post: " + err.message)
-    } finally {
-      setGeneratingSlot(null)
-    }
-  }
-
-  const handleRegeneratePost = async (postId, day) => {
-    setRegeneratingPostId(postId)
-    if (incrementAiActions) incrementAiActions()
-    try {
-      if (!hasTextKey()) {
-        setApiModalOpen(true)
-        setRegeneratingPostId(null)
-        return
-      }
-      const postData = await generateSingleCalendarPost(creatorData, day, activeGoal)
-      const updatedPost = {
-        id: postId,
-        platform: postData.platform || 'YouTube',
-        type: postData.type || 'Video',
-        title: postData.title || `Forge generated post for ${day}`,
-        theme: THEMES[postData.theme] ? postData.theme : 'value',
-        status: 'draft',
-      }
-      setCalendar(prev => {
-        if (!prev) return null
-        const updated = prev.map(d =>
-          d.day === day
-            ? { ...d, posts: d.posts.map(p => p.id === postId ? updatedPost : p) }
-            : d
-        )
-        const h = creatorData?.handle || 'default'
-        const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-        localStorage.setItem(cacheKey, JSON.stringify(updated))
-        if (triggerToast) triggerToast('Post draft regenerated!', 'success')
-        return updated
-      })
-      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-    } catch (err) {
-      console.error(err)
-      alert("Failed to regenerate post suggestion: " + err.message)
-    } finally {
-      setRegeneratingPostId(null)
-    }
-  }
-
-  const handleAddPost = () => {
-    setNewPostData({
-      title: '',
-      day: 'Mon',
-      platform: 'YouTube',
-      type: 'Video',
-      theme: 'launch',
-      status: 'draft'
-    })
-    setIsAddModalOpen(true)
-  }
-
-  const handleSaveNewPost = () => {
-    if (!newPostData.title.trim()) return
+  // Save New Custom Draft
+  const handleSaveNewDraft = (e) => {
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     const newPost = {
-      id: `custom-${Date.now()}`,
-      platform: newPostData.platform,
-      type: newPostData.type,
-      title: newPostData.title,
-      theme: newPostData.theme,
-      status: newPostData.status,
+      id: `post-${Date.now()}`,
+      dayIndex: modalDraftDay,
+      dayName: dayNames[modalDraftDay],
+      dateLabel: `10/${26 + modalDraftDay}`,
+      fullDateStr: `Oct ${26 + modalDraftDay}, 2026`,
+      channel: modalDraftChannel,
+      format: modalDraftChannel === 'YouTube' ? 'SHORTS' : 'POST',
+      strategy: modalDraftStrategy,
+      title: modalDraftTitle.trim() || `New ${productName} Campaign Video`,
+      caption: modalDraftCaption.trim() || `Exciting new drop coming for our subscribers! Link in bio.`,
+      status: 'Draft',
+      time: '2:00 PM'
     }
-    setCalendar(prev => {
-      if (!prev) return null
-      const updated = prev.map(d =>
-        d.day === newPostData.day ? { ...d, posts: [...d.posts, newPost] } : d
-      )
-      const h = creatorData?.handle || 'default'
-      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-      localStorage.setItem(cacheKey, JSON.stringify(updated))
-      return updated
-    })
-    setIsAddModalOpen(false)
-    if (triggerToast) triggerToast('Custom post added to schedule!', 'success')
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+
+    setPosts(prev => [...prev, newPost])
+    setSelectedPostId(newPost.id)
+    setNewDraftModalOpen(false)
+    setModalDraftTitle('')
+    setModalDraftCaption('')
+    addXP(40, `Added new quest to ${newPost.dayName}`, e)
   }
 
-  const handleScheduleAllDrafts = () => {
-    if (!calendar) return
-    setCalendar(prev => {
-      if (!prev) return null
-      const updated = prev.map(day => ({
-        ...day,
-        posts: day.posts.map(p => p.status === 'draft' ? { ...p, status: 'scheduled' } : p),
-      }))
-      const h = creatorData?.handle || 'default'
-      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-      localStorage.setItem(cacheKey, JSON.stringify(updated))
-      return updated
-    })
-    if (triggerToast) triggerToast('All draft posts marked as Scheduled!', 'success')
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+  // Days list for 7-day sprint
+  const sprintDays = [
+    { name: 'Mon', date: '10/26', dayIdx: 0 },
+    { name: 'Tue', date: '10/27', dayIdx: 1 },
+    { name: 'Wed', date: '10/28', dayIdx: 2 },
+    { name: 'Thu', date: '10/29', dayIdx: 3 },
+    { name: 'Fri', date: '10/30', dayIdx: 4 },
+    { name: 'Sat', date: '10/31', dayIdx: 5 },
+    { name: 'Sun', date: '11/1', dayIdx: 6 }
+  ]
+
+  // Channel Icon helper
+  const renderChannelIcon = (channel) => {
+    if (channel === 'YouTube') return <Youtube className="w-4 h-4 text-red-500 shrink-0" />
+    if (channel === 'Instagram') return <Instagram className="w-4 h-4 text-pink-500 shrink-0" />
+    if (channel === 'TikTok') return <Video className="w-4 h-4 text-slate-300 shrink-0" />
+    if (channel === 'X') return <Twitter className="w-4 h-4 text-sky-400 shrink-0" />
+    return <Send className="w-4 h-4 text-slate-400 shrink-0" />
   }
-
-  const handleSaveEditedPost = (updatedPost) => {
-    setCalendar(prev => {
-      if (!prev) return null
-      const updated = prev.map(d =>
-        d.day === selectedDay
-          ? { ...d, posts: d.posts.map(p => p.id === updatedPost.id ? { ...p, ...updatedPost } : p) }
-          : d
-      )
-      const h = creatorData?.handle || 'default'
-      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-      localStorage.setItem(cacheKey, JSON.stringify(updated))
-      if (triggerToast) triggerToast('Post updated successfully!', 'success')
-      return updated
-    })
-    setSelectedPost(null)
-    setSelectedDay(null)
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-  }
-
-  const handleDeletePost = (postId) => {
-    setCalendar(prev => {
-      if (!prev) return null
-      const updated = prev.map(d => ({
-        ...d,
-        posts: d.posts.filter(p => p.id !== postId)
-      }))
-      const h = creatorData?.handle || 'default'
-      const cacheKey = `forge_calendar_${h}_${activeGoal}_w${week}`
-      localStorage.setItem(cacheKey, JSON.stringify(updated))
-      if (triggerToast) triggerToast('Post removed from calendar', 'success')
-      return updated
-    })
-    setSelectedPost(null)
-    setSelectedDay(null)
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
-  }
-
-  // Analytics Metrics
-  const totalPosts = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.length : 0), 0) : 0
-  const scheduledCount = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'scheduled').length : 0), 0) : 0
-  const draftsCount = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'draft').length : 0), 0) : 0
-  const postedCount = calendar ? calendar.reduce((s, d) => s + (d.posts ? d.posts.filter(p => p.status === 'posted').length : 0), 0) : 0
-  const readinessPercent = totalPosts > 0 ? Math.round((scheduledCount / totalPosts) * 100) : 0
-
-  // Platform breakdown counts
-  const platformCounts = useMemo(() => {
-    if (!calendar) return {}
-    const counts = {}
-    calendar.forEach(d => {
-      (d.posts || []).forEach(p => {
-        counts[p.platform] = (counts[p.platform] || 0) + 1
-      })
-    })
-    return counts
-  }, [calendar])
-
-  // Filtered days data
-  const filteredCalendar = useMemo(() => {
-    if (!calendar) return []
-    return calendar.map(dayData => ({
-      ...dayData,
-      posts: (dayData.posts || []).filter(p => {
-        const matchesPlatform = platformFilter === 'all' || p.platform.toLowerCase() === platformFilter.toLowerCase()
-        const matchesStatus = statusFilter === 'all' || p.status.toLowerCase() === statusFilter.toLowerCase()
-        return matchesPlatform && matchesStatus
-      })
-    }))
-  }, [calendar, platformFilter, statusFilter])
-
-  // Flattened posts for Feed / Timeline view
-  const allChronologicalPosts = useMemo(() => {
-    if (!filteredCalendar) return []
-    const list = []
-    filteredCalendar.forEach((dayData, idx) => {
-      const dateObj = weekDates[idx]
-      ;(dayData.posts || []).forEach(post => {
-        list.push({
-          ...post,
-          day: dayData.day,
-          dateObj,
-          dayIndex: idx
-        })
-      })
-    })
-    return list
-  }, [filteredCalendar, weekDates])
-
-  const activeGoalDetails = GOAL_CONFIG[activeGoal] || GOAL_CONFIG.launch
-  const ActiveGoalIcon = activeGoalDetails.icon
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-
-      {/* ─── 1. TOP COMMAND HERO HEADER ──────────────────────────── */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-[#0f172a]/90 via-[#0a0f1d]/90 to-[#080c14] border border-slate-800/80 p-5 sm:p-7 overflow-hidden">
-        {/* Subtle ambient light glow */}
-        <div className="absolute top-0 right-1/4 w-96 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-0 left-10 w-64 h-24 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          {/* Left Title & Strategy Context */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span 
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold"
-                style={{
-                  color: accent.color,
-                  background: `rgba(${accent.rgb}, 0.12)`,
-                  border: `1px solid rgba(${accent.rgb}, 0.35)`
-                }}
-              >
-                <Sparkles size={11} className="animate-pulse" style={{ color: accent.color }} />
-                CONTENT CALENDAR & CADENCE ENGINE
-              </span>
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">
-                {weekLabel}
-              </span>
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
-                @{handle.replace('@', '')} • {niche}
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              This Week's Content Plan
-            </h1>
-
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
-              Forge engineered a strategic 7-day multi-channel roadmap for <strong className="text-slate-200">{creatorName}</strong> around <strong style={{ color: accent.color }}>"{productName}"</strong>. Click any card to customize or generate full captions with AI.
-            </p>
-          </div>
-
-          {/* Right Action Cluster */}
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
-            {calJob.status === 'running' && (
-              <div 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                style={{
-                  background: `rgba(${accent.rgb}, 0.12)`,
-                  border: `1px solid rgba(${accent.rgb}, 0.35)`
-                }}
-              >
-                <span className="inline-flex rounded-full h-2 w-2" style={{ background: accent.color }}></span>
-                <span className="text-xs font-mono" style={{ color: accent.color }}>AI generating schedule…</span>
-                <button
-                  type="button"
-                  onClick={() => cancelBgJob(calJobId)}
-                  className="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-wider ml-1"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleRegenerateWeek}
-              disabled={calJob.status === 'running' || isLoading}
-              className="flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50 shadow-sm hover:brightness-110 active:scale-[0.98]"
-              style={{
-                background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.88) 100%)`,
-                color: accent.contrastText || '#090d16',
-                boxShadow: `0 2px 14px rgba(${accent.rgb}, 0.28)`
-              }}
-            >
-              <Wand2 size={13} className={calJob.status === 'running' || isLoading ? 'animate-spin' : ''} />
-              <span>{calJob.status === 'running' ? 'Crafting Week…' : 'Auto-fill Week with AI'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleAddPost}
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer"
-            >
-              <Plus size={13} />
-              <span>Add Post</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleScheduleAllDrafts}
-              title="Batch schedule all draft posts"
-              className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-emerald-200 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer"
-            >
-              <CheckCircle2 size={13} />
-              <span className="hidden sm:inline">Schedule All</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Offline / Mock Warning Notice */}
-        {!hasTextKey() && (
-          <div className="mt-4 p-3 rounded-xl bg-amber-950/30 border border-amber-800/40 flex items-center justify-between gap-3 text-xs text-amber-200">
-            <div className="flex items-center gap-2.5">
-              <AlertCircle size={15} className="text-amber-400 shrink-0" />
-              <span>
-                <strong>Mock Calendar Mode:</strong> Add your Gemini or OpenAI API key in Settings to unlock real-time contextual calendar generation.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setApiModalOpen(true)}
-              className="font-bold underline text-amber-300 hover:text-amber-100 shrink-0"
-            >
-              Add Key →
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ─── 2. CADENCE METRIC STRIP ──────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        {/* Metric 1: Planned Velocity */}
-        <div className="p-4 rounded-2xl bg-[#0d1424] border border-slate-800/80">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Weekly Volume</span>
-            <Calendar size={13} className="text-cyan-400" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-white">{totalPosts}</span>
-            <span className="text-[11px] text-slate-400">
-              {totalPosts > 0 ? `~${(totalPosts / 7).toFixed(1)}/day` : '0/day'}
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-500 mt-1 block font-mono">
-            Optimal target: 8–14 posts/week
-          </span>
-        </div>
-
-        {/* Metric 2: Scheduled Readiness */}
-        <div className="p-4 rounded-2xl bg-[#0d1424] border border-slate-800/80">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Schedule Readiness</span>
-            <Clock size={13} className="text-emerald-400" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-emerald-400">{scheduledCount}</span>
-            <span className="text-[11px] text-slate-400">of {totalPosts} ready ({readinessPercent}%)</span>
-          </div>
-          {/* Progress bar */}
-          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div
-              className="bg-emerald-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${readinessPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Metric 3: Channels Activated */}
-        <div className="p-4 rounded-2xl bg-[#0d1424] border border-slate-800/80">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Channels Active</span>
-            <Layers size={13} className="text-purple-400" />
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap mt-1">
-            {Object.keys(platformCounts).length === 0 ? (
-              <span className="text-xs text-slate-500">None yet</span>
-            ) : (
-              Object.entries(platformCounts).map(([platform, count]) => {
-                const conf = PLATFORM_CONFIG[platform] || PLATFORM_CONFIG.Instagram
-                return (
-                  <span
-                    key={platform}
-                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: conf.badgeBg, color: conf.badgeColor }}
-                  >
-                    {conf.abbr} {count}
-                  </span>
-                )
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Metric 4: Campaign Objective */}
-        <div className="p-4 rounded-2xl bg-[#0d1424] border border-slate-800/80 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Active Strategy</span>
-            <ActiveGoalIcon size={13} style={{ color: activeGoalDetails.color }} />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className="text-sm font-bold uppercase tracking-wide"
-              style={{ color: activeGoalDetails.color }}
-            >
-              {activeGoalDetails.label} Mode
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-400 line-clamp-1 leading-snug">
-            {activeGoalDetails.tagline}
-          </span>
-        </div>
-      </div>
-
-      {/* ─── 3. STRATEGY CONTROLS & DUAL-TIER FILTER BAR ────────── */}
-      <div className="rounded-2xl bg-[#0d1424]/90 border border-slate-800/80 p-3 sm:p-4 space-y-3">
-
-        {/* Top row: Campaign Goal Segmented Switcher + Week Navigation */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-
-          {/* Goal Selector */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <Compass size={12} className="text-cyan-400" /> Goal:
-            </span>
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
-              {Object.entries(GOAL_CONFIG).map(([key, goalObj]) => {
-                const IconComponent = goalObj.icon
-                const isActive = activeGoal === key
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setActiveGoal(key)}
-                    disabled={isLoading}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-slate-800 text-white border border-slate-700'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                    }`}
-                  >
-                    <IconComponent
-                      size={12}
-                      style={{ color: isActive ? goalObj.color : 'currentColor' }}
-                    />
-                    <span>{goalObj.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Week offset navigator */}
+    <div className="h-full flex flex-col bg-[#090d16] text-slate-200 overflow-hidden select-none">
+      
+      {/* ── TOP HEADER (Flat Dark Elevation, Border 0) ── */}
+      <header className="h-16 bg-[#0c0f17] px-4 sm:px-6 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          {/* Date & Week Title */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
+            <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+              Oct 26 – Nov 1, 2026
+            </h2>
+            <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#161b2b] text-slate-300">
+              Week 44
+            </span>
+          </div>
+
+          {/* Week Shift Controls */}
+          <div className="flex items-center bg-[#111522] p-0.5 rounded-xl">
+            <button
+              type="button"
+              onClick={() => {
+                setWeekOffset(w => w - 1)
+                if (triggerToast) triggerToast('Navigating to previous week', 'info')
+              }}
+              className="p-1.5 hover:bg-[#161b2b] rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+              title="Previous Week"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWeekOffset(0)
+                if (triggerToast) triggerToast('Reset to active sprint week', 'info')
+              }}
+              className="px-2.5 py-1 text-xs font-semibold hover:bg-[#161b2b] rounded-lg text-slate-300 transition cursor-pointer"
+            >
+              Current
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWeekOffset(w => w + 1)
+                if (triggerToast) triggerToast('Navigating to next week', 'info')
+              }}
+              className="p-1.5 hover:bg-[#161b2b] rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+              title="Next Week"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          {/* Strategy Mode Badge */}
+          <div className="hidden lg:flex items-center gap-1.5 bg-rose-500/10 text-rose-400 px-3 py-1 rounded-xl text-xs font-semibold">
+            <Target size={13} className="text-rose-400" />
+            <span>Mode: Launch Conversion &amp; Urgency</span>
+          </div>
+        </div>
+
+        {/* Quick Action Buttons (Zero Borders) */}
+        <div className="flex items-center gap-2">
+          {/* AI Auto-Fill Week */}
+          <button
+            type="button"
+            onClick={() => setAiModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition cursor-pointer"
+            title="Auto-fill week with AI"
+          >
+            <Sparkles size={13} className="text-rose-400" />
+            <span className="hidden sm:inline">Auto-fill Week with AI</span>
+          </button>
+
+          {/* New Draft Button (Brand Red with Pure White Text) */}
+          <button
+            type="button"
+            onClick={() => {
+              setModalDraftDay(activePost ? activePost.dayIndex : 0)
+              setNewDraftModalOpen(true)
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-xl transition shadow-sm cursor-pointer hover:opacity-95"
+            style={{ background: brandRed, color: '#ffffff' }}
+          >
+            <Plus size={14} className="text-white" />
+            <span>New Quest Draft</span>
+          </button>
+
+          {/* Schedule All Ready */}
+          <button
+            type="button"
+            onClick={handleScheduleAllReady}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 rounded-xl transition cursor-pointer"
+          >
+            <CheckCircle2 size={13} />
+            <span>Schedule All Ready</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ── METRICS & STRATEGY STRIP (Flat Dark Elevation, Border 0) ── */}
+      <section className="bg-[#0c0f17] px-4 sm:px-6 py-3 flex-shrink-0 mt-0.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
+          
+          {/* Metric 1: Gamified Level & XP */}
+          <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#111522]">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+              <Trophy size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between text-xs font-extrabold text-white">
+                <span className="text-amber-400">Level {currentLevel} Creator</span>
+                <span className="text-[10px] font-mono text-slate-400">{xp} / {targetXp} XP</span>
+              </div>
+              <div className="w-full bg-[#161b2b] h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div className="bg-amber-400 h-full rounded-full transition-all duration-500" style={{ width: `${xpPercent}%` }} />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                <span className="flex items-center gap-1">
+                  <Flame size={11} className="text-rose-400" />
+                  <span>Streak: <b className="text-white">{streak} Days</b></span>
+                </span>
+                <span className="text-rose-400 font-bold">1 post to Lvl {currentLevel + 1}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Metric 2: Readiness / Pipeline */}
+          <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#111522]">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+              <Gauge size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between text-xs font-extrabold text-white">
+                <span>{readyPostsCount} of {totalPostsCount} Ready</span>
+                <span className="text-[11px] text-emerald-400">{readinessPercent}%</span>
+              </div>
+              <div className="w-full bg-[#161b2b] h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: `${readinessPercent}%` }} />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {draftPostsCount} pending in draft quest queue
+              </p>
+            </div>
+          </div>
+
+          {/* Metric 3: Channel Breakdown */}
+          <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#111522]">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
+              <Share2 size={16} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-500/15 text-red-400">YT {ytCount}</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-pink-500/15 text-pink-400">IG {igCount}</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/15 text-sky-400">X {xCount}</span>
+                {ttCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-slate-500/15 text-slate-300">TT {ttCount}</span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium mt-1">Omnichannel distribution active</p>
+            </div>
+          </div>
+
+          {/* Metric 4: Campaign Product & Formula */}
+          <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-[#111522]">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+              <Zap size={16} />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">
+                Target: {productName}
+              </span>
+              <span className="text-xs font-bold text-white truncate block">
+                Launch + Proof + Value
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── SPLIT MAIN WORKSPACE ── */}
+      <div className="flex-1 flex overflow-hidden">
+        
+        {/* LEFT WORKSPACE: Sprint Grid or Month Grid */}
+        <section className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-5 custom-scrollbar">
+          
+          {/* Filter Chips & View Mode Switcher */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2.5">
+            {/* Platform Filter Chips (Flat Dark Pills, Border 0) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               <button
                 type="button"
-                onClick={() => setWeek(w => w - 1)}
-                disabled={isLoading}
-                title="Previous Week"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                onClick={() => setPlatformFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  platformFilter === 'all'
+                    ? 'text-white shadow-sm'
+                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+                }`}
+                style={platformFilter === 'all' ? { background: brandRed, color: '#ffffff' } : {}}
               >
-                <ChevronLeft size={14} />
+                All Channels
               </button>
               <button
                 type="button"
-                onClick={() => setWeek(0)}
-                className={`text-xs font-mono px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                  week === 0
-                    ? 'text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-800/40'
+                onClick={() => setPlatformFilter('YouTube')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  platformFilter === 'YouTube'
+                    ? 'text-white shadow-sm'
+                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+                }`}
+                style={platformFilter === 'YouTube' ? { background: brandRed, color: '#ffffff' } : {}}
+              >
+                <Youtube size={13} className="text-red-500" />
+                <span>YouTube</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlatformFilter('Instagram')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  platformFilter === 'Instagram'
+                    ? 'text-white shadow-sm'
+                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+                }`}
+                style={platformFilter === 'Instagram' ? { background: brandRed, color: '#ffffff' } : {}}
+              >
+                <Instagram size={13} className="text-pink-500" />
+                <span>Instagram</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlatformFilter('TikTok')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  platformFilter === 'TikTok'
+                    ? 'text-white shadow-sm'
+                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+                }`}
+                style={platformFilter === 'TikTok' ? { background: brandRed, color: '#ffffff' } : {}}
+              >
+                <Video size={13} className="text-slate-300" />
+                <span>TikTok</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlatformFilter('X')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  platformFilter === 'X'
+                    ? 'text-white shadow-sm'
+                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+                }`}
+                style={platformFilter === 'X' ? { background: brandRed, color: '#ffffff' } : {}}
+              >
+                <Twitter size={13} className="text-sky-400" />
+                <span>X</span>
+              </button>
+            </div>
+
+            {/* View Mode Toggle: 7-Day Sprint vs Month Grid */}
+            <div className="flex items-center bg-[#111522] p-1 rounded-xl text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setViewMode('sprint')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'sprint'
+                    ? 'bg-[#1c2236] text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {week === 0 ? 'This Week' : week > 0 ? `+${week}w` : `${week}w`}
+                <Columns size={13} />
+                <span>7-Day Sprint</span>
               </button>
               <button
                 type="button"
-                onClick={() => setWeek(w => w + 1)}
-                disabled={isLoading}
-                title="Next Week"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-
-            {/* View Mode Toggle: Grid vs Feed */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                title="7-Day Column Grid View"
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'grid'
-                    ? 'bg-slate-800 text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-300'
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'calendar'
+                    ? 'bg-[#1c2236] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <LayoutGrid size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('feed')}
-                title="Chronological Feed View"
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'feed'
-                    ? 'bg-slate-800 text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                <List size={14} />
+                <Calendar size={13} />
+                <span>Month Grid</span>
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Bottom row: Platform & Status Filter Chips */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
-          {/* Platform chips */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Filter size={11} /> Filter:
-            </span>
-            <button
-              type="button"
-              onClick={() => setPlatformFilter('all')}
-              className={`text-[11px] font-mono px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                platformFilter === 'all'
-                  ? 'bg-slate-800 text-white border border-slate-700'
-                  : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-transparent'
-              }`}
-            >
-              All Platforms
-            </button>
-            {Object.keys(PLATFORM_CONFIG).map(plat => (
-              <button
-                key={plat}
-                type="button"
-                onClick={() => setPlatformFilter(plat.toLowerCase())}
-                className={`text-[11px] font-mono px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  platformFilter === plat.toLowerCase()
-                    ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 bg-slate-900/60 border border-transparent'
-                }`}
-              >
-                {plat}
-              </button>
-            ))}
-          </div>
+          {/* VIEW A: 7-DAY SPRINT BOARD (GAMIFIED DAY CARDS) */}
+          {viewMode === 'sprint' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              {sprintDays.map(day => {
+                const dayPosts = posts.filter(p => {
+                  const matchDay = p.dayIndex === day.dayIdx
+                  if (!matchDay) return false
+                  if (platformFilter === 'all') return true
+                  return p.channel.toLowerCase() === platformFilter.toLowerCase()
+                })
 
-          {/* Status filter chips */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {['all', 'draft', 'scheduled', 'posted'].map(st => (
-              <button
-                key={st}
-                type="button"
-                onClick={() => setStatusFilter(st)}
-                className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                  statusFilter === st
-                    ? 'bg-slate-800 text-cyan-300 border border-slate-700'
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {st}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── 4. MAIN CONTENT AREA: 7-DAY GRID OR FEED VIEW ──────── */}
-      {viewMode === 'grid' ? (
-        /* 4 CARDS PER ROW RESPONSIVE GRID */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {isLoading || calJob.status === 'running' || !calendar ? (
-            /* SKELETON LOADER (4 CARDS PER ROW) */
-            <>
-              {DAYS.map((day, i) => {
-                const dateObj = weekDates[i]
-                const dateStr = dateObj ? `${dateObj.getMonth() + 1}/${dateObj.getDate()}` : ''
-                const isToday = week === 0 && dateObj && dateObj.toDateString() === new Date().toDateString()
-                return (
-                  <SkeletonDayColumn
-                    key={day}
-                    day={day}
-                    dateStr={dateStr}
-                    isToday={isToday}
-                  />
-                )
-              })}
-              <div className="p-4 rounded-2xl bg-[#0d1424]/40 border border-dashed border-slate-800/60 flex flex-col justify-between min-h-[240px] animate-pulse">
-                <div className="h-4 w-28 bg-slate-800 rounded" />
-                <div className="space-y-2 my-auto">
-                  <div className="h-10 bg-slate-800/50 rounded-xl" />
-                  <div className="h-10 bg-slate-800/30 rounded-xl" />
-                </div>
-                <div className="h-8 bg-slate-800/40 rounded-xl" />
-              </div>
-            </>
-          ) : (
-            <>
-              {filteredCalendar.map((dayData, dayIdx) => {
-                const dateObj = weekDates[dayIdx]
-                const isToday = week === 0 && dateObj && dateObj.toDateString() === new Date().toDateString()
-                const dateStr = dateObj ? `${dateObj.getMonth() + 1}/${dateObj.getDate()}` : ''
+                const hasSelected = dayPosts.some(p => p.id === activePost?.id)
 
                 return (
                   <div
-                    key={dayData.day}
-                    className={`p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between min-h-[230px] transition-all duration-200 ${
-                      isToday
-                        ? 'bg-[#0c1527]'
-                        : 'bg-[#0d1424] border border-slate-800/80 hover:border-slate-700'
+                    key={day.dayIdx}
+                    className={`flex flex-col bg-[#0c0f17] rounded-2xl p-3.5 transition-all duration-150 ${
+                      hasSelected ? 'ring-2 ring-rose-500/70 bg-[#111522]' : 'hover:bg-[#111522]/80'
                     }`}
-                    style={isToday ? {
-                      border: `2px solid rgba(${accent.rgb}, 0.85)`,
-                      boxShadow: `0 0 24px -2px rgba(${accent.rgb}, 0.35)`
-                    } : {}}
                   >
                     {/* Day Column Header */}
-                    <div>
-                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
-                        <div className="flex items-center gap-1.5">
-                          <span 
-                            className={`text-xs font-bold ${isToday ? '' : 'text-slate-300'}`}
-                            style={isToday ? { color: accent.color } : {}}
-                          >
-                            {dayData.day}
-                          </span>
-                          {isToday && (
-                            <span 
-                              className="inline-flex rounded-full h-1.5 w-1.5"
-                              style={{ background: accent.color }}
-                            />
-                          )}
+                    <div className="flex items-center justify-between pb-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-extrabold text-xs ${hasSelected ? 'text-rose-400' : 'text-slate-200'}`}>
+                          {day.name}
+                        </span>
+                        {day.dayIdx === 6 && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-slate-400 font-semibold text-[11px]">{day.date}</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-[#161b2b] text-slate-300 font-bold text-[10px]">
+                          {dayPosts.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Posts Cards list */}
+                    <div className="space-y-2 flex-1">
+                      {dayPosts.length === 0 ? (
+                        <div className="h-28 flex flex-col items-center justify-center text-center p-3 rounded-xl bg-[#090d16] text-slate-500">
+                          <MessageSquare size={18} className="mb-1 text-slate-600" />
+                          <span className="text-[11px] font-semibold">No quest slotted</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-slate-500">{dateStr}</span>
-                          {(dayData.posts || []).length > 0 && (
-                            <span className="text-[9px] font-mono px-1 rounded bg-slate-800 text-slate-400">
-                              {dayData.posts.length}
-                            </span>
-                          )}
-                        </div>
+                      ) : (
+                        dayPosts.map(post => {
+                          const stratCfg = STRATEGY_CONFIG[post.strategy] || STRATEGY_CONFIG.LAUNCH
+                          const isSelected = post.id === activePost?.id
+
+                          return (
+                            <div
+                              key={post.id}
+                              onClick={() => setSelectedPostId(post.id)}
+                              className={`cursor-pointer p-3 rounded-xl transition-all duration-150 relative ${
+                                isSelected ? 'bg-[#1c2236] text-white shadow-md' : 'bg-[#111522] text-slate-200 hover:bg-[#161b2b]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                                  {renderChannelIcon(post.channel)}
+                                  <span className="uppercase tracking-wider text-slate-300 font-mono">
+                                    {post.channel.slice(0, 2)} {post.format}
+                                  </span>
+                                </div>
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${stratCfg.bg} ${stratCfg.text}`}>
+                                  {post.strategy}
+                                </span>
+                              </div>
+
+                              <h4 className="text-xs font-bold text-slate-100 line-clamp-2 leading-snug mb-2">
+                                {post.title}
+                              </h4>
+
+                              <div className="flex items-center justify-between pt-1">
+                                {post.status === 'Posted' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
+                                    <CheckCircle2 size={11} /> Posted
+                                  </span>
+                                ) : post.status === 'Scheduled' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-400 flex items-center gap-1">
+                                    <Clock size={11} /> {post.time}
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#161b2b] text-slate-400">
+                                    Draft
+                                  </span>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedPostId(post.id)
+                                    handleTweakWithAi()
+                                  }}
+                                  title="Polish with AI"
+                                  className="text-slate-400 hover:text-rose-400 p-1 rounded-md transition cursor-pointer"
+                                >
+                                  <Sparkles size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+
+                    {/* Quick Add Post on this day */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalDraftDay(day.dayIdx)
+                        setNewDraftModalOpen(true)
+                      }}
+                      className="mt-2.5 w-full py-2 rounded-xl text-[11px] font-bold text-slate-400 bg-[#111522] hover:text-white hover:bg-[#161b2b] flex items-center justify-center gap-1 transition cursor-pointer"
+                    >
+                      <Plus size={13} />
+                      <span>Add Post</span>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* VIEW B: MONTHLY CALENDAR VIEW (Direct from reference image) */}
+          {viewMode === 'calendar' && (
+            <div className="flex-1 bg-[#0c0f17] rounded-2xl p-4 flex flex-col">
+              {/* Day Name Headers */}
+              <div className="grid grid-cols-7 pb-2 text-center text-xs font-extrabold text-slate-400 uppercase tracking-wider bg-[#111522] py-2 rounded-t-xl">
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+                <div>Sun</div>
+              </div>
+
+              {/* 35 Calendar Cells */}
+              <div className="grid grid-cols-7 flex-1 rounded-b-xl overflow-hidden bg-[#090d16] gap-1 p-1">
+                {Array.from({ length: 35 }).map((_, i) => {
+                  const dayNumber = i < 4 ? 28 + i : i <= 34 ? i - 3 : i - 34
+                  const isCurrentMonth = i >= 4 && i <= 34
+                  const isToday = i === 20 || i === 5 // e.g. Day 20 or active day highlighted
+
+                  // Match posts to days in month
+                  const cellPosts = posts.filter(p => {
+                    if (i === 5 && p.dayIndex === 0) return true
+                    if (i === 19 && p.dayIndex === 1) return true
+                    if (i === 20 && p.dayIndex === 2) return true
+                    if (i === 22 && p.dayIndex === 4) return true
+                    return false
+                  })
+
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        if (cellPosts.length > 0) {
+                          setSelectedPostId(cellPosts[0].id)
+                        } else {
+                          if (triggerToast) triggerToast(`Day ${dayNumber} selected. Click "+ New Quest Draft" to schedule.`, 'info')
+                        }
+                      }}
+                      className={`min-h-[85px] p-2 flex flex-col justify-between transition hover:bg-[#161b2b] cursor-pointer rounded-lg ${
+                        !isCurrentMonth ? 'bg-[#0c0f17]/40 text-slate-600' : 'bg-[#0c0f17] text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-bold ${
+                          isToday
+                            ? 'w-5 h-5 rounded-full text-white flex items-center justify-center font-black shadow-sm'
+                            : ''
+                        }`}
+                        style={isToday ? { background: brandRed, color: '#ffffff' } : {}}
+                        >
+                          {dayNumber}
+                        </span>
+                        {cellPosts.length > 0 && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        )}
                       </div>
 
-                      {/* Posts inside day column */}
-                      <div className="space-y-2">
-                        {(dayData.posts || []).map((post) => (
-                          <PostCard
-                            key={post.id}
-                            post={post}
-                            day={dayData.day}
-                            onCopy={handleCopy}
-                            onSchedule={handleSchedule}
-                            onRegenerate={(id) => handleRegeneratePost(id, dayData.day)}
-                            isRegenerating={regeneratingPostId === post.id}
-                            copiedId={copiedId}
-                            onOpen={(p) => {
-                              setSelectedPost(p)
-                              setSelectedDay(dayData.day)
-                            }}
-                            onDelete={handleDeletePost}
-                          />
+                      <div className="space-y-1 mt-1">
+                        {cellPosts.map(p => (
+                          <div
+                            key={p.id}
+                            className="p-1 rounded text-white text-[10px] font-bold truncate shadow-xs"
+                            style={{ background: brandRed, color: '#ffffff' }}
+                            title={`${p.title} (${p.time})`}
+                          >
+                            <span>{p.title}</span>
+                            <span className="block text-[8.5px] opacity-90">{p.time}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
-
-                    {/* Empty Slot / AI Post Generator button */}
-                    <div className="mt-2.5 pt-2 border-t border-slate-800/60">
-                      <EmptySlot
-                        day={dayData.day}
-                        onGenerate={handleGenerateSlot}
-                        isGenerating={generatingSlot === dayData.day}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* 8th Slot: Weekly Buffer & Ideas Scratchpad to complete 4-per-row grid */}
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-[#0e1627]/90 to-[#0a0f1d]/90 border border-dashed border-slate-800/90 hover:border-cyan-500/40 flex flex-col justify-between min-h-[230px] transition-all group">
-                <div>
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles size={13} className="text-cyan-400" />
-                      <span className="text-xs font-bold text-slate-200">Ideas & Buffer</span>
-                    </div>
-                    <span className="text-[10px] font-mono text-cyan-400/90 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-800/40 font-semibold">
-                      VAULT
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-400 leading-relaxed mt-2">
-                    Capture scratchpad ideas, unscheduled post hooks, or stage drafts for next week.
-                  </p>
-
-                  <div className="mt-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase block">Weekly Tip</span>
-                    <p className="text-[11px] text-slate-300">
-                      Consistency beats intensity: keep at least 2 evergreen value posts queued ahead.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-slate-800/60">
-                  <button
-                    type="button"
-                    onClick={handleAddPost}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 transition-all cursor-pointer"
-                  >
-                    <Plus size={12} />
-                    <span>Quick Add Draft</span>
-                  </button>
-                </div>
+                  )
+                })}
               </div>
-            </>
+            </div>
           )}
-        </div>
-      ) : (
-        /* CHRONOLOGICAL TIMELINE / FEED VIEW */
-        <div className="rounded-2xl bg-[#0d1424] border border-slate-800/80 p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+
+          {/* CAMPAIGN CONVERSION ARCHITECTURE STRATEGY CARDS FOOTER (Border 0, Flat Dark Elevation) */}
+          <div className="mt-5 p-4 rounded-2xl bg-[#0c0f17]">
+            <div className="flex items-center justify-between mb-3">
+              <h5 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-rose-400" />
+                <span>Campaign Conversion Architecture &amp; Strategy Tags</span>
+              </h5>
+              <span className="text-[10px] text-slate-500 font-medium">Strategic framework for omnichannel conversion</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              <div className="p-2.5 rounded-xl bg-sky-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-400">
+                  <span>LAUNCH</span>
+                  <span className="text-[9px] px-1 bg-sky-500/20 text-sky-300 rounded font-mono">CONV</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">High-urgency direct conversion hooks &amp; checkout waitlist.</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-emerald-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                  <span>VALUE</span>
+                  <span className="text-[9px] px-1 bg-emerald-500/20 text-emerald-300 rounded font-mono">AUTHORITY</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">High-signal educational breakdowns &amp; viral tips.</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-amber-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-400">
+                  <span>BTS</span>
+                  <span className="text-[9px] px-1 bg-amber-500/20 text-amber-300 rounded font-mono">HUMANITY</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">Unfiltered build-in-public raw moments.</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-purple-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-purple-400">
+                  <span>PROOF</span>
+                  <span className="text-[9px] px-1 bg-purple-500/20 text-purple-300 rounded font-mono">CRED</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">Case studies, testimonials, and user receipts.</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-rose-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-rose-400">
+                  <span>CTA</span>
+                  <span className="text-[9px] px-1 bg-rose-500/20 text-rose-300 rounded font-mono">REVENUE</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">Unapologetic call-to-actions targeting warm buyers.</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-fuchsia-500/10">
+                <div className="flex items-center justify-between text-xs font-bold text-fuchsia-400">
+                  <span>COMMUNITY</span>
+                  <span className="text-[9px] px-1 bg-fuchsia-500/20 text-fuchsia-300 rounded font-mono">ENGAGE</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">Polls &amp; questions that trigger algorithmic comments.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Border 0, Flat Dark Elevation) ── */}
+        <aside className="w-[380px] lg:w-[420px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar">
+          
+          {/* Header */}
+          <div className="p-5 flex items-center justify-between bg-[#111522]">
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                Chronological Release Feed
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Draft for {activePost?.dayName}day
+                </span>
+                {activePost?.status === 'Posted' ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400">
+                    Posted
+                  </span>
+                ) : activePost?.status === 'Scheduled' ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/15 text-sky-400">
+                    Scheduled
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400">
+                    Draft
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base font-extrabold text-white mt-0.5">
+                {activePost?.fullDateStr} • {activePost?.time}
               </h3>
-              <p className="text-xs text-slate-400">
-                {allChronologicalPosts.length} posts queued across this week
-              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleShareDraftPreview}
+                title="Copy Caption Link"
+                className="p-2 rounded-lg bg-[#161b2b] hover:bg-[#1c2236] text-slate-300 transition cursor-pointer"
+              >
+                <Share2 size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={handleVoicePreview}
+                title="Voice Preview Hook"
+                className="p-2 rounded-lg bg-[#161b2b] hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 transition cursor-pointer"
+              >
+                <Volume2 size={14} />
+              </button>
             </div>
           </div>
 
-          {allChronologicalPosts.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-sm">
-              No posts match the active platform or status filter.
+          {/* Post Configuration Body */}
+          <div className="p-5 flex-1 space-y-4">
+            
+            {/* Channel & Strategy Badges */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {renderChannelIcon(activePost?.channel)}
+                <span className="text-xs font-extrabold text-white">
+                  {activePost?.channel} {activePost?.format}
+                </span>
+              </div>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                STRATEGY_CONFIG[activePost?.strategy]?.bg || 'bg-sky-500/15'
+              } ${
+                STRATEGY_CONFIG[activePost?.strategy]?.text || 'text-sky-300'
+              }`}>
+                {activePost?.strategy} STRATEGY
+              </span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {allChronologicalPosts.map((post) => {
-                const plat = PLATFORM_CONFIG[post.platform] || PLATFORM_CONFIG.Instagram
-                const theme = THEMES[post.theme] || THEMES.value
-                const status = STATUS_STYLES[post.status] || STATUS_STYLES.draft
-                const PlatformIcon = plat.icon || Sparkles
 
-                return (
-                  <div
-                    key={post.id}
-                    onClick={() => {
-                      setSelectedPost(post)
-                      setSelectedDay(post.day)
-                    }}
-                    className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group"
+            {/* Campaign Product Focus */}
+            <div className="bg-[#111522] rounded-xl p-3">
+              <div className="text-[10px] uppercase font-bold text-slate-400">
+                Campaign Product Focus
+              </div>
+              <div className="text-xs font-extrabold text-white mt-0.5">
+                {productName}
+              </div>
+            </div>
+
+            {/* Catchy Video Hook / Headline */}
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Catchy Video Hook / Headline
+              </label>
+              <input
+                type="text"
+                value={activePost?.title || ''}
+                onChange={(e) => updateActivePostTitle(e.target.value)}
+                className="w-full text-sm font-semibold text-white bg-[#111522] rounded-xl p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none transition border-0"
+                placeholder="e.g. Sneak Peek: Upcoming Exclusive Songs for Members!"
+              />
+            </div>
+
+            {/* Social Caption & Script */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Social Caption &amp; Script
+                </label>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {activePost?.caption?.length || 0} / 2,200
+                </span>
+              </div>
+              <textarea
+                ref={captionRef}
+                rows={6}
+                value={activePost?.caption || ''}
+                onChange={(e) => updateActivePostCaption(e.target.value)}
+                className="w-full text-sm text-slate-200 bg-[#111522] rounded-xl p-3 focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed transition font-normal resize-none border-0"
+              />
+            </div>
+
+            {/* AI Creative Booster / Tweak Tools */}
+            <div className="rounded-xl p-3 bg-[#111522]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-amber-400" />
+                  <span>AI Creative Booster</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleGenerateHookIdeas}
+                  disabled={isGeneratingHooks}
+                  className="text-[11px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={11} className={isGeneratingHooks ? 'animate-spin' : ''} />
+                  <span>New Hooks</span>
+                </button>
+              </div>
+
+              <div className="space-y-1.5 text-xs text-slate-300">
+                {suggestedHooks.map((hook, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleApplyHook(hook)}
+                    className="w-full text-left p-2.5 rounded-lg bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-xs font-medium text-slate-200 flex items-start gap-1.5"
                   >
-                    <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                        style={{ background: plat.badgeBg, color: plat.badgeColor }}
-                      >
-                        <PlatformIcon size={18} />
-                      </div>
-
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/40">
-                            {post.day} {post.dateObj ? `${post.dateObj.getMonth() + 1}/${post.dateObj.getDate()}` : ''}
-                          </span>
-                          <span className="text-xs font-bold text-white">
-                            {post.platform}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400 uppercase">
-                            • {post.type}
-                          </span>
-                          <span
-                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-                            style={{ background: theme.bg, color: theme.color }}
-                          >
-                            {theme.label}
-                          </span>
-                        </div>
-
-                        <p className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">
-                          {post.title}
-                        </p>
-
-                        <p className="text-xs text-slate-400">
-                          {theme.why}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <span
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1.5 border"
-                        style={{ background: status.bg, color: status.color, borderColor: status.border }}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.dot }} />
-                        {status.label}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCopy(post.id, post.title)
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                        title="Copy hook"
-                      >
-                        {copiedId === post.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSchedule(post.id)
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-cyan-400 transition-colors"
-                        title="Toggle schedule"
-                      >
-                        <Calendar size={13} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (window.confirm('Delete this post?')) {
-                            handleDeletePost(post.id)
-                          }
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
-                        title="Delete post"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─── 5. CAMPAIGN THEME MATRIX / LEGEND ───────────────────── */}
-      <div className="p-4 rounded-2xl bg-[#0d1424]/60 border border-slate-800/80">
-        <div className="flex items-center gap-2 mb-2.5">
-          <Info size={13} className="text-cyan-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-            Campaign Conversion Architecture
-          </span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {Object.entries(THEMES).map(([k, t]) => (
-            <div
-              key={k}
-              className="p-2.5 rounded-xl border space-y-1"
-              style={{ background: t.bg, borderColor: t.border }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold" style={{ color: t.color }}>{t.label}</span>
-                <span className="text-[8px] font-mono opacity-60 text-slate-300">{t.tag}</span>
+                    <Lightbulb size={12} className="text-amber-400 shrink-0 mt-0.5" />
+                    <span>"{hook}"</span>
+                  </button>
+                ))}
               </div>
-              <p className="text-[10px] text-slate-300 leading-tight">
-                {t.why}
-              </p>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ─── 6. ADD CUSTOM POST MODAL ────────────────────────────── */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-[#0d1424] border border-slate-800 p-6 space-y-5 relative">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus size={16} className="text-cyan-400" /> Add Custom Post
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Insert a hand-crafted release hook into your weekly schedule.
-                </p>
+            {/* Action Buttons Group (Border 0, Guaranteed White Text on Red) */}
+            <div className="space-y-2 pt-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    captionRef.current?.focus()
+                    if (triggerToast) triggerToast('Script editor focused. Write freely!', 'info')
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Pencil size={13} className="text-slate-400" />
+                  <span>Edit Script</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTweakWithAi}
+                  disabled={isTweakingAi}
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
+                  <span>{isTweakingAi ? 'Polishing...' : 'Tweak with AI'}</span>
+                </button>
               </div>
+
+              {/* Approve and Schedule (Solid Brand Red, White Text, +50 XP) */}
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                onClick={handleApproveAndSchedule}
+                className="w-full py-3 px-4 rounded-xl font-extrabold text-xs tracking-wide flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95"
+                style={{ background: brandRed, color: '#ffffff' }}
               >
-                <X size={14} />
+                <CheckCircle2 size={15} className="text-white" />
+                <span className="text-white font-bold">Approve and Schedule (+50 XP)</span>
+              </button>
+
+              {/* Instant Post to Live Channel (Solid Emerald, White Text, +100 XP) */}
+              <button
+                type="button"
+                onClick={handleInstantPostLive}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md"
+                style={{ color: '#ffffff' }}
+              >
+                <Send size={14} className="text-white" />
+                <span className="text-white font-bold">Post to Live Channel Now (+100 XP)</span>
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Title Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Post Title / Hook
+          </div>
+        </aside>
+
+      </div>
+
+      {/* ── MODAL: AI AUTO-FILL WEEK ── */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0f17] rounded-2xl max-w-lg w-full p-6 text-slate-200 shadow-2xl animate-fadeIn">
+            <div className="flex items-center justify-between pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">
+                    Generate 7-Day Campaign Cadence
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Let AI craft strategic hooks for your product launch
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Product or Offer Name
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition-colors"
-                  placeholder="e.g. 5 secrets to scaling your agency"
-                  value={newPostData.title}
-                  onChange={e => setNewPostData(prev => ({ ...prev, title: e.target.value }))}
+                  value={aiProductName}
+                  onChange={(e) => setAiProductName(e.target.value)}
+                  className="w-full text-xs font-medium bg-[#111522] text-white rounded-xl p-2.5 focus:ring-2 focus:ring-rose-500 outline-none border-0"
                 />
               </div>
 
-              {/* Day & Platform */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Day of Week
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={newPostData.day}
-                    onChange={e => setNewPostData(prev => ({ ...prev, day: e.target.value }))}
-                  >
-                    {DAYS.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Platform
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={newPostData.platform}
-                    onChange={e => {
-                      const platform = e.target.value
-                      const defaultTypes = (PLATFORM_CONFIG[platform] && PLATFORM_CONFIG[platform].types) || ['Post']
-                      setNewPostData(prev => ({
-                        ...prev,
-                        platform,
-                        type: defaultTypes[0]
-                      }))
-                    }}
-                  >
-                    {Object.keys(PLATFORM_CONFIG).map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Format Type & Campaign Theme */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Format Type
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={newPostData.type}
-                    onChange={e => setNewPostData(prev => ({ ...prev, type: e.target.value }))}
-                  >
-                    {((PLATFORM_CONFIG[newPostData.platform] && PLATFORM_CONFIG[newPostData.platform].types) || ['Post']).map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Campaign Theme
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={newPostData.theme}
-                    onChange={e => setNewPostData(prev => ({ ...prev, theme: e.target.value }))}
-                  >
-                    {Object.entries(THEMES).map(([k, t]) => (
-                      <option key={k} value={k}>{t.label} ({t.tag})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Initial Status */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Initial Status
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Key Value Proposition / Price
                 </label>
-                <div className="flex gap-4">
-                  {['draft', 'scheduled'].map(s => (
-                    <label key={s} className="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-200">
-                      <input
-                        type="radio"
-                        name="newPostStatus"
-                        checked={newPostData.status === s}
-                        onChange={() => setNewPostData(prev => ({ ...prev, status: s }))}
-                        className="accent-cyan-400"
-                      />
-                      <span className="capitalize">{s}</span>
-                    </label>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={aiProductUsp}
+                  onChange={(e) => setAiProductUsp(e.target.value)}
+                  className="w-full text-xs font-medium bg-[#111522] text-white rounded-xl p-2.5 focus:ring-2 focus:ring-rose-500 outline-none border-0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Target Primary Goal
+                </label>
+                <select
+                  value={aiCampaignGoal}
+                  onChange={(e) => setAiCampaignGoal(e.target.value)}
+                  className="w-full text-xs font-semibold bg-[#111522] text-white rounded-xl p-2.5 focus:ring-2 focus:ring-rose-500 outline-none border-0"
+                >
+                  <option value="LaunchUrgency">Conversion &amp; Urgency (Cart closes Sunday)</option>
+                  <option value="AudienceGrowth">Rapid Follower Growth &amp; Viral Reach</option>
+                  <option value="HighTicketCall">High-Ticket / Waitlist Warmup</option>
+                </select>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3">
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+                onClick={() => setAiModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-xl cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleSaveNewPost}
-                disabled={!newPostData.title.trim()}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors disabled:opacity-50 cursor-pointer"
+                onClick={handleExecuteAiWeekFill}
+                className="px-5 py-2.5 text-xs font-extrabold text-white rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm hover:opacity-95"
+                style={{ background: brandRed, color: '#ffffff' }}
               >
-                Add to Calendar
+                <Wand2 size={13} className="text-white" />
+                <span className="text-white">Forge 7-Day Strategy (+150 XP)</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── 7. POST DETAILS & AI STUDIO MODAL ───────────────────── */}
-      {selectedPost && (
-        <PostDetailsModal
-          post={selectedPost}
-          day={selectedDay}
-          onClose={() => {
-            setSelectedPost(null)
-            setSelectedDay(null)
-          }}
-          onSave={handleSaveEditedPost}
-          onDelete={handleDeletePost}
-        />
-      )}
-    </div>
-  )
-}
-
-// ─── POST DETAILS & AI STUDIO MODAL ────────────────────────────
-function PostDetailsModal({ post, day, onClose, onSave, onDelete }) {
-  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast } = useForge()
-  const [edited, setEdited] = useState({ ...post })
-  const [activeTab, setActiveTab] = useState('details') // 'details' | 'ai-studio' | 'preview'
-  const [isGeneratingBody, setIsGeneratingBody] = useState(false)
-  const [selectedTone, setSelectedTone] = useState('Confident')
-
-  // Close on Escape
-  useEffect(() => {
-    const fn = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', fn)
-    return () => window.removeEventListener('keydown', fn)
-  }, [onClose])
-
-  const handleWriteWithAi = async () => {
-    if (!hasTextKey()) {
-      setApiModalOpen(true)
-      return
-    }
-    setIsGeneratingBody(true)
-    if (incrementAiActions) incrementAiActions()
-    try {
-      const text = await generateStudioContent(
-        { label: `${edited.platform} ${edited.type || 'Post'}`, platform: edited.platform },
-        edited.title || '',
-        creatorData,
-        selectedTone
-      )
-      setEdited(p => ({ ...p, body: text }))
-      if (triggerToast) triggerToast('AI caption generated successfully!', 'success')
-    } catch (err) {
-      console.error(err)
-      if (triggerToast) triggerToast(err.message || 'Failed to generate caption', 'error')
-    } finally {
-      setIsGeneratingBody(false)
-    }
-  }
-
-  const plat = PLATFORM_CONFIG[edited.platform] || PLATFORM_CONFIG.YouTube
-  const theme = THEMES[edited.theme] || THEMES.value
-  const PlatformIcon = plat.icon || Sparkles
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fade-in"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl rounded-3xl bg-[#0d1424] border border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Top ambient color strip */}
-        <div
-          className="h-1 w-full"
-          style={{ background: `linear-gradient(90deg, ${plat.color} 0%, ${theme.color} 50%, transparent 100%)` }}
-        />
-
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-800">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: plat.badgeBg, color: plat.badgeColor }}
-            >
-              <PlatformIcon size={18} />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-base font-bold text-white truncate leading-snug">
-                {edited.title || 'Untitled Hook'}
-              </h3>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
-                <span className="font-mono text-cyan-400">{day}</span>
-                <span>•</span>
-                <span>{edited.platform} {edited.type}</span>
-                <span>•</span>
-                <span
-                  className="px-1.5 py-0.2 rounded text-[10px] font-bold uppercase"
-                  style={{ background: theme.bg, color: theme.color }}
-                >
-                  {theme.label}
-                </span>
+      {/* ── MODAL: STAGE NEW CONTENT QUEST ── */}
+      {newDraftModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0f17] rounded-2xl max-w-lg w-full p-6 text-slate-200 shadow-2xl animate-fadeIn">
+            <div className="flex items-center justify-between pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                  <Plus size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">
+                    Stage New Content Quest
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Pick day, strategy pillar, and destination channel
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-800/80 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* Tabs Bar */}
-        <div className="flex items-center border-b border-slate-800 px-5 gap-4 bg-slate-950/40">
-          {[
-            { id: 'details', label: 'Post Parameters', icon: Pencil },
-            { id: 'ai-studio', label: 'AI Caption Studio', icon: Wand2 },
-            { id: 'preview', label: 'Social Mockup', icon: Eye },
-          ].map(tab => {
-            const TabIcon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 py-3 text-xs font-semibold relative transition-colors cursor-pointer ${
-                  isActive ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-200'
-                }`}
+                onClick={() => setNewDraftModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer"
               >
-                <TabIcon size={13} />
-                <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 rounded-full" />
-                )}
+                <X size={16} />
               </button>
-            )
-          })}
-        </div>
-
-        {/* Modal Scrollable Body */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          {activeTab === 'details' && (
-            <div className="space-y-4">
-              {/* Hook / Title */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Post Hook / Video Title
-                </label>
-                <input
-                  type="text"
-                  className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition-colors"
-                  value={edited.title || ''}
-                  onChange={e => setEdited(p => ({ ...p, title: e.target.value }))}
-                  placeholder="Your compelling hook..."
-                />
-              </div>
-
-              {/* Platform & Type */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Platform
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={edited.platform || 'YouTube'}
-                    onChange={e => {
-                      const pl = e.target.value
-                      const defaultTypes = (PLATFORM_CONFIG[pl] && PLATFORM_CONFIG[pl].types) || ['Post']
-                      setEdited(p => ({ ...p, platform: pl, type: defaultTypes[0] }))
-                    }}
-                  >
-                    {Object.keys(PLATFORM_CONFIG).map(pl => (
-                      <option key={pl} value={pl}>{pl}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Format
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={edited.type || 'Video'}
-                    onChange={e => setEdited(p => ({ ...p, type: e.target.value }))}
-                  >
-                    {((PLATFORM_CONFIG[edited.platform] && PLATFORM_CONFIG[edited.platform].types) || ['Post']).map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Theme & Status */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Campaign Theme
-                  </label>
-                  <select
-                    className="w-full rounded-xl bg-slate-900 border border-slate-700 p-2.5 text-xs text-white outline-none focus:border-cyan-400"
-                    value={edited.theme || 'launch'}
-                    onChange={e => setEdited(p => ({ ...p, theme: e.target.value }))}
-                  >
-                    {Object.entries(THEMES).map(([k, t]) => (
-                      <option key={k} value={k}>{t.label} — {t.tag}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Status
-                  </label>
-                  <div className="flex gap-1.5">
-                    {['draft', 'scheduled', 'posted'].map(st => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => setEdited(p => ({ ...p, status: st }))}
-                        className={`flex-1 py-2 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
-                          edited.status === st
-                            ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-700/60'
-                            : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
-          )}
 
-          {activeTab === 'ai-studio' && (
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Tone:</span>
-                  {['Confident', 'Urgent', 'Casual', 'Storytelling'].map(t => (
+            <div className="py-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Target Day</label>
+                  <select
+                    value={modalDraftDay}
+                    onChange={(e) => setModalDraftDay(parseInt(e.target.value, 10))}
+                    className="w-full text-xs font-semibold bg-[#111522] text-white rounded-xl p-2.5 border-0 focus:ring-2 focus:ring-rose-500 outline-none"
+                  >
+                    <option value={0}>Monday (Oct 26)</option>
+                    <option value={1}>Tuesday (Oct 27)</option>
+                    <option value={2}>Wednesday (Oct 28)</option>
+                    <option value={3}>Thursday (Oct 29)</option>
+                    <option value={4}>Friday (Oct 30)</option>
+                    <option value={5}>Saturday (Oct 31)</option>
+                    <option value={6}>Sunday (Nov 1)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Social Channel</label>
+                  <select
+                    value={modalDraftChannel}
+                    onChange={(e) => setModalDraftChannel(e.target.value)}
+                    className="w-full text-xs font-semibold bg-[#111522] text-white rounded-xl p-2.5 border-0 focus:ring-2 focus:ring-rose-500 outline-none"
+                  >
+                    <option value="YouTube">YouTube Shorts</option>
+                    <option value="Instagram">Instagram Reel</option>
+                    <option value="TikTok">TikTok Video</option>
+                    <option value="X">X (Twitter) Thread</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Strategy Tag</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['LAUNCH', 'VALUE', 'BTS', 'PROOF', 'CTA', 'COMMUNITY'].map(tag => (
                     <button
-                      key={t}
+                      key={tag}
                       type="button"
-                      onClick={() => setSelectedTone(t)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                        selectedTone === t
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
-                          : 'text-slate-400 hover:text-slate-200'
+                      onClick={() => setModalDraftStrategy(tag)}
+                      className={`p-2 rounded-xl text-xs font-bold text-center transition cursor-pointer ${
+                        modalDraftStrategy === tag
+                          ? 'bg-sky-500/25 text-sky-300 ring-1 ring-sky-400/30'
+                          : 'bg-[#111522] text-slate-400 hover:text-white'
                       }`}
                     >
-                      {t}
+                      {tag}
                     </button>
                   ))}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleWriteWithAi}
-                  disabled={isGeneratingBody}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  <Sparkles size={12} className={isGeneratingBody ? 'animate-spin' : ''} />
-                  <span>{isGeneratingBody ? 'Writing with AI…' : 'Generate Full Copy'}</span>
-                </button>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Post Caption & Script Body
-                </label>
-                <textarea
-                  rows={8}
-                  className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3.5 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-cyan-400 transition-colors leading-relaxed font-sans"
-                  placeholder="Click 'Generate Full Copy' above or type your script, bullet points, or captions here..."
-                  value={edited.body || ''}
-                  onChange={e => setEdited(p => ({ ...p, body: e.target.value }))}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Hook / Headline</label>
+                <input
+                  type="text"
+                  value={modalDraftTitle}
+                  onChange={(e) => setModalDraftTitle(e.target.value)}
+                  className="w-full text-xs font-medium bg-[#111522] text-white rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-rose-500 border-0"
+                  placeholder={`e.g. 3 Reasons ${productName} is a Game Changer`}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                <span>{(edited.body || '').length} characters</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(edited.body || '')
-                    if (triggerToast) triggerToast('Caption copied to clipboard!', 'success')
-                  }}
-                  className="text-cyan-400 hover:text-cyan-300 underline font-semibold cursor-pointer"
-                >
-                  Copy Text
-                </button>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Caption / Talking Points</label>
+                <textarea
+                  rows={3}
+                  value={modalDraftCaption}
+                  onChange={(e) => setModalDraftCaption(e.target.value)}
+                  className="w-full text-xs font-medium bg-[#111522] text-white rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-rose-500 border-0 resize-none"
+                  placeholder="Write draft caption or paste talking points..."
+                />
               </div>
             </div>
-          )}
 
-          {activeTab === 'preview' && (
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-                  style={{ background: plat.badgeBg, color: plat.badgeColor }}
-                >
-                  {plat.abbr}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white leading-tight">
-                    {creatorData?.name || 'Creator Name'}
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    {edited.platform} • Scheduled for {day}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block" style={{ background: theme.bg, color: theme.color }}>
-                  {theme.label} • {edited.type}
-                </span>
-                <p className="text-sm font-semibold text-white">
-                  {edited.title || 'Your Hook Here'}
-                </p>
-                {edited.body && (
-                  <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">
-                    {edited.body}
-                  </p>
-                )}
-              </div>
+            <div className="flex items-center justify-end gap-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setNewDraftModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNewDraft}
+                className="px-5 py-2.5 text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition cursor-pointer"
+              >
+                Add to Campaign (+40 XP)
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-950/60">
-          {onDelete && (
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm('Delete this post?')) {
-                  onDelete(edited.id)
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 px-3 py-2 rounded-xl hover:bg-rose-950/30 transition-colors cursor-pointer"
-            >
-              <Trash2 size={13} />
-              <span>Delete</span>
-            </button>
-          )}
-
-          <div className="flex items-center gap-3 ml-auto">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => onSave(edited)}
-              disabled={!(edited.title || '').trim()}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <Check size={13} />
-              <span>Save Changes</span>
-            </button>
           </div>
         </div>
-      </div>
+      )}
+
     </div>
   )
 }
