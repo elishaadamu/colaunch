@@ -762,12 +762,18 @@ function ProductLandingPage({
 
     const containerRect = container.getBoundingClientRect()
     const targetRect = target.getBoundingClientRect()
-    const offset = targetRect.top - containerRect.top + container.scrollTop
+    const topPos = (typeof target.offsetTop === 'number' && target.offsetTop > 0)
+      ? target.offsetTop
+      : (targetRect.top - containerRect.top + container.scrollTop)
 
-    container.scrollTo({
-      top: Math.max(0, offset),
-      behavior: 'smooth'
-    })
+    try {
+      container.scrollTo({
+        top: Math.max(0, topPos),
+        behavior: 'smooth'
+      })
+    } catch {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   const scrollToTop = (e) => {
@@ -779,7 +785,7 @@ function ProductLandingPage({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 overflow-hidden relative">
+    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 overflow-hidden relative min-h-0">
       
       {/* 1. Navbar - ALWAYS PINNED/STICKY TO THE TOP */}
       <nav 
@@ -876,7 +882,7 @@ function ProductLandingPage({
       {/* 2. Scrollable Page Content Container */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scroll-smooth w-full selection:bg-rose-500/20"
+        className="flex-1 min-h-0 overflow-y-auto scroll-smooth w-full relative selection:bg-rose-500/20"
       >
 
       {/* 2. Content-First Hero Section with Creator Identity */}
@@ -1310,7 +1316,7 @@ function ProductLandingPage({
       </section>
 
       {/* 8. Minimal Footer */}
-      <footer className="p-6 bg-[#080a0e] text-center text-xs text-slate-500 space-y-1.5">
+      <footer className="p-8 pb-24 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2">
         <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
         <p className="text-[11px] text-slate-600">
           Official platform powered by CoLaunch Autonomous Creator Operations.
@@ -2710,7 +2716,7 @@ export default function Preview() {
       </header>
 
       {/* Main Workspace Layout (Full Width, No Sidebar) */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-20 max-w-[1440px] mx-auto w-full">
+      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-36 max-w-[1440px] mx-auto w-full">
 
         <div className="w-full flex-1 flex flex-col space-y-4">
           
@@ -2761,10 +2767,11 @@ export default function Preview() {
           <div 
             ref={previewContainerRef}
             id="preview-container" 
-            className="flex-1 bg-[#12141c] border border-[#222634] rounded-2xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300"
+            className="w-full flex-1 min-h-[580px] bg-[#12141c] border border-[#222634] rounded-2xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300"
             style={{
               boxShadow: `0 0 35px -5px rgba(${accent.rgb}, 0.12)`,
-              minHeight: '520px'
+              height: isFullscreen ? '100vh' : '680px',
+              minHeight: '580px'
             }}
           >
             {/* Browser Top Chrome Bar */}
@@ -2806,7 +2813,7 @@ export default function Preview() {
             </div>
 
             {/* Inner Viewport Area */}
-            <div className={`flex-1 relative overflow-hidden flex bg-[#0f1117] ${viewMode === 'mobile' ? 'items-center justify-center' : 'items-stretch'}`}>
+            <div className={`flex-1 min-h-0 relative overflow-hidden flex bg-[#0f1117] ${viewMode === 'mobile' ? 'items-center justify-center' : 'items-stretch'}`}>
               {/* Regenerating overlay */}
               {isRegenerating && (
                 <div 
@@ -2839,7 +2846,7 @@ export default function Preview() {
                     {/* Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-[#141414] rounded-b-xl z-20 pointer-events-none" />
                     
-                    <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                       <AppMockup 
                         theme={theme} 
                         activeTab={activeTab}
@@ -2858,7 +2865,7 @@ export default function Preview() {
                 </div>
               ) : (
                 /* Desktop / Dashboard Viewport */
-                <div className="w-full h-full overflow-hidden flex flex-col">
+                <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">
                   <AppMockup 
                     theme={theme} 
                     activeTab={activeTab}
