@@ -2642,7 +2642,7 @@ export default function Preview() {
       </header>
 
       {/* Main Workspace Layout (Full Width, No Sidebar) */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-64 sm:pb-72 max-w-[1440px] mx-auto w-full">
+      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-20 max-w-[1440px] mx-auto w-full">
 
         <div className="w-full flex-1 flex flex-col space-y-4">
           
@@ -3138,9 +3138,6 @@ export default function Preview() {
 
           </div>
         </section>
-
-        {/* Generous bottom clearance spacer so all cards and buttons scroll completely above sticky bars */}
-        <div className="h-48 w-full flex-shrink-0 pointer-events-none" aria-hidden="true" />
 
       </main>
 
