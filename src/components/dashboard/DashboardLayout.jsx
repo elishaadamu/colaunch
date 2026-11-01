@@ -310,10 +310,9 @@ export default function DashboardLayout() {
                 </span>
               )}
               <div
-                className="w-8 h-8 rounded-none border overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
+                className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
                 style={{
                   background: '#121722',
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
                   color: '#ffffff',
                 }}
               >

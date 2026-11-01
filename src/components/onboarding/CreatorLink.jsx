@@ -589,7 +589,7 @@ export default function CreatorLink() {
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
                       }}
-                      className="w-11 h-11 rounded-full object-cover border-2 border-[#c81e3c]" 
+                      className="w-11 h-11 rounded-full object-cover" 
                     />
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-full flex items-center justify-center text-[9px] text-white font-black shadow">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />

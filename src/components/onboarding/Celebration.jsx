@@ -231,10 +231,9 @@ export default function Celebration() {
         <div className="text-center max-w-3xl mb-8 sm:mb-10">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div 
-              className="w-14 h-14 rounded-none flex items-center justify-center border overflow-hidden relative"
+              className="w-14 h-14 rounded-none flex items-center justify-center overflow-hidden relative"
               style={{
                 background: `rgba(${accent.rgb}, 0.12)`,
-                borderColor: `rgba(${accent.rgb}, 0.35)`,
               }}
             >
               {resolvedAvatar ? (

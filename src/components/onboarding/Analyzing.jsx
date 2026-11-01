@@ -488,9 +488,8 @@ export default function Analyzing() {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div
-                className="w-14 h-14 rounded-full border flex items-center justify-center overflow-hidden relative"
+                className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden relative"
                 style={{
-                  borderColor: completedSteps.includes(0) ? accent.color : 'rgba(255,255,255,0.15)',
                   background: '#151921',
                 }}
               >

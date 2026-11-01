@@ -1199,31 +1199,26 @@ export default function Blueprint() {
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="relative shrink-0">
                     {/* Channel Avatar */}
-                    <div 
-                      className="w-14 h-14 rounded-2xl p-[2px] shadow-lg"
-                      style={{ background: `linear-gradient(135deg, ${accent.color}, #6366f1, #38bdf8)` }}
-                    >
-                      <div className="w-full h-full rounded-[14px] bg-[#0c101a] flex items-center justify-center overflow-hidden relative">
-                        <span className="text-xl font-extrabold text-white/80 select-none">
-                          {(creatorData.name || creatorData.handle || 'C').replace(/^@/, '').charAt(0).toUpperCase()}
-                        </span>
-                        {activeAvatar && (
-                          <img
-                            src={activeAvatar}
-                            alt={creatorData.handle || ''}
-                            referrerPolicy="no-referrer"
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onError={e => {
-                              if (!e.currentTarget.dataset.proxied && activeAvatar.startsWith('http')) {
-                                e.currentTarget.dataset.proxied = 'true';
-                                e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(activeAvatar)}`;
-                              } else {
-                                e.currentTarget.style.display = 'none';
-                              }
-                            }}
-                          />
-                        )}
-                      </div>
+                    <div className="w-14 h-14 rounded-2xl shadow-lg bg-[#0c101a] flex items-center justify-center overflow-hidden relative">
+                      <span className="text-xl font-extrabold text-white/80 select-none">
+                        {(creatorData.name || creatorData.handle || 'C').replace(/^@/, '').charAt(0).toUpperCase()}
+                      </span>
+                      {activeAvatar && (
+                        <img
+                          src={activeAvatar}
+                          alt={creatorData.handle || ''}
+                          referrerPolicy="no-referrer"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={e => {
+                            if (!e.currentTarget.dataset.proxied && activeAvatar.startsWith('http')) {
+                              e.currentTarget.dataset.proxied = 'true';
+                              e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(activeAvatar)}`;
+                            } else {
+                              e.currentTarget.style.display = 'none';
+                            }
+                          }}
+                        />
+                      )}
                     </div>
                     <div 
                       className="absolute -bottom-1 -right-1 text-white rounded-full p-1 border-2 border-[#0f1117] flex items-center justify-center"
@@ -1395,12 +1390,6 @@ export default function Blueprint() {
               <div 
                 className="lg:col-span-8 rounded-2xl bg-[#0f1117] border border-[#1f2433] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
               >
-                {/* Ambient Top Accent Gradient */}
-                <div 
-                  className="absolute top-0 left-0 right-0 h-1" 
-                  style={{ background: `linear-gradient(90deg, ${accent.color}, #38bdf8, #6366f1)` }} 
-                />
-
                 {/* Header Tag & Match Indicator */}
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <div 
