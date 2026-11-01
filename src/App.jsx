@@ -276,7 +276,15 @@ export default function App() {
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
-      if (path === '/portal' || path === '/portal/') return 'creator-link'
+      if (path === '/' || path === '') return 'welcome'
+      if (path === '/portal' || path === '/portal/') {
+        const savedStep = localStorage.getItem('forge_onboarding_step')
+        const savedCreator = localStorage.getItem('forge_creator_data')
+        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          return savedStep
+        }
+        return 'creator-link'
+      }
       if (path === '/dashboard' || path.startsWith('/dashboard/')) {
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         return 'dashboard'
@@ -297,15 +305,9 @@ export default function App() {
         return 'dashboard'
       }
 
-      // Restore saved onboarding step and creator data if present
-      const savedStep = localStorage.getItem('forge_onboarding_step')
-      const savedCreator = localStorage.getItem('forge_creator_data')
-      if (savedStep && savedCreator && STEPS.includes(savedStep)) {
-        return savedStep
-      }
-      return 'creator-link'
+      return 'welcome'
     } catch { }
-    return 'creator-link'
+    return 'welcome'
   })
 
   const [userProfile, setUserProfile] = useState(() => {
@@ -605,15 +607,22 @@ export default function App() {
   const navigate = useCallback((newStep) => {
     setStep(newStep)
     try {
-      if (newStep !== 'login' && newStep !== 'signup') {
+      if (newStep !== 'login' && newStep !== 'signup' && newStep !== 'welcome') {
         localStorage.setItem('forge_onboarding_step', newStep)
+      } else if (newStep === 'welcome') {
+        localStorage.removeItem('forge_onboarding_step')
       }
     } catch {}
     let path = '/'
-    if (newStep === 'creator-link') path = '/portal'
-    else if (newStep === 'login') path = '/login'
-    else if (newStep === 'signup') path = '/signup'
-    else if (newStep === 'dashboard') {
+    if (newStep === 'welcome') {
+      path = '/'
+    } else if (newStep === 'creator-link' || ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(newStep)) {
+      path = '/portal'
+    } else if (newStep === 'login') {
+      path = '/login'
+    } else if (newStep === 'signup') {
+      path = '/signup'
+    } else if (newStep === 'dashboard') {
       const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
         .replace(/^@+/, '')
         .toLowerCase()
@@ -622,7 +631,7 @@ export default function App() {
       path = cId ? `/dashboard/${cId}` : '/dashboard'
     }
 
-    if (window.location.pathname !== path && path !== '/') {
+    if (window.location.pathname !== path) {
       window.history.pushState(null, '', path)
     }
   }, [creatorData])
@@ -815,8 +824,15 @@ export default function App() {
       const path = window.location.pathname
       const cachedCreator = localStorage.getItem('forge_creator_data')
 
-      if (path === '/portal' || path === '/portal/') {
-        setStep('creator-link')
+      if (path === '/' || path === '') {
+        setStep('welcome')
+      } else if (path === '/portal' || path === '/portal/') {
+        const savedStep = localStorage.getItem('forge_onboarding_step')
+        if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          setStep(savedStep)
+        } else {
+          setStep('creator-link')
+        }
       } else if (path === '/login') {
         setStep('login')
       } else if (path === '/signup') {
@@ -856,12 +872,7 @@ export default function App() {
           return
         }
 
-        const savedStep = localStorage.getItem('forge_onboarding_step')
-        if (savedStep && STEPS.includes(savedStep) && cachedCreator) {
-          setStep(savedStep)
-        } else {
-          setStep('creator-link')
-        }
+        setStep('welcome')
       }
     }
 

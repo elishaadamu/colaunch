@@ -111,7 +111,7 @@ function getTargetArchetype(creator) {
 }
 
 export default function CreatorLink() {
-  const { next, prev, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator } = useForge()
+  const { next, prev, goTo, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator } = useForge()
 
   // Retain creator data from session storage across reloads unless explicitly wiped
   const [url, setUrl]                 = useState(() => creatorData?.url || '')
@@ -332,7 +332,11 @@ export default function CreatorLink() {
           <div className="h-4 w-px bg-[#1f242c] hidden sm:block"></div>
 
           {/* CoLaunch Logo & Mark */}
-          <div className="inline-flex items-center gap-2.5 group cursor-default">
+          <div 
+            onClick={() => goTo('welcome')}
+            className="inline-flex items-center gap-2.5 group cursor-pointer transition-opacity hover:opacity-90 select-none"
+            title="Back to Home"
+          >
             <div className="grid grid-cols-2 gap-1 p-1 bg-[#111317] border border-[#1f242c] rounded-lg transition-colors group-hover:border-[#8bae35]/40">
               <div className="w-1.5 h-1.5 rounded-sm bg-[#8bae35] transition-colors"></div>
               <div className="w-1.5 h-1.5 rounded-sm bg-neutral-300 group-hover:bg-white transition-colors"></div>

@@ -2990,7 +2990,8 @@ export default function Welcome() {
                 Mutual IP Spec
               </a>
               <a 
-                href="/portal" 
+                href="#faq" 
+                onClick={(e) => scrollToSection(e, 'faq')} 
                 className="hover:text-white transition-colors cursor-pointer"
               >
                 Creator Privacy
