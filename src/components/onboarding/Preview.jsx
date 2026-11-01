@@ -705,6 +705,9 @@ function ProductLandingPage({
   const productName = blueprint?.name || `${creatorName}'s Resource Hub`
   const creatorUrl = getCreatorChannelUrl(creatorData)
 
+  const scrollContainerRef = useRef(null)
+  const navRef = useRef(null)
+
   // Real Scraped YouTube Videos
   const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
     ? creatorData.recentPosts
@@ -746,14 +749,52 @@ function ProductLandingPage({
     ? (creatorData.description.length > 180 ? creatorData.description.slice(0, 180) + '...' : creatorData.description)
     : `Curated masterclasses, downloadable study frameworks, and a private discussion space hosted directly by ${creatorName}.`
 
+  // Controlled Section Scrolling (Pin-point accuracy without jumping window)
+  const scrollToSection = (sectionId) => (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const container = scrollContainerRef.current
+    if (!container) return
+    const target = container.querySelector(sectionId)
+    if (!target) return
+
+    const containerRect = container.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const offset = targetRect.top - containerRect.top + container.scrollTop
+
+    container.scrollTo({
+      top: Math.max(0, offset),
+      behavior: 'smooth'
+    })
+  }
+
+  const scrollToTop = (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
-    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 overflow-y-auto selection:bg-rose-500/20">
+    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 overflow-hidden relative">
       
-      {/* 1. Navbar */}
-      <nav className={`border-b border-[#1f2433] bg-[#0c0e16]/95 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'}`}>
-        <div className="flex items-center gap-3 min-w-0">
+      {/* 1. Navbar - ALWAYS PINNED/STICKY TO THE TOP */}
+      <nav 
+        ref={navRef}
+        className={`border-b border-[#1f2433] bg-[#0c0e16] sticky top-0 z-30 flex-shrink-0 flex items-center justify-between w-full shadow-md ${
+          isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
+        }`}
+      >
+        <div 
+          onClick={scrollToTop}
+          className="flex items-center gap-3 min-w-0 cursor-pointer group"
+          title="Back to top"
+        >
           <div 
-            className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0"
+            className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0 group-hover:scale-105 transition-transform"
             style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
           >
             {resolvedAvatar ? (
@@ -763,7 +804,7 @@ function ProductLandingPage({
             )}
           </div>
           <div className="min-w-0">
-            <span className="font-bold text-sm text-white truncate block leading-tight">
+            <span className="font-bold text-sm text-white truncate block leading-tight group-hover:text-slate-200 transition-colors">
               {productName}
             </span>
             <span className="text-[10px] text-slate-400 font-mono block">
@@ -772,13 +813,37 @@ function ProductLandingPage({
           </div>
         </div>
 
-        {/* Anchor Links */}
+        {/* Anchor Links with Controlled Scroll */}
         {!isMobile && (
           <div className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
-            <a href="#featured" className="hover:text-white transition-colors">Featured Video</a>
-            <a href="#archive" className="hover:text-white transition-colors">Video Archive</a>
-            <a href="#discussions" className="hover:text-white transition-colors">Community Voices</a>
-            <a href="#resources" className="hover:text-white transition-colors">Resources</a>
+            <button 
+              type="button" 
+              onClick={scrollToSection('#featured')} 
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+            >
+              Featured Video
+            </button>
+            <button 
+              type="button" 
+              onClick={scrollToSection('#archive')} 
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+            >
+              Video Archive
+            </button>
+            <button 
+              type="button" 
+              onClick={scrollToSection('#discussions')} 
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+            >
+              Community Voices
+            </button>
+            <button 
+              type="button" 
+              onClick={scrollToSection('#resources')} 
+              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300"
+            >
+              Resources
+            </button>
           </div>
         )}
 
@@ -807,6 +872,12 @@ function ProductLandingPage({
           </button>
         </div>
       </nav>
+
+      {/* 2. Scrollable Page Content Container */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto scroll-smooth w-full selection:bg-rose-500/20"
+      >
 
       {/* 2. Content-First Hero Section with Creator Identity */}
       <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
@@ -1246,6 +1317,7 @@ function ProductLandingPage({
         </p>
       </footer>
 
+      </div>
     </div>
   )
 }
@@ -2734,7 +2806,7 @@ export default function Preview() {
             </div>
 
             {/* Inner Viewport Area */}
-            <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#0f1117]">
+            <div className={`flex-1 relative overflow-hidden flex bg-[#0f1117] ${viewMode === 'mobile' ? 'items-center justify-center' : 'items-stretch'}`}>
               {/* Regenerating overlay */}
               {isRegenerating && (
                 <div 
