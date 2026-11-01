@@ -100,7 +100,7 @@ function GlobalToast({ toast, onClose }) {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[9999] pointer-events-auto"
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] pointer-events-auto w-auto max-w-[90vw]"
       style={{
         animation: 'toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
       }}
@@ -112,14 +112,14 @@ function GlobalToast({ toast, onClose }) {
         }
       `}</style>
 
-      {/* Solid card with solid left accent stripe, zero gradients, zero progress bar */}
+      {/* Solid card with solid left accent stripe, zero gradients, zero progress bar, zero border radius */}
       <div
-        className="relative flex items-stretch rounded-xl border shadow-[0_20px_48px_rgba(0,0,0,0.7)] overflow-hidden"
+        className="relative flex items-stretch rounded-none border-0 shadow-[0_20px_48px_rgba(0,0,0,0.7)] overflow-hidden"
         style={{
           background: '#0f121a',
-          borderColor: '#232a3d',
           minWidth: 320,
           maxWidth: 440,
+          borderRadius: '0px'
         }}
       >
         {/* Solid left accent vertical stripe */}
@@ -163,7 +163,7 @@ function GlobalToast({ toast, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-1"
+            className="w-6 h-6 rounded-none flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-1"
             title="Dismiss notification"
           >
             <X size={13} />
