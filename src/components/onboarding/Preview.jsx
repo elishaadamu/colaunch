@@ -749,31 +749,40 @@ function ProductLandingPage({
     ? (creatorData.description.length > 180 ? creatorData.description.slice(0, 180) + '...' : creatorData.description)
     : `Curated masterclasses, downloadable study frameworks, and a private discussion space hosted directly by ${creatorName}.`
 
-  // Controlled Section Scrolling (Pin-point accuracy without jumping window)
+  // Controlled Section Scrolling (Pin-point accuracy without jumping window or showing prior section)
   const scrollToSection = (sectionId) => (e) => {
     if (e) {
       e.preventDefault()
       e.stopPropagation()
     }
-    const container = scrollContainerRef.current
-    if (!container) return
-    const target = container.querySelector(sectionId)
+    const cleanId = sectionId.replace('#', '')
+    const target = document.getElementById(cleanId)
     if (!target) return
 
-    const containerRect = container.getBoundingClientRect()
-    const targetRect = target.getBoundingClientRect()
-    const topPos = (typeof target.offsetTop === 'number' && target.offsetTop > 0)
-      ? target.offsetTop
-      : (targetRect.top - containerRect.top + container.scrollTop)
+    const nav = navRef.current
+    const navHeight = nav ? nav.offsetHeight : 58
+    // CoLaunch top fixed header (64px) + sticky navbar (~58px) + breathing buffer (12px) = 134px
+    const topClearance = 64 + navHeight + 12
 
-    try {
+    // 1. If inside an active scrollable container (e.g. fullscreen mode)
+    const container = scrollContainerRef.current
+    if (container && container.scrollHeight > container.clientHeight + 40) {
+      const containerRect = container.getBoundingClientRect()
+      const targetRect = target.getBoundingClientRect()
+      const targetPos = container.scrollTop + (targetRect.top - containerRect.top) - (navHeight + 6)
       container.scrollTo({
-        top: Math.max(0, topPos),
+        top: Math.max(0, targetPos),
         behavior: 'smooth'
       })
-    } catch {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+
+    // 2. Main window smooth scroll
+    const targetRect = target.getBoundingClientRect()
+    const targetWindowY = window.pageYOffset + targetRect.top - topClearance
+    window.scrollTo({
+      top: Math.max(0, targetWindowY),
+      behavior: 'smooth'
+    })
   }
 
   const scrollToTop = (e) => {
@@ -781,16 +790,26 @@ function ProductLandingPage({
       e.preventDefault()
       e.stopPropagation()
     }
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    const container = scrollContainerRef.current
+    if (container && container.scrollHeight > container.clientHeight + 40) {
+      container.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    const previewEl = document.getElementById('preview-container')
+    if (previewEl) {
+      const previewTop = window.pageYOffset + previewEl.getBoundingClientRect().top - 72
+      window.scrollTo({ top: Math.max(0, previewTop), behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 overflow-hidden relative min-h-0">
+    <div className="w-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 relative min-h-0 rounded-b-2xl">
       
-      {/* 1. Navbar - ALWAYS PINNED/STICKY TO THE TOP */}
+      {/* 1. Navbar - PERMANENTLY STICKY TO THE TOP */}
       <nav 
         ref={navRef}
-        className={`border-b border-[#1f2433] bg-[#0c0e16] sticky top-0 z-30 flex-shrink-0 flex items-center justify-between w-full shadow-md ${
+        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-0 sm:sticky sm:top-16 z-30 flex-shrink-0 flex items-center justify-between w-full shadow-lg ${
           isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
         }`}
       >
@@ -882,7 +901,7 @@ function ProductLandingPage({
       {/* 2. Scrollable Page Content Container */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto scroll-smooth w-full relative selection:bg-rose-500/20"
+        className="w-full relative selection:bg-rose-500/20"
       >
 
       {/* 2. Content-First Hero Section with Creator Identity */}
@@ -963,7 +982,7 @@ function ProductLandingPage({
 
       {/* 3. Featured Masterclass / Top Video Showcase */}
       {topVideo && (
-        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a]`}>
+        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-32 sm:scroll-mt-36`}>
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -1047,7 +1066,7 @@ function ProductLandingPage({
 
       {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
       {recentVideoList.length > 0 && (
-        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13]`}>
+        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-32 sm:scroll-mt-36`}>
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div>
@@ -1159,7 +1178,7 @@ function ProductLandingPage({
       )}
 
       {/* 5. Real Audience Community Discussions (Show Their Comments!) */}
-      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a]`}>
+      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-32 sm:scroll-mt-36`}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div>
@@ -1224,7 +1243,7 @@ function ProductLandingPage({
       </section>
 
       {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
-      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13]`}>
+      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-32 sm:scroll-mt-36`}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-1">
             <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
@@ -1316,7 +1335,7 @@ function ProductLandingPage({
       </section>
 
       {/* 8. Minimal Footer */}
-      <footer className="p-8 pb-24 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2">
+      <footer className="p-8 pb-32 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2 rounded-b-2xl">
         <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
         <p className="text-[11px] text-slate-600">
           Official platform powered by CoLaunch Autonomous Creator Operations.
@@ -2716,7 +2735,7 @@ export default function Preview() {
       </header>
 
       {/* Main Workspace Layout (Full Width, No Sidebar) */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-36 max-w-[1440px] mx-auto w-full">
+      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-44 max-w-[1440px] mx-auto w-full">
 
         <div className="w-full flex-1 flex flex-col space-y-4">
           
@@ -2767,15 +2786,21 @@ export default function Preview() {
           <div 
             ref={previewContainerRef}
             id="preview-container" 
-            className="w-full flex-1 min-h-[580px] bg-[#12141c] border border-[#222634] rounded-2xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300"
+            className={`w-full flex-1 bg-[#12141c] border border-[#222634] rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ${
+              isFullscreen 
+                ? 'fixed inset-0 z-50 overflow-y-auto rounded-none border-0' 
+                : (viewMode === 'landing' ? 'min-h-[600px]' : 'min-h-[580px] h-[680px] overflow-hidden')
+            }`}
             style={{
               boxShadow: `0 0 35px -5px rgba(${accent.rgb}, 0.12)`,
-              height: isFullscreen ? '100vh' : '680px',
+              height: isFullscreen ? '100vh' : (viewMode === 'landing' ? 'auto' : '680px'),
               minHeight: '580px'
             }}
           >
             {/* Browser Top Chrome Bar */}
-            <div className="bg-[#161922] px-4 py-3 border-b border-[#222634] flex items-center justify-between select-none flex-shrink-0">
+            <div className={`bg-[#161922] px-4 py-3 border-b border-[#222634] flex items-center justify-between select-none flex-shrink-0 ${
+              isFullscreen ? '' : 'rounded-t-2xl'
+            }`}>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-rose-500/80" />
                 <div className="w-3 h-3 rounded-full bg-amber-500/80" />
@@ -2813,7 +2838,11 @@ export default function Preview() {
             </div>
 
             {/* Inner Viewport Area */}
-            <div className={`flex-1 min-h-0 relative overflow-hidden flex bg-[#0f1117] ${viewMode === 'mobile' ? 'items-center justify-center' : 'items-stretch'}`}>
+            <div className={`flex-1 relative flex bg-[#0f1117] ${
+              viewMode === 'mobile' 
+                ? 'items-center justify-center min-h-[600px] overflow-hidden' 
+                : (viewMode === 'landing' ? 'items-stretch min-h-0' : 'items-stretch min-h-0 overflow-hidden')
+            }`}>
               {/* Regenerating overlay */}
               {isRegenerating && (
                 <div 
@@ -2865,7 +2894,9 @@ export default function Preview() {
                 </div>
               ) : (
                 /* Desktop / Dashboard Viewport */
-                <div className="w-full h-full min-h-0 overflow-hidden flex flex-col">
+                <div className={`w-full flex flex-col ${
+                  viewMode === 'landing' ? 'min-h-0' : 'h-full min-h-0 overflow-hidden'
+                }`}>
                   <AppMockup 
                     theme={theme} 
                     activeTab={activeTab}
