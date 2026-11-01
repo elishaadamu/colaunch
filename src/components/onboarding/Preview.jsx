@@ -554,127 +554,57 @@ function ProductLandingPage({
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const niche = creatorData?.niche || 'Software & Technology'
-  const nicheL = niche.toLowerCase()
+  const niche = creatorData?.niche || 'Digital Content'
+  const productName = blueprint?.name || `${creatorName}'s Resource Hub`
+  const creatorUrl = getCreatorChannelUrl(creatorData)
 
-  const isTech = nicheL.includes('code') || nicheL.includes('tech') || nicheL.includes('dev') || nicheL.includes('program') || nicheL.includes('python')
-  const isFinance = nicheL.includes('finance') || nicheL.includes('money') || nicheL.includes('invest') || nicheL.includes('business')
-  const isEducation = nicheL.includes('educat') || nicheL.includes('learn') || nicheL.includes('science') || nicheL.includes('teach')
-
-  const productName = blueprint?.name || 'Creator Platform'
-
-  // Scraped videos for curriculum breakdown
+  // Real Scraped YouTube Videos
   const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
     ? creatorData.recentPosts
     : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
       ? creatorData.videos
       : []
 
-  const topVideoTitle = recentVideoList[0]?.title || 'Production Foundation & Architecture'
-  const secondVideoTitle = recentVideoList[1]?.title || 'Core Engine & Workflow Implementation'
-  const thirdVideoTitle = recentVideoList[2]?.title || 'Advanced Optimization & Deployment'
-  const fourthVideoTitle = recentVideoList[3]?.title || 'Monetization & Production Scaling'
+  const topVideo = recentVideoList[0] || null
+  const topVideoTitle = topVideo?.title || `${creatorName} Masterclass & Foundations`
+  const topVideoThumb = topVideo?.thumbnail || (topVideo?.videoId ? `https://i.ytimg.com/vi/${topVideo.videoId}/hqdefault.jpg` : '')
+  const topVideoUrl = topVideo?.url || (topVideo?.videoId ? `https://www.youtube.com/watch?v=${topVideo.videoId}` : creatorUrl)
 
-  // Dynamic Headline based on creator niche
-  const heroHeadline = isTech
-    ? `Stop Getting Stuck in Tutorial Hell. Ship Real Production SaaS.`
-    : isFinance
-      ? `Battle-Tested Frameworks to Build Predictable Wealth.`
-      : isEducation
-        ? `The Step-by-Step Blueprint to Master ${niche} from Day One.`
-        : (blueprint?.tagline || `The Official ${productName} by ${creatorName}`)
+  // Real Scraped Comments from Channel
+  const communityComments = (Array.isArray(channelComments) && channelComments.length > 0)
+    ? channelComments.slice(0, 6)
+    : (Array.isArray(creatorData?.comments) && creatorData.comments.length > 0)
+      ? creatorData.comments.slice(0, 6)
+      : [
+          {
+            author: '@AlexDev88',
+            text: `This solved the exact problem I have been wrestling with for weeks. Having a single organized platform with full breakdowns is incredible.`,
+            published: '2 days ago'
+          },
+          {
+            author: '@JordanWorship',
+            text: `The clarity and depth brought here is unmatched. It completely transformed our weekly workflow.`,
+            published: '1 week ago'
+          },
+          {
+            author: '@SarahTech',
+            text: `Finally, a dedicated space with real community interaction and organized files instead of random YouTube search results.`,
+            published: '3 days ago'
+          }
+        ]
 
-  const heroSubtitle = isTech
-    ? `Get instant access to complete production boilerplates, database schemas, continuous deployment scripts, and live weekly code reviews with ${creatorName}. Everything you need to turn tutorials into real revenue.`
-    : `Direct access to complete video roadmaps, downloadable frameworks, weekly live office hours, and private community discussions hosted by ${creatorName}.`
-
-  // Scraped Real Comments for Authentic Testimonials
-  const testimonials = (Array.isArray(channelComments) && channelComments.length >= 3)
-    ? channelComments.slice(0, 3).map((c, i) => ({
-        author: c.author || `@member_${i + 1}`,
-        text: (c.text || c.quote || '').trim() || `Incredible depth and clarity. Having this complete platform saves dozens of hours.`,
-        time: c.published || c.time || 'Verified Member'
-      }))
-    : [
-        {
-          author: '@AlexDev88',
-          text: `This solved the exact problem I have been wrestling with for weeks. Having a single organized platform with full source code is worth 10x the price.`,
-          time: 'Verified Member'
-        },
-        {
-          author: '@JordanCode',
-          text: `The depth ${creatorName} brings here is unreal. Clear, concise, and saved me easily 40+ hours of setup headaches.`,
-          time: 'Verified Member'
-        },
-        {
-          author: '@SarahM_Tech',
-          text: `Finally, a real platform with direct community access and production-ready resources instead of fragmented YouTube snippets.`,
-          time: 'Verified Member'
-        }
-      ]
-
-  const modules = [
-    {
-      num: '01',
-      title: topVideoTitle,
-      lessons: '12 lessons',
-      duration: '3h 40m',
-      tags: ['HD Video', 'Starter Code', 'Checklist'],
-      desc: 'Complete architectural walkthrough, environment configuration, and foundational setup.'
-    },
-    {
-      num: '02',
-      title: secondVideoTitle,
-      lessons: '9 lessons',
-      duration: '2h 55m',
-      tags: ['Workflows', 'API Integration', 'Templates'],
-      desc: 'Step-by-step implementation of core business logic, database connectors, and state pipelines.'
-    },
-    {
-      num: '03',
-      title: thirdVideoTitle,
-      lessons: '8 lessons',
-      duration: '2h 15m',
-      tags: ['CI/CD', 'Automations', 'Security'],
-      desc: 'Battle-hardened deployment recipes, security audit checkpoints, and performance tuning.'
-    },
-    {
-      num: '04',
-      title: fourthVideoTitle,
-      lessons: '6 lessons',
-      duration: '1h 50m',
-      tags: ['Scaling', 'Analytics', 'Mastermind'],
-      desc: 'Production launch checklist, user onboarding frameworks, and expansion playbooks.'
-    }
-  ]
-
-  const faqs = [
-    {
-      q: `How is this different from ${creatorName}'s free YouTube content?`,
-      a: `Free YouTube videos provide conceptual overviews. ${productName} provides complete, production-grade source code, downloadable boilerplates, step-by-step implementation roadmaps, and direct weekly office hours with ${creatorName}.`
-    },
-    {
-      q: 'Do I get instant access after signing up?',
-      a: 'Yes. You receive immediate access to the entire video vault, private community server, and downloadable starter kits as soon as you complete enrollment.'
-    },
-    {
-      q: 'Can I cancel or get a refund?',
-      a: 'Absolutely. You are fully protected by a 14-day no-questions-asked 100% money-back guarantee. You can cancel your membership anytime in one click from your account settings.'
-    },
-    {
-      q: 'Is this suitable for beginners?',
-      a: 'Every module starts with a comprehensive quickstart guide and includes fully commented code repositories and active community support to ensure you never get stuck.'
-    }
-  ]
-
-  const [openFaq, setOpenFaq] = useState(0)
+  // Headline & Subtitle
+  const heroHeadline = blueprint?.tagline || `The Ultimate Resource Hub for ${creatorName}'s Community`
+  const heroSubtitle = creatorData?.description
+    ? (creatorData.description.length > 180 ? creatorData.description.slice(0, 180) + '...' : creatorData.description)
+    : `Curated masterclasses, downloadable study frameworks, and a private discussion space hosted directly by ${creatorName}.`
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#0b0d13] text-slate-100 overflow-y-auto selection:bg-rose-500/20">
+    <div className="w-full h-full flex flex-col bg-[#0a0c12] text-slate-100 overflow-y-auto selection:bg-rose-500/20">
       
-      {/* 1. Landing Top Navigation Bar */}
-      <nav className={`border-b border-[#1f2433] bg-[#0d0f17]/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'}`}>
-        <div className="flex items-center gap-2.5 min-w-0">
+      {/* 1. Navbar */}
+      <nav className={`border-b border-[#1f2433] bg-[#0c0e16]/95 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'}`}>
+        <div className="flex items-center gap-3 min-w-0">
           <div 
             className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0"
             style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
@@ -686,23 +616,22 @@ function ProductLandingPage({
             )}
           </div>
           <div className="min-w-0">
-            <span className="font-extrabold text-sm text-white truncate block leading-tight">
+            <span className="font-bold text-sm text-white truncate block leading-tight">
               {productName}
             </span>
             <span className="text-[10px] text-slate-400 font-mono block">
-              by @{handleClean}
+              @{handleClean} · Official Platform
             </span>
           </div>
         </div>
 
-        {/* Desktop Anchor Links */}
+        {/* Anchor Links */}
         {!isMobile && (
           <div className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
-            <a href="#deliverables" className="hover:text-white transition-colors">What's Inside</a>
-            <a href="#curriculum" className="hover:text-white transition-colors">Curriculum</a>
-            <a href="#testimonials" className="hover:text-white transition-colors">Reviews</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <a href="#featured" className="hover:text-white transition-colors">Featured Video</a>
+            <a href="#archive" className="hover:text-white transition-colors">Video Archive</a>
+            <a href="#discussions" className="hover:text-white transition-colors">Community Voices</a>
+            <a href="#resources" className="hover:text-white transition-colors">Resources</a>
           </div>
         )}
 
@@ -711,42 +640,43 @@ function ProductLandingPage({
           <button
             type="button"
             onClick={onSwitchToProduct}
-            className="px-3 py-1.5 text-xs font-semibold border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2030] transition cursor-pointer rounded-none flex items-center gap-1.5"
+            className="px-3.5 py-1.5 text-xs font-bold border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2030] transition cursor-pointer rounded-none flex items-center gap-1.5"
             title="Preview inside member area"
           >
             <Layers className="w-3.5 h-3.5" style={{ color: dynamicAccent }} />
-            <span className={isMobile ? "hidden sm:inline" : ""}>Member Area</span>
+            <span>Member Area</span>
           </button>
-          <a
-            href="#pricing"
-            className="px-3.5 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer rounded-none flex items-center gap-1"
+          <button
+            type="button"
+            onClick={onSwitchToProduct}
+            className="px-4 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer rounded-none flex items-center gap-1 text-white"
             style={{ 
-              background: dynamicAccent, 
-              color: isLight ? '#000000' : '#ffffff' 
+              background: dynamicAccent,
+              borderRadius: '0px'
             }}
           >
             <span>Get Access</span>
             <ArrowRight className="w-3 h-3" />
-          </a>
+          </button>
         </div>
       </nav>
 
-      {/* 2. Hero Section */}
+      {/* 2. Content-First Hero Section with Creator Identity */}
       <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
         style={{
-          background: `radial-gradient(ellipse at top center, rgba(${accent.rgb}, 0.15) 0%, transparent 70%), #0c0e16`
+          background: `radial-gradient(ellipse at top center, rgba(${accent.rgb}, 0.12) 0%, transparent 65%), #0c0e16`
         }}
       >
-        <div className="max-w-3xl mx-auto space-y-4 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-4 relative z-10">
           
-          {/* Official Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-semibold uppercase tracking-wider rounded-none">
+          {/* Creator Channel Tag */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-mono uppercase tracking-wider rounded-none">
             <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-            <span>Official Digital Platform · Founding Cohort Open</span>
+            <span>Official Video & Resource Hub · @{handleClean}</span>
           </div>
 
-          {/* Main Headline */}
-          <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl'}`}>
+          {/* Headline */}
+          <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl lg:text-5xl'}`}>
             {heroHeadline}
           </h1>
 
@@ -755,370 +685,378 @@ function ProductLandingPage({
             {heroSubtitle}
           </p>
 
-          {/* Dual CTAs */}
+          {/* Real Channel Stats (No fake A B C D boxes!) */}
+          <div className="pt-2 pb-2 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-300">
+            {creatorData?.followers && (
+              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                <span className="text-white font-bold">{creatorData.followers}</span>
+                <span className="text-slate-400">Subscribers</span>
+              </div>
+            )}
+            {recentVideoList.length > 0 && (
+              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                <span className="text-white font-bold">{creatorData?.videoCount || recentVideoList.length}</span>
+                <span className="text-slate-400">Curated Videos</span>
+              </div>
+            )}
+            {creatorData?.totalViews && (
+              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                <span className="text-white font-bold">{creatorData.totalViews}</span>
+                <span className="text-slate-400">Channel Views</span>
+              </div>
+            )}
+          </div>
+
+          {/* Direct Outcome CTAs (NO $/mo!) */}
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href="#pricing"
-              className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-bold tracking-wide transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2"
+            <button
+              type="button"
+              onClick={onSwitchToProduct}
+              className="w-full sm:w-auto px-7 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2 text-white"
               style={{
                 background: dynamicAccent,
-                color: isLight ? '#000000' : '#ffffff',
-                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.3)`
+                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`,
+                borderRadius: '0px'
               }}
             >
-              <span>Claim Founding Access · $29/mo</span>
+              <span>Explore Platform & Videos</span>
               <ArrowRight className="w-4 h-4" />
+            </button>
+            <a
+              href="#featured"
+              className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
+              <span>Watch Featured Video</span>
             </a>
-            <button
-              type="button"
-              onClick={onSwitchToProduct}
-              className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
-            >
-              <Layers className="w-4 h-4" style={{ color: dynamicAccent }} />
-              <span>Preview Inside Member Area</span>
-            </button>
           </div>
 
-          {/* Social Proof Trust Bar */}
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-4 text-slate-400 text-xs">
-            <div className="flex items-center -space-x-1.5">
-              {[1, 2, 3, 4].map(idx => (
-                <div 
-                  key={idx}
-                  className="w-6 h-6 border border-[#1f2433] bg-[#1a1f2e] text-[9px] font-bold text-white flex items-center justify-center overflow-hidden"
+        </div>
+      </section>
+
+      {/* 3. Featured Masterclass / Top Video Showcase */}
+      {topVideo && (
+        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a]`}>
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+                  Featured Channel Video
+                </span>
+                <h3 className="text-base sm:text-xl font-bold text-white mt-1">
+                  {topVideoTitle}
+                </h3>
+              </div>
+              {creatorUrl && (
+                <a
+                  href={topVideoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0"
                 >
-                  {String.fromCharCode(64 + idx)}
+                  <span>Open on YouTube</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {/* Cinematic Video Player Mockup */}
+            <div className="relative aspect-video w-full bg-[#141824] border border-[#222634] overflow-hidden group shadow-2xl">
+              {topVideoThumb ? (
+                <img 
+                  src={topVideoThumb} 
+                  alt={topVideoTitle}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" 
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[#111420]">
+                  <Video className="w-12 h-12 text-slate-600" />
                 </div>
-              ))}
-            </div>
-            <span className="font-semibold text-slate-200">
-              Joined by {fmt(parseFollowerCount(creatorData?.followers) * 0.0018 || 3200)}+ members
-            </span>
-            <span className="hidden sm:inline">·</span>
-            <div className="flex items-center gap-1 text-amber-400">
-              {'★★★★★'}
-              <span className="font-bold text-slate-200 text-xs ml-1">4.9/5</span>
-              <span className="text-[11px] text-slate-400">(380+ verified reviews)</span>
+              )}
+              
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={onSwitchToProduct}
+                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
+                  style={{ background: dynamicAccent, color: isLight ? '#000000' : '#ffffff' }}
+                  title="Play video inside member player"
+                >
+                  <Play className="w-7 h-7 fill-current ml-1" />
+                </button>
+              </div>
+
+              {/* Bottom Video Meta Bar */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
+                <div className="flex items-center gap-3 font-mono">
+                  {topVideo.views && <span>{topVideo.views} views</span>}
+                  {topVideo.likes && (
+                    <>
+                      <span>·</span>
+                      <span>{topVideo.likes} likes</span>
+                    </>
+                  )}
+                  {topVideo.published && (
+                    <>
+                      <span>·</span>
+                      <span>{topVideo.published}</span>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={onSwitchToProduct}
+                  className="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer"
+                >
+                  Stream inside Platform →
+                </button>
+              </div>
             </div>
           </div>
+        </section>
+      )}
 
-        </div>
-      </section>
-
-      {/* 3. Problem vs Solution Comparison */}
-      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              The Reality Check
-            </span>
-            <h3 className="text-lg sm:text-2xl font-bold text-white">
-              Why Most People Never Ship vs The {productName} Architecture
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* The Old Way */}
-            <div className="p-5 bg-[#121520] border border-red-500/30 space-y-3">
-              <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider">
-                <span className="w-2 h-2 bg-red-400" />
-                <span>The Traditional Struggle (Tutorial Hell)</span>
+      {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
+      {recentVideoList.length > 0 && (
+        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13]`}>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Video Vault & Curated Archive
+                </span>
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                  Latest Releases from @{handleClean}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Organized by topic with zero advertising interruptions.
+                </p>
               </div>
-              <ul className="space-y-2 text-xs text-slate-300">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 font-bold">✕</span>
-                  <span>Watching fragmented clips without understanding end-to-end architecture.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 font-bold">✕</span>
-                  <span>Missing production glue: auth, database schemas, webhooks, and deployment scripts.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 font-bold">✕</span>
-                  <span>Zero direct answers or feedback when your local environment inevitably breaks.</span>
-                </li>
-              </ul>
+              {creatorUrl && (
+                <a
+                  href={creatorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono hover:underline flex items-center gap-1.5 self-start sm:self-auto"
+                  style={{ color: dynamicAccent }}
+                >
+                  <span>Explore Channel on YouTube</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
             </div>
 
-            {/* The Solution */}
-            <div className="p-5 bg-[#121520] border space-y-3" style={{ borderColor: dynamicAccentBorder }}>
-              <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider" style={{ color: dynamicAccent }}>
-                <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-                <span>The {productName} Standard</span>
-              </div>
-              <ul className="space-y-2 text-xs text-slate-200">
-                <li className="flex items-start gap-2">
-                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
-                  <span>Production-tested codebases ready to clone, customize, and deploy on day 1.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
-                  <span>Direct weekly office hours and live code reviews hosted directly by {creatorName}.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
-                  <span>Vetted member network sharing real implementations, bug fixes, and collaborations.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {recentVideoList.slice(0, 6).map((v, idx) => {
+                const vidThumb = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
+                const vidLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
+                return (
+                  <div 
+                    key={idx} 
+                    className="bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition overflow-hidden flex flex-col justify-between group shadow-sm"
+                  >
+                    <div>
+                      {/* Thumbnail */}
+                      <div className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center">
+                        {vidThumb ? (
+                          <img 
+                            src={vidThumb} 
+                            alt="" 
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <Video className="w-8 h-8 text-slate-600" />
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={onSwitchToProduct}
+                            className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+                            style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
+                          >
+                            <Play className="w-5 h-5 fill-current ml-0.5" />
+                          </button>
+                        </div>
+                      </div>
 
-      {/* 4. What's Inside (Deliverables Grid) */}
-      <section id="deliverables" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Engineered Deliverables
-            </span>
-            <h3 className="text-lg sm:text-2xl font-bold text-white">
-              Everything Included in Your Founding Membership
-            </h3>
-          </div>
+                      {/* Content */}
+                      <div className="p-3.5 space-y-1.5">
+                        <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-slate-200">
+                          {v.title}
+                        </h5>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
+                          {v.views && <span>{v.views} views</span>}
+                          {v.published && (
+                            <>
+                              <span>·</span>
+                              <span>{v.published}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Full Video Vault & Masterclasses</h4>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                40+ structured HD walkthroughs covering setup, scaling, error recovery, and production architecture.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <div className="flex items-center gap-2">
-                <Download className="w-4 h-4" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Production Starter Kits & Boilerplates</h4>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Battle-tested repositories and templates with full commercial rights. Clone and ship immediately.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Private Inner Circle & Community Hub</h4>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Dedicated forum and private spaces to exchange feedback, find co-builders, and troubleshoot issues.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Live Weekly AMAs & Code Reviews</h4>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Direct monthly sessions with {creatorName}. Bring your specific project blockers and get live feedback.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Curriculum Breakdown (Real Scraped Channel Video Topics) */}
-      <section id="curriculum" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Curriculum & Roadmap
-              </span>
-              <h3 className="text-lg sm:text-2xl font-bold text-white">
-                Step-by-Step Implementation Modules
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={onSwitchToProduct}
-              className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-              style={{ color: dynamicAccent }}
-            >
-              <span>Explore Player in Member Area</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {modules.map((m, idx) => (
-              <div key={idx} className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-xs font-mono font-bold px-2 py-1 bg-[#171b28] border border-[#23293a] text-slate-300 shrink-0">
-                    MODULE {m.num}
-                  </span>
-                  <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-bold text-white truncate leading-snug">
-                      {m.title}
-                    </h5>
-                    <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
-                      {m.desc}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {m.tags.map(t => (
-                        <span key={t} className="text-[9.5px] px-1.5 py-0.5 bg-[#191e2c] text-slate-300 border border-[#242b3e]">
-                          {t}
-                        </span>
-                      ))}
+                    {/* Actions */}
+                    <div className="p-3 pt-0 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={onSwitchToProduct}
+                        className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center"
+                      >
+                        Play in Hub
+                      </button>
+                      <a
+                        href={vidLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-400 hover:text-white transition"
+                        title="Watch on YouTube"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3 sm:text-right shrink-0">
-                  <div className="text-[11px] font-mono text-slate-400">
-                    <span>{m.lessons}</span>
-                    <span className="mx-1.5">·</span>
-                    <span>{m.duration}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onSwitchToProduct}
-                    className="p-1.5 border border-[#23293a] bg-[#161a26] hover:bg-[#1f2435] text-slate-300 transition cursor-pointer"
-                    title="Preview module"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                )
+              })}
+            </div>
           </div>
+        </section>
+      )}
 
-          {/* Quick Peek In Member Area Banner */}
-          <div className="p-4 bg-[#141824] border border-[#232a3d] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      {/* 5. Real Audience Community Discussions (Show Their Comments!) */}
+      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div>
-              <h5 className="text-xs font-bold text-white">Want to see the interactive video player & community forums?</h5>
-              <p className="text-[11px] text-slate-400 mt-0.5">Test the fully responsive dashboard experience right now.</p>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Community Feed
+              </span>
+              <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                What the Community Is Saying
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Direct reactions, discussions, and questions from viewers across recent uploads.
+              </p>
             </div>
             <button
               type="button"
               onClick={onSwitchToProduct}
-              className="px-4 py-2 text-xs font-bold transition rounded-none shrink-0 cursor-pointer"
-              style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
+              className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
+              style={{ color: dynamicAccent }}
             >
-              Peek Inside Member Area →
+              <span>Join Discussion Room →</span>
             </button>
           </div>
-        </div>
-      </section>
 
-      {/* 6. Authentic Testimonials (Apify Live Scraped Comments) */}
-      <section id="testimonials" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Community Endorsements
-            </span>
-            <h3 className="text-lg sm:text-2xl font-bold text-white">
-              What the Community Is Saying
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {testimonials.map((t, idx) => (
-              <div key={idx} className="p-4 bg-[#11141e] border border-[#1f2433] flex flex-col justify-between space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {communityComments.map((c, idx) => (
+              <div 
+                key={idx}
+                className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
+              >
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-amber-400 text-xs">
-                    {'★★★★★'}
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
+                      style={{ background: dynamicAccentBg }}
+                    >
+                      {(c.author || c.user || 'V').replace('@','').charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-bold text-white truncate block">
+                        {c.author || c.user || '@viewer'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono block">
+                        {c.published || c.time || 'Community Member'}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed italic">
-                    "{t.text}"
+
+                  <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
+                    "{c.text || c.quote}"
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-[#1f2433] flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-white">{t.author}</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">✓ Verified</span>
-                </div>
+                {c.videoTitle && (
+                  <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
+                    on: {c.videoTitle}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 7. Pricing Section */}
-      <section id="pricing" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0d1017]`}>
-        <div className="max-w-xl mx-auto space-y-6">
+      {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
+      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: dynamicAccent }}>
-              Limited Founding Invitation
+            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+              Platform Features
             </span>
-            <h3 className="text-xl sm:text-3xl font-black text-white">
-              Join the Founding Cohort
+            <h3 className="text-lg sm:text-2xl font-bold text-white">
+              Everything Accessible Inside the Hub
             </h3>
-            <p className="text-xs text-slate-300">
-              Lock in early bird pricing before general public registration opens.
-            </p>
           </div>
 
-          <div 
-            className="p-6 bg-[#11141e] border relative"
-            style={{ borderColor: dynamicAccentBorder, boxShadow: `0 0 25px -5px rgba(${accent.rgb}, 0.2)` }}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-[#1f2433]">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-white">
-                  Founding Member Pass
-                </span>
-                <p className="text-[11px] text-slate-400">All-inclusive platform access</p>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl sm:text-3xl font-black text-white">$29</span>
-                <span className="text-xs text-slate-400"> / month</span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <Video className="w-5 h-5" style={{ color: dynamicAccent }} />
+              <h4 className="text-sm font-bold text-white">Ad-Free Video Archive</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Stream complete tutorials and masterclasses in chronological order without commercial breaks.
+              </p>
             </div>
 
-            <ul className="py-4 space-y-2.5 text-xs text-slate-200">
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
-                <span>Instant access to all current and future module roadmaps</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
-                <span>Full commercial license for all starter kits & production templates</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
-                <span>Private community forum & dedicated channel with fellow builders</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
-                <span>Weekly live office hours & code reviews with {creatorName}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
-                <span>14-day 100% money-back guarantee (no questions asked)</span>
-              </li>
-            </ul>
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <Download className="w-5 h-5" style={{ color: dynamicAccent }} />
+              <h4 className="text-sm font-bold text-white">Resource Files & Templates</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Direct access to project assets, code boilerplates, study roadmaps, and cheat sheets.
+              </p>
+            </div>
 
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <Users className="w-5 h-5" style={{ color: dynamicAccent }} />
+              <h4 className="text-sm font-bold text-white">Private Community Rooms</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Connect with fellow practitioners, share your progress, and get direct creator feedback.
+              </p>
+            </div>
+          </div>
+
+          {/* Clean Invitation Box (No subscription pricing!) */}
+          <div className="p-6 bg-[#131622] border border-[#23293a] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+              <h4 className="text-sm font-bold text-white">
+                Enter @{handleClean}'s Digital Platform
+              </h4>
+              <p className="text-xs text-slate-400 mt-1">
+                Access the complete video archive, download files, and participate in community discussions.
+              </p>
+            </div>
             <button
               type="button"
               onClick={onSwitchToProduct}
-              className="w-full py-3.5 font-bold text-xs sm:text-sm tracking-wide transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2"
+              className="px-6 py-3 text-xs uppercase tracking-wider font-bold transition shadow-lg rounded-none text-white shrink-0 cursor-pointer"
               style={{
                 background: dynamicAccent,
-                color: isLight ? '#000000' : '#ffffff',
-                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`
+                borderRadius: '0px'
               }}
             >
-              <span>Enroll Now & Claim Founding Pass</span>
-              <ArrowRight className="w-4 h-4" />
+              Get Free Access Now →
             </button>
-
-            <div className="pt-3 text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>100% Risk-Free Guarantee · 256-Bit Encrypted Checkout</span>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* 8. Creator Bio / Authority */}
-      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
-        <div className="max-w-3xl mx-auto p-5 bg-[#10131d] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
+      {/* 7. Creator Authority & Welcome Statement */}
+      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
+        <div className="max-w-3xl mx-auto p-5 bg-[#121520] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
           <div 
             className="w-16 h-16 rounded-none flex items-center justify-center font-bold text-lg border overflow-hidden relative flex-shrink-0"
             style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
@@ -1130,7 +1068,7 @@ function ProductLandingPage({
             )}
           </div>
           <div className="space-y-1 text-center sm:text-left min-w-0 flex-1">
-            <h4 className="text-sm font-bold text-white">Built by {creatorName} (@{handleClean})</h4>
+            <h4 className="text-sm font-bold text-white">{creatorName} (@{handleClean})</h4>
             <div className="flex items-center justify-center sm:justify-start gap-3 text-slate-400 text-xs font-mono">
               {creatorData?.followers && <span>{creatorData.followers} subscribers</span>}
               {creatorData?.videoCount && <span>{creatorData.videoCount} videos</span>}
@@ -1139,54 +1077,17 @@ function ProductLandingPage({
             <p className="text-xs text-slate-300 leading-relaxed pt-1">
               {creatorData?.description 
                 ? (creatorData.description.length > 200 ? creatorData.description.slice(0, 200) + '...' : creatorData.description)
-                : `Dedicated to helping builders and creators level up with structured, battle-tested knowledge.`}
+                : `Dedicated to helping our community grow with high-utility, structured video releases and frameworks.`}
             </p>
           </div>
         </div>
       </section>
 
-      {/* 9. FAQ Accordion */}
-      <section id="faq" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
-        <div className="max-w-3xl mx-auto space-y-4">
-          <div className="text-center space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Frequently Asked Questions
-            </span>
-            <h3 className="text-lg sm:text-2xl font-bold text-white">
-              Got Questions? We Have Answers.
-            </h3>
-          </div>
-
-          <div className="space-y-2 pt-2">
-            {faqs.map((f, i) => {
-              const isOpen = openFaq === i
-              return (
-                <div key={i} className="bg-[#121520] border border-[#1f2433] overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? -1 : i)}
-                    className="w-full p-3.5 text-left text-xs sm:text-sm font-bold text-white flex items-center justify-between gap-2 hover:bg-[#161a26] transition cursor-pointer"
-                  >
-                    <span>{f.q}</span>
-                    <span className="text-slate-400 font-mono text-sm">{isOpen ? '−' : '+'}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="px-3.5 pb-3.5 text-xs text-slate-300 leading-relaxed border-t border-[#1f2433] pt-2.5">
-                      {f.a}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 10. Minimal Footer */}
-      <footer className="p-6 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2">
+      {/* 8. Minimal Footer */}
+      <footer className="p-6 bg-[#080a0e] text-center text-xs text-slate-500 space-y-1.5">
         <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
         <p className="text-[11px] text-slate-600">
-          Powered by CoLaunch Autonomous Creator Operations.
+          Official platform powered by CoLaunch Autonomous Creator Operations.
         </p>
       </footer>
 
@@ -2422,6 +2323,29 @@ export default function Preview() {
     }
   }
 
+  const handleBuild = () => {
+    const finalPayload = {
+      blueprint: {
+        ...currentBlueprint,
+        features: localFeatures
+      },
+      productName: currentBlueprint.name,
+      features: localFeatures,
+      theme,
+      isMobileView: viewMode === 'mobile',
+      viewMode,
+      extraTabs,
+    };
+    updateCreator(finalPayload);
+    try {
+      localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }));
+    } catch {}
+    showToast("Launching application build...")
+    setTimeout(() => {
+      next();
+    }, 400);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#08090d] text-slate-100 selection:bg-white/20">
       
@@ -2492,7 +2416,7 @@ export default function Preview() {
 
         {/* Right Header Badges & Actions */}
         <div className="flex items-center space-x-3">
-          <div className="hidden lg:flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-medium">
+          <div className="hidden lg:flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-none text-xs font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Generated v2.4</span>
           </div>
@@ -2500,11 +2424,25 @@ export default function Preview() {
           <button 
             type="button" 
             onClick={requestWipeCreator}
-            className="flex items-center space-x-2 text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3.5 py-2 rounded-xl transition cursor-pointer"
+            className="flex items-center space-x-2 text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3.5 py-2 rounded-none transition cursor-pointer"
             title="Wipe creator state"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Reset Creator</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={handleBuild}
+            disabled={isRegenerating}
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 font-bold text-xs uppercase tracking-wider text-white shadow-md transition cursor-pointer rounded-none active:scale-95"
+            style={{ 
+              background: dynamicAccent,
+              borderRadius: '0px'
+            }}
+          >
+            <span>Looks good, build it</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
 
           <div className="flex items-center space-x-1 pl-2">
@@ -2523,11 +2461,10 @@ export default function Preview() {
         </div>
       </header>
 
-      {/* Main Workspace Layout */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1700px] mx-auto w-full">
+      {/* Main Workspace Layout (Full Width, No Sidebar) */}
+      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-28 max-w-[1500px] mx-auto w-full">
 
-        {/* Left / Center Main Preview Area (Span 8) */}
-        <div className="lg:col-span-8 flex flex-col space-y-4">
+        <div className="w-full flex-1 flex flex-col space-y-4">
           
           {/* Breadcrumb / Header Info & Fullscreen Toggle */}
           <div className="flex items-center justify-between px-2">
@@ -2711,285 +2648,30 @@ export default function Preview() {
 
         </div>
 
-        {/* Right Sidebar - Creator Forge & Included Features (Span 4) */}
-        <div className="lg:col-span-4 flex flex-col space-y-6">
-          
-          {/* What's Included Card */}
-          <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-5 shadow-lg flex flex-col space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">What's Included</h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Active capabilities configured for your build</p>
-              </div>
-              <span 
-                className="text-[10px] px-2.5 py-1 rounded-lg font-mono font-bold border"
-                style={{ 
-                  background: dynamicAccentBg, 
-                  color: dynamicAccent,
-                  borderColor: dynamicAccentBorder
-                }}
-              >
-                {localFeatures.length} Active
-              </span>
-            </div>
-
-            {/* Active modules list with interactive toggles */}
-            <div className="space-y-2">
-              {localFeatures.map(label => {
-                const matched = FEATURES.find(f => f.label.toLowerCase() === label.toLowerCase()) ||
-                                CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
-                const Icon = matched ? matched.icon : Layout
-                return (
-                  <div 
-                    key={label} 
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#161922] border border-[#222634] hover:border-slate-700 transition group"
-                  >
-                    <div className="flex items-center space-x-3 min-w-0 pr-2">
-                      <div 
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs shadow-sm border flex-shrink-0"
-                        style={{ 
-                          background: dynamicAccentBg, 
-                          color: dynamicAccent,
-                          borderColor: dynamicAccentBorder
-                        }}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-xs font-medium text-slate-200 truncate">{label}</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFeature(label)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer flex-shrink-0"
-                      title={`Remove "${label}" from build`}
-                    >
-                      <X className="w-3.5 h-3.5 group-hover:block hidden" />
-                      <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden block" />
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Available Capabilities that can be added */}
-            {(() => {
-              const unadded = CAPABILITY_PRESETS.filter(p => 
-                !localFeatures.some(f => f.toLowerCase() === p.label.toLowerCase() || f.toLowerCase().includes(p.label.toLowerCase()))
-              )
-              if (unadded.length === 0) return null
-              return (
-                <div className="pt-3 border-t border-[#222634]/80">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Add More Modules
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      Click to include
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {unadded.map(preset => {
-                      const PresetIcon = preset.icon
-                      return (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => handleToggleFeature(preset.label)}
-                          className="w-full flex items-center justify-between p-2 rounded-xl bg-[#161922]/50 hover:bg-[#161922] border border-[#222634]/60 hover:border-slate-600 transition text-left group cursor-pointer"
-                        >
-                          <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                            <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs bg-[#12141c] border border-[#222634] text-slate-400 group-hover:text-white transition flex-shrink-0">
-                              <PresetIcon className="w-3 h-3" />
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-xs font-medium text-slate-300 group-hover:text-white block truncate">
-                                {preset.label}
-                              </span>
-                              <span className="text-[10px] text-slate-500 block truncate">
-                                {preset.desc}
-                              </span>
-                            </div>
-                          </div>
-                          <div 
-                            className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition border group-hover:scale-105"
-                            style={{ 
-                              background: dynamicAccentBg, 
-                              color: dynamicAccent,
-                              borderColor: dynamicAccentBorder
-                            }}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
-          </div>
-
-          {/* Refine with Forge Card */}
-          <div className="bg-[#12141c] border border-[#222634] rounded-2xl p-5 shadow-lg flex flex-col flex-1 justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Refine with Forge</h3>
-                <span 
-                  className="text-[10px] px-2 py-0.5 rounded-md font-bold border"
-                  style={{ 
-                    background: dynamicAccentBg, 
-                    color: dynamicAccent,
-                    borderColor: dynamicAccentBorder
-                  }}
-                >
-                  AI ASSISTANT
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mb-3.5 leading-relaxed">
-                Click any refinement chip or type custom commands to instantly tailor your application build.
-              </p>
-              
-              {/* Interactive Dynamic Prompt Chips */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {QUICK_PROMPTS.map(chip => {
-                  const isChipApplied = appliedPrompts.includes(chip)
-                  const isPodcastChip = chip.toLowerCase().includes('podcast') && localFeatures.some(f => f.toLowerCase().includes('podcast'))
-                  const isLiveChip = chip.toLowerCase().includes('live') && localFeatures.some(f => f.toLowerCase().includes('live') || f.toLowerCase().includes('ama'))
-                  const isStoreChip = chip.toLowerCase().includes('store') && localFeatures.some(f => f.toLowerCase().includes('store') || f.toLowerCase().includes('product'))
-                  const isMobileChip = chip.toLowerCase().includes('mobile') && viewMode === 'mobile'
-                  const isCommunityChip = chip.toLowerCase().includes('community') && activeTab === 'Community'
-                  const isPremiumChip = chip.toLowerCase().includes('premium') && theme === 'premium'
-                  const isMinimalistChip = chip.toLowerCase().includes('minimalist') && theme === 'minimalist'
-
-                  const isActive = isChipApplied || isPodcastChip || isLiveChip || isStoreChip || isMobileChip || isCommunityChip || isPremiumChip || isMinimalistChip
-
-                  return (
-                    <button 
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        if (isActive) {
-                          removeAppliedPrompt(chip)
-                        } else {
-                          handleChipClick(chip)
-                        }
-                      }}
-                      className="text-xs px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
-                      style={isActive ? {
-                        background: dynamicAccentBg,
-                        borderColor: dynamicAccentBorder,
-                        color: dynamicAccent,
-                        fontWeight: 600
-                      } : {
-                        background: '#161922',
-                        borderColor: '#222634',
-                        color: '#cbd5e1'
-                      }}
-                      title={isActive ? `Click to remove "${chip}"` : `Click to apply "${chip}"`}
-                    >
-                      {chip === 'Focus on community' && '👥 '}
-                      {chip === 'More minimalist' && '⚪ '}
-                      {chip === 'For women 25-34' && '🎯 '}
-                      {chip === 'Mobile-first' && '📱 '}
-                      {chip === 'Add a podcast section' && '🎙️ '}
-                      {chip === 'Add live events' && '🔴 '}
-                      {chip === 'Add digital store' && '🛍️ '}
-                      <span>{chip}</span>
-                      {isActive && <Check className="w-3 h-3 stroke-[3]" />}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Input Area */}
-              <div className="relative mb-3">
-                <textarea 
-                  rows={3} 
-                  placeholder="Describe a change (e.g. Add podcast section, switch to mobile, add dark mode...)" 
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handlePromptSend()
-                    }
-                  }}
-                  className="w-full bg-[#161922] border border-[#222634] focus:border-slate-500 rounded-xl p-3 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none resize-none shadow-inner transition"
-                />
-                <button 
-                  type="button"
-                  onClick={handlePromptSend}
-                  disabled={!prompt.trim()}
-                  className="absolute right-3 bottom-4 p-2 rounded-lg transition border border-[#222634] bg-[#12141c] hover:bg-[#1f2430] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  style={{ color: dynamicAccent }}
-                  title="Send instruction"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Regenerate Button */}
-              <button 
-                type="button"
-                onClick={() => handleQuickPrompt('Regenerate')}
-                disabled={isRegenerating}
-                className="w-full bg-[#161922] hover:bg-[#1f2430] font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-sm border cursor-pointer active:scale-95 disabled:opacity-40"
-                style={{
-                  color: dynamicAccent,
-                  borderColor: dynamicAccentBorder
-                }}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                <span>{isRegenerating ? 'Regenerating Component...' : 'Regenerate Component'}</span>
-              </button>
-            </div>
-
-            {/* Final Action CTA Button */}
-            <div className="mt-6 pt-4 border-t border-[#222634]">
-              <button 
-                type="button"
-                onClick={() => {
-                  const finalPayload = {
-                    blueprint: {
-                      ...currentBlueprint,
-                      features: localFeatures
-                    },
-                    productName: currentBlueprint.name,
-                    features: localFeatures,
-                    theme,
-                    isMobileView: viewMode === 'mobile',
-                    viewMode,
-                    extraTabs,
-                  };
-                  updateCreator(finalPayload);
-                  try {
-                    localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }));
-                  } catch {}
-                  showToast("Launching application build...")
-                  setTimeout(() => {
-                    next();
-                  }, 400);
-                }}
-                disabled={isRegenerating}
-                className="w-full font-extrabold py-3.5 rounded-none text-sm transition shadow-xl flex items-center justify-center space-x-2 group cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  background: dynamicAccent,
-                  color: isLight ? '#000000' : '#ffffff',
-                  boxShadow: `0 10px 25px -5px rgba(${accent.rgb}, 0.35)`,
-                  borderRadius: '0px'
-                }}
-              >
-                <span>Looks good, build it</span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-
       </main>
+
+      {/* Sticky Bottom Action Bar */}
+      <aside className="fixed bottom-0 left-0 right-0 z-40 bg-[#08090c]/95 border-t border-[#1f2433] py-3.5 px-4 sm:px-6 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+            <span>Ready to ship <strong>{currentBlueprint?.name}</strong> for @{(creatorData?.handle || 'creator').replace('@','')}</span>
+          </div>
+          <button 
+            type="button"
+            onClick={handleBuild}
+            disabled={isRegenerating}
+            className="w-full sm:w-auto font-bold px-8 py-3 text-xs uppercase tracking-wider transition shadow-xl flex items-center justify-center space-x-2 group cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+            style={{
+              background: dynamicAccent,
+              borderRadius: '0px'
+            }}
+          >
+            <span>Looks good, build it</span>
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </button>
+        </div>
+      </aside>
 
       {/* Floating Notification Toast */}
       {toastMessage && (
