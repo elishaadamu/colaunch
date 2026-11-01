@@ -1225,7 +1225,7 @@ export default function App() {
 
   return (
     <ForgeContext.Provider value={ctx}>
-      <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-hidden`}>
+      <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-clip`}>
         {screens[step] || <Welcome />}
       </div>
       <SupportWidget currentStage={step} />

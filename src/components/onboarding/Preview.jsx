@@ -761,24 +761,25 @@ function ProductLandingPage({
 
     const nav = navRef.current
     const navHeight = nav ? nav.offsetHeight : 58
-    // CoLaunch top fixed header (64px) + sticky navbar (~58px) + breathing buffer (12px) = 134px
-    const topClearance = 64 + navHeight + 12
+    // CoLaunch top fixed header (64px) + sticky navbar (~58px) = 122px
+    // Flush alignment: top of section aligns exactly with bottom border of sticky navbar
+    const totalClearance = 64 + navHeight
 
     // 1. If inside an active scrollable container (e.g. fullscreen mode)
     const container = scrollContainerRef.current
     if (container && container.scrollHeight > container.clientHeight + 40) {
       const containerRect = container.getBoundingClientRect()
       const targetRect = target.getBoundingClientRect()
-      const targetPos = container.scrollTop + (targetRect.top - containerRect.top) - (navHeight + 6)
+      const targetPos = container.scrollTop + (targetRect.top - containerRect.top) - navHeight
       container.scrollTo({
         top: Math.max(0, targetPos),
         behavior: 'smooth'
       })
     }
 
-    // 2. Main window smooth scroll
-    const targetRect = target.getBoundingClientRect()
-    const targetWindowY = window.pageYOffset + targetRect.top - topClearance
+    // 2. Main window smooth scroll (flush below sticky navbar, 0px of prior section visible)
+    const targetDocumentTop = window.pageYOffset + target.getBoundingClientRect().top
+    const targetWindowY = targetDocumentTop - totalClearance
     window.scrollTo({
       top: Math.max(0, targetWindowY),
       behavior: 'smooth'
@@ -796,7 +797,7 @@ function ProductLandingPage({
     }
     const previewEl = document.getElementById('preview-container')
     if (previewEl) {
-      const previewTop = window.pageYOffset + previewEl.getBoundingClientRect().top - 72
+      const previewTop = window.pageYOffset + previewEl.getBoundingClientRect().top - 64
       window.scrollTo({ top: Math.max(0, previewTop), behavior: 'smooth' })
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -809,7 +810,7 @@ function ProductLandingPage({
       {/* 1. Navbar - PERMANENTLY STICKY TO THE TOP */}
       <nav 
         ref={navRef}
-        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-0 sm:sticky sm:top-16 z-30 flex-shrink-0 flex items-center justify-between w-full shadow-lg ${
+        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-16 z-40 flex-shrink-0 flex items-center justify-between w-full shadow-xl ${
           isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
         }`}
       >
@@ -982,7 +983,7 @@ function ProductLandingPage({
 
       {/* 3. Featured Masterclass / Top Video Showcase */}
       {topVideo && (
-        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-32 sm:scroll-mt-36`}>
+        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[124px]`}>
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -1066,7 +1067,7 @@ function ProductLandingPage({
 
       {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
       {recentVideoList.length > 0 && (
-        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-32 sm:scroll-mt-36`}>
+        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[124px]`}>
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div>
@@ -1178,7 +1179,7 @@ function ProductLandingPage({
       )}
 
       {/* 5. Real Audience Community Discussions (Show Their Comments!) */}
-      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-32 sm:scroll-mt-36`}>
+      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[124px]`}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div>
@@ -1243,7 +1244,7 @@ function ProductLandingPage({
       </section>
 
       {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
-      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-32 sm:scroll-mt-36`}>
+      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[124px]`}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center space-y-1">
             <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
@@ -3245,6 +3246,8 @@ export default function Preview() {
           </div>
         </section>
 
+        {/* Generous Bottom Clearance Spacer so fixed bottom bar never hides any content */}
+        <div className="h-44 w-full flex-shrink-0" aria-hidden="true" />
       </main>
 
       {/* Video Player Modal */}
