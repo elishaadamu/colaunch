@@ -166,8 +166,8 @@ export default function Celebration() {
   const creatorId = creatorData?.id || creatorData?.channelId || creatorData?._id || (
     'cr_' + cleanHandle + '_' + Math.abs(cleanHandle.split('').reduce((acc, ch) => ((acc << 5) - acc) + ch.charCodeAt(0), 0)).toString(36)
   )
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch.app'
-  const publicUrl = `${baseUrl}/${cleanHandle}/${creatorId}`
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const dashboardUrl = `${baseUrl}/dashboard/${creatorId}`
   
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   
@@ -191,7 +191,7 @@ export default function Celebration() {
 
   const handleCopyLink = () => {
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(publicUrl)
+      navigator.clipboard.writeText(dashboardUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2200)
     }
@@ -255,11 +255,11 @@ export default function Celebration() {
             <strong className="text-slate-200">{handle}</strong>, your community, content, and revenue rails are ready.
           </p>
 
-          {/* Public URL Link Banner */}
+          {/* Creator Dashboard URL Link Banner */}
           <div className="mt-5 inline-flex items-center gap-2.5 p-1.5 pl-4 rounded-none bg-[#12141c] border border-[#222634] max-w-full">
             <Globe className="w-4 h-4 flex-shrink-0" style={{ color: accent.color }} />
             <span className="font-mono text-xs sm:text-sm text-slate-300 truncate select-all">
-              {publicUrl}
+              {dashboardUrl}
             </span>
             <button
               type="button"
@@ -270,7 +270,7 @@ export default function Celebration() {
                 color: copied ? '#34D399' : accent.color,
                 border: `1px solid ${copied ? 'rgba(16, 185, 129, 0.3)' : `rgba(${accent.rgb}, 0.3)`}`
               }}
-              title="Copy link to clipboard"
+              title="Copy dashboard link to clipboard"
             >
               {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -433,7 +433,12 @@ export default function Celebration() {
             <div className="bg-[#12141c] border border-[#222634] rounded-none p-6 flex flex-col justify-between">
               <button
                 type="button"
-                onClick={next}
+                onClick={() => {
+                  try {
+                    localStorage.setItem('forge_onboarding_step', 'dashboard')
+                  } catch {}
+                  next()
+                }}
                 className="w-full font-bold py-4 px-6 rounded-none text-sm transition flex items-center justify-center space-x-2.5 group cursor-pointer border border-white/10"
                 style={{
                   background: accent.color,

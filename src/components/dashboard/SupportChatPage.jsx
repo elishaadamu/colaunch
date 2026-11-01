@@ -576,7 +576,7 @@ export default function SupportChatPage() {
                       <div className="flex items-center gap-1.5 mb-1 text-[10px] text-slate-400 font-mono">
                         {isUser ? (
                           <>
-                            <span className="font-bold">{m.creator_name || (userIdentity.name || creatorName)}</span>
+                            <span className="font-bold">{userIdentity.name || authenticCreatorName || m.creator_name || 'Creator'}</span>
                             <User className="w-3 h-3 text-slate-400" />
                           </>
                         ) : isAdmin ? (

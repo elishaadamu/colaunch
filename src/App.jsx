@@ -317,9 +317,25 @@ export default function App() {
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
-      if (path === '/dashboard' || path.startsWith('/dashboard/')) return 'dashboard'
+      if (path === '/dashboard' || path.startsWith('/dashboard/')) {
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        return 'dashboard'
+      }
       if (path === '/login') return 'login'
       if (path === '/signup') return 'signup'
+
+      const rawParts = path.split('/').filter(Boolean)
+      const reservedRoutes = [
+        'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
+        'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
+        'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
+        'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
+        'dashboard', 'login', 'signup', 'api', 'static'
+      ]
+      if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        return 'dashboard'
+      }
 
       // Restore saved onboarding step and creator data if present
       const savedStep = localStorage.getItem('forge_onboarding_step')
@@ -629,7 +645,7 @@ export default function App() {
   const navigate = useCallback((newStep) => {
     setStep(newStep)
     try {
-      if (newStep !== 'dashboard' && newStep !== 'login' && newStep !== 'signup') {
+      if (newStep !== 'login' && newStep !== 'signup') {
         localStorage.setItem('forge_onboarding_step', newStep)
       }
     } catch {}
@@ -643,32 +659,18 @@ export default function App() {
         .replace(/[^a-z0-9_-]/g, '') || 'creator'
       const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || ('cr_' + cleanHandle)
       path = cId ? `/dashboard/${cId}` : '/dashboard'
-    } else if (newStep === 'celebration') {
-      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
-        .replace(/^@+/, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]/g, '') || 'creator'
-      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || 'cr_' + cleanHandle
-      path = `/${cleanHandle}/${cId}`
     }
 
-    if (window.location.pathname !== path) {
+    if (window.location.pathname !== path && path !== '/') {
       window.history.pushState(null, '', path)
     }
   }, [creatorData])
 
   useEffect(() => {
-    if (step === 'celebration' && typeof window !== 'undefined') {
-      const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
-        .replace(/^@+/, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]/g, '') || 'creator'
-      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || 'cr_' + cleanHandle
-      const targetPath = `/${cleanHandle}/${cId}`
-      if (window.location.pathname !== targetPath && !window.location.pathname.startsWith('/dashboard')) {
-        window.history.replaceState(null, '', targetPath)
-      }
-    } else if (step === 'dashboard' && typeof window !== 'undefined') {
+    if (step === 'dashboard' && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('forge_onboarding_step', 'dashboard')
+      } catch {}
       const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
         .replace(/^@+/, '')
         .toLowerCase()
@@ -721,6 +723,7 @@ export default function App() {
       localStorage.setItem('forge_user_profile', JSON.stringify(profile))
       localStorage.setItem('forge_active_session', 'true')
       localStorage.setItem('forge_creator_data', JSON.stringify(creatorData))
+      localStorage.setItem('forge_onboarding_step', 'dashboard')
 
       // Wait for registration to complete in DB to prevent race conditions
       fetch('/api/auth/signup', {
@@ -857,6 +860,7 @@ export default function App() {
         setStep('signup')
       } else if (path === '/dashboard' || path.startsWith('/dashboard/')) {
         setStep('dashboard')
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         const pathParts = path.split('/').filter(Boolean)
         if (pathParts[0] === 'dashboard' && pathParts[1]) {
           const routeCreatorId = pathParts[1]
@@ -868,6 +872,27 @@ export default function App() {
           })
         }
       } else {
+        const rawParts = path.split('/').filter(Boolean)
+        const reservedRoutes = [
+          'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
+          'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
+          'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
+          'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
+          'dashboard', 'login', 'signup', 'api', 'static'
+        ]
+        if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+          const routeCreatorId = rawParts[1]
+          setStep('dashboard')
+          try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+          setCreatorData(prev => {
+            const updated = { ...(prev || {}), id: routeCreatorId }
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            return updated
+          })
+          window.history.replaceState(null, '', `/dashboard/${routeCreatorId}`)
+          return
+        }
+
         const savedStep = localStorage.getItem('forge_onboarding_step')
         if (savedStep && STEPS.includes(savedStep) && cachedCreator) {
           setStep(savedStep)
@@ -1081,7 +1106,7 @@ export default function App() {
     setChatOpen
   }
 
-  // /:creatorhandle/:id route — public creator application & live hub url: {{baseurl}}/creatorhandle/id
+  // /:creatorhandle/:id route — public creator application & live hub url redirects directly to creator dashboard
   if (typeof window !== 'undefined') {
     const rawParts = window.location.pathname.split('/').filter(Boolean)
     const reservedRoutes = [
@@ -1092,12 +1117,19 @@ export default function App() {
       'dashboard', 'login', 'signup', 'api', 'static'
     ]
     if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+      const routeCreatorId = rawParts[1]
+      if (window.location.pathname !== `/dashboard/${routeCreatorId}`) {
+        window.history.replaceState(null, '', `/dashboard/${routeCreatorId}`)
+      }
       return (
         <ForgeContext.Provider value={ctx}>
-          <div className="min-h-screen bg-forge-bg text-white overflow-x-hidden">
-            <Celebration />
-          </div>
-          <SupportWidget currentStage="celebration" />
+          <DashboardLayout />
+          <WipeCreatorModal 
+            isOpen={wipeModalOpen} 
+            onClose={() => setWipeModalOpen(false)} 
+            onConfirm={confirmWipeCreator} 
+            creatorData={creatorData} 
+          />
           {globalToast && (
             <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
           )}
