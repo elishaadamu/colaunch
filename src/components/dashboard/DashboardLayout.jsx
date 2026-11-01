@@ -207,34 +207,10 @@ export default function DashboardLayout() {
     return () => { active = false }
   }, [resolvedAvatar, creatorData?.brandColor, creatorData?.brand_color, creatorData?.brandHex])
 
-  // Resolve Creator Brand Color dynamically from detected avatar color
-  const creatorBrandColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC' && creatorData.brand_color.toLowerCase() !== '#ff3b30') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC' && creatorData.brandColor.toLowerCase() !== '#ff3b30') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC' && creatorData.brandHex.toLowerCase() !== '#ff3b30') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC' && creatorData.color.toLowerCase() !== '#ff3b30') return creatorData.color
-    try {
-      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
-      if (rawMap) {
-        const map = JSON.parse(rawMap)
-        const id = creatorData?.id
-        const handle = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        const name = (creatorData?.name || '').toLowerCase()
-        if (id && map[id]?.primaryHex && map[id].primaryHex.toLowerCase() !== '#ff3b30') return map[id].primaryHex
-        if (handle && map[handle]?.primaryHex && map[handle].primaryHex.toLowerCase() !== '#ff3b30') return map[handle].primaryHex
-        if (name && map[name]?.primaryHex && map[name].primaryHex.toLowerCase() !== '#ff3b30') return map[name].primaryHex
-      }
-    } catch {}
-
-    const det = getDeterministicBrandColor(creatorData)
-    if (det?.primaryHex && det.primaryHex.toLowerCase() !== '#ff3b30') {
-      return det.primaryHex
-    }
-    return '#10B981'
-  }, [creatorData?.brand_color, creatorData?.brandColor, creatorData?.brandHex, creatorData?.color, creatorData?.name, creatorData?.id, creatorData?.handle])
-
-  const [cr, cg, cb] = useMemo(() => hexToRgb(creatorBrandColor), [creatorBrandColor])
-  const brandTextColor = useMemo(() => getContrastTextColor(creatorBrandColor), [creatorBrandColor])
+  // Unified single brand color across the entire application
+  const creatorBrandColor = '#8bae35'
+  const [cr, cg, cb] = [139, 174, 53]
+  const brandTextColor = '#0d1403'
 
   // Listen for pricing events from child tabs (Revenue, Marketing, etc.)
   useEffect(() => {

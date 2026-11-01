@@ -57,59 +57,18 @@ const STEPS = [
 ]
 
 // Subtle accent colors per platform — fallback only if creator has no avatar color
-const PLATFORM_ACCENTS = {
-  youtube: { color: '#10B981', rgb: '16,185,129' },
-  instagram: { color: '#e1306c', rgb: '225,48,108' },
-  twitter: { color: '#60a5fa', rgb: '96,165,250' },
-  tiktok: { color: '#00c8c8', rgb: '0,200,200' },
-  twitch: { color: '#9146ff', rgb: '145,70,255' },
-  other: { color: '#10B981', rgb: '16,185,129' },
-}
+// Unified single brand color across the entire application (from scraping URL to dashboard)
+const SINGLE_BRAND_COLOR = '#8bae35'
+const SINGLE_BRAND_RGB = '139, 174, 53'
+const SINGLE_BRAND_CONTRAST = '#0d1403'
 
-export function getAccent(platformOrCreator, brandColorOverride = null) {
-  if (brandColorOverride && typeof brandColorOverride === 'string' && brandColorOverride.startsWith('#')) {
-    const [r, g, b] = hexToRgb(brandColorOverride)
-    return { color: brandColorOverride, rgb: `${r},${g},${b}` }
+export function getAccent(platformOrCreator = null, brandColorOverride = null) {
+  return {
+    color: SINGLE_BRAND_COLOR,
+    rgb: SINGLE_BRAND_RGB,
+    contrastText: SINGLE_BRAND_CONTRAST,
+    gradient: 'linear-gradient(135deg, #8bae35 0%, #9ec43d 100%)'
   }
-
-  if (platformOrCreator && typeof platformOrCreator === 'object') {
-    const hex = platformOrCreator.brandColor || platformOrCreator.brand_color || platformOrCreator.brandHex
-    if (hex && typeof hex === 'string' && hex.startsWith('#') && hex.toLowerCase() !== '#ff3b30') {
-      const [r, g, b] = hexToRgb(hex)
-      return { color: hex, rgb: `${r},${g},${b}` }
-    }
-    // Check localStorage cache
-    try {
-      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
-      if (rawMap) {
-        const map = JSON.parse(rawMap)
-        const id = platformOrCreator?.id
-        const handle = (platformOrCreator?.handle || '').replace(/^@/, '').toLowerCase()
-        const found = (id && map[id]) || (handle && map[handle])
-        if (found?.primaryHex && found.primaryHex.toLowerCase() !== '#ff3b30') {
-          const [r, g, b] = hexToRgb(found.primaryHex)
-          return { color: found.primaryHex, rgb: `${r},${g},${b}` }
-        }
-      }
-    } catch {}
-
-    const det = getDeterministicBrandColor(platformOrCreator)
-    if (det?.primaryHex) {
-      const [r, g, b] = hexToRgb(det.primaryHex)
-      return { color: det.primaryHex, rgb: `${r},${g},${b}` }
-    }
-
-    const plat = (platformOrCreator.platform || '').toLowerCase()
-    return PLATFORM_ACCENTS[plat] || PLATFORM_ACCENTS.other
-  }
-
-  if (typeof platformOrCreator === 'string' && platformOrCreator.startsWith('#')) {
-    const [r, g, b] = hexToRgb(platformOrCreator)
-    return { color: platformOrCreator, rgb: `${r},${g},${b}` }
-  }
-
-  const p = String(platformOrCreator || '').toLowerCase()
-  return PLATFORM_ACCENTS[p] || PLATFORM_ACCENTS.other
 }
 
 
@@ -317,6 +276,7 @@ export default function App() {
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
+      if (path === '/portal' || path === '/portal/') return 'creator-link'
       if (path === '/dashboard' || path.startsWith('/dashboard/')) {
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         return 'dashboard'
@@ -650,7 +610,8 @@ export default function App() {
       }
     } catch {}
     let path = '/'
-    if (newStep === 'login') path = '/login'
+    if (newStep === 'creator-link') path = '/portal'
+    else if (newStep === 'login') path = '/login'
     else if (newStep === 'signup') path = '/signup'
     else if (newStep === 'dashboard') {
       const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
@@ -854,7 +815,9 @@ export default function App() {
       const path = window.location.pathname
       const cachedCreator = localStorage.getItem('forge_creator_data')
 
-      if (path === '/login') {
+      if (path === '/portal' || path === '/portal/') {
+        setStep('creator-link')
+      } else if (path === '/login') {
         setStep('login')
       } else if (path === '/signup') {
         setStep('signup')
@@ -1144,10 +1107,12 @@ export default function App() {
     return <CommunityJoin handle={joinHandle} />
   }
 
-  // /portal/:portalId route — dedicated Creator Co-Founder Portal (magic link)
-  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/portal') || window.location.pathname.startsWith('/co-launch/'))) {
-    const portalId = window.location.pathname.replace('/portal/', '').replace('/portal', '').replace('/co-launch/', '').replace(/\/$/, '')
-    return <CreatorPortal portalId={portalId} />
+  // /portal/:portalId route — dedicated Creator Co-Founder Portal (magic link with ID)
+  if (typeof window !== 'undefined' && ((window.location.pathname.startsWith('/portal/') && window.location.pathname.replace('/portal/', '').trim()) || window.location.pathname.startsWith('/co-launch/'))) {
+    const portalId = window.location.pathname.replace('/portal/', '').replace('/co-launch/', '').replace(/\/$/, '')
+    if (portalId) {
+      return <CreatorPortal portalId={portalId} />
+    }
   }
 
   // /preorder/:slug route — live dynamic pre-order landing page & checkout

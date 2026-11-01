@@ -320,6 +320,13 @@ export default function Welcome() {
     }
   }
 
+  const handleGetStarted = () => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/portal')
+    }
+    goTo('creator-link')
+  }
+
   // Interactive Creator Demo State
   const [selectedCreatorDemo, setSelectedCreatorDemo] = useState('mkbhd')
   const [demoModalOpen, setDemoModalOpen] = useState(false)
@@ -563,10 +570,10 @@ export default function Welcome() {
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </button>
 
-            {/* Get Started Button -> takes directly to Step 1: Where is your audience? (Image 2) */}
+            {/* Get Started Button -> takes directly to Step 1: Where is your audience? (/portal) */}
             <button
               type="button"
-              onClick={() => goTo('creator-link')}
+              onClick={handleGetStarted}
               className="relative inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs md:text-sm font-bold px-3 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[34px] sm:min-h-[42px]"
               title="Analyze Creator Audience & Get Started"
             >
@@ -698,7 +705,7 @@ export default function Welcome() {
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false)
-                    goTo('creator-link')
+                    handleGetStarted()
                   }}
                   className="relative flex-1 sm:flex-none px-5 py-2.5 text-center text-xs sm:text-sm font-bold text-white rounded-xl bg-[#0F172A] hover:bg-[#1E293B] min-h-[44px] flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                   title="Analyze Creator Audience & Get Started"
@@ -779,10 +786,10 @@ export default function Welcome() {
 
             {/* Action Row: Get Started linking to creator-link (Image 2) & /launch */}
             <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-3.5 sm:gap-4 w-full">
-              {/* Primary Signature Button with Beacon (Takes directly to Step 1: Where is your audience?) */}
+              {/* Primary Signature Button with Beacon (Takes directly to Step 1: Where is your audience? /portal) */}
               <button
                 type="button"
-                onClick={() => goTo('creator-link')}
+                onClick={handleGetStarted}
                 className="relative inline-flex items-center justify-center gap-2 sm:gap-2.5 px-5 py-3 sm:px-7 sm:py-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs sm:text-sm font-display font-bold shadow-[0_6px_24px_rgba(15,23,42,0.18)] hover:shadow-[0_10px_32px_rgba(15,23,42,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none min-h-[44px] sm:min-h-[48px] shrink-0 uppercase tracking-wide w-full sm:w-auto"
                 title="Analyze Creator Audience & Get Started"
               >

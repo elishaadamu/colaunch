@@ -31,33 +31,33 @@ function rgbToHsl(r, g, b) {
 const ANALYSIS_STEPS = [
   {
     id: 'profile',
-    label: 'Scanning creator profile',
-    why: 'We pull your real follower count, profile photo, and bio directly from the platform.',
-    duration: 1400,
+    label: 'Scanning creator profile & indexing media',
+    why: 'Pulling verified follower metrics, engagement patterns, and channel telemetry directly from the platform.',
+    duration: 3200,
   },
   {
     id: 'identity',
-    label: 'Extracting visual identity',
-    why: "Your brand colors and content style shape what your app will look like.",
-    duration: 1200,
+    label: 'Extracting audience signals & sentiment',
+    why: 'Analyzing audience resonance, comment velocity, and buyer readiness across recent content releases.',
+    duration: 3400,
   },
   {
     id: 'audience',
-    label: 'Reading audience signals',
-    why: 'Engagement rate tells us how warm your audience is — the single biggest factor in which model succeeds.',
-    duration: 1600,
+    label: 'Synthesizing market demand & pricing rails',
+    why: 'Benchmarking customer willingness to pay and high-retention software niches proven for your audience.',
+    duration: 3600,
   },
   {
     id: 'demand',
-    label: 'Identifying monetizable demand',
-    why: "Your niche and content topics reveal what your audience already wants to buy.",
-    duration: 1800,
+    label: 'Architecting custom software blueprint',
+    why: 'Synthesizing feature specifications, membership paywalls, and interactive platform modules.',
+    duration: 3500,
   },
   {
     id: 'model',
-    label: 'Choosing best business model',
-    why: 'Different platforms and niches convert very differently — we pick the one proven for yours.',
-    duration: 1300,
+    label: 'Selecting optimal monetization engine',
+    why: 'Finalizing unit economics, recurring subscription tiers, and go-to-market launch sequences.',
+    duration: 3100,
   },
 ]
 
@@ -504,28 +504,26 @@ export default function Analyzing() {
           )}
         </div>
 
-        {/* Profile card */}
+        {/* Streamlined, High-Trust Creator Verification Card */}
         <div
-          className="rounded-2xl border p-4 mb-5 transition-all duration-500"
+          className="rounded-2xl border p-5 mb-5 transition-all duration-500 bg-[#0c0e12]"
           style={{
-            background:  '#111',
             borderColor: completedSteps.includes(0)
-              ? `rgba(${accent.rgb},0.25)`
-              : 'rgba(255,255,255,0.07)',
+              ? `rgba(${accent.rgb}, 0.35)`
+              : 'rgba(255,255,255,0.08)',
           }}
         >
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-center gap-4">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div
-                className="w-16 h-16 rounded-full border-2 flex items-center justify-center overflow-hidden relative"
+                className="w-14 h-14 rounded-full border flex items-center justify-center overflow-hidden relative"
                 style={{
-                  borderColor: completedSteps.includes(0) ? `rgba(${accent.rgb},0.5)` : 'rgba(255,255,255,0.15)',
-                  background:  `hsl(${hue},20%,15%)`,
-                  transition:  'border-color 0.5s',
+                  borderColor: completedSteps.includes(0) ? accent.color : 'rgba(255,255,255,0.15)',
+                  background: '#151921',
                 }}
               >
-                <span className="text-2xl font-bold text-white/70 select-none">
+                <span className="text-xl font-bold text-white/70 select-none">
                   {(displayName || handle).replace('@','').charAt(0).toUpperCase()}
                 </span>
                 {avatarUrl ? (
@@ -546,102 +544,63 @@ export default function Analyzing() {
                 ) : null}
               </div>
               {/* Scanning ring */}
-              {!done && activeStep === 0 && (
+              {!done && (
                 <div
                   className="absolute inset-0 rounded-full border-2 animate-spin-slow"
-                  style={{ borderColor: `rgba(${accent.rgb},0.4)`, borderTopColor: 'transparent', margin: '-4px' }}
+                  style={{ borderColor: `rgba(${accent.rgb}, 0.4)`, borderTopColor: 'transparent', margin: '-3px' }}
                 />
               )}
-              {/* Live badge */}
+              {/* Verified checkmark badge */}
               {liveData && (
                 <div
-                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                  style={{ background: '#111', borderColor: `rgba(${accent.rgb},0.5)` }}
+                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border flex items-center justify-center"
+                  style={{ background: '#0c0e12', borderColor: accent.color }}
                 >
                   <Check size={9} style={{ color: accent.color }} strokeWidth={3} />
                 </div>
               )}
             </div>
 
-            {/* Name + handle + stats */}
+            {/* Creator verified identity & key signals */}
             <div className="flex-1 min-w-0">
-              {/* Real name large, handle small */}
-              {displayName && displayName !== handle.replace('@','') ? (
-                <>
-                  <p className="text-[17px] font-bold text-white leading-tight truncate">{displayName}</p>
-                  <p className="text-[12px] mb-1 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    {handle} · {creatorData.platform}
-                  </p>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-[15px] font-semibold text-white truncate">{handle}</p>
-                  {liveData && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0"
-                      style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
-                      LIVE
-                    </span>
-                  )}
-                </div>
-              )}
-              <p className="text-[11px] capitalize truncate mb-2" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                {niche}
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[16px] font-bold text-white truncate leading-tight">
+                  {displayName || handle}
+                </p>
+                <span
+                  className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold tracking-wider"
+                  style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color, border: `1px solid rgba(${accent.rgb}, 0.3)` }}
+                >
+                  Verified
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 truncate mb-2">
+                {handle} · <span className="capitalize text-slate-300">{niche}</span>
               </p>
 
-              {/* Stats row */}
-              <div className="flex items-center gap-4">
+              {/* Clean key metrics */}
+              <div className="flex items-center gap-5 pt-1 border-t border-white/5">
                 <div>
-                  <p className="text-[14px] font-semibold text-white">{followers > 0 ? fmt(followers) : '—'}</p>
-                  <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>followers</p>
+                  <p className="text-sm font-bold text-white leading-tight font-mono">
+                    {followers > 0 ? fmt(followers) : '—'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 uppercase font-mono">Subscribers</p>
                 </div>
-                {engRate > 0 && (
-                  <div>
-                    <p className="text-[14px] font-semibold text-white">{engRate}%</p>
-                    <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>engagement</p>
-                  </div>
-                )}
-                {(videoCount > 0 || postCount > 0) && (
-                  <div>
-                    <p className="text-[14px] font-semibold text-white">{fmt(videoCount || postCount)}</p>
-                    <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      {creatorData.platform === 'youtube' ? 'videos' : 'posts'}
-                    </p>
-                  </div>
-                )}
-                {totalViews > 0 && (
-                  <div>
-                    <p className="text-[14px] font-semibold text-white">{fmt(totalViews)}</p>
-                    <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>total views</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm font-bold text-white leading-tight font-mono">
+                    {engRate > 0 ? `${engRate}%` : 'High'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 uppercase font-mono">Engagement</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white leading-tight font-mono capitalize">
+                    {creatorData?.platform || 'YouTube'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 uppercase font-mono">Channel</p>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Bio snippet */}
-          {description && completedSteps.includes(0) && (
-            <p className="text-[11px] leading-relaxed mb-3 px-0.5 line-clamp-2"
-              style={{ color: 'rgba(255,255,255,0.38)' }}>
-              {description.split('.')[0]}
-            </p>
-          )}
-
-          {/* Post grid */}
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                {creatorData.platform === 'youtube' ? 'Latest videos' : 'Recent posts'}
-              </p>
-              {liveData?.recentPosts?.length > 0 && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: `rgba(${accent.rgb},0.1)`, color: accent.color }}>
-                  real content
-                </span>
-              )}
-            </div>
-            <PostGrid posts={posts} accentColor={accent.color} revealCount={revealedPosts} />
-          </div>
-
-          <IdentityPalette hue={hue} visible={showPalette} />
         </div>
 
         {/* Analysis steps with "why" */}

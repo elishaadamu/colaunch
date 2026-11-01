@@ -572,35 +572,15 @@ export default function ContentCalendar() {
   const niche = creatorData?.niche || 'creator community'
   const productName = creatorData?.productName || 'VIP Launch'
 
-  const detectedBrandColor = useMemo(() => {
-    if (creatorData?.brand_color && creatorData.brand_color !== '#7C5CFC') return creatorData.brand_color
-    if (creatorData?.brandColor && creatorData.brandColor !== '#7C5CFC') return creatorData.brandColor
-    if (creatorData?.brandHex && creatorData.brandHex !== '#7C5CFC') return creatorData.brandHex
-    if (creatorData?.color && creatorData.color !== '#7C5CFC') return creatorData.color
-    try {
-      const rawMap = localStorage.getItem("forge_creator_brand_color_map")
-      if (rawMap) {
-        const map = JSON.parse(rawMap)
-        const id = creatorData?.id
-        const handleClean = (creatorData?.handle || '').replace(/^@/, '').toLowerCase()
-        const name = (creatorData?.name || '').toLowerCase()
-        if (id && map[id]?.primaryHex) return map[id].primaryHex
-        if (handleClean && map[handleClean]?.primaryHex) return map[handleClean].primaryHex
-        if (name && map[name]?.primaryHex) return map[name].primaryHex
-      }
-    } catch {}
-    const det = getDeterministicBrandColor(creatorData)
-    if (det?.primaryHex) return det.primaryHex
-    return '#10B981'
-  }, [creatorData])
-
-  const [cr, cg, cb] = useMemo(() => hexToRgb(detectedBrandColor), [detectedBrandColor])
-  const brandTextColor = useMemo(() => getContrastTextColor(detectedBrandColor), [detectedBrandColor])
+  // Unified single brand color across the entire application
+  const detectedBrandColor = '#8bae35'
+  const [cr, cg, cb] = [139, 174, 53]
+  const brandTextColor = '#0d1403'
   const accent = useMemo(() => ({
-    color: detectedBrandColor,
-    rgb: `${cr},${cg},${cb}`,
-    contrastText: brandTextColor
-  }), [detectedBrandColor, cr, cg, cb, brandTextColor])
+    color: '#8bae35',
+    rgb: '139, 174, 53',
+    contrastText: '#0d1403'
+  }), [])
 
   // View mode: 'grid' (7-day columns) or 'feed' (chronological timeline)
   const [viewMode, setViewMode] = useState('grid')
