@@ -23,6 +23,19 @@ function isLightColor(hex) {
   return ((r * 299 + g * 587 + b * 114) / 1000) > 135
 }
 
+function fmt(n) {
+  n = parseFollowerCount(n)
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000
+    return k % 1 === 0 ? `${k}K` : `${k.toFixed(1)}K`
+  }
+  return String(n)
+}
+
 function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelComments = []) {
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const creatorDisplayName = (creatorData?.name || '').toLowerCase()
@@ -524,7 +537,664 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
   )
 }
 
-export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorData, extraTabs, isMobile, viewMode = 'desktop', channelComments = [] }) {
+function ProductLandingPage({ 
+  styles, 
+  creatorData, 
+  blueprint, 
+  onSwitchToProduct, 
+  channelComments = [], 
+  isMobile = false 
+}) {
+  const accent = getAccent(creatorData)
+  const dynamicAccent = accent.color
+  const dynamicAccentBg = `rgba(${accent.rgb}, 0.12)`
+  const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
+  const isLight = isLightColor(dynamicAccent)
+
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
+  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
+  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const niche = creatorData?.niche || 'Software & Technology'
+  const nicheL = niche.toLowerCase()
+
+  const isTech = nicheL.includes('code') || nicheL.includes('tech') || nicheL.includes('dev') || nicheL.includes('program') || nicheL.includes('python')
+  const isFinance = nicheL.includes('finance') || nicheL.includes('money') || nicheL.includes('invest') || nicheL.includes('business')
+  const isEducation = nicheL.includes('educat') || nicheL.includes('learn') || nicheL.includes('science') || nicheL.includes('teach')
+
+  const productName = blueprint?.name || 'Creator Platform'
+
+  // Scraped videos for curriculum breakdown
+  const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
+    ? creatorData.recentPosts
+    : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
+      ? creatorData.videos
+      : []
+
+  const topVideoTitle = recentVideoList[0]?.title || 'Production Foundation & Architecture'
+  const secondVideoTitle = recentVideoList[1]?.title || 'Core Engine & Workflow Implementation'
+  const thirdVideoTitle = recentVideoList[2]?.title || 'Advanced Optimization & Deployment'
+  const fourthVideoTitle = recentVideoList[3]?.title || 'Monetization & Production Scaling'
+
+  // Dynamic Headline based on creator niche
+  const heroHeadline = isTech
+    ? `Stop Getting Stuck in Tutorial Hell. Ship Real Production SaaS.`
+    : isFinance
+      ? `Battle-Tested Frameworks to Build Predictable Wealth.`
+      : isEducation
+        ? `The Step-by-Step Blueprint to Master ${niche} from Day One.`
+        : (blueprint?.tagline || `The Official ${productName} by ${creatorName}`)
+
+  const heroSubtitle = isTech
+    ? `Get instant access to complete production boilerplates, database schemas, continuous deployment scripts, and live weekly code reviews with ${creatorName}. Everything you need to turn tutorials into real revenue.`
+    : `Direct access to complete video roadmaps, downloadable frameworks, weekly live office hours, and private community discussions hosted by ${creatorName}.`
+
+  // Scraped Real Comments for Authentic Testimonials
+  const testimonials = (Array.isArray(channelComments) && channelComments.length >= 3)
+    ? channelComments.slice(0, 3).map((c, i) => ({
+        author: c.author || `@member_${i + 1}`,
+        text: (c.text || c.quote || '').trim() || `Incredible depth and clarity. Having this complete platform saves dozens of hours.`,
+        time: c.published || c.time || 'Verified Member'
+      }))
+    : [
+        {
+          author: '@AlexDev88',
+          text: `This solved the exact problem I have been wrestling with for weeks. Having a single organized platform with full source code is worth 10x the price.`,
+          time: 'Verified Member'
+        },
+        {
+          author: '@JordanCode',
+          text: `The depth ${creatorName} brings here is unreal. Clear, concise, and saved me easily 40+ hours of setup headaches.`,
+          time: 'Verified Member'
+        },
+        {
+          author: '@SarahM_Tech',
+          text: `Finally, a real platform with direct community access and production-ready resources instead of fragmented YouTube snippets.`,
+          time: 'Verified Member'
+        }
+      ]
+
+  const modules = [
+    {
+      num: '01',
+      title: topVideoTitle,
+      lessons: '12 lessons',
+      duration: '3h 40m',
+      tags: ['HD Video', 'Starter Code', 'Checklist'],
+      desc: 'Complete architectural walkthrough, environment configuration, and foundational setup.'
+    },
+    {
+      num: '02',
+      title: secondVideoTitle,
+      lessons: '9 lessons',
+      duration: '2h 55m',
+      tags: ['Workflows', 'API Integration', 'Templates'],
+      desc: 'Step-by-step implementation of core business logic, database connectors, and state pipelines.'
+    },
+    {
+      num: '03',
+      title: thirdVideoTitle,
+      lessons: '8 lessons',
+      duration: '2h 15m',
+      tags: ['CI/CD', 'Automations', 'Security'],
+      desc: 'Battle-hardened deployment recipes, security audit checkpoints, and performance tuning.'
+    },
+    {
+      num: '04',
+      title: fourthVideoTitle,
+      lessons: '6 lessons',
+      duration: '1h 50m',
+      tags: ['Scaling', 'Analytics', 'Mastermind'],
+      desc: 'Production launch checklist, user onboarding frameworks, and expansion playbooks.'
+    }
+  ]
+
+  const faqs = [
+    {
+      q: `How is this different from ${creatorName}'s free YouTube content?`,
+      a: `Free YouTube videos provide conceptual overviews. ${productName} provides complete, production-grade source code, downloadable boilerplates, step-by-step implementation roadmaps, and direct weekly office hours with ${creatorName}.`
+    },
+    {
+      q: 'Do I get instant access after signing up?',
+      a: 'Yes. You receive immediate access to the entire video vault, private community server, and downloadable starter kits as soon as you complete enrollment.'
+    },
+    {
+      q: 'Can I cancel or get a refund?',
+      a: 'Absolutely. You are fully protected by a 14-day no-questions-asked 100% money-back guarantee. You can cancel your membership anytime in one click from your account settings.'
+    },
+    {
+      q: 'Is this suitable for beginners?',
+      a: 'Every module starts with a comprehensive quickstart guide and includes fully commented code repositories and active community support to ensure you never get stuck.'
+    }
+  ]
+
+  const [openFaq, setOpenFaq] = useState(0)
+
+  return (
+    <div className="w-full h-full flex flex-col bg-[#0b0d13] text-slate-100 overflow-y-auto selection:bg-rose-500/20">
+      
+      {/* 1. Landing Top Navigation Bar */}
+      <nav className={`border-b border-[#1f2433] bg-[#0d0f17]/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'}`}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div 
+            className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0"
+            style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
+          >
+            {resolvedAvatar ? (
+              <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+            ) : (
+              <span>{creatorName.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <span className="font-extrabold text-sm text-white truncate block leading-tight">
+              {productName}
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono block">
+              by @{handleClean}
+            </span>
+          </div>
+        </div>
+
+        {/* Desktop Anchor Links */}
+        {!isMobile && (
+          <div className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
+            <a href="#deliverables" className="hover:text-white transition-colors">What's Inside</a>
+            <a href="#curriculum" className="hover:text-white transition-colors">Curriculum</a>
+            <a href="#testimonials" className="hover:text-white transition-colors">Reviews</a>
+            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSwitchToProduct}
+            className="px-3 py-1.5 text-xs font-semibold border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2030] transition cursor-pointer rounded-none flex items-center gap-1.5"
+            title="Preview inside member area"
+          >
+            <Layers className="w-3.5 h-3.5" style={{ color: dynamicAccent }} />
+            <span className={isMobile ? "hidden sm:inline" : ""}>Member Area</span>
+          </button>
+          <a
+            href="#pricing"
+            className="px-3.5 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer rounded-none flex items-center gap-1"
+            style={{ 
+              background: dynamicAccent, 
+              color: isLight ? '#000000' : '#ffffff' 
+            }}
+          >
+            <span>Get Access</span>
+            <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+      </nav>
+
+      {/* 2. Hero Section */}
+      <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
+        style={{
+          background: `radial-gradient(ellipse at top center, rgba(${accent.rgb}, 0.15) 0%, transparent 70%), #0c0e16`
+        }}
+      >
+        <div className="max-w-3xl mx-auto space-y-4 relative z-10">
+          
+          {/* Official Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-semibold uppercase tracking-wider rounded-none">
+            <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+            <span>Official Digital Platform · Founding Cohort Open</span>
+          </div>
+
+          {/* Main Headline */}
+          <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl'}`}>
+            {heroHeadline}
+          </h1>
+
+          {/* Subtitle */}
+          <p className={`text-slate-300 leading-relaxed max-w-2xl mx-auto ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}>
+            {heroSubtitle}
+          </p>
+
+          {/* Dual CTAs */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="#pricing"
+              className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-bold tracking-wide transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2"
+              style={{
+                background: dynamicAccent,
+                color: isLight ? '#000000' : '#ffffff',
+                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.3)`
+              }}
+            >
+              <span>Claim Founding Access · $29/mo</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <button
+              type="button"
+              onClick={onSwitchToProduct}
+              className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
+            >
+              <Layers className="w-4 h-4" style={{ color: dynamicAccent }} />
+              <span>Preview Inside Member Area</span>
+            </button>
+          </div>
+
+          {/* Social Proof Trust Bar */}
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4 text-slate-400 text-xs">
+            <div className="flex items-center -space-x-1.5">
+              {[1, 2, 3, 4].map(idx => (
+                <div 
+                  key={idx}
+                  className="w-6 h-6 border border-[#1f2433] bg-[#1a1f2e] text-[9px] font-bold text-white flex items-center justify-center overflow-hidden"
+                >
+                  {String.fromCharCode(64 + idx)}
+                </div>
+              ))}
+            </div>
+            <span className="font-semibold text-slate-200">
+              Joined by {fmt(parseFollowerCount(creatorData?.followers) * 0.0018 || 3200)}+ members
+            </span>
+            <span className="hidden sm:inline">·</span>
+            <div className="flex items-center gap-1 text-amber-400">
+              {'★★★★★'}
+              <span className="font-bold text-slate-200 text-xs ml-1">4.9/5</span>
+              <span className="text-[11px] text-slate-400">(380+ verified reviews)</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3. Problem vs Solution Comparison */}
+      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              The Reality Check
+            </span>
+            <h3 className="text-lg sm:text-2xl font-bold text-white">
+              Why Most People Never Ship vs The {productName} Architecture
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* The Old Way */}
+            <div className="p-5 bg-[#121520] border border-red-500/30 space-y-3">
+              <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wider">
+                <span className="w-2 h-2 bg-red-400" />
+                <span>The Traditional Struggle (Tutorial Hell)</span>
+              </div>
+              <ul className="space-y-2 text-xs text-slate-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">✕</span>
+                  <span>Watching fragmented clips without understanding end-to-end architecture.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">✕</span>
+                  <span>Missing production glue: auth, database schemas, webhooks, and deployment scripts.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">✕</span>
+                  <span>Zero direct answers or feedback when your local environment inevitably breaks.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* The Solution */}
+            <div className="p-5 bg-[#121520] border space-y-3" style={{ borderColor: dynamicAccentBorder }}>
+              <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider" style={{ color: dynamicAccent }}>
+                <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+                <span>The {productName} Standard</span>
+              </div>
+              <ul className="space-y-2 text-xs text-slate-200">
+                <li className="flex items-start gap-2">
+                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
+                  <span>Production-tested codebases ready to clone, customize, and deploy on day 1.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
+                  <span>Direct weekly office hours and live code reviews hosted directly by {creatorName}.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold" style={{ color: dynamicAccent }}>✓</span>
+                  <span>Vetted member network sharing real implementations, bug fixes, and collaborations.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. What's Inside (Deliverables Grid) */}
+      <section id="deliverables" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Engineered Deliverables
+            </span>
+            <h3 className="text-lg sm:text-2xl font-bold text-white">
+              Everything Included in Your Founding Membership
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Full Video Vault & Masterclasses</h4>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                40+ structured HD walkthroughs covering setup, scaling, error recovery, and production architecture.
+              </p>
+            </div>
+
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Production Starter Kits & Boilerplates</h4>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Battle-tested repositories and templates with full commercial rights. Clone and ship immediately.
+              </p>
+            </div>
+
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Private Inner Circle & Community Hub</h4>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Dedicated forum and private spaces to exchange feedback, find co-builders, and troubleshoot issues.
+              </p>
+            </div>
+
+            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Live Weekly AMAs & Code Reviews</h4>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Direct monthly sessions with {creatorName}. Bring your specific project blockers and get live feedback.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Curriculum Breakdown (Real Scraped Channel Video Topics) */}
+      <section id="curriculum" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Curriculum & Roadmap
+              </span>
+              <h3 className="text-lg sm:text-2xl font-bold text-white">
+                Step-by-Step Implementation Modules
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onSwitchToProduct}
+              className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+              style={{ color: dynamicAccent }}
+            >
+              <span>Explore Player in Member Area</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {modules.map((m, idx) => (
+              <div key={idx} className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-xs font-mono font-bold px-2 py-1 bg-[#171b28] border border-[#23293a] text-slate-300 shrink-0">
+                    MODULE {m.num}
+                  </span>
+                  <div className="min-w-0">
+                    <h5 className="text-xs sm:text-sm font-bold text-white truncate leading-snug">
+                      {m.title}
+                    </h5>
+                    <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                      {m.desc}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {m.tags.map(t => (
+                        <span key={t} className="text-[9.5px] px-1.5 py-0.5 bg-[#191e2c] text-slate-300 border border-[#242b3e]">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 sm:text-right shrink-0">
+                  <div className="text-[11px] font-mono text-slate-400">
+                    <span>{m.lessons}</span>
+                    <span className="mx-1.5">·</span>
+                    <span>{m.duration}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onSwitchToProduct}
+                    className="p-1.5 border border-[#23293a] bg-[#161a26] hover:bg-[#1f2435] text-slate-300 transition cursor-pointer"
+                    title="Preview module"
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick Peek In Member Area Banner */}
+          <div className="p-4 bg-[#141824] border border-[#232a3d] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div>
+              <h5 className="text-xs font-bold text-white">Want to see the interactive video player & community forums?</h5>
+              <p className="text-[11px] text-slate-400 mt-0.5">Test the fully responsive dashboard experience right now.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onSwitchToProduct}
+              className="px-4 py-2 text-xs font-bold transition rounded-none shrink-0 cursor-pointer"
+              style={{ background: dynamicAccent, color: isLight ? '#000' : '#fff' }}
+            >
+              Peek Inside Member Area →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Authentic Testimonials (Apify Live Scraped Comments) */}
+      <section id="testimonials" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Community Endorsements
+            </span>
+            <h3 className="text-lg sm:text-2xl font-bold text-white">
+              What the Community Is Saying
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {testimonials.map((t, idx) => (
+              <div key={idx} className="p-4 bg-[#11141e] border border-[#1f2433] flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 text-amber-400 text-xs">
+                    {'★★★★★'}
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed italic">
+                    "{t.text}"
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-[#1f2433] flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-white">{t.author}</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">✓ Verified</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Pricing Section */}
+      <section id="pricing" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0d1017]`}>
+        <div className="max-w-xl mx-auto space-y-6">
+          <div className="text-center space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: dynamicAccent }}>
+              Limited Founding Invitation
+            </span>
+            <h3 className="text-xl sm:text-3xl font-black text-white">
+              Join the Founding Cohort
+            </h3>
+            <p className="text-xs text-slate-300">
+              Lock in early bird pricing before general public registration opens.
+            </p>
+          </div>
+
+          <div 
+            className="p-6 bg-[#11141e] border relative"
+            style={{ borderColor: dynamicAccentBorder, boxShadow: `0 0 25px -5px rgba(${accent.rgb}, 0.2)` }}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-[#1f2433]">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-white">
+                  Founding Member Pass
+                </span>
+                <p className="text-[11px] text-slate-400">All-inclusive platform access</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl sm:text-3xl font-black text-white">$29</span>
+                <span className="text-xs text-slate-400"> / month</span>
+              </div>
+            </div>
+
+            <ul className="py-4 space-y-2.5 text-xs text-slate-200">
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
+                <span>Instant access to all current and future module roadmaps</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
+                <span>Full commercial license for all starter kits & production templates</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
+                <span>Private community forum & dedicated channel with fellow builders</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
+                <span>Weekly live office hours & code reviews with {creatorName}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: dynamicAccent }} />
+                <span>14-day 100% money-back guarantee (no questions asked)</span>
+              </li>
+            </ul>
+
+            <button
+              type="button"
+              onClick={onSwitchToProduct}
+              className="w-full py-3.5 font-bold text-xs sm:text-sm tracking-wide transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2"
+              style={{
+                background: dynamicAccent,
+                color: isLight ? '#000000' : '#ffffff',
+                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`
+              }}
+            >
+              <span>Enroll Now & Claim Founding Pass</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <div className="pt-3 text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>100% Risk-Free Guarantee · 256-Bit Encrypted Checkout</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Creator Bio / Authority */}
+      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0b0d13]`}>
+        <div className="max-w-3xl mx-auto p-5 bg-[#10131d] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
+          <div 
+            className="w-16 h-16 rounded-none flex items-center justify-center font-bold text-lg border overflow-hidden relative flex-shrink-0"
+            style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
+          >
+            {resolvedAvatar ? (
+              <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+            ) : (
+              <span>{creatorName.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="space-y-1 text-center sm:text-left min-w-0 flex-1">
+            <h4 className="text-sm font-bold text-white">Built by {creatorName} (@{handleClean})</h4>
+            <div className="flex items-center justify-center sm:justify-start gap-3 text-slate-400 text-xs font-mono">
+              {creatorData?.followers && <span>{creatorData.followers} subscribers</span>}
+              {creatorData?.videoCount && <span>{creatorData.videoCount} videos</span>}
+              {creatorData?.totalViews && <span>{creatorData.totalViews} views</span>}
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed pt-1">
+              {creatorData?.description 
+                ? (creatorData.description.length > 200 ? creatorData.description.slice(0, 200) + '...' : creatorData.description)
+                : `Dedicated to helping builders and creators level up with structured, battle-tested knowledge.`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 9. FAQ Accordion */}
+      <section id="faq" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="text-center space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Frequently Asked Questions
+            </span>
+            <h3 className="text-lg sm:text-2xl font-bold text-white">
+              Got Questions? We Have Answers.
+            </h3>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            {faqs.map((f, i) => {
+              const isOpen = openFaq === i
+              return (
+                <div key={i} className="bg-[#121520] border border-[#1f2433] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? -1 : i)}
+                    className="w-full p-3.5 text-left text-xs sm:text-sm font-bold text-white flex items-center justify-between gap-2 hover:bg-[#161a26] transition cursor-pointer"
+                  >
+                    <span>{f.q}</span>
+                    <span className="text-slate-400 font-mono text-sm">{isOpen ? '−' : '+'}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-3.5 pb-3.5 text-xs text-slate-300 leading-relaxed border-t border-[#1f2433] pt-2.5">
+                      {f.a}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 10. Minimal Footer */}
+      <footer className="p-6 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2">
+        <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
+        <p className="text-[11px] text-slate-600">
+          Powered by CoLaunch Autonomous Creator Operations.
+        </p>
+      </footer>
+
+    </div>
+  )
+}
+
+export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorData, extraTabs, isMobile, viewMode = 'landing', onSwitchView, channelComments = [] }) {
   const isDark = theme === 'dark' || theme === 'premium' || theme === 'minimalist' || !theme
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const accent = getAccent(creatorData)
@@ -661,6 +1331,20 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
   }
 
   const styles = themeStyles[theme] || themeStyles.dark
+
+  if (viewMode === 'landing') {
+    const defaultTab = getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs)[0] || 'Community'
+    return (
+      <ProductLandingPage
+        styles={styles}
+        creatorData={creatorData}
+        blueprint={blueprint}
+        onSwitchToProduct={() => onSwitchView ? onSwitchView('product') : setActiveTab(defaultTab)}
+        channelComments={internalComments}
+        isMobile={isMobile}
+      />
+    )
+  }
 
   if (viewMode === 'dashboard') {
     return (
@@ -1267,17 +1951,30 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           </div>
         </div>
 
-        <button 
-          className="font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95"
-          style={{ 
-            background: styles.accent, 
-            color: isLight ? '#000000' : '#ffffff',
-            boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.25)`
-          }}
-        >
-          <span>SIGN IN</span>
-          <ArrowRight className="w-3 h-3 stroke-[2.5]" />
-        </button>
+        <div className="flex items-center gap-2.5">
+          {onSwitchView && (
+            <button 
+              type="button"
+              onClick={() => onSwitchView('landing')}
+              className="font-semibold px-3.5 py-2 text-xs transition border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1a2030] flex items-center gap-1.5 cursor-pointer rounded-none"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Public Landing Page</span>
+            </button>
+          )}
+          <button 
+            className="font-bold px-5 py-2 rounded-none text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95"
+            style={{ 
+              background: styles.accent, 
+              color: isLight ? '#000000' : '#ffffff',
+              boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.25)`,
+              borderRadius: '0px'
+            }}
+          >
+            <span>SIGN IN</span>
+            <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+          </button>
+        </div>
       </div>
 
       {/* Inner Nav Tabs */}
@@ -1408,7 +2105,7 @@ export default function Preview() {
     }
   })
 
-  const [viewMode, setViewMode] = useState('desktop') // 'desktop' | 'mobile'
+  const [viewMode, setViewMode] = useState('landing') // 'landing' | 'product' | 'mobile'
   const isMobileView = viewMode === 'mobile'
   const [extraTabs, setExtraTabs] = useState(() => creatorData.extraTabs || [])
   const [localFeatures, setLocalFeatures] = useState(() => {
@@ -1715,11 +2412,13 @@ export default function Preview() {
 
   const handleSwitchView = (mode) => {
     setViewMode(mode)
-    if (mode === 'desktop') {
+    if (mode === 'landing') {
+      showToast("Switched to Public Landing Page")
+    } else if (mode === 'product' || mode === 'desktop') {
       setAppliedPrompts(prev => prev.filter(p => !p.toLowerCase().includes('mobile')))
-      showToast("Switched to Member Web preview")
+      showToast("Switched to Member Product App")
     } else if (mode === 'mobile') {
-      showToast("Switched to Member Mobile preview")
+      showToast("Switched to Mobile Preview")
     }
   }
 
@@ -1752,22 +2451,34 @@ export default function Preview() {
         </div>
 
         {/* Center View Mode Selector */}
-        <div className="hidden md:flex items-center bg-[#12141c] p-1 rounded-2xl border border-[#222634] shadow-inner">
+        <div className="hidden md:flex items-center bg-[#12141c] p-1 border border-[#222634] shadow-inner">
           <button 
-            onClick={() => handleSwitchView('desktop')}
-            className="flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+            onClick={() => handleSwitchView('landing')}
+            className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
-              background: viewMode === 'desktop' ? dynamicAccent : 'transparent',
-              color: viewMode === 'desktop' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
-              boxShadow: viewMode === 'desktop' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
+              background: viewMode === 'landing' ? dynamicAccent : 'transparent',
+              color: viewMode === 'landing' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
+              boxShadow: viewMode === 'landing' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
             }}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Member Web</span>
+            <span>Public Landing Page</span>
+          </button>
+          <button 
+            onClick={() => handleSwitchView('product')}
+            className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
+            style={{
+              background: (viewMode === 'product' || viewMode === 'desktop') ? dynamicAccent : 'transparent',
+              color: (viewMode === 'product' || viewMode === 'desktop') ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
+              boxShadow: (viewMode === 'product' || viewMode === 'desktop') ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
+            }}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Member Product App</span>
           </button>
           <button 
             onClick={() => handleSwitchView('mobile')}
-            className="flex items-center space-x-2 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+            className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
               background: viewMode === 'mobile' ? dynamicAccent : 'transparent',
               color: viewMode === 'mobile' ? (isLight ? '#000000' : '#ffffff') : '#94a3b8',
@@ -1775,7 +2486,7 @@ export default function Preview() {
             }}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>Member Mobile</span>
+            <span>Mobile</span>
           </button>
         </div>
 
@@ -1880,19 +2591,21 @@ export default function Preview() {
               </div>
 
               <div className="flex-1 max-w-md mx-4">
-                <a 
-                  href={creatorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#0b0c10] hover:bg-[#161922] border border-[#222634] hover:border-slate-600 rounded-lg px-4 py-1.5 text-xs text-slate-300 text-center truncate flex items-center justify-center space-x-2 shadow-inner transition cursor-pointer group"
-                  title="Open Creator Channel on YouTube"
+                <div 
+                  className="bg-[#0b0c10] border border-[#222634] rounded-none px-4 py-1.5 text-xs text-slate-300 text-center truncate flex items-center justify-between shadow-inner"
                 >
-                  <Lock className="w-3 h-3 flex-shrink-0" style={{ color: dynamicAccent }} />
-                  <span id="browser-url" className="truncate font-mono group-hover:underline" style={{ color: dynamicAccent }}>
-                    {cleanCreatorUrlDisplay}
+                  <div className="flex items-center space-x-2 truncate min-w-0">
+                    <Lock className="w-3 h-3 flex-shrink-0" style={{ color: dynamicAccent }} />
+                    <span id="browser-url" className="truncate font-mono font-semibold" style={{ color: dynamicAccent }}>
+                      {viewMode === 'landing' 
+                        ? `${(creatorData?.handle || 'creator').replace('@','')}.colaunch.app` 
+                        : `${(creatorData?.handle || 'creator').replace('@','')}.colaunch.app/app`}
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] uppercase font-mono px-2 py-0.5 border border-[#222634] bg-[#141824] text-slate-400 shrink-0 ml-2">
+                    {viewMode === 'landing' ? 'Public Landing Page' : 'Member App'}
                   </span>
-                  <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-slate-300 flex-shrink-0" />
-                </a>
+                </div>
               </div>
 
               <div className="flex items-center space-x-3 text-slate-400 text-xs">
@@ -1950,7 +2663,8 @@ export default function Preview() {
                         creatorData={creatorData}
                         extraTabs={extraTabs}
                         isMobile={true}
-                        viewMode="mobile"
+                        viewMode={viewMode === 'landing' ? 'landing' : 'mobile'}
+                        onSwitchView={handleSwitchView}
                         channelComments={channelComments}
                       />
                     </div>
@@ -1968,6 +2682,7 @@ export default function Preview() {
                     extraTabs={extraTabs}
                     isMobile={false}
                     viewMode={viewMode}
+                    onSwitchView={handleSwitchView}
                     channelComments={channelComments}
                   />
                 </div>
@@ -2251,17 +2966,18 @@ export default function Preview() {
                   try {
                     localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }));
                   } catch {}
-                  showToast("🚀 Launching application build...")
+                  showToast("Launching application build...")
                   setTimeout(() => {
                     next();
                   }, 400);
                 }}
                 disabled={isRegenerating}
-                className="w-full font-extrabold py-3.5 rounded-xl text-sm transition shadow-xl flex items-center justify-center space-x-2 group cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full font-extrabold py-3.5 rounded-none text-sm transition shadow-xl flex items-center justify-center space-x-2 group cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background: dynamicAccent,
                   color: isLight ? '#000000' : '#ffffff',
-                  boxShadow: `0 10px 25px -5px rgba(${accent.rgb}, 0.35)`
+                  boxShadow: `0 10px 25px -5px rgba(${accent.rgb}, 0.35)`,
+                  borderRadius: '0px'
                 }}
               >
                 <span>Looks good, build it</span>
