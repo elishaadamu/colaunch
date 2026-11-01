@@ -189,6 +189,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
+  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
 
   // Unified single brand color across the entire application (co-launch.app brand red)
   const creatorBrandColor = '#c81e3c'
