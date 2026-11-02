@@ -160,7 +160,7 @@ function DashboardAppPreview() {
       {/* Main Viewport Stage */}
       <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden relative">
         {device === 'desktop' && (
-          <div className="w-full max-w-6xl h-full flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
+          <div className="w-full max-w-6xl h-full min-h-0 flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
             {/* Sleek Browser Window Chrome matching user Image 3 */}
             <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
               <div className="flex items-center space-x-1.5">
@@ -207,7 +207,7 @@ function DashboardAppPreview() {
             </div>
 
             {/* Browser Content Stage with Smooth Scroll */}
-            <div className="flex-1 overflow-y-auto bg-[#0a0c12] custom-scrollbar relative flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto bg-[#0a0c12] custom-scrollbar relative flex flex-col scroll-smooth">
               <AppMockup
                 theme={theme}
                 activeTab={mockupActiveTab}
@@ -227,7 +227,7 @@ function DashboardAppPreview() {
         {device === 'mobile' && (
           <div className="w-[360px] max-w-full h-full max-h-[740px] p-2.5 rounded-none border border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative my-auto transition-all duration-300">
             {/* Screen Viewport */}
-            <div className="flex-1 rounded-none overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar border border-white/5">
+            <div className="flex-1 min-h-0 rounded-none overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar border border-white/5 scroll-smooth">
               <AppMockup
                 theme={theme}
                 activeTab={mockupActiveTab}
