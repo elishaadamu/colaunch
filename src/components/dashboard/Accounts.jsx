@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForge } from '../../App'
 import {
   Youtube,
@@ -110,6 +110,22 @@ export default function Accounts() {
       exchangeYouTubeAuthCode(code)
         .then(channel => {
           setYoutubeConn({ connected: true, channel })
+          if (updateCreator && channel) {
+            updateCreator({
+              name: channel.title || creatorData?.name,
+              creator_name: channel.title || creatorData?.creator_name,
+              channel_title: channel.title,
+              handle: channel.customUrl || creatorData?.handle,
+              youtube_handle: channel.customUrl || creatorData?.youtube_handle,
+              avatar: channel.thumbnail || creatorData?.avatar,
+              avatarUrl: channel.thumbnail || creatorData?.avatarUrl,
+              subscribers: channel.subscriberCount !== undefined ? String(channel.subscriberCount) : creatorData?.subscribers,
+              video_count: channel.videoCount !== undefined ? String(channel.videoCount) : creatorData?.video_count,
+              youtube_channel_id: channel.id || creatorData?.youtube_channel_id,
+              email: channel.email || creatorData?.email,
+              youtube_connected: true
+            })
+          }
           if (triggerToast) {
             triggerToast(`Connected to YouTube: ${channel.title || '@creator'}!`, 'success')
           }
@@ -225,39 +241,64 @@ export default function Accounts() {
     ? `https://www.youtube.com/${youtubeCustomUrl.startsWith('@') ? youtubeCustomUrl : '@' + youtubeCustomUrl}`
     : 'https://studio.youtube.com'
 
-  // Dynamic scheduled posts preview for the sidebar
-  const upcomingQueue = [
-    {
-      id: 'q1',
-      day: 'Tuesday',
-      date: 'Nov 3, 2026',
-      channel: 'YouTube',
-      format: 'VIDEO',
-      title: creatorData?.product_name ? `Launch: Unveiling ${creatorData.product_name}` : 'Big things are coming...',
-      time: '11:30 AM',
-      status: 'scheduled'
-    },
-    {
-      id: 'q2',
-      day: 'Wednesday',
-      date: 'Nov 4, 2026',
-      channel: 'Instagram',
-      format: 'REEL',
-      title: 'Behind the Scenes & Community Teaser',
-      time: '1:00 PM',
-      status: 'draft'
-    },
-    {
-      id: 'q3',
-      day: 'Friday',
-      date: 'Nov 6, 2026',
-      channel: 'YouTube',
-      format: 'SHORTS',
-      title: 'Top 3 Highlights & Platform Walkthrough',
-      time: '4:00 PM',
-      status: 'draft'
-    }
-  ]
+  // Dynamic scheduled posts preview for the sidebar from real campaign data
+  const upcomingQueue = useMemo(() => {
+    try {
+      const handle = creatorData?.handle || 'default'
+      const hClean = handle.replace(/^@+/, '')
+      const saved = localStorage.getItem(`forge_campaign_posts_${hClean}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const scheduled = parsed.filter(p => p.status === 'Scheduled')
+          if (scheduled.length > 0) {
+            return scheduled.slice(0, 3).map(p => ({
+              id: p.id,
+              day: p.fullDayName || p.dayName,
+              date: p.fullDateStr,
+              channel: p.channel,
+              format: p.format,
+              title: p.title,
+              time: p.time,
+              status: 'scheduled'
+            }))
+          }
+          return parsed.slice(0, 3).map(p => ({
+            id: p.id,
+            day: p.fullDayName || p.dayName,
+            date: p.fullDateStr,
+            channel: p.channel,
+            format: p.format,
+            title: p.title,
+            time: p.time,
+            status: p.status === 'Scheduled' ? 'scheduled' : 'draft'
+          }))
+        }
+      }
+    } catch (_) {}
+    return [
+      {
+        id: 'q1',
+        day: 'Tuesday',
+        date: 'Nov 3, 2026',
+        channel: 'YouTube',
+        format: 'VIDEO',
+        title: creatorData?.productName ? `Launch: Unveiling ${creatorData.productName}` : 'Launch Campaign Video',
+        time: '11:30 AM',
+        status: 'draft'
+      },
+      {
+        id: 'q2',
+        day: 'Wednesday',
+        date: 'Nov 4, 2026',
+        channel: 'Instagram',
+        format: 'REEL',
+        title: 'Behind the Scenes & Community Teaser',
+        time: '1:00 PM',
+        status: 'draft'
+      }
+    ]
+  }, [creatorData?.handle, creatorData?.productName])
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6 text-slate-200">

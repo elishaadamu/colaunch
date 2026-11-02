@@ -346,7 +346,7 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       strategy: t.strategy,
       title: t.title,
       caption: t.caption,
-      status: offset < 0 ? 'Posted' : offset === 0 && idx === 0 ? 'Scheduled' : 'Draft',
+      status: 'Draft',
       time: t.time,
       imageUrl: null
     }
@@ -552,7 +552,7 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
       strategy: 'CTA',
       title: `Weekly Wrap-Up: Top Highlights & What's Next`,
       caption: `Exciting new updates just dropped in ${prod}! Check out the member hub now.\n\n#${name.replace(/\s+/g, '')} #WeeklyUpdate`,
-      status: 'Scheduled',
+      status: 'Draft',
       time: '4:00 PM',
       imageUrl: null
     },
@@ -639,7 +639,7 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       const format = mapTypeToFormat(p.type || p.format)
       const strategy = (p.theme || p.strategy || 'LAUNCH').toUpperCase()
       const title = p.title || p.label || `Launch Post ${pIdx + 1}`
-      const status = p.status === 'posted' || p.done ? 'Posted' : p.status === 'scheduled' ? 'Scheduled' : 'Draft'
+      const status = (p.status === 'posted' || p.done) ? 'Posted' : ((p.status === 'scheduled' || p.status === 'Scheduled') && p.scheduledAt) ? 'Scheduled' : 'Draft'
       const time = p.time || defaultTimes[pIdx % defaultTimes.length]
       const caption = generateTailoredCaption(p, creatorData, productName)
 
@@ -702,21 +702,12 @@ export default function ContentCalendar() {
   const [platformFilter, setPlatformFilter] = useState('all')
 
   // Gamification State (XP, Streak, Level, Completed Quests)
-  const [xp, setXp] = useState(() => {
+  const [bonusXp, setBonusXp] = useState(() => {
     try {
-      const saved = localStorage.getItem(`forge_calendar_xp_${handleClean}`)
-      return saved ? parseInt(saved, 10) : 720
+      const saved = localStorage.getItem(`forge_calendar_bonus_xp_${handleClean}`)
+      return saved ? parseInt(saved, 10) : 0
     } catch {
-      return 720
-    }
-  })
-
-  const [streak, setStreak] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`forge_calendar_streak_${handleClean}`)
-      return saved ? parseInt(saved, 10) : 4
-    } catch {
-      return 4
+      return 0
     }
   })
 
@@ -729,17 +720,14 @@ export default function ContentCalendar() {
     }
   })
 
-  // Level computation: Level 3 (0-999), Level 4 (1000-1499), Level 5 (1500+)
-  const currentLevel = xp >= 1500 ? 5 : xp >= 1000 ? 4 : 3
-  const targetXp = currentLevel === 3 ? 1000 : currentLevel === 4 ? 1500 : 2000
-  const xpPercent = Math.min(100, Math.round((xp / targetXp) * 100))
-
   const addXP = (amount, reason, e) => {
-    const nextXp = xp + amount
-    setXp(nextXp)
-    try {
-      localStorage.setItem(`forge_calendar_xp_${handleClean}`, String(nextXp))
-    } catch {}
+    setBonusXp(prev => {
+      const next = prev + amount
+      try {
+        localStorage.setItem(`forge_calendar_bonus_xp_${handleClean}`, String(next))
+      } catch {}
+      return next
+    })
 
     const rect = e?.currentTarget?.getBoundingClientRect()
     triggerConfettiBurst(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top : undefined)
@@ -783,6 +771,40 @@ export default function ContentCalendar() {
   const [posts, setPosts] = useState(() => {
     return loadSyncedCampaignPosts(creatorData, productName, handleClean)
   })
+
+  // Dynamic XP computation derived from real creator actions, database posts, and connected accounts
+  const xp = useMemo(() => {
+    // 25 XP per drafted post, 75 XP per scheduled post, 150 XP per published post
+    const postsXp = posts.reduce((sum, p) => {
+      if (p.status === 'Posted') return sum + 150
+      if (p.status === 'Scheduled') return sum + 75
+      return sum + 25 // Draft
+    }, 0)
+    const ytXp = youtubeConnection?.connected ? 200 : 0
+    const emailXp = creatorData?.email && creatorData.email.includes('@') ? 100 : 0
+    return (creatorData?.xp || 0) + postsXp + ytXp + emailXp + bonusXp
+  }, [posts, youtubeConnection?.connected, creatorData?.email, creatorData?.xp, bonusXp])
+
+  // Dynamic Level computation:
+  // Level 1: 0-249 XP (Starter Creator)
+  // Level 2: 250-499 XP (Rising Creator)
+  // Level 3: 500-999 XP (Active Creator)
+  // Level 4: 1000-1999 XP (Growth Creator)
+  // Level 5: 2000+ XP (Pro Creator)
+  const currentLevel = xp >= 2000 ? 5 : xp >= 1000 ? 4 : xp >= 500 ? 3 : xp >= 250 ? 2 : 1
+  const targetXp = currentLevel === 1 ? 250 : currentLevel === 2 ? 500 : currentLevel === 3 ? 1000 : currentLevel === 4 ? 2000 : 3500
+  const prevLevelXp = currentLevel === 1 ? 0 : currentLevel === 2 ? 250 : currentLevel === 3 ? 500 : currentLevel === 4 ? 1000 : 2000
+  const xpPercent = Math.min(100, Math.max(5, Math.round(((xp - prevLevelXp) / (targetXp - prevLevelXp)) * 100)))
+
+  // Dynamic Streak: computed from active days with scheduled or published posts
+  const streak = useMemo(() => {
+    const scheduledOrPosted = posts.filter(p => p.status === 'Scheduled' || p.status === 'Posted')
+    if (scheduledOrPosted.length > 0) {
+      const activeDays = new Set(scheduledOrPosted.map(p => p.dayName)).size
+      return Math.max(1, activeDays)
+    }
+    return 1
+  }, [posts])
 
   // Persist posts and keep Marketing Launch Calendar synchronized
   useEffect(() => {
@@ -1084,7 +1106,7 @@ export default function ContentCalendar() {
     setIsPublishingDirect(true)
     try {
       const newStatus = 'Scheduled'
-      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus, scheduledAt: new Date().toISOString() } : p))
       addXP(50, `Scheduled "${activePost?.title?.slice(0, 20)}..." for ${activePost?.fullDateStr || 'target date'}`, e)
       if (triggerToast) {
         triggerToast(`Post scheduled for ${activePost?.channel || 'YouTube'} on ${activePost?.fullDateStr || 'target date'}!`, 'success')
@@ -1092,6 +1114,13 @@ export default function ContentCalendar() {
     } finally {
       setIsPublishingDirect(false)
     }
+  }
+
+  // Revert Post to Draft
+  const handleRevertToDraft = () => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Draft', scheduledAt: null } : p))
+    if (triggerToast) triggerToast('Post reverted to Draft.', 'info')
   }
 
   // Save Post to Draft queue
@@ -1604,7 +1633,9 @@ export default function ContentCalendar() {
           <div className="text-[11px] hidden lg:flex items-center gap-1.5">
             <span className="text-slate-500">STATUS: </span>
             <span className={youtubeConnection?.connected ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-              {youtubeConnection?.connected ? `Connected (${youtubeConnection?.channel?.subscriberCount || '10.5M'} subs)` : 'Ready to Authenticate'}
+              {youtubeConnection?.connected
+                ? `Connected (${youtubeConnection?.channel?.subscriberCount ? String(youtubeConnection.channel.subscriberCount) : (creatorData?.subscribers || '0')} subs)`
+                : 'Ready to Authenticate'}
             </span>
           </div>
         </div>
@@ -1657,7 +1688,7 @@ export default function ContentCalendar() {
                   <Flame size={11} className="text-rose-400" />
                   <span>Streak: <b className="text-white">{streak} Days</b></span>
                 </span>
-                <span className="text-rose-400 font-bold">1 post to Lvl {currentLevel + 1}</span>
+                <span className="text-amber-400/90 font-mono text-[10px]">{Math.max(0, targetXp - xp)} XP to Lvl {currentLevel + 1}</span>
               </div>
             </div>
           </div>
@@ -1669,14 +1700,14 @@ export default function ContentCalendar() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between text-xs font-extrabold text-white">
-                <span>{readyPostsCount} of {totalPostsCount} Ready</span>
+                <span>{readyPostsCount} of {totalPostsCount} Scheduled</span>
                 <span className="text-[11px] text-emerald-400">{readinessPercent}%</span>
               </div>
               <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
                 <div className="bg-emerald-500 h-full rounded-none transition-all duration-300" style={{ width: `${readinessPercent}%` }} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                {draftPostsCount} pending in draft quest queue
+              <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                {draftPostsCount} unscheduled in draft queue
               </p>
             </div>
           </div>
@@ -2090,59 +2121,80 @@ export default function ContentCalendar() {
         {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine) ── */}
         <aside className="w-[380px] lg:w-[450px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-4 sm:p-5 space-y-4">
           
-          {/* Header: Title, Date, Status Badge */}
-          <div className="flex items-start justify-between gap-2">
+          {/* Header: Title, Date, Real Dynamic Status Badge */}
+          <div className="flex items-start justify-between gap-2 pb-2 border-b border-[#1b2336]">
             <div>
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-0.5">
+                {activePost?.status === 'Scheduled' ? 'SCHEDULED BROADCAST' : activePost?.status === 'Posted' ? 'PUBLISHED CONTENT' : 'CAMPAIGN DRAFT'}
+              </p>
               <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                Your draft for {getFullDayName(activePost)}
+                {activePost?.status === 'Scheduled' ? `Scheduled for ${getFullDayName(activePost)}` : `Your draft for ${getFullDayName(activePost)}`}
               </h3>
               <p className="text-xs font-bold text-rose-400 mt-0.5">
-                {activePost?.fullDateStr || 'Selected Date'}
+                {activePost?.fullDateStr || 'Selected Date'} • <span className="font-mono text-slate-400">{activePost?.time || '9:00 AM'}</span>
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               {activePost?.status === 'Posted' ? (
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                   <CheckCircle2 size={11} /> Posted
                 </span>
               ) : activePost?.status === 'Scheduled' ? (
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-sky-500/15 text-sky-400 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
                   <Clock size={11} /> Scheduled
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
-                  Draft
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300 border border-[#242d42]">
+                  Draft (Unscheduled)
                 </span>
               )}
             </div>
           </div>
 
-          {/* If multiple posts on selected date, show quick post switcher */}
+          {/* Quick Post Switcher for multiple posts on selected date */}
           {(() => {
             const datePosts = posts.filter(p => p.dateKey === (activePost?.dateKey || selectedCalendarDateKey))
             if (datePosts.length <= 1) return null
             return (
-              <div className="flex items-center gap-1.5 p-1 bg-[#111522] rounded-none border border-white/[0.08] overflow-x-auto">
-                <span className="text-[10px] font-mono uppercase text-slate-400 px-1 font-bold whitespace-nowrap">Posts ({datePosts.length}):</span>
-                {datePosts.map((p, pIdx) => {
-                  const isCurrent = p.id === activePost?.id
-                  return (
-                    <button
-                      key={p.id || pIdx}
-                      type="button"
-                      onClick={() => setSelectedPostId(p.id)}
-                      className={`px-2.5 py-1 text-[10.5px] font-bold rounded-none transition cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                        isCurrent
-                          ? 'bg-[#c81e3c] text-white shadow-xs'
-                          : 'text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800'
-                      }`}
-                      style={isCurrent ? { background: brandRed, color: '#ffffff', borderRadius: '0px' } : { borderRadius: '0px' }}
-                    >
-                      <span>{p.channel}</span>
-                      <span className="text-[9px] opacity-75 font-mono">({p.format || 'POST'})</span>
-                    </button>
-                  )
-                })}
+              <div className="p-2 bg-[#0c0f17] border border-[#202738] rounded-none space-y-1.5" style={{ borderRadius: '0px' }}>
+                <div className="flex items-center justify-between text-[10px] font-mono uppercase text-slate-400 font-bold px-0.5">
+                  <span>Posts on this day ({datePosts.length}):</span>
+                  <span className="text-slate-500">Click to switch</span>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+                  {datePosts.map((p, pIdx) => {
+                    const isCurrent = p.id === activePost?.id
+                    const isScheduled = p.status === 'Scheduled'
+                    const isPosted = p.status === 'Posted'
+                    return (
+                      <button
+                        key={p.id || pIdx}
+                        type="button"
+                        onClick={() => setSelectedPostId(p.id)}
+                        className={`px-3 py-1.5 text-[11px] font-bold rounded-none transition cursor-pointer flex items-center gap-2 whitespace-nowrap border ${
+                          isCurrent
+                            ? 'bg-[#c81e3c] text-white border-[#c81e3c] shadow-sm'
+                            : 'text-slate-300 hover:text-white bg-[#121624] hover:bg-[#181f30] border-[#222b40]'
+                        }`}
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <span className="font-extrabold">{p.channel}</span>
+                        <span className="text-[10px] font-mono opacity-80 uppercase">({p.format || 'POST'})</span>
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.2 border ${
+                            isPosted
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                              : isScheduled
+                              ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                              : 'bg-slate-700/50 text-slate-400 border-slate-600'
+                          }`}
+                        >
+                          {isPosted ? 'POSTED' : isScheduled ? 'SCHEDULED' : 'DRAFT'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )
           })()}
@@ -2309,7 +2361,7 @@ export default function ContentCalendar() {
                           {youtubeConnection.channel?.title || 'Connected Channel'}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {youtubeConnection.channel?.customUrl || '@creator'} • {youtubeConnection.channel?.subscriberCount || '10.5M'} subscribers
+                          {youtubeConnection.channel?.customUrl || '@creator'} • {youtubeConnection.channel?.subscriberCount || creatorData?.subscribers || '0'} subscribers
                         </div>
                       </div>
                     </div>
@@ -2341,19 +2393,39 @@ export default function ContentCalendar() {
                 {/* Dispatch Action Buttons */}
                 <div className="space-y-2 pt-1">
                   
-                  {/* Primary: Schedule */}
-                  <button
-                    type="button"
-                    onClick={handleSchedulePost}
-                    disabled={isPublishingDirect}
-                    className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
-                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Clock size={14} className="text-white" />
-                    <span className="text-white font-bold">
-                      {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+50 XP)'}
-                    </span>
-                  </button>
+                  {/* Primary Action Button */}
+                  {activePost?.status === 'Scheduled' ? (
+                    <div className="p-2.5 bg-sky-950/40 border border-sky-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+                      <div className="flex items-center gap-2">
+                        <Clock size={15} className="text-sky-400 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-sky-200">Scheduled for Broadcast</p>
+                          <p className="text-[10px] text-sky-400/80 font-mono">{activePost?.fullDateStr} at {activePost?.time || '9:00 AM'}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRevertToDraft}
+                        className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Revert to Draft
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSchedulePost}
+                      disabled={isPublishingDirect}
+                      className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Clock size={14} className="text-white" />
+                      <span className="text-white font-bold">
+                        {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+75 XP)'}
+                      </span>
+                    </button>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     {/* Secondary: Save Draft */}
@@ -2378,7 +2450,7 @@ export default function ContentCalendar() {
                     >
                       <Send size={13} className="text-white" />
                       <span className="text-white font-bold">
-                        {isPublishingDirect ? 'Publishing...' : 'Publish Live (+100 XP)'}
+                        {isPublishingDirect ? 'Publishing...' : 'Publish Live (+150 XP)'}
                       </span>
                     </button>
                   </div>

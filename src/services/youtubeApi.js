@@ -4,9 +4,9 @@
  * and direct video / community post publishing for creators.
  */
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1060262666913-0vu142mc8f59csp2db3heqs0rnphgqtb.apps.googleusercontent.com'
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || (typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app')
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
 
 const STORAGE_KEY = 'forge_youtube_connection'
 

@@ -23,6 +23,7 @@ import PricingPointModal from './PricingPointModal'
 import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
 import EmailConfigModal from '../ui/EmailConfigModal'
 import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
+import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 
 function DashboardAppPreview() {
   const { creatorData, triggerToast } = useForge()
@@ -310,7 +311,22 @@ export default function DashboardLayout() {
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
-  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+
+  // Listen for real-time YouTube connection events from OAuth
+  const [ytConn, setYtConn] = useState(() => getStoredYouTubeConnection())
+  useEffect(() => {
+    const handleConnected = (e) => setYtConn(e.detail)
+    const handleDisconnected = () => setYtConn(null)
+    window.addEventListener('forge_youtube_connected', handleConnected)
+    window.addEventListener('forge_youtube_disconnected', handleDisconnected)
+    return () => {
+      window.removeEventListener('forge_youtube_connected', handleConnected)
+      window.removeEventListener('forge_youtube_disconnected', handleDisconnected)
+    }
+  }, [])
+
+  const resolvedAvatar = ytConn?.channel?.thumbnail || creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const resolvedCreatorName = ytConn?.channel?.title || creatorData?.name || creatorData?.creator_name || creatorData?.handle || 'Creator'
 
   // Unified single brand color across the entire application (co-launch.app brand red)
   const creatorBrandColor = '#c81e3c'
@@ -422,11 +438,9 @@ export default function DashboardLayout() {
 
             {/* Creator name + avatar */}
             <div className="flex items-center gap-2">
-              {creatorData.name && (
-                <span className="text-[12px] hidden sm:block text-slate-300 font-medium">
-                  {creatorData.name}
-                </span>
-              )}
+              <span className="text-[12px] hidden sm:block text-slate-300 font-medium">
+                {resolvedCreatorName}
+              </span>
               <div
                 className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
                 style={{
@@ -437,12 +451,12 @@ export default function DashboardLayout() {
                 {resolvedAvatar ? (
                   <img
                     src={resolvedAvatar}
-                    alt={creatorData.name || creatorData.handle}
+                    alt={resolvedCreatorName}
                     className="w-full h-full object-cover"
                     onError={e => { e.currentTarget.style.display = 'none' }}
                   />
                 ) : (
-                  (creatorData.name || creatorData.handle || 'C').replace('@', '').charAt(0).toUpperCase()
+                  (resolvedCreatorName || 'C').replace('@', '').charAt(0).toUpperCase()
                 )}
               </div>
             </div>

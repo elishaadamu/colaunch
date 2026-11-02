@@ -865,6 +865,27 @@ export default function App() {
           exchangeYouTubeAuthCode(code)
             .then(channel => {
               console.log('[YouTube OAuth] Channel connected:', channel?.title)
+              if (channel) {
+                setCreatorData(prev => {
+                  const updated = {
+                    ...(prev || {}),
+                    name: channel.title || prev?.name,
+                    creator_name: channel.title || prev?.creator_name,
+                    channel_title: channel.title,
+                    handle: channel.customUrl || prev?.handle,
+                    youtube_handle: channel.customUrl || prev?.youtube_handle,
+                    avatar: channel.thumbnail || prev?.avatar,
+                    avatarUrl: channel.thumbnail || prev?.avatarUrl,
+                    subscribers: channel.subscriberCount !== undefined ? String(channel.subscriberCount) : prev?.subscribers,
+                    video_count: channel.videoCount !== undefined ? String(channel.videoCount) : prev?.video_count,
+                    youtube_channel_id: channel.id || prev?.youtube_channel_id,
+                    email: channel.email || prev?.email,
+                    youtube_connected: true
+                  }
+                  try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+                  return updated
+                })
+              }
             })
             .catch(err => {
               console.warn('[YouTube OAuth] Code exchange notice:', err)

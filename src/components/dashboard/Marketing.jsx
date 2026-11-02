@@ -217,7 +217,7 @@ function buildFallbackWeek(creatorData) {
   const prod = creatorData?.productName || `${name} Academy`
   return [
     { day: 'Mon', posts: [
-      { id: 1, type: 'Video', title: `Welcome to the VIP ${name} ${niche} Masterclass Launch!`, platform: 'YouTube', theme: 'launch', status: 'posted' },
+      { id: 1, type: 'Video', title: `Welcome to the VIP ${name} ${niche} Masterclass Launch!`, platform: 'YouTube', theme: 'launch', status: 'draft' },
       { id: 2, type: 'Reel', title: `3 ${niche} Myths Busted by our Academic Experts`, platform: 'Instagram', theme: 'value', status: 'draft' }
     ]},
     { day: 'Tue', posts: [
