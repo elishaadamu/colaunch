@@ -2183,18 +2183,19 @@ export default function Marketing({ chatOpen: propChatOpen }) {
     <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-7 max-w-7xl mx-auto w-full">
 
       {/* ─── CREATOR PROFILE CARD ────────────────────────────────── */}
-      <div className="rounded-2xl border overflow-hidden"
-        style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
+      <div className="rounded-none border overflow-hidden"
+        style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)', borderRadius: '0px' }}>
         {/* Top strip: avatar + name + stats */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 border-b"
           style={{ borderColor: 'var(--theme-border-color)' }}>
           <div className="flex items-center gap-4 min-w-0 flex-1">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 flex items-center justify-center"
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none overflow-hidden border-2 flex items-center justify-center"
                 style={{
                   borderColor: 'var(--theme-accent-border)',
                   background: 'var(--theme-accent-bg)',
+                  borderRadius: '0px'
                 }}>
                 {creatorData.avatarUrl ? (
                   <img src={creatorData.avatarUrl} alt={displayName}
@@ -2206,9 +2207,9 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                   </span>
                 )}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center"
-                style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-accent-border)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--theme-accent)' }} />
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-none border flex items-center justify-center"
+                style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-accent-border)', borderRadius: '0px' }}>
+                <span className="w-1.5 h-1.5 rounded-none" style={{ background: 'var(--theme-accent)' }} />
               </div>
             </div>
 
@@ -2217,8 +2218,8 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[15px] sm:text-[16px] font-bold text-white truncate">{displayName}</p>
                 <p className="text-[11px] sm:text-[12px] truncate" style={{ color: 'var(--theme-text-muted)' }}>{handle}</p>
-                <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full capitalize"
-                  style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
+                <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-none capitalize text-white font-bold"
+                  style={{ background: 'rgba(200, 30, 60, 0.25)', color: '#ffffff', border: '1px solid rgba(200, 30, 60, 0.45)', borderRadius: '0px' }}>
                   {creatorData.platform || 'creator'}
                 </span>
               </div>
@@ -2437,15 +2438,16 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleAutoFillWeek}
               disabled={autofillJob.status === 'running'}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-none transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-none transition-all cursor-pointer disabled:opacity-50 text-white shadow-xs"
               style={{
-                color: accent.color,
-                background: `rgba(${accent.rgb}, 0.12)`,
-                border: `1px solid rgba(${accent.rgb}, 0.35)`
+                color: '#ffffff',
+                background: `rgba(${accent.rgb}, 0.25)`,
+                border: `1px solid rgba(${accent.rgb}, 0.45)`,
+                borderRadius: '0px'
               }}
             >
-              <Sparkles size={11} className={autofillJob.status === 'running' ? "animate-pulse" : ""} style={{ color: accent.color }} />
-              <span>{autofillJob.status === 'running' ? "AI working…" : "Auto-fill Week"}</span>
+              <Sparkles size={11} className={`text-white ${autofillJob.status === 'running' ? "animate-pulse" : ""}`} style={{ color: '#ffffff' }} />
+              <span className="text-white">{autofillJob.status === 'running' ? "AI working…" : "Auto-fill Week"}</span>
             </button>
           </div>
         </div>
@@ -2493,16 +2495,17 @@ export default function Marketing({ chatOpen: propChatOpen }) {
               type="button"
               onClick={handleRegeneratePriorities}
               disabled={isPrioritiesGenerating}
-              className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-none transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-none transition-all cursor-pointer disabled:opacity-50 text-white shadow-xs"
               style={{
-                color: accent.color,
-                background: `rgba(${accent.rgb}, 0.12)`,
-                border: `1px solid rgba(${accent.rgb}, 0.35)`
+                color: '#ffffff',
+                background: `rgba(${accent.rgb}, 0.25)`,
+                border: `1px solid rgba(${accent.rgb}, 0.45)`,
+                borderRadius: '0px'
               }}
               title="Regenerate dynamic priorities with AI"
             >
-              <RefreshCw size={11} className={isPrioritiesGenerating ? "animate-spin" : ""} style={{ color: accent.color }} />
-              <span>{isPrioritiesGenerating ? "Tailoring…" : "AI Refresh"}</span>
+              <RefreshCw size={11} className={`text-white ${isPrioritiesGenerating ? "animate-spin" : ""}`} style={{ color: '#ffffff' }} />
+              <span className="text-white">{isPrioritiesGenerating ? "Tailoring…" : "AI Refresh"}</span>
             </button>
 
             <span className="text-[11px] font-mono px-2.5 py-1 rounded-none bg-slate-900 border border-slate-800 text-slate-400">
@@ -2687,25 +2690,27 @@ export default function Marketing({ chatOpen: propChatOpen }) {
       </section>
 
       {/* ─── COMMERCIAL LAUNCH & PRICING POINT CALLOUT ────────────── */}
-      <section className="rounded-2xl border p-5 sm:p-6 relative overflow-hidden"
+      <section className="rounded-none border p-5 sm:p-6 relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, rgba(18, 23, 34, 0.95) 0%, rgba(9, 13, 22, 0.98) 100%)',
           borderColor: `rgba(${accent.rgb}, 0.28)`,
-          boxShadow: `0 12px 36px rgba(0,0,0,0.4), 0 0 24px rgba(${accent.rgb}, 0.1)`
+          boxShadow: `0 12px 36px rgba(0,0,0,0.4), 0 0 24px rgba(${accent.rgb}, 0.1)`,
+          borderRadius: '0px'
         }}>
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] pointer-events-none opacity-20"
+        <div className="absolute top-0 right-0 w-64 h-64 blur-[80px] pointer-events-none opacity-20"
           style={{ background: accent.color }} />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-1.5 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase"
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-[10px] font-bold tracking-wider uppercase text-white shadow-xs"
               style={{
-                background: `rgba(${accent.rgb}, 0.15)`,
-                border: `1px solid rgba(${accent.rgb}, 0.35)`,
-                color: accent.color
+                background: `rgba(${accent.rgb}, 0.25)`,
+                border: `1px solid rgba(${accent.rgb}, 0.45)`,
+                color: '#ffffff',
+                borderRadius: '0px'
               }}>
-              <Zap size={11} className="fill-current" />
-              <span>Launch Point • Ready to Deploy</span>
+              <Zap size={11} className="fill-current text-white" style={{ color: '#ffffff' }} />
+              <span className="text-white font-bold">Launch Point • Ready to Deploy</span>
             </div>
             <h3 className="text-[18px] sm:text-[20px] font-bold text-white tracking-tight">
               Ready to take your product live to your audience?
@@ -2722,15 +2727,16 @@ export default function Marketing({ chatOpen: propChatOpen }) {
                   window.dispatchEvent(new CustomEvent('forge_open_pricing'))
                 }
               }}
-              className="px-5 py-3 rounded-xl font-bold text-[13px] flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-sm"
+              className="px-5 py-3 rounded-none font-bold text-[13px] flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-sm text-white"
               style={{
                 background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.9) 100%)`,
-                color: brandTextColor,
+                color: brandTextColor || '#ffffff',
+                borderRadius: '0px'
               }}
             >
-              <Zap size={14} className="fill-current" style={{ color: brandTextColor }} />
-              <span style={{ color: brandTextColor }}>Review Launch Plan & Pricing</span>
-              <ChevronRight size={14} style={{ color: brandTextColor }} />
+              <Zap size={14} className="fill-current" style={{ color: brandTextColor || '#ffffff' }} />
+              <span style={{ color: brandTextColor || '#ffffff' }}>Review Launch Plan & Pricing</span>
+              <ChevronRight size={14} style={{ color: brandTextColor || '#ffffff' }} />
             </button>
           </div>
         </div>
@@ -2738,11 +2744,11 @@ export default function Marketing({ chatOpen: propChatOpen }) {
 
       {/* Scheduled toast */}
       {scheduledToast && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl animate-fade-up"
-          style={{ background: `rgba(${accent.rgb},0.08)`, border: `1px solid rgba(${accent.rgb},0.2)` }}>
-          <Check size={13} style={{ color: accent.color }} />
-          <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Added to your content calendar</span>
-          <button onClick={() => setScheduledToast(null)} className="ml-auto text-white/25 hover:text-white/50"><X size={12} /></button>
+        <div className="flex items-center gap-2 px-4 py-3 rounded-none animate-fade-up text-white"
+          style={{ background: `rgba(${accent.rgb},0.15)`, border: `1px solid rgba(${accent.rgb},0.35)`, borderRadius: '0px' }}>
+          <Check size={13} className="text-white" style={{ color: '#ffffff' }} />
+          <span className="text-[13px] text-white">Added to your content calendar</span>
+          <button onClick={() => setScheduledToast(null)} className="ml-auto text-white/40 hover:text-white cursor-pointer"><X size={12} /></button>
         </div>
       )}
 

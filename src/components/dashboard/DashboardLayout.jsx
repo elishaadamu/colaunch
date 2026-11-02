@@ -461,39 +461,42 @@ export default function DashboardLayout() {
         {/* Guest Action Suggestion Banner */}
         {!isRegistered && aiActionsCount >= 3 && (
           <div 
-            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
             style={{
               background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)`,
               borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
               backdropFilter: 'blur(16px)',
               boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+              borderRadius: '0px'
             }}
           >
             {/* Ambient creator background glow */}
             <div 
-              className="absolute -right-8 -top-8 w-24 h-24 rounded-full blur-xl pointer-events-none" 
+              className="absolute -right-8 -top-8 w-24 h-24 blur-xl pointer-events-none" 
               style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
             />
             
             <div className="flex items-center gap-3.5 relative z-10">
               <div 
-                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
                 style={{ 
-                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
+                  background: `rgba(${cr}, ${cg}, ${cb}, 0.18)`, 
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
+                  borderRadius: '0px'
                 }}
               >
-                <Sparkles size={16} className="animate-pulse" style={{ color: creatorBrandColor }} />
+                <Sparkles size={16} className="animate-pulse text-white" />
               </div>
               <div className="space-y-0.5 text-left">
                 <h4 className="text-[13px] font-semibold text-white tracking-tight flex items-center gap-2">
                   Upgrade to Secure Account
                   <span 
-                    className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                    className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
                     style={{
-                      background: `rgba(${cr}, ${cg}, ${cb}, 0.2)`,
-                      color: creatorBrandColor,
-                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.3)`
+                      background: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
+                      color: '#ffffff',
+                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.45)`,
+                      borderRadius: '0px'
                     }}
                   >
                     {aiActionsCount} AI Actions
@@ -507,7 +510,8 @@ export default function DashboardLayout() {
             
             <button 
               onClick={() => goTo('signup')} 
-              className="forge-btn-primary text-[12px] py-2 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5"
+              className="forge-btn-primary text-[12px] py-2 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none"
+              style={{ borderRadius: '0px' }}
             >
               Secure Console Account
             </button>

@@ -1526,3 +1526,48 @@
     font-size: 24px;
   }
 }
+
+/* ==========================================================================
+   STRICT ZERO BORDER RADIUS & ACCENT CONTRAST ENFORCEMENT
+   ========================================================================== */
+button,
+input,
+select,
+textarea,
+section,
+dialog,
+.forge-btn-primary,
+.forge-btn-secondary,
+.forge-card,
+.forge-input,
+.rounded,
+.rounded-sm,
+.rounded-md,
+.rounded-lg,
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl,
+.rounded-t-xl,
+.rounded-t-2xl,
+.rounded-t-3xl,
+.rounded-b-xl,
+.rounded-b-2xl,
+.rounded-b-3xl,
+.rounded-full:not([class*="w-1."]):not([class*="w-2."]):not([class*="h-1."]):not([class*="h-2."]):not(.window-dot):not(.status-dot) {
+  border-radius: 0px !important;
+}
+
+/* Ensure tinted red/rose accent backgrounds strictly render crisp white text */
+.bg-rose-500\/10,
+.bg-rose-500\/15,
+.bg-rose-500\/20,
+.bg-rose-500\/25,
+.bg-red-500\/10,
+.bg-red-500\/15,
+.bg-red-500\/20,
+.bg-red-500\/25,
+[style*="rgba(200, 30, 60"],
+[style*="rgba(200,30,60"] {
+  color: #ffffff !important;
+}
+
