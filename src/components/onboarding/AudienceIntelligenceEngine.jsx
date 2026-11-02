@@ -53,28 +53,48 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
   // Intelligence State (Populated dynamically via Apify signals & AI)
   const [intelligence, setIntelligence] = useState(() => {
-    const dynamic = getDynamicAudienceIntelligence(creatorData)
+    // 1. Read existing real comments from creatorData or localStorage
+    let storedComments = []
+    try {
+      const c1 = localStorage.getItem(`forge_creator_comments_${handleClean}`)
+      if (c1) storedComments = JSON.parse(c1)
+    } catch {}
+    if (!storedComments.length && Array.isArray(creatorData?.comments)) {
+      storedComments = creatorData.comments
+    }
+    if (!storedComments.length && Array.isArray(creatorData?.channelComments)) {
+      storedComments = creatorData.channelComments
+    }
+
+    // 2. Read existing real Google Search results from localStorage
+    let storedSearch = []
+    try {
+      const s1 = localStorage.getItem(`forge_apify_search_${handleClean}`)
+      if (s1) storedSearch = JSON.parse(s1)
+    } catch {}
+
+    const dynamic = getDynamicAudienceIntelligence(creatorData, storedComments, storedSearch)
     try {
       const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
       if (cached) {
         const parsed = JSON.parse(cached)
         if (parsed && parsed.telemetry && parsed.pain_points && parsed.demographics) {
-          // Enrich requests if old cached version lacked verified source provenance
-          if (Array.isArray(parsed.requests)) {
-            parsed.requests = parsed.requests.map((r, i) => ({
-              ...dynamic.requests[i],
-              ...r,
-              source: 'YouTube',
-              sourceTitle: r.sourceTitle || dynamic.requests[i]?.sourceTitle || `${creatorName} Channel Release`,
-              sourceUrl: (r.sourceUrl && r.sourceUrl !== '#') ? r.sourceUrl : (dynamic.requests[i]?.sourceUrl || `https://www.youtube.com/@${handleClean}`),
-              author: (r.author && !r.author.includes('LoyalCommunityMember') && !r.author.includes('viewerHandle') && !r.author.includes('CreatorFan') && !r.author.includes('GrowthMindset')) ? r.author : (dynamic.requests[i]?.author || `@community_viewer_${i + 1}`)
-            }))
+          // If cached requests contain fake placeholder strings, discard the fake cache
+          const hasFake = (parsed.requests || []).some(r => 
+            !r.author || 
+            r.author.includes('LoyalCommunityMember') || 
+            r.author.includes('viewerHandle') || 
+            r.author.includes('Marcus_CreativeLead') || 
+            r.author.includes('ElenaStudioCraft') || 
+            r.author.includes('Devin_ScaleFast') ||
+            (r.quote && r.quote.includes('centralized place where we could access all your templates'))
+          )
+          if (!hasFake && parsed.requests?.length >= 3) {
+            return parsed
           }
-          return parsed
         }
       }
     } catch {}
-    // Immediate dynamic heuristic calculation so UI is never an empty mockup
     return dynamic
   })
 
@@ -94,6 +114,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       let comments = []
       try {
         comments = await fetchCreatorComments(handleClean, platform, 12)
+        if (!comments || comments.length === 0) {
+          const urls = (creatorData?.recentPosts || []).map(p => p.url).filter(Boolean)
+          if (urls.length > 0) {
+            comments = await fetchCreatorComments(urls[0], platform, 12)
+          }
+        }
       } catch (err) {
         console.warn('[Forge] Notice fetching comments via Apify:', err)
       }
@@ -102,14 +128,18 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       setAnalysisStatus('Querying Google competitor landscape via Apify Actor 563JCPLOqM1kMmbbP...')
       let searchItems = []
       try {
-        searchItems = await searchGoogleApify(googleQuery || `${niche} software tools pricing`)
+        const query = googleQuery || `${creatorName} ${niche} software tools reviews`
+        searchItems = await searchGoogleApify(query)
         setGoogleResults(searchItems)
+        try {
+          localStorage.setItem(`forge_apify_search_${handleClean}`, JSON.stringify(searchItems))
+        } catch {}
       } catch (err) {
         console.warn('[Forge] Apify Google search notice:', err)
       }
 
-      // 3. Synthesize 10-module audience intelligence with AI
-      setAnalysisStatus('Synthesizing 10-module audience intelligence...')
+      // 3. Synthesize audience intelligence strictly from real Apify signals
+      setAnalysisStatus('Synthesizing audience intelligence from Apify signals...')
       const synthesized = await generateAudienceIntelligenceAI(creatorData, comments, searchItems)
 
       if (synthesized) {
@@ -129,15 +159,10 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     }
   }
 
-  // Auto-run if creator handle changes and not in cache
-  const lastHandleRef = useRef(handleClean)
+  // Auto-run pipeline on mount and when creator changes to ensure Apify live data is loaded
   useEffect(() => {
-    if (lastHandleRef.current !== handleClean) {
-      lastHandleRef.current = handleClean
-      setGoogleQuery(`${niche} software tools pricing`)
-      runFullPipeline(true)
-    }
-  }, [handleClean, niche])
+    runFullPipeline(false)
+  }, [handleClean])
 
   // Trigger manual Apify Google search
   const handleRunApifyGoogleSearch = async () => {
@@ -380,14 +405,10 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
             <div className="space-y-3">
               {intel.requests.map((r, idx) => {
-                // Ensure grounded author name (no generic placeholder)
-                const fallbackAuthors = ['@DavidWorshipLeader', '@GraceBandDirector', '@AcousticPraise']
-                const authorDisplay = (r.author && !r.author.includes('LoyalCommunityMember') && !r.author.includes('viewerHandle') && !r.author.includes('CreatorFan') && !r.author.includes('GrowthMindset'))
-                  ? r.author
-                  : (creatorData?.recentPosts?.[idx]?.author ? `@${creatorData.recentPosts[idx].author}` : fallbackAuthors[idx % fallbackAuthors.length])
-                const authorClean = authorDisplay.startsWith('@') ? authorDisplay : `@${authorDisplay}`
+                const authorClean = r.author?.startsWith('@') ? r.author : (r.author || `@${handleClean} Audience`)
+                const isYouTube = r.platform === 'YouTube' || (r.sourceUrl && (r.sourceUrl.includes('youtube.com') || r.sourceUrl.includes('youtu.be')))
 
-                // Grounded YouTube video target URL
+                // Grounded target URL from Apify
                 const targetUrl = (r.sourceUrl && r.sourceUrl !== '#')
                   ? r.sourceUrl
                   : (creatorData?.recentPosts?.[idx]?.url && creatorData.recentPosts[idx].url !== '#')
@@ -396,12 +417,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   ? intel.evidence[idx].url
                   : `https://www.youtube.com/@${handleClean}`
 
-                // Grounded YouTube video source title
+                // Grounded source title from Apify
                 const videoTitle = r.sourceTitle 
                   || creatorData?.recentPosts?.[idx]?.title 
                   || intel.evidence?.[idx]?.title 
                   || intel.transcripts?.top_videos?.[idx]?.title 
-                  || `${creatorName} Channel Release`
+                  || `${creatorName} Platform Release`
 
                 return (
                   <div key={idx} className="p-4 bg-[#111624] rounded-none border-0 flex flex-col md:flex-row md:items-start gap-3.5 group hover:bg-[#141b2d] transition-colors">
@@ -410,42 +431,46 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      {/* Top Header: Request Title on Left, Verified Source on Right (where user requested) */}
+                      {/* Top Header: Request Title on Left, Verified Source on Right */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <span className="text-xs font-bold text-white tracking-wide truncate">{r.title}</span>
                         
                         {/* Verified Source Action & Provenance */}
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-[10px] text-slate-400 font-mono">
-                            {authorClean} &bull; YouTube Comment
+                            {authorClean} &bull; {isYouTube ? 'YouTube Comment' : 'Apify Search Record'}
                           </span>
                           <a
                             href={targetUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#181f33] hover:bg-red-950/60 text-[10px] font-bold text-slate-200 hover:text-white transition-all border border-slate-700/70 hover:border-red-500/50 rounded-none shrink-0"
-                            title={`Open YouTube source video: "${videoTitle}"`}
+                            title={`Open verified source: "${videoTitle}"`}
                           >
-                            <Youtube size={12} className="text-red-500 fill-current shrink-0" />
+                            {isYouTube ? (
+                              <Youtube size={12} className="text-red-500 fill-current shrink-0" />
+                            ) : (
+                              <Globe size={12} className="text-sky-400 shrink-0" />
+                            )}
                             <span>View Source</span>
                             <ExternalLink size={10} className="text-slate-400 shrink-0" />
                           </a>
                         </div>
                       </div>
 
-                      {/* Verbatim quote from viewer */}
+                      {/* Verbatim quote from viewer / search record */}
                       <p className="text-xs text-slate-300 mt-1.5 italic leading-relaxed">
                         "{r.quote}"
                       </p>
 
-                      {/* Solution summary + Clickable source video link */}
+                      {/* Solution summary + Clickable source link */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800/80">
                         <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 font-semibold">
                           <CheckCircle2 size={12} className="shrink-0 text-emerald-400" />
                           <span>{r.solution}</span>
                         </div>
                         <div className="text-[10px] text-slate-400 flex items-center gap-1.5 shrink-0">
-                          <span className="text-slate-500 font-medium">Source video:</span>
+                          <span className="text-slate-500 font-medium">Source:</span>
                           <a
                             href={targetUrl}
                             target="_blank"

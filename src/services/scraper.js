@@ -18,12 +18,12 @@ const APIFY_BASE = 'https://api.apify.com/v2'
 
 let inMemoryKeys = {
   youtubeApiKey: '',
-  apifyToken: '',
+  apifyToken: import.meta.env?.VITE_APIFY_API_KEY || '',
 }
 
 try {
   inMemoryKeys.youtubeApiKey = localStorage.getItem('forge_youtube_api_key') || ''
-  inMemoryKeys.apifyToken = localStorage.getItem('forge_apify_token') || ''
+  inMemoryKeys.apifyToken = localStorage.getItem('forge_apify_token') || import.meta.env?.VITE_APIFY_API_KEY || ''
 } catch (e) {
   console.warn('[Forge] Failed to load scraping keys from localStorage:', e)
 }
@@ -715,7 +715,33 @@ export async function searchGoogleApify(keyword, apifyTokenOverride = null) {
 
   try {
     const res = await apifyRunSync(actorId, input, token, 45)
-    return Array.isArray(res) ? res : []
+    if (!Array.isArray(res)) return []
+    const flat = []
+    for (const item of res) {
+      if (Array.isArray(item?.results)) {
+        for (const r of item.results) {
+          flat.push({
+            title: r.title || r.name || '',
+            url: r.url || r.link || '',
+            snippet: r.description || r.snippet || '',
+            description: r.description || r.snippet || '',
+            date: r.date || '',
+            position: r.position || 0,
+            source: 'Apify Google Search'
+          })
+        }
+      } else if (item && (item.title || item.url || item.description || item.snippet)) {
+        flat.push({
+          title: item.title || item.name || '',
+          url: item.url || item.link || '',
+          snippet: item.description || item.snippet || '',
+          description: item.description || item.snippet || '',
+          date: item.date || '',
+          source: 'Apify Google Search'
+        })
+      }
+    }
+    return flat
   } catch (err) {
     console.warn('[Forge] Google search scraper error, returning empty dataset:', err)
     return []
@@ -944,23 +970,45 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
         }
       } catch {}
 
+      if (targetUrls.length === 0) {
+        try {
+          const vids = await fetchCreatorYouTubeVideos(clean, 5)
+          if (Array.isArray(vids) && vids.length > 0) {
+            targetUrls = vids.map(v => v.url || `https://www.youtube.com/watch?v=${v.videoId || v.id}`).filter(Boolean)
+          }
+        } catch {}
+      }
+
       if (targetUrls.length > 0) {
         const apifyRes = await apifyRunSync(
           'streamers~youtube-comments-scraper',
-          { startUrls: targetUrls.slice(0, 2).map(url => ({ url })), maxComments: limit },
+          { 
+            startUrls: targetUrls.slice(0, 5).map(url => ({ url })), 
+            maxComments: limit,
+            sortCommentsBy: 'TOP_COMMENTS'
+          },
           apifyToken,
           45
         )
         if (Array.isArray(apifyRes) && apifyRes.length > 0) {
-          const formatted = apifyRes.map((c, i) => ({
-            id: c.commentId || c.id || `apify_${i}`,
-            author: c.authorChannelName || c.authorText || c.author || '@viewer',
-            text: (c.text || c.commentText || '').trim(),
-            likes: String(c.likesCount || c.likeCount || 0),
-            published: c.publishedTimeText || 'Recent',
-            time: c.publishedTimeText || 'Recent',
-            source: 'Apify YouTube Comments'
-          })).filter(c => c.text)
+          const formatted = apifyRes.map((c, i) => {
+            const txt = (c.text || c.comment || c.commentText || '').trim()
+            const vUrl = c.pageUrl || c.videoUrl || (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : '')
+            const vTitle = c.title || c.videoTitle || (targetUrls[0] ? 'Channel Upload' : '')
+            return {
+              id: c.cid || c.commentId || c.id || `apify_${i}`,
+              author: c.author || c.authorChannelName || c.authorText || '@viewer',
+              text: txt,
+              quote: txt,
+              likes: String(c.voteCount || c.likesCount || c.likeCount || 0),
+              published: c.publishedTimeText || c.published || 'Recent',
+              time: c.publishedTimeText || c.published || 'Recent',
+              videoId: c.videoId || '',
+              videoTitle: vTitle,
+              videoUrl: vUrl,
+              source: 'Apify YouTube Comments'
+            }
+          }).filter(c => c.text && c.text !== 'NO_RESULTS' && !c.error)
 
           if (formatted.length > 0) {
             try {
@@ -984,14 +1032,15 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
       const data = await res.json()
       if (Array.isArray(data.comments) && data.comments.length > 0) {
         const formatted = data.comments.map((c, i) => ({
-          id: c.id || `comm_${i}`,
+          id: c.id || c.cid || `comm_${i}`,
           author: c.author || '@viewer',
-          text: (c.text || c.quote || '').trim(),
-          likes: String(c.likes || 0),
-          published: c.published || 'Recent',
-          time: c.published || 'Recent',
+          text: (c.text || c.comment || c.quote || '').trim(),
+          likes: String(c.likes || c.voteCount || 0),
+          published: c.published || c.publishedTimeText || 'Recent',
+          time: c.published || c.publishedTimeText || 'Recent',
           videoId: c.videoId || '',
-          videoTitle: c.videoTitle || '',
+          videoTitle: c.videoTitle || c.title || 'Channel Upload',
+          videoUrl: c.videoUrl || c.pageUrl || (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : ''),
           source: c.source || 'YouTube'
         })).filter(c => c.text)
 

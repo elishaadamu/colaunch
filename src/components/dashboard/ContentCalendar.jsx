@@ -41,7 +41,8 @@ import {
   Layers,
   Sparkle,
   Trash2,
-  Bell
+  Bell,
+  ShieldCheck
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -1770,6 +1771,103 @@ export default function ContentCalendar() {
               </div>
             </div>
           )}
+
+          {/* ── CAMPAIGN CONVERSION ARCHITECTURE & STRATEGY TAGS (Exact match to reference Image 2) ── */}
+          <div className="mt-4 p-4 bg-[#090d16] border-0 rounded-none space-y-3 select-none">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-none bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={14} className="text-rose-400" />
+                </div>
+                <h4 className="text-xs font-black tracking-wider text-white uppercase">
+                  Campaign Conversion Architecture &amp; Strategy Tags
+                </h4>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Strategic framework for omnichannel conversion
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              {/* 1. LAUNCH */}
+              <div className="p-3 bg-[#0c1322] border border-sky-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-sky-400 tracking-wide">LAUNCH</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-sky-500/20 text-sky-300">
+                    CONV
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  High-urgency direct conversion hooks &amp; checkout waitlist.
+                </p>
+              </div>
+
+              {/* 2. VALUE */}
+              <div className="p-3 bg-[#0a1b18] border border-emerald-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-emerald-400 tracking-wide">VALUE</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-emerald-500/20 text-emerald-300">
+                    AUTHORITY
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  High-signal educational breakdowns &amp; viral tips.
+                </p>
+              </div>
+
+              {/* 3. BTS */}
+              <div className="p-3 bg-[#1d1608] border border-amber-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-amber-400 tracking-wide">BTS</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-amber-500/20 text-amber-300">
+                    HUMANITY
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  Unfiltered build-in-public raw moments.
+                </p>
+              </div>
+
+              {/* 4. PROOF */}
+              <div className="p-3 bg-[#160d24] border border-purple-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-purple-400 tracking-wide">PROOF</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-purple-500/20 text-purple-300">
+                    CRED
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  Case studies, testimonials, and user receipts.
+                </p>
+              </div>
+
+              {/* 5. CTA */}
+              <div className="p-3 bg-[#220d14] border border-rose-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-rose-400 tracking-wide">CTA</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-rose-500/20 text-rose-300">
+                    REVENUE
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  Unapologetic call-to-actions targeting warm buyers.
+                </p>
+              </div>
+
+              {/* 6. COMMUNITY */}
+              <div className="p-3 bg-[#1c0d26] border border-fuchsia-900/30 rounded-none flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-fuchsia-400 tracking-wide">COMMUNITY</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded-none bg-fuchsia-500/20 text-fuchsia-300">
+                    ENGAGE
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug mt-2">
+                  Polls &amp; questions that trigger algorithmic comments.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Matching Image 4) ── */}
