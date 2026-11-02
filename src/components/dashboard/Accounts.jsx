@@ -1144,66 +1144,6 @@ export default function Accounts() {
             </div>
           </div>
 
-          {/* ── PANEL 4: DIRECT ARCHITECTURE & SECURITY GUARANTEE ── */}
-          <div
-            className="p-5 border bg-[#0c0f17] space-y-3"
-            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
-          >
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={16} className="text-emerald-400" />
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                Direct OAuth 2.0 Security
-              </h4>
-            </div>
-
-            <div className="space-y-2 text-xs text-slate-400 leading-relaxed">
-              <p>
-                CoLaunch executes publishing directly from your dedicated backend without any intermediate SaaS services or credential storage.
-              </p>
-              <ul className="space-y-1.5 font-mono text-[11px] text-slate-300 pt-1">
-                <li className="flex items-center gap-1.5">
-                  <Check size={12} className="text-emerald-400 shrink-0" />
-                  <span>Buffer &amp; middleman proxies removed</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <Check size={12} className="text-emerald-400 shrink-0" />
-                  <span>Scoped to upload &amp; schedule only</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <Check size={12} className="text-emerald-400 shrink-0" />
-                  <span>Revocable instantly in Google Console</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* ── PANEL 5: ECOSYSTEM INTEGRATIONS ── */}
-          <div
-            className="p-4 border bg-[#0c0f17] text-xs space-y-2"
-            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] font-mono">
-                COMING SOON
-              </span>
-              <span className="text-[10px] font-mono text-slate-500">API PREVIEW</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
-                LinkedIn Pages
-              </span>
-              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
-                Threads
-              </span>
-              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
-                Discord Webhooks
-              </span>
-              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
-                Pinterest
-              </span>
-            </div>
-          </div>
-
         </div>
 
       </div>
