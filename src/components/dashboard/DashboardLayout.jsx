@@ -66,22 +66,22 @@ function DashboardAppPreview() {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 sm:p-6 bg-[#090d16] overflow-hidden">
-      {/* Top Header matching user reference Image 3: Centered, clean, flat, zero gradients */}
-      <div className="text-center mb-5 pt-1 flex-shrink-0">
+    <div className="min-h-full w-full flex flex-col bg-[#090d16]">
+      {/* Top Header outside the box: Permanently fixed at the top with backdrop */}
+      <div className="sticky top-0 z-30 bg-[#090d16]/95 backdrop-blur-md border-b border-white/5 py-3 px-4 text-center flex-shrink-0 shadow-md">
         <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
           Live App Preview
         </h2>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
           This is how your space looks to your audience.
         </p>
 
         {/* Centered Device Switcher matching Image 3: Desktop vs Mobile */}
-        <div className="inline-flex items-center gap-1.5 p-1 mt-3.5 bg-[#0e1320] border border-[#202738] rounded-none">
+        <div className="inline-flex items-center gap-1.5 p-1 mt-2.5 bg-[#0e1320] border border-[#202738] rounded-none">
           <button
             type="button"
             onClick={() => setDevice('desktop')}
-            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold transition cursor-pointer rounded-none ${
+            className={`flex items-center gap-2 px-5 py-1.5 text-xs font-bold transition cursor-pointer rounded-none ${
               device === 'desktop'
                 ? 'text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -94,7 +94,7 @@ function DashboardAppPreview() {
           <button
             type="button"
             onClick={() => setDevice('mobile')}
-            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold transition cursor-pointer rounded-none ${
+            className={`flex items-center gap-2 px-5 py-1.5 text-xs font-bold transition cursor-pointer rounded-none ${
               device === 'mobile'
                 ? 'text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -107,7 +107,7 @@ function DashboardAppPreview() {
         </div>
 
         {/* Secondary View Mode Bar (Public Landing vs Member App) */}
-        <div className="flex items-center justify-center gap-2 mt-3">
+        <div className="flex items-center justify-center gap-2 mt-2">
           <div className="inline-flex items-center gap-1 p-0.5 bg-[#0e1320] border border-[#202738] rounded-none">
             <button
               type="button"
@@ -158,9 +158,9 @@ function DashboardAppPreview() {
       </div>
 
       {/* Main Viewport Stage */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden relative">
+      <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-6 relative">
         {device === 'desktop' && (
-          <div className="w-full max-w-6xl h-full min-h-0 flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
+          <div className="w-full max-w-6xl h-[90vh] min-h-[600px] flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
             {/* Sleek Browser Window Chrome matching user Image 3 */}
             <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
               <div className="flex items-center space-x-1.5">
@@ -225,7 +225,7 @@ function DashboardAppPreview() {
         )}
 
         {device === 'mobile' && (
-          <div className="w-[360px] max-w-full h-full max-h-[740px] p-2.5 rounded-none border border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative my-auto transition-all duration-300">
+          <div className="w-[380px] max-w-full h-[90vh] min-h-[600px] p-2.5 rounded-none border border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative my-auto transition-all duration-300">
             {/* Screen Viewport */}
             <div className="flex-1 min-h-0 rounded-none overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar border border-white/5 scroll-smooth">
               <AppMockup
