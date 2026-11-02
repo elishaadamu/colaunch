@@ -42,8 +42,8 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const engagementRate = parseFloat(creatorData?.engagementRate) || 4.8
   const productName = activeBlueprint?.name || creatorData?.productName || 'WorshipLeader+ Membership'
 
-  // Active Tab State (10 Distinct Modules)
-  const [activeTab, setActiveTab] = useState('pain_points')
+  // Active Tab State (10 Distinct Modules - Module 1: Channel Telemetry is default)
+  const [activeTab, setActiveTab] = useState('telemetry')
 
   // Live Market & Competitor Search State
   const defaultSearchQuery = (() => {
