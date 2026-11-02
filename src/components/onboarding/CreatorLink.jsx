@@ -629,7 +629,7 @@ export default function CreatorLink() {
                 <div className="px-3.5 py-2 bg-[#090d14] flex items-center justify-between text-[10px] font-mono text-neutral-400 select-none">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center gap-1.5 text-neutral-300">
-                      <Activity className="w-3.5 h-3.5 text-[#c81e3c]" /> BUFFER: ONLINE
+                      <Activity className="w-3.5 h-3.5 text-[#c81e3c]" /> STATUS: ONLINE
                     </span>
                     <span className="text-neutral-700">|</span>
                     <span className="hidden sm:inline text-neutral-400">PROTOCOL: HTTPS/2 · TLS 1.3</span>
