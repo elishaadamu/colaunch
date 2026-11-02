@@ -312,6 +312,18 @@ export default function DashboardLayout() {
   const [diyModalOpen, setDiyModalOpen] = useState(false)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
 
+  // Security Guard: If logged out, redirect immediately to /login
+  useEffect(() => {
+    const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+    if (!hasSession) {
+      if (typeof window !== 'undefined') {
+        window.location.replace('/login')
+      } else {
+        goTo('login')
+      }
+    }
+  }, [userProfile, goTo])
+
   // Listen for real-time YouTube connection events from OAuth
   const [ytConn, setYtConn] = useState(() => getStoredYouTubeConnection())
   useEffect(() => {

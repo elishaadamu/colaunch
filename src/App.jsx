@@ -273,6 +273,13 @@ export default function App() {
         return 'creator-link'
       }
       if (path === '/dashboard' || path.startsWith('/dashboard/')) {
+        const hasSession = localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')
+        if (!hasSession) {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.history.replaceState(null, '', '/login')
+          }
+          return 'login'
+        }
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         return 'dashboard'
       }
@@ -288,6 +295,13 @@ export default function App() {
         'dashboard', 'login', 'signup', 'api', 'static'
       ]
       if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+        const hasSession = localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')
+        if (!hasSession) {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.history.replaceState(null, '', '/login')
+          }
+          return 'login'
+        }
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         return 'dashboard'
       }
@@ -610,6 +624,13 @@ export default function App() {
     } else if (newStep === 'signup') {
       path = '/signup'
     } else if (newStep === 'dashboard') {
+      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      if (!hasSession) {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.replace('/login')
+        }
+        return
+      }
       const cleanHandle = (creatorData?.handle || creatorData?.name || 'creator')
         .replace(/^@+/, '')
         .toLowerCase()
@@ -621,10 +642,15 @@ export default function App() {
     if (window.location.pathname !== path) {
       window.history.pushState(null, '', path)
     }
-  }, [creatorData])
+  }, [creatorData, userProfile])
 
   useEffect(() => {
     if (step === 'dashboard' && typeof window !== 'undefined') {
+      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      if (!hasSession) {
+        window.location.replace('/login')
+        return
+      }
       try {
         localStorage.setItem('forge_onboarding_step', 'dashboard')
       } catch {}
@@ -641,7 +667,7 @@ export default function App() {
         }
       }
     }
-  }, [step, creatorData?.id, creatorData?.channelId, creatorData?._id, creatorData?.handle, creatorData?.name])
+  }, [step, userProfile, creatorData?.id, creatorData?.channelId, creatorData?._id, creatorData?.handle, creatorData?.name])
 
   const next = () => {
     if (step === 'celebration') {
@@ -910,6 +936,11 @@ export default function App() {
       } else if (path === '/signup') {
         setStep('signup')
       } else if (path === '/dashboard' || path.startsWith('/dashboard/')) {
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+        if (!hasSession) {
+          window.location.replace('/login')
+          return
+        }
         setStep('dashboard')
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         const pathParts = path.split('/').filter(Boolean)
@@ -932,6 +963,11 @@ export default function App() {
           'dashboard', 'login', 'signup', 'api', 'static'
         ]
         if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+          const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+          if (!hasSession) {
+            window.location.replace('/login')
+            return
+          }
           const routeCreatorId = rawParts[1]
           setStep('dashboard')
           try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
@@ -1078,6 +1114,7 @@ export default function App() {
     })
 
     localStorage.clear()
+    try { sessionStorage.clear() } catch {}
     setUserProfile(null)
 
     setCreatorData({
@@ -1097,7 +1134,12 @@ export default function App() {
     })
     setBgJobs({})
     setAiActionsCount(0)
-    navigate('login')
+
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login')
+    } else {
+      navigate('login')
+    }
   }, [navigate])
 
   // Unified brand color is applied consistently across all portal & dashboard pages
@@ -1150,6 +1192,17 @@ export default function App() {
       'dashboard', 'login', 'signup', 'api', 'static'
     ]
     if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      if (!hasSession) {
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login')
+        }
+        return (
+          <ForgeContext.Provider value={ctx}>
+            <Login />
+          </ForgeContext.Provider>
+        )
+      }
       const routeCreatorId = rawParts[1]
       if (window.location.pathname !== `/dashboard/${routeCreatorId}`) {
         window.history.replaceState(null, '', `/dashboard/${routeCreatorId}`)
@@ -1276,6 +1329,17 @@ export default function App() {
   }
 
   if (step === 'dashboard') {
+    const hasSession = Boolean(userProfile || (typeof localStorage !== 'undefined' && localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+    if (!hasSession) {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.replace('/login')
+      }
+      return (
+        <ForgeContext.Provider value={ctx}>
+          <Login />
+        </ForgeContext.Provider>
+      )
+    }
     return (
       <ForgeContext.Provider value={ctx}>
         <DashboardLayout />
