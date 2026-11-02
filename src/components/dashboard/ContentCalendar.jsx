@@ -773,37 +773,38 @@ export default function ContentCalendar() {
   })
 
   // Dynamic XP computation derived from real creator actions, database posts, and connected accounts
+  // Pre-generated templates do NOT award passive XP — XP is only earned through genuine creator actions.
   const xp = useMemo(() => {
-    // 25 XP per drafted post, 75 XP per scheduled post, 150 XP per published post
+    // 0 XP for unedited system drafts; 50 XP per actively scheduled post; 100 XP per published post
     const postsXp = posts.reduce((sum, p) => {
-      if (p.status === 'Posted') return sum + 150
-      if (p.status === 'Scheduled') return sum + 75
-      return sum + 25 // Draft
+      if (p.status === 'Posted') return sum + 100
+      if (p.status === 'Scheduled') return sum + 50
+      // Only award custom draft XP if user created it or significantly customized it
+      if (p.isCustomCreated || (p.caption && p.caption.length > 50 && p.customized)) return sum + 25
+      return sum
     }, 0)
-    const ytXp = youtubeConnection?.connected ? 200 : 0
-    const emailXp = creatorData?.email && creatorData.email.includes('@') ? 100 : 0
+    const ytXp = youtubeConnection?.connected ? 100 : 0
+    const emailXp = creatorData?.email && creatorData.email.includes('@') ? 50 : 0
     return (creatorData?.xp || 0) + postsXp + ytXp + emailXp + bonusXp
   }, [posts, youtubeConnection?.connected, creatorData?.email, creatorData?.xp, bonusXp])
 
-  // Dynamic Level computation:
-  // Level 1: 0-249 XP (Starter Creator)
-  // Level 2: 250-499 XP (Rising Creator)
-  // Level 3: 500-999 XP (Active Creator)
-  // Level 4: 1000-1999 XP (Growth Creator)
-  // Level 5: 2000+ XP (Pro Creator)
-  const currentLevel = xp >= 2000 ? 5 : xp >= 1000 ? 4 : xp >= 500 ? 3 : xp >= 250 ? 2 : 1
-  const targetXp = currentLevel === 1 ? 250 : currentLevel === 2 ? 500 : currentLevel === 3 ? 1000 : currentLevel === 4 ? 2000 : 3500
-  const prevLevelXp = currentLevel === 1 ? 0 : currentLevel === 2 ? 250 : currentLevel === 3 ? 500 : currentLevel === 4 ? 1000 : 2000
-  const xpPercent = Math.min(100, Math.max(5, Math.round(((xp - prevLevelXp) / (targetXp - prevLevelXp)) * 100)))
+  // Realistic Level computation:
+  // Level 1: 0-249 XP (Launchpad Creator)
+  // Level 2: 250-599 XP (Rising Creator)
+  // Level 3: 600-1199 XP (Active Creator)
+  // Level 4: 1200-2499 XP (Growth Creator)
+  // Level 5: 2500+ XP (Pro Creator)
+  const currentLevel = xp >= 2500 ? 5 : xp >= 1200 ? 4 : xp >= 600 ? 3 : xp >= 250 ? 2 : 1
+  const targetXp = currentLevel === 1 ? 250 : currentLevel === 2 ? 600 : currentLevel === 3 ? 1200 : currentLevel === 4 ? 2500 : 5000
+  const prevLevelXp = currentLevel === 1 ? 0 : currentLevel === 2 ? 250 : currentLevel === 3 ? 600 : currentLevel === 4 ? 1200 : 2500
+  const xpPercent = Math.min(100, Math.max(0, Math.round(((xp - prevLevelXp) / (targetXp - prevLevelXp)) * 100)))
 
-  // Dynamic Streak: computed from active days with scheduled or published posts
+  // Truthful Streak: only counts if there are genuinely scheduled or posted campaigns
   const streak = useMemo(() => {
     const scheduledOrPosted = posts.filter(p => p.status === 'Scheduled' || p.status === 'Posted')
-    if (scheduledOrPosted.length > 0) {
-      const activeDays = new Set(scheduledOrPosted.map(p => p.dayName)).size
-      return Math.max(1, activeDays)
-    }
-    return 1
+    if (scheduledOrPosted.length === 0) return 1
+    const activeDays = new Set(scheduledOrPosted.map(p => p.dayName)).size
+    return Math.max(1, activeDays)
   }, [posts])
 
   // Persist posts and keep Marketing Launch Calendar synchronized
