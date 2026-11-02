@@ -709,14 +709,21 @@ const PREVIEW_COMPONENTS = { webapp: WebAppPreview, mobile: MobilePreview, commu
 // ── Mapping Recommendations ──────────────────────────────────────────────────
 
 function mapRecommendationsToBlueprints(recs, creatorData = {}) {
-  const followers = parseFollowerCount(creatorData?.followers)
+  const followers = parseFollowerCount(
+    creatorData?.followers ||
+    creatorData?.subscribers ||
+    creatorData?.subscriberCount ||
+    creatorData?.channelData?.subscriberCount ||
+    creatorData?.telemetry?.subscribers ||
+    455000
+  )
   const eng = parseFloat(creatorData?.engagementRate) || 3.5
 
   // Pull audience intelligence pricing if available to guarantee 100% synchronization
   let intelPricing = creatorData?.audienceIntelligence?.pricing || null
   if (!intelPricing) {
     try {
-      const cleanH = (creatorData?.handle || '').replace(/^@/, '').toLowerCase().trim()
+      const cleanH = (creatorData?.handle || creatorData?.name || '').replace(/^@/, '').toLowerCase().trim()
       const cached = localStorage.getItem(`forge_audience_intel_${cleanH}`)
       if (cached) {
         const parsed = JSON.parse(cached)
@@ -730,8 +737,17 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
     return BLUEPRINTS.map((b, idx) => ({
       ...b,
       fit: Math.max(65, baseFit - (idx * 6)),
-      revenue: (intelPricing?.conservative_mrr && intelPricing?.target_mrr && idx === 0)
-        ? `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
+      revenue: (intelPricing?.conservative_mrr && intelPricing?.target_mrr)
+        ? (idx === 0 
+            ? `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
+            : (() => {
+                const pLow = parseFloat(intelPricing.conservative_mrr.replace(/[^0-9.]/g, '')) || 19
+                const pHigh = parseFloat(intelPricing.target_mrr.replace(/[^0-9.]/g, '')) || 49
+                const unit = intelPricing.target_mrr.includes('M') ? 'M' : 'K'
+                const factor = idx === 1 ? 0.75 : idx === 2 ? 0.55 : 0.40
+                return `$${Math.round(pLow * factor * 10) / 10}${unit}–$${Math.round(pHigh * factor * 10) / 10}${unit} / mo`
+              })()
+          )
         : calculateFollowerRevenueRange(followers, b.id, eng)
     }))
   }
@@ -760,14 +776,25 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
       other: ['Custom storefront', 'Digital delivery', 'Secure checkout', 'Customer dashboard']
     }
 
-    let dynamicRev = (intelPricing?.conservative_mrr && intelPricing?.target_mrr && index === 0)
-      ? `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
-      : calculateFollowerRevenueRange(
-          followers,
-          r.product_category,
-          eng,
-          r.revenue_potential
-        )
+    let dynamicRev = ''
+    if (intelPricing?.conservative_mrr && intelPricing?.target_mrr) {
+      if (index === 0) {
+        dynamicRev = `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
+      } else {
+        const pLow = parseFloat(intelPricing.conservative_mrr.replace(/[^0-9.]/g, '')) || 19
+        const pHigh = parseFloat(intelPricing.target_mrr.replace(/[^0-9.]/g, '')) || 49
+        const unit = intelPricing.target_mrr.includes('M') ? 'M' : 'K'
+        const factor = index === 1 ? 0.75 : index === 2 ? 0.55 : 0.40
+        dynamicRev = `$${Math.round(pLow * factor * 10) / 10}${unit}–$${Math.round(pHigh * factor * 10) / 10}${unit} / mo`
+      }
+    } else {
+      dynamicRev = calculateFollowerRevenueRange(
+        followers,
+        r.product_category,
+        eng,
+        r.revenue_potential
+      )
+    }
 
     const rawConf = r.confidence_score ?? r.confidenceScore ?? r.fit
     let fitVal
