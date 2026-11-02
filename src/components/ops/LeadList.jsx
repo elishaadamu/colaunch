@@ -7,7 +7,7 @@ import {
   Grid, List, LayoutGrid
 } from 'lucide-react'
 import { XLogo } from '../launch/PostVisualMockup'
-import { getCreators, scrapeCreator, analyzeCreator, qualifyCreator, suppressCreator, deleteCreator, getCreatorAnalysis } from '../../services/opsApi'
+import { getCreators, scrapeCreator, analyzeCreator, qualifyCreator, suppressCreator, deleteCreator, deleteAllCreators, getCreatorAnalysis } from '../../services/opsApi'
 
 const PLATFORM_ICONS = {
   youtube:   { Icon: Youtube,    color: '#ff3b30' },
@@ -608,8 +608,18 @@ function CreatorCompactCard({ creator, onAnalyze, onQualify, onSuppress, onDelet
         <button
           onClick={() => onViewAnalysis(creator)}
           className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors border-none cursor-pointer"
+          title="View Details"
         >
           <Eye size={8} />
+        </button>
+
+        {/* Quick delete button */}
+        <button
+          onClick={() => onDelete(creator.id)}
+          className="p-1 rounded bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors border-none cursor-pointer"
+          title="Delete Creator"
+        >
+          <Trash2 size={8} />
         </button>
       </div>
 
@@ -784,7 +794,7 @@ const CopyButton = ({ text }) => {
   )
 }
 
-function DeepAnalysisView({ analysis, creator, onBack, onReanalyze, analyzing }) {
+function DeepAnalysisView({ analysis, creator, onBack, onReanalyze, onDelete, analyzing }) {
   const [showRaw, setShowRaw] = useState(false)
   const { Icon, color } = PLATFORM_ICONS[creator.platform] || { Icon: AlertCircle, color: '#fff' }
 
@@ -838,15 +848,28 @@ function DeepAnalysisView({ analysis, creator, onBack, onReanalyze, analyzing })
           </div>
         </div>
 
-        <button
-          onClick={() => onReanalyze(creator.id)}
-          disabled={analyzing}
-          className="px-4 py-2.5 rounded-xl text-[12px] font-semibold text-white/90 hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0 bg-transparent"
-          style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}
-        >
-          {analyzing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          {analyzing ? 'Analyzing…' : 'Re-Run AI Analysis'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onReanalyze(creator.id)}
+            disabled={analyzing}
+            className="px-4 py-2.5 rounded-xl text-[12px] font-semibold text-white/90 hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0 bg-transparent cursor-pointer"
+            style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}
+          >
+            {analyzing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+            {analyzing ? 'Analyzing…' : 'Re-Run AI Analysis'}
+          </button>
+
+          {onDelete && (
+            <button
+              onClick={() => onDelete(creator.id)}
+              className="px-3.5 py-2.5 rounded-xl text-[12px] font-semibold text-rose-400 hover:text-white hover:bg-rose-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 bg-transparent border border-rose-500/30 cursor-pointer"
+              title="Delete Creator"
+            >
+              <Trash2 size={13} />
+              <span>Delete Creator</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats and Metrics */}
@@ -1188,6 +1211,27 @@ export default function LeadList({ onCountChange }) {
     })
   }
 
+  const handleDeleteAll = () => {
+    if (creators.length === 0) return
+    setConfirmModal({
+      title: 'Delete All Creators',
+      message: `Are you sure you want to delete all ${creators.length} creators from the database? This action will cascade delete all associated messages, drafts, and analyses and cannot be undone.`,
+      confirmLabel: 'Delete All',
+      confirmBg: '#ef4444',
+      onConfirm: async () => {
+        try {
+          await deleteAllCreators()
+          showToast('All creators have been deleted.', 'success')
+          setSelectedCreator(null)
+          setSelectedAnalysis(null)
+          load()
+        } catch (e) {
+          showToast(`Failed to delete all creators: ${e.message}`, 'error')
+        }
+      }
+    })
+  }
+
   const handleInlineScrape = async () => {
     if (!search.trim()) return
     setScrapingInline(true)
@@ -1304,6 +1348,7 @@ export default function LeadList({ onCountChange }) {
           creator={selectedCreator}
           onBack={() => { setSelectedAnalysis(null); setSelectedCreator(null); }}
           onReanalyze={handleAnalyze}
+          onDelete={handleDelete}
           analyzing={analyzing === selectedCreator.id}
         />
       ) : (
@@ -1497,14 +1542,27 @@ export default function LeadList({ onCountChange }) {
                 </button>
               </div>
 
-              {/* Batch Add button */}
-              <button
-                onClick={() => setShowScrape(true)}
-                className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-black transition-all border-none bg-white hover:bg-white/95 cursor-pointer"
-              >
-                <Plus size={13} />
-                <span>Add</span>
-              </button>
+              {/* Action Buttons: Clear All & Add */}
+              <div className="ml-auto flex items-center gap-2">
+                {creators.length > 0 && (
+                  <button
+                    onClick={handleDeleteAll}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-medium text-rose-400 hover:text-white hover:bg-rose-500/20 transition-all border border-rose-500/30 bg-transparent cursor-pointer"
+                    title="Delete all creators from database"
+                  >
+                    <Trash2 size={12} />
+                    <span className="hidden sm:inline">Clear All</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setShowScrape(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-black transition-all border-none bg-white hover:bg-white/95 cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>Add</span>
+                </button>
+              </div>
 
             </div>
 
