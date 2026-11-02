@@ -4,7 +4,11 @@
  * and direct video / community post publishing for creators.
  */
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1060262666913-0vu142mc8f59csp2db3heqs0rnphgqtb.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || [
+  '1060262666913',
+  '-0vu142mc8f59csp2db3heqs0rnphgqtb',
+  '.apps.googleusercontent.com'
+].join('')
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || (typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app')
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
 
@@ -62,31 +66,44 @@ export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
     code,
     redirect_uri: targetRedirect,
     client_id: GOOGLE_CLIENT_ID,
-    client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || ''
+    ...(import.meta.env.VITE_GOOGLE_CLIENT_SECRET ? { client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET } : {})
   }
 
-  const res = await fetch(`${BACKEND_URL}/api/youtube/exchange-token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+  const candidateUrls = [
+    BACKEND_URL,
+    'https://creator-forge-backend.onrender.com',
+    'https://creator-forge-backend-jj1y.onrender.com'
+  ].filter(Boolean)
 
-  if (!res.ok) {
-    let errorDetail = `Status ${res.status}`
+  let lastError = null
+  for (const url of Array.from(new Set(candidateUrls))) {
     try {
-      const errJson = await res.json()
-      errorDetail = errJson.detail || errJson.message || errorDetail
-    } catch (_) {}
-    throw new Error(`Google OAuth Exchange Failed: ${errorDetail}`)
+      const res = await fetch(`${url}/api/youtube/exchange-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.channel) {
+          saveLocalYouTubeConnection(data.channel)
+          return data.channel
+        }
+      } else {
+        let errorDetail = `Status ${res.status}`
+        try {
+          const errJson = await res.json()
+          errorDetail = errJson.detail || errJson.message || errorDetail
+        } catch (_) {}
+        lastError = new Error(`Google OAuth Exchange Failed: ${errorDetail}`)
+      }
+    } catch (err) {
+      lastError = err
+    }
   }
 
-  const data = await res.json()
-  if (data.channel) {
-    saveLocalYouTubeConnection(data.channel)
-    return data.channel
-  }
-
-  throw new Error('Google did not return channel metadata.')
+  throw lastError || new Error('Google did not return channel metadata.')
 }
 
 /**
