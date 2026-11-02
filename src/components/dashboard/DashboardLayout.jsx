@@ -377,20 +377,6 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Commercial Launch & Pricing Point Button */}
-            <button
-              onClick={() => setPricingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-[12px] font-bold transition-all hover:opacity-90 active:scale-98 cursor-pointer border border-white/10"
-              style={{
-                background: creatorBrandColor,
-                color: brandTextColor,
-              }}
-              title="Review Co-Launch Commercial Terms & Pricing"
-            >
-              <Zap size={12} className="fill-current" style={{ color: brandTextColor }} />
-              <span style={{ color: brandTextColor }}>Launch Plan • Pricing</span>
-            </button>
-
             {/* Live status pill */}
             <div
               className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border"
