@@ -60,9 +60,25 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const [googleResults, setGoogleResults] = useState(null)
   const [searchNotice, setSearchNotice] = useState(null)
 
-  // Intelligence State (Populated dynamically via Apify signals & AI)
+  // Intelligence State (Populated from localStorage cache or dynamically via signals)
   const [intelligence, setIntelligence] = useState(() => {
-    // 1. Read existing real comments from creatorData or localStorage
+    // 1. Check creatorData.audienceIntelligence first
+    if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
+      return creatorData.audienceIntelligence
+    }
+
+    // 2. Check saved localStorage cache for this creator
+    try {
+      const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed && parsed.telemetry && parsed.pain_points) {
+          return parsed
+        }
+      }
+    } catch {}
+
+    // 3. Fallback: dynamic intelligence computed from signals
     let storedComments = []
     try {
       const c1 = localStorage.getItem(`forge_creator_comments_${handleClean}`)
@@ -75,7 +91,6 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       storedComments = creatorData.channelComments
     }
 
-    // 2. Read existing real Google Search results from localStorage
     let storedSearch = []
     try {
       const s1 = localStorage.getItem(`forge_apify_search_${handleClean}`)
@@ -84,31 +99,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
     const dynamic = getDynamicAudienceIntelligence(creatorData, storedComments, storedSearch)
     try {
-      const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
-      if (cached) {
-        const parsed = JSON.parse(cached)
-        if (parsed && parsed.telemetry && parsed.pain_points && parsed.demographics) {
-          // If cached requests contain fake placeholder strings, discard the fake cache
-          const hasFake = (parsed.requests || []).some(r => 
-            !r.author || 
-            r.author.includes('LoyalCommunityMember') || 
-            r.author.includes('viewerHandle') || 
-            r.author.includes('Marcus_CreativeLead') || 
-            r.author.includes('ElenaStudioCraft') || 
-            r.author.includes('Devin_ScaleFast') ||
-            (r.quote && r.quote.includes('centralized place where we could access all your templates'))
-          )
-
-          // Discard if cache contains duplicate quotes or generic placeholders
-          const quoteList = (parsed.requests || []).map(r => (r.quote || '').trim().toLowerCase()).filter(Boolean)
-          const hasDuplicates = new Set(quoteList).size < quoteList.length
-          const hasGenericTitles = (parsed.requests || []).some(r => r.title?.startsWith('Feature Request') || r.title === 'FAQ Item')
-
-          if (!hasFake && !hasDuplicates && !hasGenericTitles && parsed.requests?.length >= 3) {
-            return parsed
-          }
-        }
-      }
+      localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(dynamic))
     } catch {}
     return dynamic
   })
@@ -120,6 +111,26 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
   // Run full intelligence pipeline: Apify comments + Apify Google Search + AI synthesis
   const runFullPipeline = async (forceRefresh = false) => {
+    // If NOT an explicit force refresh, check if valid data is already saved in localStorage or creatorData
+    if (!forceRefresh) {
+      if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
+        setIntelligence(creatorData.audienceIntelligence)
+        setIsAnalyzing(false)
+        return
+      }
+      try {
+        const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (parsed && parsed.telemetry && parsed.pain_points) {
+            setIntelligence(parsed)
+            setIsAnalyzing(false)
+            return
+          }
+        }
+      } catch {}
+    }
+
     setIsAnalyzing(true)
     setAnalysisStatus('Scanning channel uploads & metadata...')
 
@@ -202,13 +213,42 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     }
   }
 
-  // Auto-run pipeline on mount and when creator changes to ensure live market and community data is loaded
+  // Auto-run pipeline on mount ONLY if not already saved in localStorage for this creator
   useEffect(() => {
     if (defaultSearchQuery && (!googleQuery || googleQuery === 'undefined software tools pricing' || (googleQuery.includes('Worship chord') && (handleClean.includes('marques') || handleClean.includes('mkbhd'))))) {
       setGoogleQuery(defaultSearchQuery)
     }
-    runFullPipeline(false)
+
+    // Check if 10 modules already saved in localStorage or creatorData
+    let hasSaved = false
+    if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
+      hasSaved = true
+    }
+    try {
+      const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed && parsed.telemetry && parsed.pain_points) {
+          hasSaved = true
+        }
+      }
+    } catch {}
+
+    if (!hasSaved) {
+      runFullPipeline(false)
+    } else {
+      setIsAnalyzing(false)
+    }
   }, [handleClean, defaultSearchQuery])
+
+  // Ensure any intelligence updates are immediately persisted to localStorage
+  useEffect(() => {
+    if (intelligence && intelligence.telemetry && intelligence.pain_points && handleClean) {
+      try {
+        localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(intelligence))
+      } catch {}
+    }
+  }, [intelligence, handleClean])
 
   // Trigger manual market competitor search
   const handleRunApifyGoogleSearch = async () => {
@@ -228,10 +268,16 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
           weakness: item.snippet || item.description || 'Legacy feature bloat, high cost, or lack of tailored creator workflow integration.',
           advantage: `Tailored specifically for @${handleClean}'s audience with direct tool access and zero bloat.`
         }))
-        setIntelligence(prev => ({
-          ...prev,
-          competitors: newComps.length >= 3 ? newComps : prev.competitors
-        }))
+        setIntelligence(prev => {
+          const updated = {
+            ...prev,
+            competitors: newComps.length >= 3 ? newComps : prev.competitors
+          }
+          try {
+            localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(updated))
+          } catch {}
+          return updated
+        })
         setSearchNotice(`✓ Market search query successfully indexed ${items.length} live competitor benchmarks for "${googleQuery}".`)
       }
     } catch (err) {
