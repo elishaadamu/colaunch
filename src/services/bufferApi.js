@@ -64,6 +64,37 @@ export async function executeBufferGraphQL(query, variables = {}) {
  * Retrieves the Buffer account profile and organization ID
  */
 export async function fetchBufferAccount() {
+  // First attempt via backend proxy to bypass browser CORS
+  try {
+    const res = await fetch('/api/buffer/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated) {
+        return {
+          accountId: 'buffer-authenticated',
+          email: data.email || '',
+          organizationId: 'buffer-org',
+          organizationName: data.organizationName || 'My organization',
+          channels: data.channels || [],
+          raw: data
+        };
+      }
+    }
+  } catch (e) {
+    // Backend proxy not reachable, fallback to direct client call
+  }
+
+  const token = getBufferToken();
+  if (!token) {
+    return {
+      accountId: null,
+      email: '',
+      organizationId: null,
+      organizationName: '',
+      raw: null
+    };
+  }
+
   const query = `
     query GetBufferAccount {
       account {
@@ -77,23 +108,45 @@ export async function fetchBufferAccount() {
     }
   `;
 
-  const data = await executeBufferGraphQL(query);
-  const account = data?.account;
-  const primaryOrg = account?.organizations?.[0] || null;
+  try {
+    const data = await executeBufferGraphQL(query);
+    const account = data?.account;
+    const primaryOrg = account?.organizations?.[0] || null;
 
-  return {
-    accountId: account?.id,
-    email: account?.email,
-    organizationId: primaryOrg?.id,
-    organizationName: primaryOrg?.name,
-    raw: account
-  };
+    return {
+      accountId: account?.id || null,
+      email: account?.email || '',
+      organizationId: primaryOrg?.id || null,
+      organizationName: primaryOrg?.name || '',
+      raw: account
+    };
+  } catch (err) {
+    console.warn('[BufferApi] Client fetch account notice:', err.message);
+    return {
+      accountId: null,
+      email: '',
+      organizationId: null,
+      organizationName: '',
+      raw: null
+    };
+  }
 }
 
 /**
  * Fetches all connected channels (YouTube, X, Instagram, LinkedIn, TikTok, Facebook) for the given organization
  */
 export async function fetchBufferChannels(organizationId) {
+  // Check backend proxy first
+  try {
+    const res = await fetch('/api/buffer/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated && Array.isArray(data.channels)) {
+        return data.channels;
+      }
+    }
+  } catch (e) {}
+
   if (!organizationId) {
     const acct = await fetchBufferAccount();
     organizationId = acct.organizationId;
@@ -116,11 +169,15 @@ export async function fetchBufferChannels(organizationId) {
     }
   `;
 
-  const data = await executeBufferGraphQL(query, {
-    input: { organizationId }
-  });
-
-  return Array.isArray(data?.channels) ? data.channels : [];
+  try {
+    const data = await executeBufferGraphQL(query, {
+      input: { organizationId }
+    });
+    return Array.isArray(data?.channels) ? data.channels : [];
+  } catch (err) {
+    console.warn('[BufferApi] Channels fetch notice:', err.message);
+    return [];
+  }
 }
 
 /**
@@ -183,6 +240,29 @@ export async function createBufferPost({
 }) {
   if (!channelId) {
     throw new Error('A valid channelId is required to create a Buffer post.');
+  }
+
+  // Try backend proxy first to avoid browser CORS
+  try {
+    const res = await fetch('/api/buffer/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channelId,
+        text,
+        mode,
+        schedulingType,
+        dueAt,
+        saveToDraft,
+        assets
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.post) return data.post;
+    }
+  } catch (e) {
+    // Fallback to direct client execution
   }
 
   const mutation = `

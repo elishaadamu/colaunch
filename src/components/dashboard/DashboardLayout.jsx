@@ -13,13 +13,15 @@ import SupportChatPage from './SupportChatPage'
 import { useForge, getAccent } from '../../App'
 import { 
   Sparkles, Laptop, Smartphone, Tablet, Menu, LogOut, Zap,
-  Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor
+  Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor,
+  Mail, AlertTriangle
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup, VideoPlayerModal } from '../onboarding/Preview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import PricingPointModal from './PricingPointModal'
 import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
+import EmailConfigModal from '../ui/EmailConfigModal'
 import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 
 function DashboardAppPreview() {
@@ -299,18 +301,31 @@ export default function DashboardLayout() {
     setActiveTab,
     logout,
     userProfile,
+    setUserProfile,
+    triggerToast,
     chatOpen,
     setChatOpen,
   } = useForge()
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024)
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const [diyModalOpen, setDiyModalOpen] = useState(false)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
 
   // Unified single brand color across the entire application (co-launch.app brand red)
   const creatorBrandColor = '#c81e3c'
   const [cr, cg, cb] = [200, 30, 60]
   const brandTextColor = '#ffffff'
+
+  // Email configuration check: ensures the user has a genuine custom email (not default/dummy)
+  const currentCreatorEmail = (userProfile?.email || creatorData?.email || '').trim().toLowerCase()
+  const isEmailConfigured = Boolean(
+    currentCreatorEmail &&
+    currentCreatorEmail !== 'creatorforgeweb@gmail.com' &&
+    !currentCreatorEmail.endsWith('@example.com') &&
+    !currentCreatorEmail.endsWith('@test.com') &&
+    currentCreatorEmail.includes('@')
+  )
 
   // Listen for pricing events from child tabs (Revenue, Marketing, etc.)
   useEffect(() => {
@@ -444,6 +459,66 @@ export default function DashboardLayout() {
           </div>
         </div>
 
+        {/* Email Not Configured Notification Banner (First view of dashboard prompt) */}
+        {!isEmailConfigured && (
+          <div 
+            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3.5 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+            style={{
+              background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.14) 0%, rgba(11, 15, 25, 0.98) 100%)`,
+              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.5)`,
+              borderRadius: '0px'
+            }}
+          >
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div 
+                className="w-10 h-10 rounded-none flex items-center justify-center flex-shrink-0 border"
+                style={{ 
+                  background: creatorBrandColor, 
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.6)`,
+                  borderRadius: '0px'
+                }}
+              >
+                <Mail size={18} className="text-white" />
+              </div>
+              <div className="space-y-0.5 text-left">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[13px] font-extrabold text-white tracking-tight">
+                    Email Address Not Configured
+                  </h4>
+                  <span 
+                    className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
+                    style={{
+                      background: creatorBrandColor,
+                      color: '#ffffff',
+                      borderRadius: '0px'
+                    }}
+                  >
+                    Action Required
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-300 leading-relaxed">
+                  Your creator email is not configured. Please add your email address to enable campaign outreach, lead notifications, customer receipts, and member invites.
+                </p>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              onClick={() => setEmailModalOpen(true)}
+              className="text-[12px] py-2.5 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 font-extrabold transition-all duration-150 cursor-pointer shadow-md hover:opacity-95"
+              style={{
+                background: creatorBrandColor,
+                color: '#ffffff',
+                borderRadius: '0px',
+                border: 'none'
+              }}
+            >
+              <Mail size={14} className="text-white" />
+              <span className="text-white font-bold">Configure Email</span>
+            </button>
+          </div>
+        )}
+
         {/* Guest Action Suggestion Banner */}
         {!isRegistered && aiActionsCount >= 3 && (
           <div 
@@ -548,6 +623,17 @@ export default function DashboardLayout() {
           diyPassPrice: 50
         }}
         onUnlockSuccess={() => setDiyModalOpen(false)}
+      />
+
+      {/* Email Configuration Modal */}
+      <EmailConfigModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        userProfile={userProfile}
+        creatorData={creatorData}
+        setUserProfile={setUserProfile}
+        updateCreator={updateCreator}
+        triggerToast={triggerToast}
       />
     </div>
   )

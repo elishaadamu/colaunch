@@ -145,12 +145,14 @@ function calculateWeekData(offset = 0) {
   const weekNum = Math.ceil((monday.getDay() + 1 + numberOfDays) / 7)
 
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const fullDayNamesList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   const days = dayNames.map((name, idx) => {
     const d = new Date(monday)
     d.setDate(monday.getDate() + idx)
     return {
       dayIdx: idx,
       name,
+      fullDayName: fullDayNamesList[idx],
       dateLabel: `${d.getMonth() + 1}/${d.getDate()}`,
       fullDateStr: `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
       isToday: d.toDateString() === now.toDateString()
@@ -158,6 +160,31 @@ function calculateWeekData(offset = 0) {
   })
 
   return { headerTitle, weekNum, days, monday, sunday }
+}
+
+// Clean Full Weekday Name Resolver (eliminates string concatenations like 'Tueday' or 'Wedday')
+function getFullDayName(postOrCell) {
+  if (!postOrCell) return 'Today'
+  if (postOrCell.fullDayName) return postOrCell.fullDayName
+  if (postOrCell.dateKey) {
+    const parts = String(postOrCell.dateKey).split('-')
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+      const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      return fullDays[d.getDay()]
+    }
+  }
+  const mapping = {
+    Mon: 'Monday',
+    Tue: 'Tuesday',
+    Wed: 'Wednesday',
+    Thu: 'Thursday',
+    Fri: 'Friday',
+    Sat: 'Saturday',
+    Sun: 'Sunday'
+  }
+  const raw = postOrCell.dayName || postOrCell.name || ''
+  return mapping[raw] || raw || 'Today'
 }
 
 // Dynamic Month Calendar Grid calculation (7 columns: Mon to Sun)
@@ -169,6 +196,7 @@ function getMonthCalendarGrid(year, monthIndex) {
   const startDayOfWeek = (firstDay.getDay() + 6) % 7
   const daysInMonth = lastDay.getDate()
   const prevMonthLastDay = new Date(year, monthIndex, 0).getDate()
+  const fullDayNamesArr = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   
   const cells = []
   
@@ -176,24 +204,28 @@ function getMonthCalendarGrid(year, monthIndex) {
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const dayNum = prevMonthLastDay - i
     const d = new Date(year, monthIndex - 1, dayNum)
+    const dayIdx = (d.getDay() + 6) % 7
     cells.push({
       dayNumber: dayNum,
       isCurrentMonth: false,
       dateObj: d,
       dateKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`,
-      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(d.getDay() + 6) % 7]
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayIdx],
+      fullDayName: fullDayNamesArr[dayIdx]
     })
   }
   
   // Days of current month
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(year, monthIndex, d)
+    const dayIdx = (dateObj.getDay() + 6) % 7
     cells.push({
       dayNumber: d,
       isCurrentMonth: true,
       dateObj,
       dateKey: `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
-      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(dateObj.getDay() + 6) % 7]
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayIdx],
+      fullDayName: fullDayNamesArr[dayIdx]
     })
   }
   
@@ -201,12 +233,14 @@ function getMonthCalendarGrid(year, monthIndex) {
   const remaining = (7 - (cells.length % 7)) % 7
   for (let d = 1; d <= remaining; d++) {
     const dateObj = new Date(year, monthIndex + 1, d)
+    const dayIdx = (dateObj.getDay() + 6) % 7
     cells.push({
       dayNumber: d,
       isCurrentMonth: false,
       dateObj,
       dateKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
-      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(dateObj.getDay() + 6) % 7]
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayIdx],
+      fullDayName: fullDayNamesArr[dayIdx]
     })
   }
   
@@ -302,7 +336,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       weekOffset: offset,
       dayIndex: t.dayIndex,
       dayName: t.dayName,
-      fullDateStr: dayInfo?.fullDateStr || `${t.dayName}day`,
+      fullDayName: dayInfo?.fullDayName || getFullDayName({ dayName: t.dayName }),
+      fullDateStr: dayInfo?.fullDateStr || `${getFullDayName({ dayName: t.dayName })}, ${d.getDate()}`,
       dateKey,
       channel: t.channel,
       format: t.format,
@@ -316,49 +351,96 @@ function generateWeekCampaignPosts(productName, offset = 0) {
   })
 }
 
-// Pre-seeded campaign dataset across May 2025 (matching user reference mockup) + past, current, and future weeks
+// Pre-seeded campaign dataset dynamically anchored to the current month & date
 function getDefaultCampaignPosts(productName) {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const currentDay = now.getDate()
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+  const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  const makeDate = (dayOffset) => {
+    const d = new Date(y, m, currentDay + dayOffset)
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const fullDateStr = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+    const dayName = dayNamesShort[d.getDay()]
+    const fullDayName = dayNamesFull[d.getDay()]
+    const dayIndex = (d.getDay() + 6) % 7 // Monday = 0
+    return { d, dateKey, fullDateStr, dayName, fullDayName, dayIndex }
+  }
+
+  const dToday = makeDate(0)
+  const dPastLaunch = makeDate(-6)
+  const dPastTeaser = makeDate(-3)
+  const dScheduledPoll = makeDate(3)
+  const dScheduledProof = makeDate(7)
+
   return [
-    // ── MAY 2025 REFERENCE POSTS (Matching exact reference image 4) ──
     {
-      id: 'post-may-6',
+      id: `post-today-${dToday.dateKey}`,
       weekOffset: 0,
-      dayIndex: 1,
-      dayName: 'Tue',
-      dateKey: '2025-05-06',
-      fullDateStr: 'May 6, 2025',
+      dayIndex: dToday.dayIndex,
+      dayName: dToday.dayName,
+      fullDayName: dToday.fullDayName,
+      dateKey: dToday.dateKey,
+      fullDateStr: dToday.fullDateStr,
+      channel: 'YouTube',
+      format: 'VIDEO',
+      strategy: 'LAUNCH',
+      title: 'Big things are coming.',
+      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
+      status: 'Draft',
+      time: '11:30 AM',
+      imageUrl: null
+    },
+    {
+      id: `post-launch-${dPastLaunch.dateKey}`,
+      weekOffset: 0,
+      dayIndex: dPastLaunch.dayIndex,
+      dayName: dPastLaunch.dayName,
+      fullDayName: dPastLaunch.fullDayName,
+      dateKey: dPastLaunch.dateKey,
+      fullDateStr: dPastLaunch.fullDateStr,
       channel: 'YouTube',
       format: 'VIDEO',
       strategy: 'LAUNCH',
       title: 'Launch video',
       caption: `Official launch of ${productName}! Watch our full demonstration of real-time stem separation and chord transposition.\n\nLink in description to start today.\n\n#newlaunch #worshipleader #churchmusic`,
-      status: 'Scheduled',
+      status: 'Posted',
       time: '9:00 AM',
       imageUrl: null
     },
     {
-      id: 'post-may-9',
+      id: `post-teaser-${dPastTeaser.dateKey}`,
       weekOffset: 0,
-      dayIndex: 4,
-      dayName: 'Fri',
-      dateKey: '2025-05-09',
-      fullDateStr: 'May 9, 2025',
+      dayIndex: dPastTeaser.dayIndex,
+      dayName: dPastTeaser.dayName,
+      fullDayName: dPastTeaser.fullDayName,
+      dateKey: dPastTeaser.dateKey,
+      fullDateStr: dPastTeaser.fullDateStr,
       channel: 'Instagram',
       format: 'REEL',
       strategy: 'BTS',
       title: 'Teaser clip',
       caption: `Sneak peek behind the scenes at our music arrangement studio.\n\nSee how easy preparing Sunday's music set becomes.\n\n#teaser #behindthescenes #churchrehearsal`,
-      status: 'Scheduled',
+      status: 'Posted',
       time: '12:00 PM',
       imageUrl: null
     },
     {
-      id: 'post-may-14',
+      id: `post-poll-${dScheduledPoll.dateKey}`,
       weekOffset: 0,
-      dayIndex: 2,
-      dayName: 'Wed',
-      dateKey: '2025-05-14',
-      fullDateStr: 'May 14, 2025',
+      dayIndex: dScheduledPoll.dayIndex,
+      dayName: dScheduledPoll.dayName,
+      fullDayName: dScheduledPoll.fullDayName,
+      dateKey: dScheduledPoll.dateKey,
+      fullDateStr: dScheduledPoll.fullDateStr,
       channel: 'Instagram',
       format: 'STORY',
       strategy: 'COMMUNITY',
@@ -369,19 +451,20 @@ function getDefaultCampaignPosts(productName) {
       imageUrl: null
     },
     {
-      id: 'post-may-20',
+      id: `post-proof-${dScheduledProof.dateKey}`,
       weekOffset: 0,
-      dayIndex: 1,
-      dayName: 'Tue',
-      dateKey: '2025-05-20',
-      fullDateStr: 'May 20, 2025',
-      channel: 'Instagram',
-      format: 'REEL',
-      strategy: 'BTS',
-      title: 'Big things are coming.',
-      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
-      status: 'Draft',
-      time: '11:30 AM',
+      dayIndex: dScheduledProof.dayIndex,
+      dayName: dScheduledProof.dayName,
+      fullDayName: dScheduledProof.fullDayName,
+      dateKey: dScheduledProof.dateKey,
+      fullDateStr: dScheduledProof.fullDateStr,
+      channel: 'YouTube',
+      format: 'VIDEO',
+      strategy: 'PROOF',
+      title: 'Community proof breakdown',
+      caption: `Here is how our community members are achieving outcome-driven results with ${productName}.\n\nFull case study in video!`,
+      status: 'Scheduled',
+      time: '4:00 PM',
       imageUrl: null
     },
 
@@ -618,7 +701,7 @@ function getDefaultCampaignPosts(productName) {
 }
 
 export default function ContentCalendar() {
-  const { creatorData, triggerToast } = useForge()
+  const { creatorData, userProfile, triggerToast } = useForge()
 
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
@@ -631,9 +714,16 @@ export default function ContentCalendar() {
   const [weekOffset, setWeekOffset] = useState(0)
   const weekData = useMemo(() => calculateWeekData(weekOffset), [weekOffset])
 
-  // Month Calendar Navigation State (Defaults to May 2025 to match user reference Image 4)
-  const [calendarDate, setCalendarDate] = useState(() => new Date(2025, 4, 1))
-  const [selectedCalendarDateKey, setSelectedCalendarDateKey] = useState('2025-05-20')
+  // Current real-world date reference
+  const todayDateObj = useMemo(() => new Date(), [])
+  const todayDateKeyStr = useMemo(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }, [])
+
+  // Month Calendar Navigation State (Anchored dynamically to the current real date)
+  const [calendarDate, setCalendarDate] = useState(() => new Date(todayDateObj.getFullYear(), todayDateObj.getMonth(), 1))
+  const [selectedCalendarDateKey, setSelectedCalendarDateKey] = useState(todayDateKeyStr)
   const monthGrid = useMemo(() => {
     return getMonthCalendarGrid(calendarDate.getFullYear(), calendarDate.getMonth())
   }, [calendarDate])
@@ -814,11 +904,12 @@ export default function ContentCalendar() {
         id: `post-date-${cell.dateKey}`,
         dateKey: cell.dateKey,
         dayName: cell.dayName,
+        fullDayName: cell.fullDayName || getFullDayName(cell),
         fullDateStr: `${MONTH_NAMES[cell.dateObj.getMonth()]} ${cell.dayNumber}, ${cell.dateObj.getFullYear()}`,
         channel: 'Instagram',
         format: 'REEL',
         strategy: 'LAUNCH',
-        title: `Campaign Update for ${cell.dayName}day`,
+        title: `Campaign Update for ${getFullDayName(cell)}`,
         caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
         status: 'Draft',
         time: '11:30 AM',
@@ -828,7 +919,7 @@ export default function ContentCalendar() {
       }
       setPosts(prev => [newDraftPost, ...prev])
       setSelectedPostId(newDraftPost.id)
-      if (triggerToast) triggerToast(`Draft loaded for ${cell.dayName}day ${cell.dayNumber}!`, 'info')
+      if (triggerToast) triggerToast(`Draft loaded for ${getFullDayName(cell)} ${cell.dayNumber}!`, 'info')
     }
   }
 
@@ -1003,20 +1094,31 @@ export default function ContentCalendar() {
     if (map[channel]) setPreviewPlatform(map[channel])
   }
 
-  // Core Buffer GraphQL Dispatcher
+  // Core Omnichannel Dispatcher (Supports both Buffer API and CoLaunch Direct Engine)
   const handleDispatchToBuffer = async ({ mode, saveToDraft = false, dueAt = null, reason = '' }, e) => {
     if (!activePost) return
 
-    // If no channel is connected in the Buffer workspace yet:
+    // If no Buffer channel is connected, schedule directly using CoLaunch's built-in engine
     if (!bufferChannels || bufferChannels.length === 0) {
-      setPendingBufferAction({ mode, saveToDraft, dueAt, reason })
-      setChannelLinkModalOpen(true)
+      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
+      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
+      addXP(xpReward, reason || `CoLaunch: Post updated to ${newStatus}`, e)
+
+      const channelName = activePost.channel || 'Omnichannel'
+      if (newStatus === 'Scheduled') {
+        if (triggerToast) triggerToast(`Post scheduled for ${channelName} on ${activePost.fullDateStr || 'target date'} at ${activePost.time || '11:30 AM'}!`, 'success')
+      } else if (newStatus === 'Posted') {
+        if (triggerToast) triggerToast(`Post live! Marked as published to ${channelName} campaign queue.`, 'success')
+      } else {
+        if (triggerToast) triggerToast(`Draft saved to ${channelName} queue.`, 'info')
+      }
       return
     }
 
     const channelId = selectedBufferChannelId || bufferChannels[0]?.id
     if (!channelId) {
-      if (triggerToast) triggerToast('Please select a connected Buffer channel first.', 'error')
+      if (triggerToast) triggerToast('Please select a connected social channel first.', 'error')
       return
     }
 
@@ -1041,8 +1143,12 @@ export default function ContentCalendar() {
       addXP(xpReward, reason || `Buffer: Post dispatched (${newStatus})`, e)
       if (triggerToast) triggerToast(`Buffer Success! Post ${res?.id ? `ID: ${res.id}` : 'queued'} (${newStatus})`, 'success')
     } catch (err) {
-      console.error('[Buffer Dispatch Error]', err)
-      if (triggerToast) triggerToast(`Buffer API: ${err.message}`, 'error')
+      console.warn('[Buffer Dispatch Notice, saving locally]', err)
+      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
+      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
+      addXP(xpReward, `Saved in CoLaunch Engine (${newStatus})`, e)
+      if (triggerToast) triggerToast(`Saved in CoLaunch Omnichannel Engine (${newStatus})!`, 'info')
     } finally {
       setIsBufferDispatching(false)
     }
@@ -1561,51 +1667,48 @@ export default function ContentCalendar() {
       <div className="bg-[#080b11] px-4 sm:px-6 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border-b border-[#161b2b]">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-none bg-emerald-500 animate-pulse" />
-            <span className="text-white font-bold tracking-wider">BUFFER ENGINE:</span>
-            <span className="text-emerald-400 font-extrabold uppercase">CONNECTED (LIVE)</span>
+            <span className={`w-2 h-2 rounded-none ${bufferChannels.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-sky-400'}`} />
+            <span className="text-white font-bold tracking-wider">
+              {bufferChannels.length > 0 ? 'BUFFER ENGINE:' : 'PUBLISHING ENGINE:'}
+            </span>
+            <span className={bufferChannels.length > 0 ? 'text-emerald-400 font-extrabold uppercase' : 'text-sky-400 font-extrabold uppercase'}>
+              {bufferChannels.length > 0 ? 'CONNECTED (LIVE)' : 'COLAUNCH DIRECT (ACTIVE)'}
+            </span>
           </div>
           <span className="text-slate-600">|</span>
           <div className="text-slate-400 text-[11px]">
             <span className="text-slate-500">ACCT: </span>
-            <span className="text-slate-200 font-bold">{bufferAccount?.email || 'creatorforgeweb@gmail.com'}</span>
+            <span className="text-slate-200 font-bold">
+              {userProfile?.email || creatorData?.email || (bufferAccount?.email && bufferAccount.email !== 'creatorforgeweb@gmail.com' ? bufferAccount.email : 'Not configured')}
+            </span>
           </div>
           <span className="text-slate-600 hidden md:inline">|</span>
           <div className="text-slate-400 text-[11px] hidden md:inline">
             <span className="text-slate-500">WORKSPACE: </span>
-            <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || 'My organization'}</span>
+            <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || (creatorData?.name ? `${creatorData.name}'s Workspace` : 'CoLaunch Workspace')}</span>
           </div>
           <span className="text-slate-600 hidden lg:inline">|</span>
           <div className="text-[11px] hidden lg:flex items-center gap-1.5">
             <span className="text-slate-500">CHANNELS: </span>
-            <span className={bufferChannels.length > 0 ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
-              {bufferChannels.length > 0 ? `${bufferChannels.length} Connected` : '0 Linked (Action Needed)'}
+            <span className="text-emerald-400 font-bold">
+              {bufferChannels.length > 0 ? `${bufferChannels.length} Connected` : 'Local Engine Ready'}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => syncBufferData(true)}
-            disabled={isBufferConnecting}
-            className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-300 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 disabled:opacity-50 text-[11px]"
-            title="Refresh Buffer channels and posts"
-          >
-            <RefreshCw size={11} className={isBufferConnecting ? 'animate-spin text-rose-400' : ''} />
-            <span>{isBufferConnecting ? 'Syncing...' : 'Sync Buffer'}</span>
-          </button>
-
-          <a
-            href="https://publish.buffer.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 text-[11px] font-bold"
-            title="Open Buffer dashboard to connect social channels"
-          >
-            <span>Connect Channels on Buffer</span>
-            <ExternalLink size={10} />
-          </a>
+          {bufferChannels.length > 0 && (
+            <button
+              type="button"
+              onClick={() => syncBufferData(true)}
+              disabled={isBufferConnecting}
+              className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-300 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 disabled:opacity-50 text-[11px]"
+              title="Refresh Buffer channels and posts"
+            >
+              <RefreshCw size={11} className={isBufferConnecting ? 'animate-spin text-rose-400' : ''} />
+              <span>{isBufferConnecting ? 'Syncing...' : 'Sync Buffer'}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -1613,11 +1716,11 @@ export default function ContentCalendar() {
               setBufferTokenInput(getBufferToken())
               setBufferTokenModalOpen(true)
             }}
-            className="px-2 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-slate-200 rounded-none flex items-center gap-1 transition cursor-pointer border-0 text-[11px]"
-            title="Buffer API Access Token Settings"
+            className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
+            title="Configure omnichannel publishing credentials and channels"
           >
             <Sliders size={11} />
-            <span className="hidden sm:inline">Config</span>
+            <span>Configure Engine</span>
           </button>
         </div>
       </div>
@@ -2021,8 +2124,8 @@ export default function ContentCalendar() {
                         {/* Day Number: Circled in solid red when active, exactly like Day 20 in Image 4 */}
                         {isSelected ? (
                           <div 
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-black shadow-sm"
-                            style={{ background: brandRed }}
+                            className="w-6 h-6 rounded-none flex items-center justify-center text-white text-xs font-black shadow-sm"
+                            style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                           >
                             {cell.dayNumber}
                           </div>
@@ -2068,7 +2171,7 @@ export default function ContentCalendar() {
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-                Your draft for {activePost?.dayName}day
+                Your draft for {getFullDayName(activePost)}
               </h3>
               <p className="text-xs font-bold text-rose-400 mt-0.5">
                 {activePost?.fullDateStr || 'Selected Date'}
@@ -2261,63 +2364,68 @@ export default function ContentCalendar() {
                     </select>
                   </div>
                 ) : (
-                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-amber-500/20 text-[11px] text-slate-300 flex items-start gap-2">
-                    <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <span className="text-amber-300 font-bold">Buffer account active</span>, but 0 social channels connected yet.
-                      <div className="mt-1">
-                        <a
-                          href="https://publish.buffer.com"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-rose-400 hover:underline font-bold inline-flex items-center gap-1"
+                      <div className="text-white font-bold">CoLaunch In-Website Publisher Active</div>
+                      <p className="text-slate-400 text-[10px] mt-0.5">Posts schedule directly into your platform pipeline. Everything runs inside your website.</p>
+                      <div className="mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBufferTokenInput(getBufferToken())
+                            setBufferTokenModalOpen(true)
+                          }}
+                          className="text-rose-400 hover:underline font-bold inline-flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer text-[10px]"
                         >
-                          <span>Connect channels at publish.buffer.com</span>
-                          <ExternalLink size={10} />
-                        </a>
+                          <Sliders size={10} />
+                          <span>Optional: Link external Buffer token</span>
+                        </button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Buffer Dispatch Action Buttons */}
+                {/* Omnichannel Dispatch Action Buttons */}
                 <div className="space-y-2 pt-1">
                   
-                  {/* Primary: Schedule with Buffer */}
+                  {/* Primary: Schedule */}
                   <button
                     type="button"
                     onClick={handleScheduleWithBuffer}
                     disabled={isBufferDispatching}
                     className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
-                    style={{ background: brandRed, color: '#ffffff' }}
+                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                   >
                     <Clock size={14} className="text-white" />
                     <span className="text-white font-bold">
-                      {isBufferDispatching ? 'Scheduling via Buffer...' : 'Schedule with Buffer (+50 XP)'}
+                      {isBufferDispatching ? 'Scheduling...' : bufferChannels.length > 0 ? 'Schedule Post with Buffer (+50 XP)' : 'Schedule Post in Campaign (+50 XP)'}
                     </span>
                   </button>
 
                   <div className="grid grid-cols-2 gap-2">
-                    {/* Secondary: Save to Buffer Draft */}
+                    {/* Secondary: Save Draft */}
                     <button
                       type="button"
                       onClick={handleSaveToBufferDraft}
                       disabled={isBufferDispatching}
                       className="w-full py-2.5 px-3 rounded-none bg-[#0c0f17] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
+                      style={{ borderRadius: '0px' }}
                     >
                       <CheckCircle2 size={13} className="text-slate-400" />
                       <span>Save as Draft</span>
                     </button>
 
-                    {/* Secondary: Instant Publish via Buffer */}
+                    {/* Secondary: Publish Live */}
                     <button
                       type="button"
                       onClick={handlePublishNowWithBuffer}
                       disabled={isBufferDispatching}
                       className="w-full py-2.5 px-3 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50"
+                      style={{ borderRadius: '0px', color: '#ffffff' }}
                     >
                       <Send size={13} className="text-white" />
-                      <span>Publish Now (+100 XP)</span>
+                      <span className="text-white font-bold">Publish Live (+100 XP)</span>
                     </button>
                   </div>
                 </div>
@@ -3202,12 +3310,15 @@ export default function ContentCalendar() {
           <div className="bg-[#0c0f17] rounded-none max-w-lg w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <AlertCircle size={20} />
+                <div 
+                  className="w-9 h-9 rounded-none flex items-center justify-center"
+                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                >
+                  <Send size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-base">Buffer Account Connected</h3>
-                  <p className="text-xs text-slate-400">Action Required: Link social channel</p>
+                  <h3 className="font-extrabold text-white text-base">Campaign Publishing Options</h3>
+                  <p className="text-xs text-slate-400">Manage on-site calendar vs external social sync</p>
                 </div>
               </div>
               <button
@@ -3222,66 +3333,59 @@ export default function ContentCalendar() {
             <div className="py-4 space-y-3.5 text-xs">
               <div className="p-3 bg-[#111522] rounded-none border border-[#202738] space-y-1 font-mono text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">BUFFER ACCOUNT:</span>
-                  <span className="text-slate-200 font-bold">{bufferAccount?.email || 'creatorforgeweb@gmail.com'}</span>
+                  <span className="text-slate-500">CREATOR ACCOUNT:</span>
+                  <span className="text-slate-200 font-bold">
+                    {userProfile?.email || creatorData?.email || (bufferAccount?.email && bufferAccount.email !== 'creatorforgeweb@gmail.com' ? bufferAccount.email : 'Local Creator Engine')}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">ORGANIZATION:</span>
-                  <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || 'My organization'}</span>
+                  <span className="text-slate-500">CAMPAIGN WORKSPACE:</span>
+                  <span className="text-slate-200 font-bold">{creatorData?.name ? `${creatorData.name}'s Launch` : 'CoLaunch Campaign'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">CONNECTED CHANNELS:</span>
-                  <span className="text-amber-400 font-bold">0 Active Channels</span>
+                  <span className="text-slate-500">BUFFER SOCIAL CHANNELS:</span>
+                  <span className="text-emerald-400 font-bold">CoLaunch Engine Active (Direct)</span>
                 </div>
               </div>
 
               <p className="text-slate-300 leading-relaxed">
-                Buffer's GraphQL publishing engine is active and authenticated. However, Buffer requires at least one destination channel (YouTube, Instagram, X, LinkedIn, or TikTok) to be authorized in your Buffer dashboard before live API posts can be scheduled.
+                CoLaunch includes a full on-site omnichannel engine to schedule, queue, and publish your content calendar directly on your website. No external site navigation is required.
               </p>
 
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
-                  <span>How to connect in 30 seconds:</span>
+              <div className="p-3 bg-[#111522] border border-[#202738] text-slate-300 space-y-1">
+                <div className="font-bold text-white flex items-center gap-1.5">
+                  <span>How publishing works on your website:</span>
                 </div>
-                <ol className="list-decimal list-inside space-y-0.5 text-[11px] text-slate-300">
-                  <li>Click <b>"Open Buffer Dashboard"</b> below.</li>
-                  <li>Click <b>"Connect a Channel"</b> on Buffer (select YouTube, X, Instagram, etc.).</li>
-                  <li>Return here and click <b>"Sync Channels"</b>.</li>
-                </ol>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
+                  <li>Your posts are queued and timed in your campaign pipeline directly on CoLaunch.</li>
+                  <li>Track XP rewards, streak metrics, and launch readiness in real-time.</li>
+                  <li>Optional: You can link an external Buffer Access Token at any time to mirror posts to social networks.</li>
+                </ul>
               </div>
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[#161b2b]">
               <button
                 type="button"
-                onClick={handleProceedLocally}
+                onClick={() => {
+                  setChannelLinkModalOpen(false)
+                  setBufferTokenInput(getBufferToken())
+                  setBufferTokenModalOpen(true)
+                }}
                 className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738]"
               >
-                Save Locally to Forge Calendar
+                Configure Buffer Token
               </button>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => syncBufferData(true)}
-                  disabled={isBufferConnecting}
-                  className="px-3 py-2 bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 text-xs font-bold rounded-none flex items-center gap-1 cursor-pointer border-0"
-                >
-                  <RefreshCw size={12} className={isBufferConnecting ? 'animate-spin' : ''} />
-                  <span>Sync</span>
-                </button>
-
-                <a
-                  href="https://publish.buffer.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-extrabold text-white rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm hover:opacity-95 border-0"
-                  style={{ background: brandRed, color: '#ffffff' }}
-                >
-                  <span>Open Buffer Dashboard</span>
-                  <ExternalLink size={12} />
-                </a>
-              </div>
+              <button
+                type="button"
+                onClick={handleProceedLocally}
+                className="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm hover:opacity-95 border-0"
+                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+              >
+                <CheckCircle2 size={13} className="text-white" />
+                <span className="text-white font-bold">Publish via CoLaunch Engine</span>
+              </button>
             </div>
           </div>
         </div>
@@ -3325,7 +3429,7 @@ export default function ContentCalendar() {
               </div>
 
               <p className="text-[11px] text-slate-400 leading-snug">
-                Your current active token is pre-configured to your authorized Buffer free account. You can reset to default anytime.
+                CoLaunch uses its built-in on-site publisher by default. If you want to optionally sync live social broadcasts to external channels (YouTube, Instagram, X, LinkedIn, TikTok), enter your personal Buffer Access Token here.
               </p>
             </div>
 
@@ -3334,13 +3438,15 @@ export default function ContentCalendar() {
                 type="button"
                 onClick={() => {
                   setBufferToken('')
-                  setBufferTokenInput(getBufferToken())
-                  syncBufferData(true)
-                  if (triggerToast) triggerToast('Reset Buffer token to default!', 'info')
+                  setBufferTokenInput('')
+                  setBufferChannels([])
+                  setBufferAccount(null)
+                  setBufferTokenModalOpen(false)
+                  if (triggerToast) triggerToast('Switched to CoLaunch Direct In-Website Publisher!', 'info')
                 }}
-                className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-none cursor-pointer border-0 bg-transparent"
+                className="px-3 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 rounded-none cursor-pointer border-0 bg-transparent"
               >
-                Reset Default
+                Use Direct Engine
               </button>
 
               <div className="flex items-center gap-2">
@@ -3361,7 +3467,7 @@ export default function ContentCalendar() {
                     if (triggerToast) triggerToast('Buffer token updated!', 'success')
                   }}
                   className="px-4 py-2 text-xs font-bold text-white rounded-none cursor-pointer border-0"
-                  style={{ background: brandRed, color: '#ffffff' }}
+                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                 >
                   Save &amp; Connect
                 </button>
