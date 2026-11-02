@@ -87,7 +87,7 @@ export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
       if (res.ok) {
         const data = await res.json()
         if (data.channel) {
-          saveLocalYouTubeConnection(data.channel)
+          saveLocalYouTubeConnection(data.channel, data.tokens)
           return data.channel
         }
       } else {
@@ -119,14 +119,17 @@ export function getStoredYouTubeConnection() {
 }
 
 /**
- * Saves connected YouTube channel data locally
+ * Saves connected YouTube channel data locally with optional OAuth tokens
  */
-export function saveLocalYouTubeConnection(channelData) {
+export function saveLocalYouTubeConnection(channelData, tokens = null) {
   if (typeof window === 'undefined') return
   try {
+    const existing = getStoredYouTubeConnection() || {}
+    const resolvedTokens = tokens || existing.tokens || null
     const payload = {
       connected: true,
       channel: channelData,
+      tokens: resolvedTokens,
       connectedAt: new Date().toISOString()
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
@@ -147,37 +150,72 @@ export async function disconnectYouTubeChannel() {
 }
 
 /**
- * Direct publishing engine for YouTube videos, shorts, and community posts
+ * Direct publishing and scheduling engine for YouTube videos via Google YouTube Data API v3.
+ * Strictly communicates with real YouTube endpoints. Rejects text-only posts since YouTube Data API
+ * only accepts video binaries (.mp4/.mov).
  */
-export async function publishToYouTube({ title, description, privacy = 'public', videoUrl = null, isShort = false }) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/youtube/publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        description,
-        privacy,
-        video_url: videoUrl,
-        is_short: isShort
-      })
-    })
+export async function publishToYouTube({
+  title,
+  description = '',
+  privacy = 'public',
+  videoUrl = null,
+  videoBase64 = null,
+  publishAt = null,
+  isShort = false
+}) {
+  const stored = getStoredYouTubeConnection()
+  const tokens = stored?.tokens || {}
 
-    if (res.ok) {
-      const data = await res.json()
-      return data.result || { status: 'published', title }
-    }
-  } catch (err) {
-    console.warn('[YouTube API] Backend dispatch notice:', err)
+  if (!videoUrl && !videoBase64) {
+    throw new Error('YouTube Data API v3 requires an actual video file (.mp4/.mov). Google does not support publishing text-only posts via API.')
   }
 
-  // Client-side confirmation when operating standalone
-  return {
-    status: 'published',
-    id: `yt-pub-${Date.now()}`,
+  const payload = {
     title,
-    channel: 'Connected YouTube Channel',
-    publishedAt: new Date().toISOString()
+    description,
+    privacy,
+    video_url: videoUrl,
+    video_base64: videoBase64,
+    publish_at: publishAt,
+    is_short: isShort,
+    access_token: tokens.access_token || null,
+    refresh_token: tokens.refresh_token || null,
+    identifier: stored?.channel?.id || 'default'
   }
+
+  const candidateUrls = [
+    BACKEND_URL,
+    'https://creator-forge-backend.onrender.com',
+    'https://creator-forge-backend-jj1y.onrender.com'
+  ].filter(Boolean)
+
+  let lastError = null
+  for (const url of Array.from(new Set(candidateUrls))) {
+    try {
+      const res = await fetch(`${url}/api/youtube/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.result) {
+          return data.result
+        }
+      } else {
+        let errorDetail = `Status ${res.status}`
+        try {
+          const errJson = await res.json()
+          errorDetail = errJson.detail || errJson.message || errorDetail
+        } catch (_) {}
+        lastError = new Error(errorDetail)
+      }
+    } catch (err) {
+      lastError = err
+    }
+  }
+
+  throw lastError || new Error('YouTube video upload failed. Please verify your video file and YouTube connection.')
 }
 

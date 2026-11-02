@@ -61,7 +61,8 @@ import {
   Globe,
   Sliders,
   Settings,
-  AlertCircle
+  AlertCircle,
+  UploadCloud
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -1170,8 +1171,59 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     if (map[channel]) setPreviewPlatform(map[channel])
   }
 
+  // Video Asset Handlers for YouTube Upload & Scheduling
+  const handleVideoFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('video/')) {
+      if (triggerToast) triggerToast('Please select a valid MP4 or MOV video file.', 'error')
+      return
+    }
+    // Limit to 45MB in browser for base64 safety
+    if (file.size > 45 * 1024 * 1024) {
+      if (triggerToast) triggerToast('File exceeds 45MB browser limit. Please enter a public video URL instead.', 'error')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const base64Data = reader.result
+      setPosts(prev => prev.map(p => p.id === activePost.id ? {
+        ...p,
+        videoBase64: base64Data,
+        videoFileName: file.name,
+        videoSize: (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      } : p))
+      if (triggerToast) triggerToast(`Attached video: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`, 'success')
+    }
+    reader.onerror = () => {
+      if (triggerToast) triggerToast('Failed to read video file.', 'error')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveVideo = () => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? {
+      ...p,
+      videoBase64: null,
+      videoUrl: null,
+      videoFileName: null,
+      videoSize: null
+    } : p))
+    if (triggerToast) triggerToast('Video attachment removed.', 'info')
+  }
+
+  const handleSetVideoUrl = (url) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? {
+      ...p,
+      videoUrl: url,
+      videoFileName: url ? url.split('/').pop()?.split('?')[0] || 'Remote Video' : null
+    } : p))
+  }
+
   // Schedule Post in Campaign Pipeline — strictly blocked if account is not connected
-  const handleSchedulePost = (e) => {
+  const handleSchedulePost = async (e) => {
     if (!activePost) return
     const isConn = isChannelConnected(activePost.channel, youtubeConnection, creatorData)
     if (!isConn) {
@@ -1182,12 +1234,67 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     }
     setIsPublishingDirect(true)
     try {
-      const newStatus = 'Scheduled'
-      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus, scheduledAt: new Date().toISOString() } : p))
-      addXP(50, `Scheduled "${activePost?.title?.slice(0, 20)}..." for ${activePost?.fullDateStr || 'target date'}`, e)
-      if (triggerToast) {
-        triggerToast(`Post scheduled for ${activePost?.channel || 'YouTube'} on ${activePost?.fullDateStr || 'target date'}!`, 'success')
+      // If YouTube and has a video file/URL attached, perform real Google API scheduled upload
+      if (activePost.channel === 'YouTube' && (activePost.videoUrl || activePost.videoBase64) && youtubeConnection?.channel) {
+        if (triggerToast) triggerToast('Queuing scheduled video directly with YouTube Data API v3...', 'info')
+
+        // Convert post target date + time into RFC 3339 datetime
+        let targetPublishDate = new Date()
+        try {
+          if (activePost.fullDateStr) {
+            const parsed = new Date(activePost.fullDateStr)
+            if (!isNaN(parsed.getTime())) targetPublishDate = parsed
+          }
+          if (targetPublishDate.getTime() < Date.now() + 3600000) {
+            targetPublishDate = new Date(Date.now() + 86400000) // default 24h ahead
+          }
+        } catch (_) {}
+        const rfc3339Time = targetPublishDate.toISOString()
+
+        const result = await publishToYouTube({
+          title: activePost.title || 'CoLaunch Video Update',
+          description: activePost.caption || '',
+          privacy: 'private',
+          publishAt: rfc3339Time,
+          videoUrl: activePost.videoUrl || null,
+          videoBase64: activePost.videoBase64 || null,
+          isShort: activePost.type === 'shorts' || (activePost.time && activePost.time.toLowerCase().includes('short'))
+        })
+
+        const ytVideoId = result?.videoId || result?.id
+        const ytUrl = result?.url || (ytVideoId ? `https://www.youtube.com/watch?v=${ytVideoId}` : null)
+
+        setPosts(prev => prev.map(p => p.id === activePost.id ? {
+          ...p,
+          status: 'Scheduled',
+          youtubeVideoId: ytVideoId,
+          youtubeUrl: ytUrl,
+          scheduledAt: rfc3339Time,
+          isLiveScheduledOnYouTube: true
+        } : p))
+        addXP(50, `Scheduled video on YouTube Studio (${ytVideoId})`, e)
+        if (triggerToast) {
+          triggerToast(`Scheduled in YouTube Studio! Video ID: ${ytVideoId} (Releases: ${rfc3339Time.slice(0, 10)})`, 'success')
+        }
+      } else {
+        // Campaign calendar scheduling
+        setPosts(prev => prev.map(p => p.id === activePost.id ? {
+          ...p,
+          status: 'Scheduled',
+          scheduledAt: new Date().toISOString()
+        } : p))
+        addXP(50, `Scheduled "${activePost?.title?.slice(0, 20)}..." in campaign calendar`, e)
+        if (triggerToast) {
+          if (activePost.channel === 'YouTube' && !activePost.videoUrl && !activePost.videoBase64) {
+            triggerToast('Draft marked Scheduled in CoLaunch calendar. Note: To queue directly in YouTube Studio, attach an MP4 video file.', 'info')
+          } else {
+            triggerToast(`Post scheduled for ${activePost?.channel || 'social channel'} on ${activePost?.fullDateStr || 'target date'}!`, 'success')
+          }
+        }
       }
+    } catch (err) {
+      console.error('[Schedule Error]', err)
+      if (triggerToast) triggerToast(`Scheduling failed: ${err.message}`, 'error')
     } finally {
       setIsPublishingDirect(false)
     }
@@ -1221,25 +1328,42 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     setIsPublishingDirect(true)
     try {
       if (activePost.channel === 'YouTube' && youtubeConnection?.channel) {
-        if (triggerToast) triggerToast('Publishing directly to YouTube Data API...', 'info')
+        if (!activePost.videoUrl && !activePost.videoBase64) {
+          if (triggerToast) {
+            triggerToast('YouTube Data API v3 requires an MP4 video file. Please attach a video below to publish live.', 'error')
+          }
+          return
+        }
+        if (triggerToast) triggerToast('Uploading video directly to YouTube Data API v3...', 'info')
         const result = await publishToYouTube({
           title: activePost.title || 'CoLaunch Video Update',
           description: activePost.caption || '',
           privacy: 'public',
           videoUrl: activePost.videoUrl || null,
+          videoBase64: activePost.videoBase64 || null,
           isShort: activePost.type === 'shorts' || (activePost.time && activePost.time.toLowerCase().includes('short'))
         })
-        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted', youtubeVideoId: result?.id } : p))
-        addXP(100, `Published live to YouTube (${result?.id || 'broadcast'})`, e)
-        if (triggerToast) triggerToast(`Successfully published to ${youtubeConnection.channel.title || 'YouTube Channel'}!`, 'success')
+        const ytVideoId = result?.videoId || result?.id
+        const ytUrl = result?.url || (ytVideoId ? `https://www.youtube.com/watch?v=${ytVideoId}` : null)
+        setPosts(prev => prev.map(p => p.id === activePost.id ? {
+          ...p,
+          status: 'Posted',
+          youtubeVideoId: ytVideoId,
+          youtubeUrl: ytUrl,
+          postedAt: new Date().toISOString()
+        } : p))
+        addXP(100, `Published live to YouTube (${ytVideoId || 'video'})`, e)
+        if (triggerToast) {
+          triggerToast(`Successfully uploaded to ${youtubeConnection.channel.title || 'YouTube Channel'}! Video ID: ${ytVideoId}`, 'success')
+        }
       } else {
-        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted' } : p))
+        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted', postedAt: new Date().toISOString() } : p))
         addXP(100, `Dispatched broadcast to ${activePost?.channel || 'Social Pipeline'}`, e)
         if (triggerToast) triggerToast(`Broadcast published live to ${activePost?.channel || 'Channel'}!`, 'success')
       }
     } catch (err) {
-      console.warn('Publish error:', err)
-      if (triggerToast) triggerToast(`Publish error: ${err.message}`, 'error')
+      console.error('[Publish Error]', err)
+      if (triggerToast) triggerToast(`YouTube upload failed: ${err.message}`, 'error')
     } finally {
       setIsPublishingDirect(false)
     }
@@ -2200,7 +2324,12 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                               <span className="truncate">{p.title}</span>
                             </div>
                             <div className="text-[9px] opacity-90 font-medium flex items-center justify-between mt-0.5">
-                              <span>{p.format || 'POST'}</span>
+                              <span className="flex items-center gap-1">
+                                <span>{p.format || 'POST'}</span>
+                                {p.youtubeVideoId && (
+                                  <span className="bg-black/60 text-[8px] font-mono px-1 py-0.2 border border-white/20">YT ✓</span>
+                                )}
+                              </span>
                               <span>{p.time}</span>
                             </div>
                           </div>
@@ -2488,6 +2617,97 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                   </div>
                 )}
 
+                {/* Real YouTube Video Asset Attachment & API Info (YouTube Data API v3) */}
+                {activePost?.channel === 'YouTube' && (
+                  <div className="p-3.5 bg-[#0c0f17] border border-[#202738] rounded-none space-y-2.5" style={{ borderRadius: '0px' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <Video size={14} className="text-red-500" />
+                        <span>Video Binary File (.mp4 / .mov)</span>
+                      </span>
+                      {(activePost?.videoBase64 || activePost?.videoUrl) && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveVideo}
+                          className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                        >
+                          <Trash2 size={11} /> Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {(activePost?.videoBase64 || activePost?.videoUrl) ? (
+                      <div className="space-y-2">
+                        {activePost.videoBase64 ? (
+                          <video
+                            src={activePost.videoBase64}
+                            controls
+                            className="w-full max-h-44 bg-black border border-[#202738] rounded-none"
+                          />
+                        ) : (
+                          <div className="p-2.5 bg-[#121624] border border-[#202738] text-xs font-mono text-slate-300 break-all">
+                            {activePost.videoUrl}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span className="truncate max-w-[220px] font-mono text-slate-200">{activePost.videoFileName || 'Video File Ready'}</span>
+                          {activePost.videoSize && <span className="font-mono text-emerald-400">{activePost.videoSize}</span>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="w-full py-2.5 px-3 bg-[#161d2d] hover:bg-[#1e273d] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border border-[#26334f] transition">
+                          <UploadCloud size={15} className="text-red-400" />
+                          <span>Attach MP4 Video File</span>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/quicktime,video/webm"
+                            onChange={handleVideoFileUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="url"
+                            value={activePost?.videoUrl || ''}
+                            onChange={(e) => handleSetVideoUrl(e.target.value)}
+                            placeholder="Or paste public video URL (.mp4)..."
+                            className="w-full py-1.5 px-2 bg-[#121624] border border-[#202738] text-white text-[11px] font-mono focus:outline-none focus:border-red-500/50"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          ℹ️ Google's YouTube Data API requires a video file. Pure text posts cannot be published via the YouTube API.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Published / Live YouTube Video Link Box */}
+                {activePost?.youtubeVideoId && (
+                  <div className="p-3 bg-red-950/30 border border-red-500/40 rounded-none flex items-center justify-between gap-3" style={{ borderRadius: '0px' }}>
+                    <div className="flex items-center gap-2">
+                      <Youtube size={18} className="text-red-500 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-white">
+                          {activePost.status === 'Scheduled' ? 'Queued in YouTube Studio' : 'Live on YouTube'}
+                        </p>
+                        <p className="text-[10px] text-red-300 font-mono">ID: {activePost.youtubeVideoId}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={activePost.youtubeUrl || `https://www.youtube.com/watch?v=${activePost.youtubeVideoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition no-underline"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <span>{activePost.status === 'Scheduled' ? 'Open Studio' : 'Watch Video'}</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
+                )}
+
                 {/* Dispatch Action Buttons */}
                 <div className="space-y-2 pt-1">
                   
@@ -2504,13 +2724,39 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                         Connect {activePost?.channel || 'Channel'} to Schedule
                       </span>
                     </button>
+                  ) : activePost?.status === 'Posted' ? (
+                    <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-emerald-200">
+                            {activePost?.channel === 'YouTube' ? 'Published to YouTube Channel' : 'Published Live'}
+                          </p>
+                          <p className="text-[10px] text-emerald-400/80 font-mono">
+                            {activePost?.youtubeVideoId ? `Video ID: ${activePost.youtubeVideoId}` : 'Broadcast Complete'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRevertToDraft}
+                        className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Revert to Draft
+                      </button>
+                    </div>
                   ) : activePost?.status === 'Scheduled' ? (
                     <div className="p-2.5 bg-sky-950/40 border border-sky-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
                       <div className="flex items-center gap-2">
                         <Clock size={15} className="text-sky-400 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-sky-200">Scheduled for Broadcast</p>
-                          <p className="text-[10px] text-sky-400/80 font-mono">{activePost?.fullDateStr} at {activePost?.time || '9:00 AM'}</p>
+                          <p className="text-xs font-bold text-sky-200">
+                            {activePost?.youtubeVideoId ? 'Scheduled on YouTube Studio' : 'Scheduled in Campaign'}
+                          </p>
+                          <p className="text-[10px] text-sky-400/80 font-mono">
+                            {activePost?.fullDateStr} at {activePost?.time || '9:00 AM'}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -2568,7 +2814,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                         {isPublishingDirect
                           ? 'Publishing...'
                           : isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
-                            ? 'Publish Live (+100 XP)'
+                            ? (activePost?.channel === 'YouTube' && !activePost?.videoBase64 && !activePost?.videoUrl ? 'Attach Video to Publish' : 'Publish Live (+100 XP)')
                             : 'Connect to Publish'}
                       </span>
                     </button>
