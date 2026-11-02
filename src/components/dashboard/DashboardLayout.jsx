@@ -28,6 +28,7 @@ function DashboardAppPreview() {
   const blueprint = creatorData.blueprint || { name: 'Creator Academy', type: 'Web App' }
   const extraTabs = creatorData.extraTabs || []
   const [device, setDevice] = useState('desktop') // 'desktop' | 'mobile'
+  const [viewMode, setViewMode] = useState('landing') // 'landing' (default: first thing seen) | 'product'
   const [copied, setCopied] = useState(false)
   const [isReloading, setIsReloading] = useState(false)
   const [playingVideo, setPlayingVideo] = useState(null)
@@ -45,7 +46,7 @@ function DashboardAppPreview() {
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const previewDomain = `${handleClean}.colaunch.app`
-  const previewUrl = `https://${previewDomain}/app`
+  const previewUrl = `https://${previewDomain}${viewMode === 'product' ? '/app' : ''}`
 
   const handleCopyLink = () => {
     try {
@@ -66,7 +67,7 @@ function DashboardAppPreview() {
 
   return (
     <div className="h-full w-full flex flex-col bg-[#090d16] p-3 sm:p-5 overflow-hidden">
-      {/* Main Viewport Stage - 90vh App Mockup Focused Directly */}
+      {/* Main Viewport Stage - 90vh App Mockup with Landing Page as First View */}
       <div className="flex-1 w-full flex items-center justify-center relative min-h-0">
         {device === 'desktop' && (
           <div className="w-full max-w-6xl h-[90vh] min-h-[600px] flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
@@ -112,18 +113,48 @@ function DashboardAppPreview() {
                 </div>
               </div>
 
-              {/* Center Address Pill */}
-              <div className="flex-1 max-w-md mx-3">
-                <div className="bg-[#121624] border border-[#222a3d] rounded-none px-3.5 py-1 text-xs flex items-center justify-between shadow-inner">
+              {/* Center: Address Pill + Mode Switcher */}
+              <div className="flex-1 max-w-lg mx-3 flex items-center justify-center gap-2">
+                <div className="flex-1 bg-[#121624] border border-[#222a3d] rounded-none px-3.5 py-1 text-xs flex items-center justify-between shadow-inner">
                   <div className="flex items-center space-x-2 truncate min-w-0">
                     <Lock size={12} className="text-emerald-400 flex-shrink-0" />
                     <span className="truncate font-mono font-medium text-slate-300 text-[11px]">
-                      {previewDomain}/app
+                      {previewDomain}{viewMode === 'product' ? '/app' : ''}
                     </span>
                   </div>
-                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0 ml-2">
-                    Member App
+                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded-none bg-white/5 border border-white/10 text-slate-400 shrink-0 ml-2">
+                    {viewMode === 'landing' ? 'Public' : 'Member App'}
                   </span>
+                </div>
+
+                {/* Inline Mode Switcher inside Chrome */}
+                <div className="hidden md:inline-flex items-center gap-1 p-0.5 bg-[#121624] border border-[#222a3d] rounded-none shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('landing')}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
+                      viewMode === 'landing'
+                        ? 'bg-white/10 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Public Landing Page"
+                  >
+                    <Globe size={11} />
+                    <span>Landing</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('product')}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
+                      viewMode === 'product'
+                        ? 'bg-white/10 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Member App View"
+                  >
+                    <Layers size={11} />
+                    <span>Member App</span>
+                  </button>
                 </div>
               </div>
 
@@ -167,7 +198,8 @@ function DashboardAppPreview() {
                 creatorData={creatorData}
                 extraTabs={extraTabs}
                 isMobile={false}
-                viewMode="product"
+                viewMode={viewMode}
+                onSwitchView={(mode) => setViewMode(mode)}
                 onPlayVideo={(v) => setPlayingVideo(v)}
               />
             </div>
@@ -186,7 +218,13 @@ function DashboardAppPreview() {
                 <Laptop size={12} />
                 <span>Switch to Desktop</span>
               </button>
-              <span className="font-mono text-[10px] text-slate-500">Mobile Mockup</span>
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === 'landing' ? 'product' : 'landing')}
+                className="text-[10px] px-2 py-0.5 bg-white/5 border border-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+              >
+                {viewMode === 'landing' ? 'View App' : 'View Landing'}
+              </button>
             </div>
 
             {/* Screen Viewport */}
@@ -199,7 +237,8 @@ function DashboardAppPreview() {
                 creatorData={creatorData}
                 extraTabs={extraTabs}
                 isMobile={true}
-                viewMode="mobile"
+                viewMode={viewMode === 'landing' ? 'landing' : 'mobile'}
+                onSwitchView={(mode) => setViewMode(mode)}
                 onPlayVideo={(v) => setPlayingVideo(v)}
               />
             </div>
