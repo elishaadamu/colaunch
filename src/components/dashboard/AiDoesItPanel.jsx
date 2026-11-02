@@ -11,7 +11,8 @@ import {
 import {
   generateMarketingPack, generateProductImage,
   regenerateSection, hasTextKey, hasTogetherKey,
-  buildChannelNativeMarketingPack
+  buildChannelNativeMarketingPack, getChannelHeroFallbackImage,
+  resetFailedAiKeys
 } from '../../services/ai'
 import ApiKeysModal from '../ui/ApiKeysModal'
 
@@ -26,13 +27,14 @@ function CopyBtn({ text, label = 'Copy', small }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }}
-      className="flex items-center gap-1.5 rounded-lg transition-all flex-shrink-0 font-medium"
+      className="flex items-center gap-1.5 rounded-none transition-all flex-shrink-0 font-medium"
       style={{
         fontSize: small ? '10px' : '11px',
         padding: small ? '3px 8px' : '6px 12px',
         background: copied ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255,255,255,0.06)',
         color: copied ? '#34d399' : 'rgba(255,255,255,0.7)',
         border: `1px solid ${copied ? 'rgba(52, 211, 153, 0.35)' : 'rgba(255,255,255,0.1)'}`,
+        borderRadius: '0px'
       }}
     >
       {copied ? <><Check size={11} className="text-emerald-400" /> Copied</> : <><Copy size={11} /> {label}</>}
@@ -47,10 +49,10 @@ function Editable({ value, onChange, multiline, className, style, placeholder })
   const Tag = multiline ? 'textarea' : 'input'
   return (
     <Tag
-      className={`w-full bg-transparent outline-none resize-none transition-all ${className || ''}`}
+      className={`w-full bg-transparent outline-none resize-none transition-all rounded-none ${className || ''}`}
       style={{
         ...style,
-        borderRadius: 6,
+        borderRadius: '0px',
         border: focus ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent',
         padding: focus ? '6px 8px' : '2px 0',
         background: focus ? 'rgba(255,255,255,0.03)' : 'transparent',
@@ -85,7 +87,7 @@ function ProductMockup({ creatorData, accent }) {
 
   // Top window frame
   const BrowserFrame = ({ children, title = `${productName.toLowerCase().replace(/\s+/g, '-')}.com` }) => (
-    <div className="rounded-2xl overflow-hidden border shadow-2xl" style={{ background: '#0a0a0c', borderColor: 'rgba(255,255,255,0.08)' }}>
+    <div className="rounded-none overflow-hidden border shadow-2xl" style={{ background: '#0a0a0c', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b" style={{ background: '#121215', borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
@@ -97,7 +99,7 @@ function ProductMockup({ creatorData, accent }) {
           <span className="text-[10px] font-mono font-medium text-white/40 truncate max-w-[200px]">{title}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
+          <span className="text-[9px] px-2 py-0.5 rounded-none font-mono font-semibold" style={{ background: `rgba(${accent.rgb},0.15)`, color: '#ffffff', borderRadius: '0px' }}>
             LIVE PREVIEW
           </span>
         </div>
@@ -878,14 +880,14 @@ function StepRow({ step, status }) {
 function SectionCard({ id, title, icon: Icon, iconColor, children, onRegen, regenning, accent, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="rounded-2xl border overflow-hidden transition-all duration-300"
-      style={{ background: '#0e0e12', borderColor: 'rgba(255,255,255,0.08)' }}>
+    <div className="rounded-none border overflow-hidden transition-all duration-300"
+      style={{ background: '#0e0e12', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
       <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
         onClick={() => setOpen(v => !v)}
         style={{ borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: `${iconColor}20` }}>
+          <div className="w-7 h-7 rounded-none flex items-center justify-center flex-shrink-0"
+            style={{ background: `${iconColor}20`, borderRadius: '0px' }}>
             <Icon size={13} style={{ color: iconColor }} />
           </div>
           <span className="text-[13px] font-bold text-white">{title}</span>
@@ -895,10 +897,10 @@ function SectionCard({ id, title, icon: Icon, iconColor, children, onRegen, rege
             <button
               onClick={onRegen}
               disabled={regenning}
-              className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg transition-all disabled:opacity-30 border"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.08)' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.9)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-none transition-all disabled:opacity-30 border"
+              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.12)', borderRadius: '0px' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
             >
               <RefreshCw size={9} className={regenning ? 'animate-spin' : ''} />
               {regenning ? 'Rewriting…' : 'Rewrite'}
@@ -949,7 +951,7 @@ export default function AiDoesItPanel({ onClose }) {
   })
 
   const [imageUrl, setImageUrl] = useState(() => {
-    return localStorage.getItem(`forge_${handle}_launch_image`) || null
+    return localStorage.getItem(`forge_${handle}_launch_image`) || getChannelHeroFallbackImage(creatorData) || null
   })
 
   const [phase, setPhase] = useState(() => {
@@ -960,9 +962,10 @@ export default function AiDoesItPanel({ onClose }) {
   const [stepStatus, setStepStatus] = useState(() => {
     const cachedPack = localStorage.getItem(`forge_${handle}_launch_pack`)
     const cachedImage = localStorage.getItem(`forge_${handle}_launch_image`)
+    const fallbackImage = getChannelHeroFallbackImage(creatorData)
     const initial = {}
     STEPS.forEach(s => {
-      initial[s.id] = (s.id === 'image' && cachedImage) || (s.id !== 'image' && cachedPack) ? 'done' : 'pending'
+      initial[s.id] = (s.id === 'image' && (cachedImage || fallbackImage)) || (s.id !== 'image' && cachedPack) ? 'done' : 'pending'
     })
     return initial
   })
@@ -1065,7 +1068,7 @@ export default function AiDoesItPanel({ onClose }) {
       setImageUrl(imageJob.result)
       setStepStatus(prev => ({ ...prev, image: 'done' }))
       clearBgJob(IMAGE_JOB)
-      if (triggerToast) triggerToast('Product Visual generated successfully!', 'success')
+      if (triggerToast) triggerToast('Product Visual generated with OpenAI!', 'success')
     }
     if (imageJob.status === 'error' || imageJob.status === 'cancelled') {
       if (imageJob.status === 'cancelled') {
@@ -1074,14 +1077,20 @@ export default function AiDoesItPanel({ onClose }) {
         setStepStatus(prev => ({ ...prev, image: cachedImage ? 'done' : 'pending' }))
       } else {
         setImageError(imageJob.error || 'Image generation failed')
-        setStepStatus(prev => ({ ...prev, image: 'error' }))
+        const fallback = getChannelHeroFallbackImage(creatorData)
+        if (fallback) {
+          setImageUrl(fallback)
+          setStepStatus(prev => ({ ...prev, image: 'done' }))
+        } else {
+          setStepStatus(prev => ({ ...prev, image: 'error' }))
+        }
       }
       clearBgJob(IMAGE_JOB)
     }
     if (imageJob.status === 'running') {
       setStepStatus(prev => ({ ...prev, image: 'active' }))
     }
-  }, [imageJob.status, imageJob.result, imageJob.error, handle, clearBgJob, triggerToast])
+  }, [imageJob.status, imageJob.result, imageJob.error, handle, clearBgJob, triggerToast, creatorData])
 
   // Edited values
   const [edits, setEdits] = useState(() => {
@@ -1116,6 +1125,11 @@ export default function AiDoesItPanel({ onClose }) {
   const loadInstantStudio = () => {
     const instantPack = buildChannelNativeMarketingPack(creatorData)
     setPack(instantPack)
+    const fallbackImg = getChannelHeroFallbackImage(creatorData)
+    if (fallbackImg && !imageUrl) {
+      setImageUrl(fallbackImg)
+      localStorage.setItem(`forge_${handle}_launch_image`, fallbackImg)
+    }
     setPhase('done')
     STEPS.forEach(s => {
       setStepStatus(prev => ({ ...prev, [s.id]: 'done' }))
@@ -1154,6 +1168,36 @@ export default function AiDoesItPanel({ onClose }) {
 
   // Regen single section
   const regen = async (section) => {
+    if (section === 'image') {
+      setRegenning(p => ({ ...p, image: true }))
+      if (incrementAiActions) incrementAiActions()
+      setImageError('')
+      setStepStatus(prev => ({ ...prev, image: 'active' }))
+      try {
+        const img = await generateProductImage(creatorData)
+        if (img) {
+          setImageUrl(img)
+          setStepStatus(prev => ({ ...prev, image: 'done' }))
+          localStorage.setItem(`forge_${handle}_launch_image`, img)
+          if (triggerToast) triggerToast('Product hero visual generated with OpenAI DALL-E!', 'success')
+        }
+      } catch (err) {
+        console.error('Image regen error:', err)
+        setImageError(err.message || 'Image generation failed')
+        const fallback = getChannelHeroFallbackImage(creatorData)
+        if (fallback) {
+          setImageUrl(fallback)
+          setStepStatus(prev => ({ ...prev, image: 'done' }))
+        } else {
+          setStepStatus(prev => ({ ...prev, image: 'error' }))
+        }
+        if (triggerToast) triggerToast(`Image generation: ${err.message}`, 'error')
+      } finally {
+        setRegenning(p => ({ ...p, image: false }))
+      }
+      return
+    }
+
     setRegenning(p => ({ ...p, [section]: true }))
     if (incrementAiActions) incrementAiActions()
     try {
@@ -1473,7 +1517,8 @@ export default function AiDoesItPanel({ onClose }) {
 
             {/* TAB 2: PRODUCT MOCKUP & AI VISUAL */}
             {(activeTab === 'mockup' || activeTab === 'all') && (
-              <SectionCard id="image" title="Channel-Native Product & Visual Studio" icon={Image} iconColor="#a78bfa" accent={accent}>
+              <SectionCard id="image" title="Channel-Native Product & Visual Studio" icon={Image} iconColor="#a78bfa" accent={accent}
+                onRegen={() => regen('image')} regenning={!!regenning.image}>
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1486,55 +1531,150 @@ export default function AiDoesItPanel({ onClose }) {
 
                   {/* AI Generated 4K Image Render */}
                   <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-white">Commercial Product Hero Image</span>
-                      {imageUrl && (
-                        <a
-                          href={imageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[10px] text-white/60 hover:text-white"
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-white">Commercial Product Hero Image</span>
+                        <span className="text-[9.5px] font-mono px-2 py-0.5 rounded-none font-bold"
+                          style={{ background: 'rgba(200, 30, 60, 0.25)', border: '1px solid rgba(200, 30, 60, 0.5)', color: '#ffffff', borderRadius: '0px' }}>
+                          ⚡ Powered by OpenAI DALL-E 3
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => regen('image')}
+                          disabled={regenning.image || stepStatus.image === 'active'}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-none text-[11px] font-bold transition-all cursor-pointer"
+                          style={{
+                            background: '#c81e3c',
+                            color: '#ffffff',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '0px'
+                          }}
                         >
-                          <ExternalLink size={10} /> Full resolution
-                        </a>
-                      )}
+                          <Sparkles size={11} className={regenning.image || stepStatus.image === 'active' ? "animate-spin text-white" : "text-white"} />
+                          <span>{regenning.image || stepStatus.image === 'active' ? 'Synthesizing with OpenAI...' : 'Regenerate with OpenAI'}</span>
+                        </button>
+                        
+                        {setApiModalOpen && (
+                          <button
+                            type="button"
+                            onClick={() => setApiModalOpen(true)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-none text-[11px] font-bold text-white transition-all cursor-pointer"
+                            style={{
+                              background: 'rgba(255,255,255,0.08)',
+                              border: '1px solid rgba(255,255,255,0.18)',
+                              color: '#ffffff',
+                              borderRadius: '0px'
+                            }}
+                            title="Configure OpenAI API Key"
+                          >
+                            <Settings size={11} className="text-white" />
+                            <span>OpenAI Key</span>
+                          </button>
+                        )}
+                        
+                        {imageUrl && (
+                          <a
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white"
+                          >
+                            <ExternalLink size={10} /> Full resolution
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     {stepStatus.image === 'active' && (
-                      <div className="rounded-xl flex items-center gap-3 px-4 py-5 border border-dashed"
-                        style={{ background: 'rgba(167,139,250,0.06)', borderColor: 'rgba(167,139,250,0.25)' }}>
-                        <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-                          style={{ borderColor: 'rgba(167,139,250,0.6)', borderTopColor: 'transparent' }} />
-                        <p className="text-[12px] text-purple-300">
-                          Rendering 4K commercial hero asset for {creatorName}...
+                      <div className="rounded-none flex items-center gap-3 px-4 py-5 border border-dashed"
+                        style={{ background: 'rgba(200,30,60,0.08)', borderColor: 'rgba(200,30,60,0.3)', borderRadius: '0px' }}>
+                        <div className="w-5 h-5 rounded-none border-2 border-t-transparent animate-spin"
+                          style={{ borderColor: '#c81e3c', borderTopColor: 'transparent' }} />
+                        <p className="text-[12px] text-white font-medium">
+                          Synthesizing 4K commercial hero asset with OpenAI DALL-E 3 for {creatorName}...
                         </p>
                       </div>
                     )}
 
                     {imageUrl && (
-                      <div className="relative rounded-2xl overflow-hidden border group shadow-2xl" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                        <img src={imageUrl} alt="AI product hero" className="w-full max-h-[420px] object-cover" />
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4"
-                          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }}>
-                          <span className="text-[11px] text-white font-medium">Channel-native 4K asset</span>
-                          <a
-                            href={imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-bold bg-white text-black shadow-lg"
-                          >
-                            <ExternalLink size={11} /> Open Full Size
-                          </a>
+                      <div className="space-y-2">
+                        <div className="relative rounded-none overflow-hidden border group shadow-2xl" style={{ borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
+                          <img src={imageUrl} alt="AI product hero" className="w-full max-h-[440px] object-cover" style={{ borderRadius: '0px' }} />
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4"
+                            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)', borderRadius: '0px' }}>
+                            <span className="text-[11px] text-white font-medium">Channel-native 4K asset • OpenAI DALL-E</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => regen('image')}
+                                disabled={regenning.image}
+                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-[#c81e3c] text-white shadow-lg border border-white/20"
+                                style={{ borderRadius: '0px', color: '#ffffff' }}
+                              >
+                                <Sparkles size={11} className={regenning.image ? "animate-spin text-white" : "text-white"} />
+                                <span>{regenning.image ? 'Generating...' : 'Re-render AI'}</span>
+                              </button>
+                              <a
+                                href={imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-white text-black shadow-lg"
+                                style={{ borderRadius: '0px' }}
+                              >
+                                <ExternalLink size={11} /> Open Full Size
+                              </a>
+                            </div>
+                          </div>
                         </div>
+
+                        {imageError && (
+                          <div className="rounded-none p-3 border flex items-center justify-between flex-wrap gap-2"
+                            style={{ background: 'rgba(200, 30, 60, 0.1)', borderColor: 'rgba(200, 30, 60, 0.3)', borderRadius: '0px' }}>
+                            <div className="text-[11px] text-white/90">
+                              <span className="font-bold text-white">Notice: </span>
+                              {imageError.includes('Expired') || imageError.includes('401')
+                                ? 'OpenAI API key expired in .env. Displaying channel-grounded product hero asset. Add an active OpenAI key to generate custom DALL-E 3 renders.'
+                                : imageError.slice(0, 160)}
+                            </div>
+                            {setApiModalOpen && (
+                              <button
+                                type="button"
+                                onClick={() => setApiModalOpen(true)}
+                                className="px-2.5 py-1 rounded-none text-[10.5px] font-bold text-white shadow-sm transition-all"
+                                style={{ background: '#c81e3c', borderRadius: '0px', color: '#ffffff' }}
+                              >
+                                Update OpenAI Key
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {stepStatus.image === 'error' && (
-                      <div className="rounded-xl p-3 border" style={{ background: 'rgba(239, 68, 68, 0.06)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-                        <p className="text-[11px] font-semibold text-red-400">Image synthesis note</p>
-                        <p className="text-[10px] text-white/40 mt-0.5">
-                          {imageError?.slice(0, 160) || 'API key limit reached. The interactive IDE/Product canvas above is already active.'}
-                        </p>
+                    {stepStatus.image === 'error' && !imageUrl && (
+                      <div className="rounded-none p-3.5 border flex items-center justify-between flex-wrap gap-3"
+                        style={{ background: 'rgba(200, 30, 60, 0.12)', borderColor: 'rgba(200, 30, 60, 0.35)', borderRadius: '0px' }}>
+                        <div>
+                          <p className="text-[11.5px] font-bold text-white">OpenAI DALL-E Image Note</p>
+                          <p className="text-[10.5px] text-white/80 mt-0.5">
+                            {imageError?.includes('Expired') || imageError?.includes('401')
+                              ? 'Your configured OpenAI API key has expired. Update your key in Settings to generate live DALL-E 3 assets.'
+                              : imageError?.slice(0, 160) || 'API key limit reached. Click below to connect an active OpenAI key.'}
+                          </p>
+                        </div>
+                        {setApiModalOpen && (
+                          <button
+                            type="button"
+                            onClick={() => setApiModalOpen(true)}
+                            className="px-3.5 py-1.5 rounded-none text-[11px] font-bold text-white shadow-sm transition-all"
+                            style={{ background: '#c81e3c', borderRadius: '0px', color: '#ffffff' }}
+                          >
+                            Update OpenAI Key
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

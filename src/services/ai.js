@@ -1277,6 +1277,36 @@ export async function generateProductImageWithTogether(
   return null;
 }
 
+// ── Channel-Calibrated Product Fallback Image ────────────────────────────────
+export function getChannelHeroFallbackImage(creatorData) {
+  const niche = (creatorData?.niche || "").toLowerCase();
+  const name = (creatorData?.name || creatorData?.creatorName || creatorData?.handle || "").toLowerCase();
+  const productName = (creatorData?.productName || creatorData?.blueprint?.name || "").toLowerCase();
+
+  if (
+    niche.includes("tech") ||
+    niche.includes("code") ||
+    niche.includes("dev") ||
+    niche.includes("software") ||
+    niche.includes("hardware") ||
+    name.includes("mkbhd") ||
+    name.includes("marques") ||
+    productName.includes("panel")
+  ) {
+    return "/images/saas_multi_device_showcase.jpg";
+  }
+  if (
+    niche.includes("design") ||
+    niche.includes("creative") ||
+    niche.includes("media") ||
+    niche.includes("video") ||
+    niche.includes("photo")
+  ) {
+    return "/images/creator_desk_mask.png";
+  }
+  return "/images/hero_saas_macbook.jpg";
+}
+
 // ── OpenAI DALL-E 3 image generation ─────────────────────────────────────────
 
 export async function generateProductImageWithOpenAI(
@@ -1284,11 +1314,13 @@ export async function generateProductImageWithOpenAI(
   signal = undefined,
 ) {
   const { openaiKey } = loadAiKeys();
-  if (!openaiKey) throw new Error("NO_OPENAI_KEY");
+  if (!openaiKey) {
+    throw new Error("NO_OPENAI_KEY: Please enter an active OpenAI API key in Settings to generate DALL-E images.");
+  }
 
   const prompt = buildChannelSpecificImagePrompt(creatorData);
 
-  // 1. Try DALL-E 3 via /v1/images/generations
+  // 1. Primary: OpenAI DALL-E 3 (1024x1024 photorealistic)
   try {
     const res = await fetch("/api/openai/v1/images/generations", {
       method: "POST",
@@ -1298,7 +1330,7 @@ export async function generateProductImageWithOpenAI(
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt: prompt,
+        prompt: prompt.slice(0, 4000),
         n: 1,
         size: "1024x1024",
         quality: "standard",
@@ -1316,47 +1348,66 @@ export async function generateProductImageWithOpenAI(
         return `data:image/png;base64,${data.data[0].b64_json}`;
       }
     }
+
+    // Parse error response from OpenAI
+    let errMsg = `OpenAI status ${res.status}`;
+    try {
+      const errData = await res.json();
+      if (errData?.error?.message) errMsg = errData.error.message;
+    } catch (_) {
+      try {
+        const errText = await res.text();
+        if (errText) errMsg = errText.slice(0, 200);
+      } catch (__) {}
+    }
+
+    console.warn(`[Forge] DALL-E 3 API returned status ${res.status}:`, errMsg);
+
+    // If key has expired or unauthorized, throw immediate clear message
+    if (res.status === 401) {
+      throw new Error(`OpenAI Key Expired: ${errMsg}`);
+    }
+
+    // 2. Fallback: DALL-E 2 if DALL-E 3 has temporary capacity/quota bounds
+    if (res.status !== 401 && res.status !== 403) {
+      try {
+        const resDalle2 = await fetch("/api/openai/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: "dall-e-2",
+            prompt: prompt.slice(0, 1000),
+            n: 1,
+            size: "1024x1024",
+            response_format: "url",
+          }),
+          signal,
+        });
+
+        if (resDalle2.ok) {
+          const data2 = await resDalle2.json();
+          if (data2?.data?.[0]?.url) return data2.data[0].url;
+          if (data2?.data?.[0]?.b64_json) return `data:image/png;base64,${data2.data[0].b64_json}`;
+        }
+      } catch (_) {}
+    }
+
+    throw new Error(`OpenAI DALL-E Error (${res.status}): ${errMsg}`);
   } catch (err) {
-    console.warn(
-      "[Forge] DALL-E 3 fetch failed, trying responses fallback:",
-      err,
-    );
+    if (err.name === "AbortError") throw err;
+    throw err;
   }
-
-  // 2. Fallback to OpenAI responses API if DALL-E 3 call fails
-  const resResponses = await fetch("/api/openai/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openaiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-5.5",
-      input: prompt,
-      tools: [{ type: "image_generation" }],
-    }),
-    signal,
-  });
-
-  if (!resResponses.ok) {
-    const err = await resResponses.text();
-    throw new Error(
-      `OpenAI Image ${resResponses.status}: ${err.slice(0, 300)}`,
-    );
-  }
-
-  const dataResponses = await resResponses.json();
-  const result = dataResponses?.output?.find(
-    (out) => out.type === "image_generation_call",
-  )?.result;
-  if (result) {
-    return `data:image/png;base64,${result}`;
-  }
-  return null;
 }
 
 async function saveImageToBackendMedia(imageResult) {
   if (!imageResult) return null;
+  // If it's already a local static asset (e.g. /images/...), return immediately
+  if (typeof imageResult === "string" && imageResult.startsWith("/images/")) {
+    return imageResult;
+  }
   try {
     const res = await fetch("/api/media/save", {
       method: "POST",
@@ -1383,28 +1434,30 @@ async function saveImageToBackendMedia(imageResult) {
 }
 
 export async function generateProductImage(creatorData, signal = undefined) {
-  const prompt = buildChannelSpecificImagePrompt(creatorData);
-
   const { openaiKey, togetherKey, geminiKey } = loadAiKeys();
   let rawImage = null;
+  let lastImageError = null;
 
-  // 2. OpenAI GPT Image 2
+  // 1. Primary: OpenAI DALL-E 3 (Default & direct creator choice)
   if (openaiKey && !failedKeys.has(openaiKey)) {
     try {
       rawImage = await generateProductImageWithOpenAI(creatorData, signal);
     } catch (err) {
       if (err.name === "AbortError") throw err;
-      if (err.message.includes("401") || err.message.includes("429")) {
+      lastImageError = err.message || "OpenAI DALL-E generation failed";
+      if (err.message.includes("401") || err.message.includes("Expired") || err.message.includes("429")) {
         failedKeys.add(openaiKey);
       }
       console.warn(
-        "[Forge] OpenAI gpt-image-2 Generation failed, trying fallback:",
+        "[Forge] OpenAI DALL-E generation failed, attempting backup providers:",
         err,
       );
     }
+  } else if (!openaiKey) {
+    lastImageError = "No OpenAI API key provided";
   }
 
-  // 3. Together.ai FLUX
+  // 2. Backup: Together.ai FLUX
   if (!rawImage && togetherKey && !failedKeys.has(togetherKey)) {
     try {
       rawImage = await generateProductImageWithTogether(creatorData, signal);
@@ -1420,7 +1473,7 @@ export async function generateProductImage(creatorData, signal = undefined) {
     }
   }
 
-  // 4. Gemini Image
+  // 3. Backup: Gemini Image Generation
   if (!rawImage && geminiKey && !failedKeys.has(geminiKey)) {
     try {
       rawImage = await generateProductImageWithGemini(creatorData, signal);
@@ -1433,8 +1486,18 @@ export async function generateProductImage(creatorData, signal = undefined) {
     }
   }
 
+  // 4. Grounded Channel Hero Fallback (Ensures UI is never left with a broken image box)
   if (!rawImage) {
-    throw new Error("NO_ACTIVE_IMAGE_KEY");
+    rawImage = getChannelHeroFallbackImage(creatorData);
+    if (!rawImage) {
+      throw new Error(lastImageError || "NO_ACTIVE_IMAGE_KEY");
+    }
+    if (lastImageError && typeof window !== "undefined") {
+      try {
+        const handle = (creatorData?.handle || "creator").replace(/^@+/, "");
+        sessionStorage.setItem(`forge_${handle}_image_note`, lastImageError);
+      } catch (_) {}
+    }
   }
 
   return await saveImageToBackendMedia(rawImage);
