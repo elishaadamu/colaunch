@@ -712,12 +712,27 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
   const followers = parseFollowerCount(creatorData?.followers)
   const eng = parseFloat(creatorData?.engagementRate) || 3.5
 
+  // Pull audience intelligence pricing if available to guarantee 100% synchronization
+  let intelPricing = creatorData?.audienceIntelligence?.pricing || null
+  if (!intelPricing) {
+    try {
+      const cleanH = (creatorData?.handle || '').replace(/^@/, '').toLowerCase().trim()
+      const cached = localStorage.getItem(`forge_audience_intel_${cleanH}`)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed?.pricing) intelPricing = parsed.pricing
+      }
+    } catch {}
+  }
+
   if (!recs || recs.length === 0) {
     const baseFit = eng >= 6.0 ? 97 : eng >= 4.0 ? 94 : followers >= 100_000 ? 92 : 89
     return BLUEPRINTS.map((b, idx) => ({
       ...b,
       fit: Math.max(65, baseFit - (idx * 6)),
-      revenue: calculateFollowerRevenueRange(followers, b.id, eng)
+      revenue: (intelPricing?.conservative_mrr && intelPricing?.target_mrr && idx === 0)
+        ? `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
+        : calculateFollowerRevenueRange(followers, b.id, eng)
     }))
   }
 
@@ -745,12 +760,14 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
       other: ['Custom storefront', 'Digital delivery', 'Secure checkout', 'Customer dashboard']
     }
 
-    const dynamicRev = calculateFollowerRevenueRange(
-      followers,
-      r.product_category,
-      eng,
-      r.revenue_potential
-    )
+    let dynamicRev = (intelPricing?.conservative_mrr && intelPricing?.target_mrr && index === 0)
+      ? `${intelPricing.conservative_mrr}–${intelPricing.target_mrr} / mo`
+      : calculateFollowerRevenueRange(
+          followers,
+          r.product_category,
+          eng,
+          r.revenue_potential
+        )
 
     const rawConf = r.confidence_score ?? r.confidenceScore ?? r.fit
     let fitVal
@@ -1398,12 +1415,12 @@ export default function Blueprint() {
             >
               {/* Primary Recommended Product (Featured) */}
               <div 
-                className="lg:col-span-8 rounded-2xl bg-[#0f1117] border border-[#1f2433] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
+                className="lg:col-span-8 rounded-none bg-[#0f1117] border border-[#1f2433] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
               >
                 {/* Header Tag & Match Indicator */}
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <div 
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold text-xs tracking-wide border"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-none font-semibold text-xs tracking-wide border"
                     style={{
                       background: `rgba(${accent.rgb}, 0.1)`,
                       borderColor: `rgba(${accent.rgb}, 0.2)`,
@@ -1414,7 +1431,7 @@ export default function Blueprint() {
                     <span>{activeBlueprint.type.toUpperCase()}</span>
                   </div>
 
-                  <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                  <div className="px-2.5 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                     {activeBlueprint.fit}% Match
                   </div>
                 </div>
@@ -1441,7 +1458,7 @@ export default function Blueprint() {
                       {activeBlueprint.features.map(f => (
                         <span 
                           key={f} 
-                          className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1"
+                          className="px-2.5 py-1 text-xs font-medium rounded-none bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1"
                         >
                           <Check className="w-3 h-3" style={{ color: accent.color }} />
                           {f}
@@ -1464,7 +1481,7 @@ export default function Blueprint() {
                         />
                       </button>
                       {showReasons && (
-                        <div className="mt-2.5 p-3 rounded-xl bg-[#141822] border border-[#1f2433] space-y-2">
+                        <div className="mt-2.5 p-3 rounded-none bg-[#141822] border border-[#1f2433] space-y-2">
                           {reasons.map((r, i) => (
                             <div key={i} className="flex items-start gap-2">
                               <span className="text-[10px] mt-0.5 flex-shrink-0 font-bold" style={{ color: accent.color }}>✓</span>
@@ -1487,13 +1504,13 @@ export default function Blueprint() {
 
                   {/* Right Column: Interactive App Preview Window */}
                   <div className="md:col-span-5">
-                    <div className="rounded-xl bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[250px]">
+                    <div className="rounded-none bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[250px]">
                       {/* Window Bar */}
                       <div className="px-3 py-2 bg-[#151822]/80 border-b border-[#1f2433] flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block"></span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block"></span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block"></span>
+                          <span className="w-2.5 h-2.5 rounded-none bg-red-500/80 inline-block"></span>
+                          <span className="w-2.5 h-2.5 rounded-none bg-amber-500/80 inline-block"></span>
+                          <span className="w-2.5 h-2.5 rounded-none bg-emerald-500/80 inline-block"></span>
                         </div>
                         <span className="text-[9px] font-mono text-slate-500 truncate">
                           {activeBlueprint.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'app'}.app
@@ -1526,11 +1543,11 @@ export default function Blueprint() {
                     <div
                       key={blueprint.id}
                       onClick={() => setSelected(blueprint.id)}
-                      className="group p-5 rounded-2xl bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
+                      className="group p-5 rounded-none bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
                     >
                       <div className="w-full flex items-start justify-between gap-2 min-w-0">
                         <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="p-2.5 rounded-xl bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
+                          <div className="p-2.5 rounded-none bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
                             <AltIcon className="w-5 h-5 text-slate-300" />
                           </div>
                           <div className="space-y-1 min-w-0 flex-1">
@@ -1542,7 +1559,7 @@ export default function Blueprint() {
                             </p>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
+                        <span className="px-2 py-0.5 rounded-none text-[11px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
                           {blueprint.fit}%
                         </span>
                       </div>
@@ -1574,7 +1591,7 @@ export default function Blueprint() {
                       updateCreator({ customIdea: customIdea.trim() })
                     }
                   }}
-                  className="p-4 rounded-xl border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer"
+                  className="p-4 rounded-none border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer"
                 >
                   <p className="text-xs font-semibold text-slate-300">Something else?</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1598,7 +1615,7 @@ export default function Blueprint() {
               id="dynamic-cta-button" 
               onClick={handleContinue}
               disabled={isScraping || isGenerating}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-none font-bold text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group"
               style={{
                 background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : accent.color,
                 color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : '#ffffff',

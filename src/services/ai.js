@@ -1848,52 +1848,44 @@ export function calculateFollowerRevenueRange(followers = 0, category = 'course'
   const engMultiplier = 0.85 + (eng / 10.0) * 0.45;
 
   const cat = String(category || '').toLowerCase();
-  let basePrice = 29;
-  let convLow = 0.0012; // 0.12% conversion
-  let convHigh = 0.0038; // 0.38% conversion
+  
+  // Align strictly with 10-point Audience Intelligence SaaS pricing architecture:
+  // Conservative conversion (~0.35% at $19/mo Starter tier) -> Floor
+  // Target conversion (~1.20% at $29/mo Pro tier) -> Target
+  let starterPrice = 19;
+  let proPrice = 29;
+  let convLow = 0.0035;
+  let convHigh = 0.0120;
 
   if (cat.includes('course') || cat.includes('academy') || cat.includes('masterclass')) {
-    basePrice = 39;
-    convLow = 0.0010;
-    convHigh = 0.0032;
+    starterPrice = 29;
+    proPrice = 49;
+    convLow = 0.0022;
+    convHigh = 0.0075;
   } else if (cat.includes('community') || cat.includes('membership')) {
-    basePrice = 24;
-    convLow = 0.0015;
-    convHigh = 0.0045;
+    starterPrice = 19;
+    proPrice = 29;
+    convLow = 0.0035;
+    convHigh = 0.0120;
   } else if (cat.includes('app') || cat.includes('mobile')) {
-    basePrice = 19;
-    convLow = 0.0018;
-    convHigh = 0.0050;
-  } else {
-    basePrice = 29;
-    convLow = 0.0012;
-    convHigh = 0.0035;
+    starterPrice = 19;
+    proPrice = 29;
+    convLow = 0.0035;
+    convHigh = 0.0120;
+  } else if (cat.includes('store') || cat.includes('digital_product') || cat.includes('physical_product')) {
+    starterPrice = 24;
+    proPrice = 39;
+    convLow = 0.0028;
+    convHigh = 0.0090;
   }
 
-  // Realistic monthly recurring potential
-  let lowMRR = Math.round(f * convLow * basePrice * engMultiplier);
-  let highMRR = Math.round(f * convHigh * basePrice * engMultiplier);
+  // Realistic monthly recurring potential directly proportional to audience scale (no artificial caps)
+  let lowMRR = Math.round(f * convLow * starterPrice * engMultiplier);
+  let highMRR = Math.round(f * convHigh * proPrice * engMultiplier);
 
-  // Calibrated realistic monthly floors and caps by audience size
-  if (f < 5_000) {
-    lowMRR = Math.max(500, Math.min(2_000, lowMRR));
-    highMRR = Math.max(1_500, Math.min(5_000, highMRR));
-  } else if (f < 25_000) {
-    lowMRR = Math.max(1_500, Math.min(4_500, lowMRR));
-    highMRR = Math.max(4_000, Math.min(12_000, highMRR));
-  } else if (f < 100_000) {
-    lowMRR = Math.max(3_500, Math.min(9_000, lowMRR));
-    highMRR = Math.max(9_000, Math.min(24_000, highMRR));
-  } else if (f < 500_000) {
-    lowMRR = Math.max(8_000, Math.min(18_000, lowMRR));
-    highMRR = Math.max(20_000, Math.min(48_000, highMRR));
-  } else if (f < 2_000_000) {
-    lowMRR = Math.max(16_000, Math.min(35_000, lowMRR));
-    highMRR = Math.max(40_000, Math.min(95_000, highMRR));
-  } else {
-    lowMRR = Math.max(30_000, Math.min(65_000, lowMRR));
-    highMRR = Math.max(75_000, Math.min(160_000, highMRR));
-  }
+  // Micro-audience floor guarantees so smaller channels don't display negligible numbers
+  lowMRR = Math.max(800, lowMRR);
+  highMRR = Math.max(2400, highMRR);
 
   const fmtK = (val) => {
     if (val >= 1_000_000) {
