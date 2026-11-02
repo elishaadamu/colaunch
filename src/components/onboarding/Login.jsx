@@ -19,32 +19,51 @@ import {
 } from 'lucide-react'
 import CoLaunchLogo from '../ui/CoLaunchLogo'
 
+// Candidate backend URLs with intelligent fallback and timeout protection
 const CANDIDATE_API_URLS = [
   '',
   'https://creator-forge-backend-jj1y.onrender.com',
   'https://creator-forge-backend.onrender.com'
 ]
 
-async function apiPost(endpoint, body) {
+async function apiPost(endpoint, body, onStatusUpdate = null) {
   let lastError = null
-  for (const baseUrl of CANDIDATE_API_URLS) {
+  for (let i = 0; i < CANDIDATE_API_URLS.length; i++) {
+    const baseUrl = CANDIDATE_API_URLS[i]
     try {
+      if (i > 0 && onStatusUpdate) {
+        onStatusUpdate('Connecting to fallback server node...')
+      }
       const url = `${baseUrl}${endpoint}`
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 20000)
+
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
+
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        throw new Error(data.detail || data.message || `Request failed with status ${res.status}`)
+        const msg = data.detail || data.message || `Request failed with status ${res.status}`
+        throw new Error(msg)
       }
       return data
     } catch (err) {
       lastError = err
+      // If server returned an explicit error response (e.g. 400 wrong password), don't retry other nodes
+      if (err.message && !err.message.includes('fetch') && !err.message.includes('abort') && !err.message.includes('Failed')) {
+        throw err
+      }
     }
   }
-  throw lastError || new Error('Connection failed. Please check network.')
+  throw lastError || new Error('Connection failed. Please check network connection.')
 }
 
 export default function Login() {
@@ -65,6 +84,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [infoNotice, setInfoNotice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingText, setLoadingText] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   // Customer care opportunity modal after code verification
@@ -150,6 +170,7 @@ export default function Login() {
     }
 
     setLoading(false)
+    setLoadingText('')
 
     // If logged in via email code or has no password set in dashboard, offer customer care opportunity!
     if (data.logged_in_via_code || !hasPwd) {
@@ -165,12 +186,13 @@ export default function Login() {
     setError('')
     setInfoNotice('')
     setLoading(true)
+    setLoadingText('Authenticating credentials…')
 
     try {
       const data = await apiPost('/api/auth/login', {
         identifier: identifier.trim(),
         password: password
-      })
+      }, (txt) => setLoadingText(txt))
 
       // If user exists but password was not set in dashboard, switch to code flow automatically!
       if (data.status === 'no_password_set') {
@@ -179,12 +201,14 @@ export default function Login() {
         setAuthMode('code')
         setCodeEmail(targetEmail)
         if (targetEmail) {
+          setLoadingText('Sending 6-digit email code…')
           await apiPost('/api/auth/send-code', { email: targetEmail })
           setCodeSent(true)
           setCodeTimer(30)
           setInfoNotice(`Authentication code sent to ${targetEmail}. Please check your inbox.`)
         }
         setLoading(false)
+        setLoadingText('')
         return
       }
 
@@ -193,18 +217,20 @@ export default function Login() {
         setAuthMode('code')
         setCodeEmail(targetEmail)
         if (targetEmail) {
+          setLoadingText('Sending 6-digit email code…')
           await apiPost('/api/auth/send-code', { email: targetEmail })
           setCodeSent(true)
           setCodeTimer(30)
           setInfoNotice(`Authentication code sent to ${targetEmail}.`)
         }
         setLoading(false)
+        setLoadingText('')
         return
       }
 
       finalizeLoginSession(data, password)
     } catch (err) {
-      // Local fallback for demo
+      // Local fallback for demo / test accounts
       if (
         (identifier.trim() === 'admin' && (password === 'creatorforge2026' || password === 'colaunch2026')) ||
         (identifier.trim().toLowerCase() === 'admin@colaunch.com' && (password === 'creatorforge2026' || password === 'colaunch2026'))
@@ -218,6 +244,7 @@ export default function Login() {
       }
       setError(err.message || 'Login failed. Please check your credentials.')
       setLoading(false)
+      setLoadingText('')
     }
   }
 
@@ -234,16 +261,18 @@ export default function Login() {
     }
 
     setLoading(true)
+    setLoadingText(`Sending 6-digit code to ${targetEmail}…`)
     try {
-      await apiPost('/api/auth/send-code', { email: targetEmail })
+      await apiPost('/api/auth/send-code', { email: targetEmail }, (txt) => setLoadingText(txt))
       setCodeEmail(targetEmail)
       setCodeSent(true)
       setCodeTimer(30)
       setInfoNotice(`We sent a 6-digit authentication code to ${targetEmail}.`)
     } catch (err) {
-      setError(err.message || 'Could not send verification code. Please verify email.')
+      setError(err.message || 'Could not send verification code. Please check email address.')
     } finally {
       setLoading(false)
+      setLoadingText('')
     }
   }
 
@@ -260,91 +289,133 @@ export default function Login() {
     }
 
     setLoading(true)
+    setLoadingText('Verifying code & preparing workspace…')
     try {
       const data = await apiPost('/api/auth/verify-code', {
         email: codeEmail.toLowerCase().trim(),
         code: cleanCode
-      })
+      }, (txt) => setLoadingText(txt))
 
       finalizeLoginSession(data, '')
     } catch (err) {
       setError(err.message || 'Invalid or expired code. Please request a new code.')
       setLoading(false)
+      setLoadingText('')
     }
   }
 
   return (
-    <div className="login-split-page">
+    <div className="min-h-screen w-full bg-[#07090e] text-slate-100 flex flex-col justify-between items-center relative overflow-hidden select-none">
+      
+      {/* Background Matrix Dots */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-25"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
+          backgroundSize: '24px 24px'
+        }}
+      />
 
-      {/* ── LEFT: FULL-BLEED IMAGE ── */}
-      <div className="login-split-image">
-        <img
-          src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=80"
-          alt="Engineering team collaborating in modern workspace"
-          loading="eager"
-        />
-        <div className="login-image-overlay" />
+      {/* Ambient Radial Mesh Glow */}
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[360px] pointer-events-none opacity-20 blur-[130px]"
+        style={{
+          background: 'radial-gradient(circle, #c81e3c 0%, #1e1b4b 60%, transparent 80%)'
+        }}
+      />
 
-        <div className="login-image-brand">
-          <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
+      {/* ── TOP NAV BAR ── */}
+      <header className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-5 flex items-center justify-between z-10">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+              window.history.pushState(null, '', '/')
+            }
+            goTo('welcome')
+          }}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 bg-[#0e1320] hover:bg-[#151c2e] border border-[#1e293b] cursor-pointer"
+          style={{ borderRadius: '0px' }}
+        >
+          <ArrowLeft size={13} />
+          <span>Home</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <CoLaunchLogo size={22} theme="dark" showWordmark={true} />
         </div>
 
-        <div className="login-image-caption">
-          <span className="login-caption-tag">STUDIO</span>
-          <h2>Build Products.<br />Share Ownership.</h2>
-          <p>50/50 co-founder partnerships powered by AI sprint workflows.</p>
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.setItem('forge_dashboard_active_tab', 'support')
+            goTo('dashboard')
+          }}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition px-3 py-1.5 bg-[#0e1320] hover:bg-[#151c2e] border border-[#1e293b] cursor-pointer"
+          style={{ borderRadius: '0px' }}
+        >
+          <Headphones size={13} className="text-[#c81e3c]" />
+          <span className="hidden sm:inline">Support</span>
+        </button>
+      </header>
 
-      {/* ── RIGHT: LOGIN FORM ── */}
-      <div className="login-split-form">
-        <div className="login-bottom-gradient" />
+      {/* ── MAIN AUTHENTICATION CONTAINER ── */}
+      <main className="w-full max-w-md mx-auto my-auto px-4 py-6 z-10">
+        <div 
+          className="bg-[#0b0f19] border border-[#1e293b] p-6 sm:p-8 shadow-2xl relative"
+          style={{ borderRadius: '0px' }}
+        >
+          {/* Subtle Top Red Accent Line */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c81e3c] to-transparent" />
 
-        {/* Top bar with back link */}
-        <div className="login-form-topbar">
-          <button type="button" onClick={() => goTo('welcome')} className="login-back-link">
-            <ArrowLeft size={15} />
-            <span>Back</span>
-          </button>
-        </div>
-
-        {/* Form inner */}
-        <div className="login-form-inner">
-
-          {/* Heading */}
-          <div className="login-form-heading">
-            <h1>Welcome back</h1>
-            <p>Sign in to your CoLaunch creator workspace</p>
+          {/* Card Sub-Header Meta */}
+          <div className="flex items-center justify-between text-[10px] font-mono tracking-wider uppercase text-slate-400 mb-4 pb-3 border-b border-[#162033]">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              DIRECT AUTH MATRIX
+            </span>
+            <span className="text-slate-500 font-mono">256-BIT TLS</span>
           </div>
 
-          {/* Customer Care Opportunity Modal / Banner (When logged in via code / no password set) */}
+          {/* Heading */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-black text-white tracking-tight">Sign In</h1>
+            <p className="text-xs text-slate-400 mt-1">
+              Access your CoLaunch workspace, marketing calendar, and launch assets.
+            </p>
+          </div>
+
+          {/* Customer Care Opportunity Card (Shown when authenticated via code & no password configured) */}
           {showCareOpportunity ? (
-            <div className="p-5 sm:p-6 bg-[#0c101a] border border-[#232f48] rounded-none space-y-4 shadow-xl" style={{ borderRadius: '0px' }}>
+            <div 
+              className="p-5 bg-[#070a12] border border-[#1e293b] space-y-4"
+              style={{ borderRadius: '0px' }}
+            >
               <div className="flex items-center gap-2.5 text-emerald-400">
                 <CheckCircle2 size={22} className="shrink-0" />
                 <div>
-                  <h2 className="text-base font-extrabold text-white">Signed In Successfully</h2>
+                  <h2 className="text-sm font-extrabold text-white">Identity Verified</h2>
                   <p className="text-[11px] text-emerald-400 font-mono">Authenticated via Single-Use Email Code</p>
                 </div>
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                Welcome back! Your identity was verified. Because your account does not currently have a password configured in the dashboard, we invite you to connect with Customer Care if you'd like to set a password or change your email address.
+                Welcome back! Because your account currently does not have a password configured in the dashboard, we invite you to connect with Customer Care if you would like to set a password or change your email address.
               </p>
 
-              <div className="p-3 bg-[#131926] border border-[#20293d] rounded-none text-xs text-slate-300 space-y-2">
+              <div className="p-3 bg-[#0d1322] border border-[#1b263b] text-xs text-slate-300 space-y-2" style={{ borderRadius: '0px' }}>
                 <div className="flex items-center gap-2 text-white font-bold">
-                  <Headphones size={15} className="text-[#c81e3c]" />
+                  <Headphones size={14} className="text-[#c81e3c]" />
                   <span>Customer Care & Account Assistance</span>
                 </div>
                 <ul className="text-[11px] text-slate-400 space-y-1 pl-4 list-disc">
                   <li>Configure or update your dashboard password</li>
-                  <li>Verify or migrate your primary account email</li>
-                  <li>Get 1-on-1 launch onboarding & technical support</li>
+                  <li>Verify or migrate your primary email address</li>
+                  <li>1-on-1 launch onboarding and technical assistance</li>
                 </ul>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -354,13 +425,13 @@ export default function Login() {
                   className="flex-1 py-3 px-4 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md"
                   style={{ borderRadius: '0px' }}
                 >
-                  <Headphones size={15} />
+                  <Headphones size={14} />
                   <span>Contact Customer Care</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => goTo('dashboard')}
-                  className="flex-1 py-3 px-4 bg-[#182030] hover:bg-[#202b40] text-slate-200 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#283652]"
+                  className="flex-1 py-3 px-4 bg-[#141b2b] hover:bg-[#1a2338] text-slate-200 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#232f48]"
                   style={{ borderRadius: '0px' }}
                 >
                   <span>Continue to Dashboard</span>
@@ -371,7 +442,10 @@ export default function Login() {
           ) : (
             <>
               {/* Segmented Auth Mode Selector: Password vs Email Code */}
-              <div className="login-role-toggle" style={{ borderRadius: '0px' }}>
+              <div 
+                className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-5"
+                style={{ borderRadius: '0px' }}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -379,12 +453,17 @@ export default function Login() {
                     setError('')
                     setInfoNotice('')
                   }}
-                  className={`login-role-btn ${authMode === 'password' ? 'active' : ''}`}
+                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold transition cursor-pointer ${
+                    authMode === 'password'
+                      ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
                   style={{ borderRadius: '0px' }}
                 >
-                  <Lock size={14} />
+                  <Lock size={13} className={authMode === 'password' ? 'text-[#c81e3c]' : ''} />
                   <span>Password Login</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -393,25 +472,35 @@ export default function Login() {
                     setInfoNotice('')
                     if (identifier.includes('@')) setCodeEmail(identifier.trim())
                   }}
-                  className={`login-role-btn ${authMode === 'code' ? 'active' : ''}`}
+                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold transition cursor-pointer ${
+                    authMode === 'code'
+                      ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
                   style={{ borderRadius: '0px' }}
                 >
-                  <Mail size={14} />
+                  <Mail size={13} className={authMode === 'code' ? 'text-[#c81e3c]' : ''} />
                   <span>Email Code Login</span>
                 </button>
               </div>
 
               {/* Error Alert */}
               {error && (
-                <div className="login-error">
-                  <AlertTriangle size={15} />
-                  <span>{error}</span>
+                <div 
+                  className="p-3 mb-4 bg-rose-950/40 border border-rose-500/50 text-rose-200 text-xs flex items-start gap-2.5"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <AlertTriangle size={15} className="text-rose-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{error}</span>
                 </div>
               )}
 
               {/* Informational Notice */}
               {infoNotice && (
-                <div className="p-3 mb-4 bg-sky-950/40 border border-sky-500/40 text-xs text-sky-200 flex items-start gap-2" style={{ borderRadius: '0px' }}>
+                <div 
+                  className="p-3 mb-4 bg-sky-950/40 border border-sky-500/50 text-sky-200 text-xs flex items-start gap-2.5"
+                  style={{ borderRadius: '0px' }}
+                >
                   <Sparkles size={15} className="text-sky-400 shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{infoNotice}</span>
                 </div>
@@ -419,180 +508,217 @@ export default function Login() {
 
               {/* ── MODE A: PASSWORD LOGIN ── */}
               {authMode === 'password' && (
-                <form onSubmit={handlePasswordLogin} className="login-fields">
-                  <label className="login-label">Username or Email</label>
-                  <div className="login-input-wrap">
-                    <User size={16} className="login-input-icon" />
-                    <input
-                      type="text"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Enter your username or email"
-                      required
-                      autoComplete="username"
-                    />
+                <form onSubmit={handlePasswordLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                      Username or Email
+                    </label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder="e.g. elishadamu97@gmail.com"
+                        required
+                        autoComplete="username"
+                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-3.5 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                        style={{ borderRadius: '0px' }}
+                      />
+                    </div>
                   </div>
 
-                  <label className="login-label">Password</label>
-                  <div className="login-input-wrap">
-                    <Lock size={16} className="login-input-icon" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="login-eye-btn"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your dashboard password"
+                        required
+                        autoComplete="current-password"
+                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-10 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                        style={{ borderRadius: '0px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+
+                    <div className="flex justify-end mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('code')
+                          setError('')
+                          if (identifier.includes('@')) {
+                            setCodeEmail(identifier.trim())
+                          }
+                        }}
+                        className="text-[11px] text-[#c81e3c] hover:underline font-semibold cursor-pointer"
+                      >
+                        No password set? Sign in with email code →
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Passwordless Helper link */}
-                  <div className="login-forgot-row flex items-center justify-between text-xs pt-1 pb-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode('code')
-                        if (identifier.includes('@')) setCodeEmail(identifier.trim())
-                      }}
-                      className="text-[#c81e3c] hover:underline font-bold bg-transparent border-0 p-0 cursor-pointer text-left"
-                    >
-                      No password set? Sign in with email code →
-                    </button>
-                  </div>
-
-                  {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={loading || !identifier.trim()}
-                    className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2 border-0"
+                    disabled={loading || !identifier.trim() || !password}
+                    className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     style={{ borderRadius: '0px' }}
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={16} className="animate-spin text-white" />
-                        <span>Signing in…</span>
+                        <Loader2 size={15} className="animate-spin text-white" />
+                        <span>{loadingText || 'Signing In…'}</span>
                       </>
                     ) : (
                       <>
                         <span>Sign In with Password</span>
-                        <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                        <ArrowRight size={14} />
                       </>
                     )}
                   </button>
                 </form>
               )}
 
-              {/* ── MODE B: EMAIL CODE LOGIN (FOR USERS WITHOUT PASSWORD SET) ── */}
+              {/* ── MODE B: EMAIL CODE LOGIN ── */}
               {authMode === 'code' && (
                 <div className="space-y-4">
                   {!codeSent ? (
-                    <form onSubmit={handleSendCode} className="login-fields">
-                      <label className="login-label">Your Account Email Address</label>
-                      <div className="login-input-wrap">
-                        <Mail size={16} className="login-input-icon" />
-                        <input
-                          type="email"
-                          value={codeEmail || identifier}
-                          onChange={(e) => {
-                            setCodeEmail(e.target.value)
-                            setIdentifier(e.target.value)
-                          }}
-                          placeholder="name@example.com"
-                          required
-                          autoFocus
-                        />
+                    <form onSubmit={handleSendCode} className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                          Account Email Address
+                        </label>
+                        <div className="relative">
+                          <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                          <input
+                            type="email"
+                            value={codeEmail || identifier}
+                            onChange={(e) => {
+                              setCodeEmail(e.target.value)
+                              setIdentifier(e.target.value)
+                            }}
+                            placeholder="e.g. elishadamu97@gmail.com"
+                            required
+                            autoComplete="email"
+                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-3.5 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                            style={{ borderRadius: '0px' }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+                          We will send a 6-digit authentication code directly to your email inbox. No dashboard password required.
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 mb-3">
-                        We will send a 6-digit authentication code to verify your identity.
-                      </p>
 
                       <button
                         type="submit"
                         disabled={loading || !(codeEmail || identifier).includes('@')}
-                        className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-0"
+                        className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ borderRadius: '0px' }}
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={16} className="animate-spin text-white" />
-                            <span>Sending code…</span>
+                            <Loader2 size={15} className="animate-spin text-white" />
+                            <span>{loadingText || 'Sending Code…'}</span>
                           </>
                         ) : (
                           <>
-                            <KeyRound size={16} />
-                            <span>Send Authentication Code</span>
+                            <span>Send 6-Digit Code</span>
+                            <ArrowRight size={14} />
                           </>
                         )}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleVerifyCode} className="login-fields space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="login-label mb-0">6-Digit Code</label>
-                          <span className="text-[11px] text-slate-500 font-mono">Sent to {codeEmail}</span>
+                    <form onSubmit={handleVerifyCode} className="space-y-4">
+                      <div className="p-3 bg-[#0d1424] border border-[#1e2a42] flex items-center justify-between text-xs" style={{ borderRadius: '0px' }}>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] font-mono">TARGET EMAIL</span>
+                          <span className="text-white font-bold">{codeEmail}</span>
                         </div>
-                        <div className="login-input-wrap">
-                          <KeyRound size={16} className="login-input-icon text-[#c81e3c]" />
-                          <input
-                            type="text"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                            placeholder="• • • • • •"
-                            maxLength={6}
-                            required
-                            autoFocus
-                            className="font-mono text-center tracking-[0.4em] font-extrabold text-lg"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading || code.trim().length < 6}
-                        className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-0"
-                        style={{ borderRadius: '0px' }}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin text-white" />
-                            <span>Verifying code…</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 size={16} />
-                            <span>Verify Code & Sign In</span>
-                          </>
-                        )}
-                      </button>
-
-                      <div className="flex items-center justify-between text-xs pt-2">
                         <button
                           type="button"
                           onClick={() => {
                             setCodeSent(false)
                             setCode('')
+                            setError('')
+                            setInfoNotice('')
                           }}
-                          className="text-slate-500 hover:text-slate-700 bg-transparent border-0 cursor-pointer p-0"
+                          className="text-[11px] text-[#c81e3c] hover:underline font-semibold cursor-pointer"
                         >
-                          Change Email
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSendCode}
-                          disabled={codeTimer > 0 || loading}
-                          className="text-[#c81e3c] hover:underline font-bold bg-transparent border-0 cursor-pointer p-0 disabled:opacity-40 disabled:no-underline"
-                        >
-                          {codeTimer > 0 ? `Resend code in ${codeTimer}s` : 'Resend Code'}
+                          Change
                         </button>
                       </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                          6-Digit Verification Code
+                        </label>
+                        <div className="relative">
+                          <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={6}
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="123456"
+                            required
+                            autoFocus
+                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-lg tracking-[0.4em] font-mono text-center py-2.5 outline-none font-bold placeholder:text-slate-700 transition"
+                            style={{ borderRadius: '0px' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-1">
+                        <span className="text-slate-500">Didn't receive it?</span>
+                        {codeTimer > 0 ? (
+                          <span className="text-slate-400 font-mono">Resend in {codeTimer}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSendCode}
+                            disabled={loading}
+                            className="text-[#c81e3c] hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          >
+                            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                            <span>Resend Code</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading || code.trim().length !== 6}
+                        className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 size={15} className="animate-spin text-white" />
+                            <span>{loadingText || 'Verifying…'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck size={15} />
+                            <span>Verify Code & Launch</span>
+                          </>
+                        )}
+                      </button>
                     </form>
                   )}
                 </div>
@@ -600,26 +726,33 @@ export default function Login() {
             </>
           )}
 
-          {/* Bottom text */}
-          <p className="login-bottom-text">
-            Don't have an account?{' '}
+          {/* Bottom Card Footer */}
+          <div className="mt-6 pt-5 border-t border-[#162033] text-center text-xs text-slate-400">
+            Don't have an account yet?{' '}
             <button
               type="button"
-              onClick={() => goTo('welcome')}
-              className="login-signup-link"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
+                  window.history.pushState(null, '', '/portal')
+                }
+                goTo('creator-link')
+              }}
+              className="text-white hover:text-[#c81e3c] font-bold underline transition cursor-pointer ml-1"
             >
               Start onboarding
             </button>
-          </p>
-
+          </div>
         </div>
+      </main>
 
-        {/* Footer */}
-        <div className="login-form-footer">
-          <span>© 2026 CoLaunch · 256-Bit Encrypted</span>
-        </div>
-
-      </div>
+      {/* ── SECURITY FOOTER ── */}
+      <footer className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-5 text-[11px] font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 z-10 border-t border-[#121927]">
+        <span>© 2026 CoLaunch Inc. · Creator OS</span>
+        <span className="flex items-center gap-1.5 text-slate-400">
+          <ShieldCheck size={13} className="text-[#c81e3c]" />
+          <span>256-Bit TLS · Zero-Knowledge Storage</span>
+        </span>
+      </footer>
 
     </div>
   )

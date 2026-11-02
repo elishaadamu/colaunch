@@ -1266,6 +1266,15 @@ export default function App() {
     )
   }
 
+  // /login route — dedicated standalone dark mode authentication page
+  if (typeof window !== 'undefined' && (window.location.pathname === '/login' || step === 'login')) {
+    return (
+      <ForgeContext.Provider value={ctx}>
+        <Login />
+      </ForgeContext.Provider>
+    )
+  }
+
   if (step === 'dashboard') {
     return (
       <ForgeContext.Provider value={ctx}>
@@ -1298,7 +1307,7 @@ export default function App() {
 
   return (
     <ForgeContext.Provider value={ctx}>
-      <div className={`min-h-screen ${step === 'welcome' || step === 'login' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-clip`}>
+      <div className={`min-h-screen ${step === 'welcome' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-clip`}>
         {screens[step] || <Welcome />}
       </div>
       <SupportWidget currentStage={step} />
