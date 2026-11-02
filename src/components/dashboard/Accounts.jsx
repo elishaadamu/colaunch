@@ -19,7 +19,13 @@ import {
   Send,
   Sparkles,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Calendar,
+  Lock,
+  Layers,
+  ArrowUpRight,
+  Zap,
+  Globe
 } from 'lucide-react'
 import {
   getStoredYouTubeConnection,
@@ -213,516 +219,953 @@ export default function Accounts() {
     (otherAccounts.tiktok?.connected ? 1 : 0) +
     (otherAccounts.email?.connected ? 1 : 0)
 
+  // Construct YouTube channel web link if available
+  const youtubeCustomUrl = youtubeConn?.channel?.customUrl
+  const youtubeChannelLink = youtubeCustomUrl
+    ? `https://www.youtube.com/${youtubeCustomUrl.startsWith('@') ? youtubeCustomUrl : '@' + youtubeCustomUrl}`
+    : 'https://studio.youtube.com'
+
+  // Dynamic scheduled posts preview for the sidebar
+  const upcomingQueue = [
+    {
+      id: 'q1',
+      day: 'Tuesday',
+      date: 'Nov 3, 2026',
+      channel: 'YouTube',
+      format: 'VIDEO',
+      title: creatorData?.product_name ? `Launch: Unveiling ${creatorData.product_name}` : 'Big things are coming...',
+      time: '11:30 AM',
+      status: 'scheduled'
+    },
+    {
+      id: 'q2',
+      day: 'Wednesday',
+      date: 'Nov 4, 2026',
+      channel: 'Instagram',
+      format: 'REEL',
+      title: 'Behind the Scenes & Community Teaser',
+      time: '1:00 PM',
+      status: 'draft'
+    },
+    {
+      id: 'q3',
+      day: 'Friday',
+      date: 'Nov 6, 2026',
+      channel: 'YouTube',
+      format: 'SHORTS',
+      title: 'Top 3 Highlights & Platform Walkthrough',
+      time: '4:00 PM',
+      status: 'draft'
+    }
+  ]
+
   return (
-    <div className="p-4 sm:p-8 max-w-4xl space-y-6 text-slate-200">
+    <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6 text-slate-200">
       
       {/* ── HEADER ── */}
-      <div className="border-b border-[#1b2234] pb-5">
-        <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
-          ACCOUNTS &amp; INTEGRATIONS
-        </p>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
-          Connected Social Accounts
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
-          Manage your live social broadcasting channels. Any account you configure here is automatically recognized across your <strong className="text-slate-200">Content Calendar</strong>, <strong className="text-slate-200">Marketing Pipeline</strong>, and <strong className="text-slate-200">Studio</strong>.
-        </p>
+      <div className="border-b border-[#1b2234] pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
+            ACCOUNTS &amp; INTEGRATIONS
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+            Connected Social Accounts
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
+            Manage your native social broadcasting channels. Connected accounts are automatically recognized across your <strong className="text-slate-200">Content Calendar</strong>, <strong className="text-slate-200">Marketing Pipeline</strong>, and <strong className="text-slate-200">Studio</strong> for direct publishing without third-party redirection.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab && setActiveTab('content-calendar')}
+            className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#121724] hover:bg-[#1a2234] border border-[#202738] transition cursor-pointer flex items-center gap-1.5"
+            style={{ borderRadius: '0px' }}
+          >
+            <Calendar size={13} />
+            <span>Content Calendar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab && setActiveTab('studio')}
+            className="px-3.5 py-2 text-xs font-bold text-white transition hover:opacity-90 cursor-pointer border-0 flex items-center gap-1.5"
+            style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+          >
+            <Sparkles size={13} className="text-white" />
+            <span>Open Studio</span>
+          </button>
+        </div>
       </div>
 
       {/* ── CONNECTION STATUS SUMMARY BANNER ── */}
       <div
-        className="p-4 border flex items-center justify-between flex-wrap gap-3"
+        className="p-4 border flex items-center justify-between flex-wrap gap-4"
         style={{
           borderRadius: '0px',
           background: activeCount > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
           borderColor: activeCount > 0 ? 'rgba(16, 185, 129, 0.25)' : '#202738'
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3.5">
           <div
-            className="w-9 h-9 flex items-center justify-center font-bold text-xs"
+            className="w-10 h-10 flex items-center justify-center font-bold text-xs shrink-0"
             style={{
               borderRadius: '0px',
               background: activeCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
               color: activeCount > 0 ? '#34d399' : '#94a3b8'
             }}
           >
-            {activeCount > 0 ? <Check size={18} /> : <AlertCircle size={18} />}
+            {activeCount > 0 ? <Check size={20} /> : <AlertCircle size={20} />}
           </div>
           <div>
-            <div className="text-sm font-bold text-white flex items-center gap-2">
-              <span>{activeCount} of 5 Channels Connected</span>
+            <div className="text-sm font-bold text-white flex items-center gap-2.5 flex-wrap">
+              <span>{activeCount} of 5 Broadcasting Channels Connected</span>
               {isYouTubeActive && (
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
                   YOUTUBE LIVE
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {activeCount > 0
-                ? 'Your publishing engine is active. Posts scheduled in your Content Calendar will broadcast to connected channels.'
+                ? 'Your publishing engine is active. Posts scheduled in your Content Calendar will broadcast directly to connected channels.'
                 : 'Connect at least one channel below to enable direct live publishing and scheduling.'}
             </p>
           </div>
         </div>
 
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setActiveTab && setActiveTab('content-calendar')}
-            className="px-3.5 py-1.5 text-xs font-bold text-white transition hover:opacity-95 cursor-pointer border-0 flex items-center gap-1.5"
-            style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-          >
-            <span>Open Content Calendar</span>
-            <ChevronRight size={13} />
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-mono text-slate-400 hidden sm:inline-block">
+            ENGINE: DIRECT OAUTH 2.0
+          </span>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('content-calendar')}
+              className="px-3.5 py-1.5 text-xs font-bold text-white transition hover:opacity-95 cursor-pointer border-0 flex items-center gap-1.5"
+              style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+            >
+              <span>Schedule Post</span>
+              <ChevronRight size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── SECTION: PRIMARY CHANNELS ── */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold font-mono uppercase tracking-wider text-slate-400">
-            Broadcasting Channels
-          </p>
-          <span className="text-xs text-slate-500 font-mono">Direct API &amp; OAuth 2.0</span>
-        </div>
-
-        <div className="space-y-3">
-          
-          {/* ══════════════════════════════════════════════════════════════
-              CARD 1: YOUTUBE (OAUTH 2.0 REAL CONNECTION)
-             ══════════════════════════════════════════════════════════════ */}
-          <div
-            className="p-4 border transition-all"
-            style={{
-              borderRadius: '0px',
-              background: isYouTubeActive ? '#0c111c' : '#0c0f17',
-              borderColor: isYouTubeActive ? 'rgba(239, 68, 68, 0.4)' : '#1e2436'
-            }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                {/* Avatar / Icon */}
-                <div
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
-                  style={{
-                    borderRadius: '0px',
-                    background: isYouTubeActive ? '#c81e3c' : 'rgba(255,255,255,0.05)',
-                    color: '#ffffff'
-                  }}
-                >
-                  {youtubeConn?.channel?.thumbnail ? (
-                    <img
-                      src={youtubeConn.channel.thumbnail}
-                      alt={youtubeConn.channel.title || 'YouTube Avatar'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Youtube size={24} className="text-white" />
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-bold text-white">YouTube</span>
-                    {isYouTubeActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
-                        CONNECTED (OAUTH 2.0)
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
-                        OFFLINE
-                      </span>
-                    )}
-                  </div>
-
-                  {isYouTubeActive ? (
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-slate-200 truncate">
-                        {youtubeConn.channel?.title || 'Connected YouTube Channel'}
-                      </p>
-                      <p className="text-[11px] text-slate-400 font-mono">
-                        {youtubeConn.channel?.customUrl || '@creator'} • {youtubeConn.channel?.subscriberCount || '0'} subscribers • {youtubeConn.channel?.videoCount || '0'} videos
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">
-                      Auto-post Shorts, Community posts, and Videos directly to your channel without third-party redirection.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                {isYouTubeActive ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setYoutubeModalOpen(true)}
-                      className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition flex items-center gap-1.5"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <Sliders size={12} />
-                      <span>Channel Details</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleDisconnectYouTube}
-                      className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      Disconnect
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleConnectYouTube}
-                    disabled={isYouTubeConnecting}
-                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2 disabled:opacity-50"
-                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Youtube size={14} className="text-white" />
-                    <span className="text-white font-bold">
-                      {isYouTubeConnecting ? 'Connecting...' : '+ Connect YouTube'}
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Scope badges if active */}
-            {isYouTubeActive && (
-              <div className="mt-3 pt-3 border-t border-[#1b2336] flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                <span className="text-slate-500 font-mono text-[10px]">ACTIVE PERMISSIONS:</span>
-                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.upload</span>
-                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.readonly</span>
-                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ Resumable video upload</span>
-              </div>
-            )}
+      {/* ── MAIN TWO-COLUMN RESPONSIVE LAYOUT ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        {/* ════════════════════════════════════════════════════════════════
+            LEFT COLUMN (CARDS SPAN FULL COLUMN WIDTH)
+           ════════════════════════════════════════════════════════════════ */}
+        <div className="xl:col-span-8 space-y-4">
+          <div className="flex items-center justify-between pb-1">
+            <p className="text-xs font-bold font-mono uppercase tracking-wider text-slate-400">
+              Broadcasting Channels
+            </p>
+            <span className="text-xs text-slate-500 font-mono">Direct API &amp; OAuth 2.0</span>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════
-              CARD 2: INSTAGRAM (META GRAPH API)
-             ══════════════════════════════════════════════════════════════ */}
-          <div
-            className="p-4 border transition-all"
-            style={{
-              borderRadius: '0px',
-              background: otherAccounts.instagram?.connected ? '#0c111c' : '#0c0f17',
-              borderColor: otherAccounts.instagram?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
-            }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                <div
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0"
-                  style={{
-                    borderRadius: '0px',
-                    background: otherAccounts.instagram?.connected ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255,255,255,0.05)',
-                    color: otherAccounts.instagram?.connected ? '#f472b6' : '#94a3b8'
-                  }}
-                >
-                  <Instagram size={22} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-bold text-white">Instagram</span>
-                    {otherAccounts.instagram?.connected ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        CONNECTED
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
-                        OFFLINE
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    {otherAccounts.instagram?.connected
-                      ? `Connected profile (${otherAccounts.instagram?.handle || '@instagram'}). Ready for Reels & Stories.`
-                      : 'Schedule Reels, Feed Posts, and Stories via Meta Graph API.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                {otherAccounts.instagram?.connected ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(expandedId === 'instagram' ? null : 'instagram')}
-                      className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      Settings
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDisconnectOther('instagram')}
-                      className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      Disconnect
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleConnectOther('instagram')}
-                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
-                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Instagram size={14} className="text-white" />
-                    <span className="text-white font-bold">+ Connect</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Instagram Settings Panel */}
-            {expandedId === 'instagram' && otherAccounts.instagram?.connected && (
-              <div className="mt-3 pt-3 border-t border-[#1b2336] space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-white">Auto-Publish Reels</span>
-                    <p className="text-[11px] text-slate-400">Dispatch scheduled Reels to Instagram automatically</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleAutoPostOther('instagram')}
-                    className="px-3 py-1 text-xs font-bold cursor-pointer border"
+          <div className="space-y-3.5">
+            
+            {/* ── CARD 1: YOUTUBE (OAUTH 2.0 REAL CONNECTION) ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: isYouTubeActive ? '#0c111c' : '#0c0f17',
+                borderColor: isYouTubeActive ? 'rgba(239, 68, 68, 0.4)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  {/* Channel Avatar / Icon */}
+                  <div
+                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
                     style={{
                       borderRadius: '0px',
-                      background: otherAccounts.instagram.autoPost ? BRAND_RED : '#111522',
-                      borderColor: otherAccounts.instagram.autoPost ? BRAND_RED : '#202738',
+                      background: isYouTubeActive ? '#c81e3c' : 'rgba(255,255,255,0.05)',
                       color: '#ffffff'
                     }}
                   >
-                    {otherAccounts.instagram.autoPost ? 'ENABLED' : 'DISABLED'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ══════════════════════════════════════════════════════════════
-              CARD 3: TWITTER / X
-             ══════════════════════════════════════════════════════════════ */}
-          <div
-            className="p-4 border transition-all"
-            style={{
-              borderRadius: '0px',
-              background: otherAccounts.twitter?.connected ? '#0c111c' : '#0c0f17',
-              borderColor: otherAccounts.twitter?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
-            }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                <div
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0"
-                  style={{
-                    borderRadius: '0px',
-                    background: otherAccounts.twitter?.connected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
-                    color: otherAccounts.twitter?.connected ? '#38bdf8' : '#94a3b8'
-                  }}
-                >
-                  <Twitter size={20} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-bold text-white">Twitter / X</span>
-                    {otherAccounts.twitter?.connected ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        CONNECTED
-                      </span>
+                    {youtubeConn?.channel?.thumbnail ? (
+                      <img
+                        src={youtubeConn.channel.thumbnail}
+                        alt={youtubeConn.channel.title || 'YouTube Avatar'}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
-                        OFFLINE
-                      </span>
+                      <Youtube size={26} className="text-white" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-400">
-                    {otherAccounts.twitter?.connected
-                      ? `Connected handle (${otherAccounts.twitter?.handle || '@creator'}). Ready for tweets & threads.`
-                      : 'Auto-post threads, announcements, and launch updates via X API v2.'}
-                  </p>
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">YouTube</span>
+                      {isYouTubeActive ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED (OAUTH 2.0)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+
+                    {isYouTubeActive ? (
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-slate-100 truncate">
+                          {youtubeConn.channel?.title || 'Connected YouTube Channel'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono">
+                          {youtubeConn.channel?.customUrl || '@creator'} • <span className="text-emerald-400 font-bold">{youtubeConn.channel?.subscriberCount || '0'}</span> subscribers • {youtubeConn.channel?.videoCount || '0'} videos
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Auto-post Shorts, Community posts, and Videos directly to your channel without third-party redirection.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {isYouTubeActive ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setYoutubeModalOpen(true)}
+                        className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition flex items-center gap-1.5"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <Sliders size={12} />
+                        <span>Channel Details</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDisconnectYouTube}
+                        className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Disconnect
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleConnectYouTube}
+                      disabled={isYouTubeConnecting}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2 disabled:opacity-50"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Youtube size={14} className="text-white" />
+                      <span className="text-white font-bold">
+                        {isYouTubeConnecting ? 'Connecting...' : '+ Connect YouTube'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                {otherAccounts.twitter?.connected ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDisconnectOther('twitter')}
-                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
-                    style={{ borderRadius: '0px' }}
+              {/* Scope badges if active */}
+              {isYouTubeActive && (
+                <div className="mt-3.5 pt-3.5 border-t border-[#1b2336] flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                  <span className="text-slate-500 font-mono text-[10px]">ACTIVE PERMISSIONS:</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.upload</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.readonly</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ Resumable video upload</span>
+                  {youtubeConn?.channel?.email && (
+                    <span className="px-2 py-0.5 bg-slate-900/60 border border-slate-800/60 text-slate-400 font-mono text-[10px]">
+                      Account: {youtubeConn.channel.email}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── CARD 2: INSTAGRAM (META GRAPH API) ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: otherAccounts.instagram?.connected ? '#0c111c' : '#0c0f17',
+                borderColor: otherAccounts.instagram?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-13 h-13 flex items-center justify-center flex-shrink-0"
+                    style={{
+                      borderRadius: '0px',
+                      background: otherAccounts.instagram?.connected ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                      color: otherAccounts.instagram?.connected ? '#f472b6' : '#94a3b8'
+                    }}
                   >
-                    Disconnect
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleConnectOther('twitter')}
-                    disabled={connectingPlatform === 'twitter'}
-                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
-                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Plus size={14} className="text-white" />
-                    <span className="text-white font-bold">{connectingPlatform === 'twitter' ? 'Connecting...' : '+ Connect'}</span>
-                  </button>
-                )}
+                    <Instagram size={24} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">Instagram</span>
+                      {otherAccounts.instagram?.connected ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {otherAccounts.instagram?.connected
+                        ? `Connected profile (${otherAccounts.instagram?.handle || '@instagram'}). Ready for Reels, Feed Posts, and Stories.`
+                        : 'Schedule Reels, Feed Posts, and Stories via Meta Graph API without third-party redirection.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {otherAccounts.instagram?.connected ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(expandedId === 'instagram' ? null : 'instagram')}
+                        className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Settings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDisconnectOther('instagram')}
+                        className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Disconnect
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleConnectOther('instagram')}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Instagram size={14} className="text-white" />
+                      <span className="text-white font-bold">+ Connect</span>
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Instagram Settings Panel */}
+              {expandedId === 'instagram' && otherAccounts.instagram?.connected && (
+                <div className="mt-3.5 pt-3.5 border-t border-[#1b2336] space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-white">Auto-Publish Reels</span>
+                      <p className="text-[11px] text-slate-400">Dispatch scheduled Reels to Instagram automatically</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleAutoPostOther('instagram')}
+                      className="px-3.5 py-1 text-xs font-bold cursor-pointer border"
+                      style={{
+                        borderRadius: '0px',
+                        background: otherAccounts.instagram.autoPost ? BRAND_RED : '#111522',
+                        borderColor: otherAccounts.instagram.autoPost ? BRAND_RED : '#202738',
+                        color: '#ffffff'
+                      }}
+                    >
+                      {otherAccounts.instagram.autoPost ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── CARD 3: TWITTER / X ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: otherAccounts.twitter?.connected ? '#0c111c' : '#0c0f17',
+                borderColor: otherAccounts.twitter?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-13 h-13 flex items-center justify-center flex-shrink-0"
+                    style={{
+                      borderRadius: '0px',
+                      background: otherAccounts.twitter?.connected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
+                      color: otherAccounts.twitter?.connected ? '#38bdf8' : '#94a3b8'
+                    }}
+                  >
+                    <Twitter size={22} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">Twitter / X</span>
+                      {otherAccounts.twitter?.connected ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {otherAccounts.twitter?.connected
+                        ? `Connected handle (${otherAccounts.twitter?.handle || '@creator'}). Ready for tweets, threads, and media uploads.`
+                        : 'Auto-post threads, announcements, and launch updates via X API v2.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {otherAccounts.twitter?.connected ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDisconnectOther('twitter')}
+                      className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleConnectOther('twitter')}
+                      disabled={connectingPlatform === 'twitter'}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Plus size={14} className="text-white" />
+                      <span className="text-white font-bold">{connectingPlatform === 'twitter' ? 'Connecting...' : '+ Connect'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── CARD 4: TIKTOK ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: otherAccounts.tiktok?.connected ? '#0c111c' : '#0c0f17',
+                borderColor: otherAccounts.tiktok?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 font-extrabold text-sm"
+                    style={{
+                      borderRadius: '0px',
+                      background: otherAccounts.tiktok?.connected ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255,255,255,0.05)',
+                      color: otherAccounts.tiktok?.connected ? '#f472b6' : '#94a3b8'
+                    }}
+                  >
+                    TT
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">TikTok</span>
+                      {otherAccounts.tiktok?.connected ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {otherAccounts.tiktok?.connected
+                        ? `Connected profile (${otherAccounts.tiktok?.handle || '@tiktok'}). Direct video posting enabled.`
+                        : 'Schedule and publish TikTok videos and clips directly via Content Posting API.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {otherAccounts.tiktok?.connected ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDisconnectOther('tiktok')}
+                      className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleConnectOther('tiktok')}
+                      disabled={connectingPlatform === 'tiktok'}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Plus size={14} className="text-white" />
+                      <span className="text-white font-bold">{connectingPlatform === 'tiktok' ? 'Connecting...' : '+ Connect'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── CARD 5: EMAIL (CONVERTKIT / BEEHIIV) ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: otherAccounts.email?.connected ? '#0c111c' : '#0c0f17',
+                borderColor: otherAccounts.email?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 font-bold text-lg"
+                    style={{
+                      borderRadius: '0px',
+                      background: otherAccounts.email?.connected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
+                      color: otherAccounts.email?.connected ? '#f59e0b' : '#94a3b8'
+                    }}
+                  >
+                    ✉
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">Email (ConvertKit / Beehiiv)</span>
+                      {otherAccounts.email?.connected ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {otherAccounts.email?.connected
+                        ? `Connected list (${otherAccounts.email?.handle || creatorData?.email || 'list@colaunch.io'}). Auto-broadcast ready.`
+                        : 'Sync audience subscribers, trigger VIP sequences, and send launch announcements directly.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {otherAccounts.email?.connected ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDisconnectOther('email')}
+                      className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleConnectOther('email')}
+                      disabled={connectingPlatform === 'email'}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Plus size={14} className="text-white" />
+                      <span className="text-white font-bold">{connectingPlatform === 'email' ? 'Connecting...' : '+ Connect'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ════════════════════════════════════════════════════════════════
+            RIGHT SIDEBAR (RICH INSPECTOR & LIVE DISPATCH PANELS)
+           ════════════════════════════════════════════════════════════════ */}
+        <div className="xl:col-span-4 space-y-5">
+
+          {/* ── PANEL 1: PUBLISHING ENGINE STATUS & MATRIX ── */}
+          <div
+            className="p-5 border bg-[#0c0f17] space-y-4"
+            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
+          >
+            <div className="flex items-center justify-between border-b border-[#1b2336] pb-3">
+              <div>
+                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
+                  DISPATCH ENGINE
+                </p>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2 mt-0.5">
+                  <Zap size={14} className="text-amber-400" />
+                  <span>CoLaunch Direct Engine</span>
+                </h4>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                ONLINE
+              </span>
+            </div>
+
+            {/* Channel Connection Grid */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Broadcasting Matrix ({activeCount}/5 Armed)
+              </p>
+              
+              <div className="grid grid-cols-1 gap-1.5 text-xs">
+                {/* YouTube status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <Youtube size={14} className={isYouTubeActive ? 'text-red-400' : 'text-slate-500'} />
+                    <span className="font-bold text-white">YouTube</span>
+                  </div>
+                  {isYouTubeActive ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      OAUTH 2.0 READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+
+                {/* Instagram status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <Instagram size={14} className={otherAccounts.instagram?.connected ? 'text-pink-400' : 'text-slate-500'} />
+                    <span className="font-bold text-white">Instagram</span>
+                  </div>
+                  {otherAccounts.instagram?.connected ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+
+                {/* Twitter / X status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <Twitter size={14} className={otherAccounts.twitter?.connected ? 'text-sky-400' : 'text-slate-500'} />
+                    <span className="font-bold text-white">Twitter / X</span>
+                  </div>
+                  {otherAccounts.twitter?.connected ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+
+                {/* TikTok status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-extrabold ${otherAccounts.tiktok?.connected ? 'text-pink-400' : 'text-slate-500'}`}>TT</span>
+                    <span className="font-bold text-white">TikTok</span>
+                  </div>
+                  {otherAccounts.tiktok?.connected ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+
+                {/* Email status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[12px] ${otherAccounts.email?.connected ? 'text-amber-400' : 'text-slate-500'}`}>✉</span>
+                    <span className="font-bold text-white">Email</span>
+                  </div>
+                  {otherAccounts.email?.connected ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#1b2336] flex items-center justify-between text-[11px] text-slate-400 font-mono">
+              <span>MIDDLEMAN: NONE</span>
+              <span className="text-emerald-400">DIRECT HANDSHAKE</span>
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════
-              CARD 4: TIKTOK
-             ══════════════════════════════════════════════════════════════ */}
-          <div
-            className="p-4 border transition-all"
-            style={{
-              borderRadius: '0px',
-              background: otherAccounts.tiktok?.connected ? '#0c111c' : '#0c0f17',
-              borderColor: otherAccounts.tiktok?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
-            }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                <div
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 font-extrabold text-sm"
-                  style={{
-                    borderRadius: '0px',
-                    background: otherAccounts.tiktok?.connected ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255,255,255,0.05)',
-                    color: otherAccounts.tiktok?.connected ? '#f472b6' : '#94a3b8'
-                  }}
+          {/* ── PANEL 2: ACTIVE CHANNEL SPOTLIGHT ── */}
+          {isYouTubeActive ? (
+            <div
+              className="p-5 border bg-[#0c0f17] space-y-4"
+              style={{ borderRadius: '0px', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            >
+              <div className="flex items-center justify-between border-b border-[#1b2336] pb-3">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  CHANNEL SPOTLIGHT
+                </p>
+                <a
+                  href={youtubeChannelLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 transition"
                 >
-                  TT
-                </div>
+                  <span>Open Channel</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-bold text-white">TikTok</span>
-                    {otherAccounts.tiktok?.connected ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        CONNECTED
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
-                        OFFLINE
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Schedule and publish TikTok videos and clips directly via Content Posting API.
+              {/* Profile Card */}
+              <div className="flex items-center gap-3.5">
+                <div
+                  className="w-14 h-14 flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ borderRadius: '0px', background: '#c81e3c' }}
+                >
+                  {youtubeConn.channel?.thumbnail ? (
+                    <img
+                      src={youtubeConn.channel.thumbnail}
+                      alt={youtubeConn.channel.title || 'Channel'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Youtube size={28} className="text-white" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-extrabold text-white truncate">
+                    {youtubeConn.channel?.title || 'Connected Channel'}
+                  </h4>
+                  <p className="text-xs font-mono text-slate-400 truncate">
+                    {youtubeConn.channel?.customUrl || '@creator'}
+                  </p>
+                  <p className="text-[11px] font-mono text-emerald-400 mt-0.5">
+                    Verified OAuth 2.0 Credentials
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                {otherAccounts.tiktok?.connected ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDisconnectOther('tiktok')}
-                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
-                    style={{ borderRadius: '0px' }}
-                  >
-                    Disconnect
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleConnectOther('tiktok')}
-                    disabled={connectingPlatform === 'tiktok'}
-                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
-                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Plus size={14} className="text-white" />
-                    <span className="text-white font-bold">{connectingPlatform === 'tiktok' ? 'Connecting...' : '+ Connect'}</span>
-                  </button>
-                )}
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="p-2.5 bg-[#101420] border border-[#1b2336]">
+                  <p className="text-[10px] font-mono text-slate-400 uppercase">Subscribers</p>
+                  <p className="text-base font-extrabold text-white mt-0.5">
+                    {youtubeConn.channel?.subscriberCount || '0'}
+                  </p>
+                </div>
+                <div className="p-2.5 bg-[#101420] border border-[#1b2336]">
+                  <p className="text-[10px] font-mono text-slate-400 uppercase">Total Videos</p>
+                  <p className="text-base font-extrabold text-white mt-0.5">
+                    {youtubeConn.channel?.videoCount || '0'}
+                  </p>
+                </div>
               </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setYoutubeModalOpen(true)}
+                  className="flex-1 py-2 text-xs font-bold text-slate-200 bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] transition cursor-pointer"
+                  style={{ borderRadius: '0px' }}
+                >
+                  View Permissions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab && setActiveTab('studio')}
+                  className="flex-1 py-2 text-xs font-bold text-white transition hover:opacity-90 cursor-pointer border-0"
+                  style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                >
+                  Create Video Post
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="p-5 border bg-[#0c0f17] space-y-3.5"
+              style={{ borderRadius: '0px', borderColor: '#1e2436' }}
+            >
+              <div className="flex items-center gap-2 text-amber-400">
+                <AlertCircle size={16} />
+                <h4 className="text-xs font-bold uppercase tracking-wider">No Active Channels</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Connect your YouTube channel with direct Google OAuth 2.0 to unlock instant live broadcasting, automatic Shorts publishing, and channel analytics.
+              </p>
+              <button
+                type="button"
+                onClick={handleConnectYouTube}
+                disabled={isYouTubeConnecting}
+                className="w-full py-2.5 text-xs font-extrabold text-white transition cursor-pointer border-0 shadow-md flex items-center justify-center gap-2"
+                style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+              >
+                <Youtube size={15} className="text-white" />
+                <span>{isYouTubeConnecting ? 'Connecting...' : 'Connect YouTube Now'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* ── PANEL 3: UPCOMING BROADCAST QUEUE ── */}
+          <div
+            className="p-5 border bg-[#0c0f17] space-y-3.5"
+            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
+          >
+            <div className="flex items-center justify-between border-b border-[#1b2336] pb-3">
+              <div>
+                <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
+                  SCHEDULED BROADCASTS
+                </p>
+                <h4 className="text-sm font-bold text-white mt-0.5">Upcoming Queue</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab && setActiveTab('content-calendar')}
+                className="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer border-0 bg-transparent"
+              >
+                <span>View Full</span>
+                <ChevronRight size={13} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {upcomingQueue.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setActiveTab && setActiveTab('content-calendar')}
+                  className="p-3 bg-[#101420] border border-[#1b2336] hover:border-slate-600 transition cursor-pointer space-y-1"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-slate-800 text-slate-300">
+                      {item.channel.toUpperCase()} • {item.format}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {item.day}, {item.time}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-200 truncate">
+                    {item.title}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-1 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab && setActiveTab('content-calendar')}
+                className="flex-1 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] transition cursor-pointer"
+                style={{ borderRadius: '0px' }}
+              >
+                Calendar View
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab && setActiveTab('studio')}
+                className="flex-1 py-2 text-xs font-bold text-white transition hover:opacity-90 cursor-pointer border-0"
+                style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+              >
+                + New Draft
+              </button>
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════
-              CARD 5: EMAIL (CONVERTKIT / BEEHIIV)
-             ══════════════════════════════════════════════════════════════ */}
+          {/* ── PANEL 4: DIRECT ARCHITECTURE & SECURITY GUARANTEE ── */}
           <div
-            className="p-4 border transition-all"
-            style={{
-              borderRadius: '0px',
-              background: otherAccounts.email?.connected ? '#0c111c' : '#0c0f17',
-              borderColor: otherAccounts.email?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
-            }}
+            className="p-5 border bg-[#0c0f17] space-y-3"
+            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                <div
-                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 font-bold text-base"
-                  style={{
-                    borderRadius: '0px',
-                    background: otherAccounts.email?.connected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
-                    color: otherAccounts.email?.connected ? '#f59e0b' : '#94a3b8'
-                  }}
-                >
-                  ✉
-                </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-400" />
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                Direct OAuth 2.0 Security
+              </h4>
+            </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-bold text-white">Email (ConvertKit / Beehiiv)</span>
-                    {otherAccounts.email?.connected ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        CONNECTED
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
-                        OFFLINE
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Sync audience subscribers, trigger VIP sequences, and send launch announcements.
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-2 text-xs text-slate-400 leading-relaxed">
+              <p>
+                CoLaunch executes publishing directly from your dedicated backend without any intermediate SaaS services or credential storage.
+              </p>
+              <ul className="space-y-1.5 font-mono text-[11px] text-slate-300 pt-1">
+                <li className="flex items-center gap-1.5">
+                  <Check size={12} className="text-emerald-400 shrink-0" />
+                  <span>Buffer &amp; middleman proxies removed</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <Check size={12} className="text-emerald-400 shrink-0" />
+                  <span>Scoped to upload &amp; schedule only</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <Check size={12} className="text-emerald-400 shrink-0" />
+                  <span>Revocable instantly in Google Console</span>
+                </li>
+              </ul>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                {otherAccounts.email?.connected ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDisconnectOther('email')}
-                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
-                    style={{ borderRadius: '0px' }}
-                  >
-                    Disconnect
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleConnectOther('email')}
-                    disabled={connectingPlatform === 'email'}
-                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
-                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    <Plus size={14} className="text-white" />
-                    <span className="text-white font-bold">{connectingPlatform === 'email' ? 'Connecting...' : '+ Connect'}</span>
-                  </button>
-                )}
-              </div>
+          {/* ── PANEL 5: ECOSYSTEM INTEGRATIONS ── */}
+          <div
+            className="p-4 border bg-[#0c0f17] text-xs space-y-2"
+            style={{ borderRadius: '0px', borderColor: '#1e2436' }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] font-mono">
+                COMING SOON
+              </span>
+              <span className="text-[10px] font-mono text-slate-500">API PREVIEW</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
+                LinkedIn Pages
+              </span>
+              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
+                Threads
+              </span>
+              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
+                Discord Webhooks
+              </span>
+              <span className="px-2 py-0.5 bg-[#121624] border border-[#202738] text-[11px] text-slate-400">
+                Pinterest
+              </span>
             </div>
           </div>
 
         </div>
-      </section>
+
+      </div>
 
       {/* ── MODAL: YOUTUBE CHANNEL METADATA & PERMISSIONS ── */}
       {youtubeModalOpen && (
