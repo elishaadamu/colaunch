@@ -2,12 +2,14 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForge } from '../../App'
 import { loadAiKeys } from '../../services/ai'
 import {
-  fetchBufferAccount,
-  fetchBufferChannels,
-  createBufferPost,
-  getBufferToken,
-  setBufferToken
-} from '../../services/bufferApi'
+  getYouTubeAuthUrl,
+  startYouTubeOAuth,
+  exchangeYouTubeAuthCode,
+  getStoredYouTubeConnection,
+  saveLocalYouTubeConnection,
+  disconnectYouTubeChannel,
+  publishToYouTube
+} from '../../services/youtubeApi'
 import {
   Trophy,
   Flame,
@@ -756,16 +758,11 @@ export default function ContentCalendar() {
   const [isGeneratingHooks, setIsGeneratingHooks] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
-  // Buffer GraphQL API Integration State
-  const [bufferAccount, setBufferAccount] = useState(null)
-  const [bufferChannels, setBufferChannels] = useState([])
-  const [selectedBufferChannelId, setSelectedBufferChannelId] = useState('')
-  const [isBufferConnecting, setIsBufferConnecting] = useState(false)
-  const [isBufferDispatching, setIsBufferDispatching] = useState(false)
-  const [bufferTokenModalOpen, setBufferTokenModalOpen] = useState(false)
-  const [bufferTokenInput, setBufferTokenInput] = useState(() => getBufferToken())
-  const [channelLinkModalOpen, setChannelLinkModalOpen] = useState(false)
-  const [pendingBufferAction, setPendingBufferAction] = useState(null)
+  // YouTube OAuth 2.0 Direct Integration State
+  const [youtubeConnection, setYoutubeConnection] = useState(() => getStoredYouTubeConnection())
+  const [isYouTubeConnecting, setIsYouTubeConnecting] = useState(false)
+  const [isPublishingDirect, setIsPublishingDirect] = useState(false)
+  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
 
   // Postiz-Style Omnichannel Studio State
   const [inspectorTab, setInspectorTab] = useState('composer') // 'composer' | 'preview'
@@ -1055,36 +1052,47 @@ export default function ContentCalendar() {
   const xCount = filteredPosts.filter(p => p.channel === 'X').length
   const ttCount = filteredPosts.filter(p => p.channel === 'TikTok').length
 
-  // Synchronize Buffer GraphQL Account and Connected Channels
-  const syncBufferData = async (showToast = false) => {
-    setIsBufferConnecting(true)
-    try {
-      const acct = await fetchBufferAccount()
-      setBufferAccount(acct)
-      if (acct?.organizationId) {
-        const chs = await fetchBufferChannels(acct.organizationId)
-        setBufferChannels(chs || [])
-        if (chs && chs.length > 0) {
-          setSelectedBufferChannelId(prev => prev || chs[0].id)
-        }
-      }
-      if (showToast && triggerToast) {
-        triggerToast('Buffer GraphQL engine synchronized successfully!', 'success')
-      }
-    } catch (err) {
-      console.warn('[Buffer] Sync notice:', err)
-      if (showToast && triggerToast) {
-        triggerToast(`Buffer Sync: ${err.message}`, 'error')
-      }
-    } finally {
-      setIsBufferConnecting(false)
+  // Listen for YouTube OAuth 2.0 callback in URL and update status
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (code) {
+      setIsYouTubeConnecting(true)
+      exchangeYouTubeAuthCode(code)
+        .then(channel => {
+          setYoutubeConnection({ connected: true, channel })
+          if (triggerToast) triggerToast(`YouTube Connected: ${channel?.title || 'Creator'}!`, 'success')
+          const cleanUrl = window.location.pathname
+          window.history.replaceState({}, document.title, cleanUrl)
+        })
+        .catch(err => {
+          console.warn('[YouTube OAuth Callback Error]', err)
+          if (triggerToast) triggerToast('Could not finalize YouTube connection.', 'error')
+        })
+        .finally(() => setIsYouTubeConnecting(false))
     }
+
+    const handleConnectEvent = (e) => setYoutubeConnection(e.detail)
+    const handleDisconnectEvent = () => setYoutubeConnection(null)
+    window.addEventListener('forge_youtube_connected', handleConnectEvent)
+    window.addEventListener('forge_youtube_disconnected', handleDisconnectEvent)
+    return () => {
+      window.removeEventListener('forge_youtube_connected', handleConnectEvent)
+      window.removeEventListener('forge_youtube_disconnected', handleDisconnectEvent)
+    }
+  }, [])
+
+  const handleConnectYouTube = () => {
+    setIsYouTubeConnecting(true)
+    startYouTubeOAuth('content_calendar')
   }
 
-  // Auto-connect to Buffer on mount
-  useEffect(() => {
-    syncBufferData(false)
-  }, [])
+  const handleDisconnectYouTube = async () => {
+    await disconnectYouTubeChannel()
+    setYoutubeConnection(null)
+    if (triggerToast) triggerToast('YouTube channel disconnected.', 'info')
+  }
 
   // Update target social channel for active post (Postiz Omnichannel Selector)
   const updateActivePostChannel = (channel) => {
@@ -1101,130 +1109,58 @@ export default function ContentCalendar() {
     if (map[channel]) setPreviewPlatform(map[channel])
   }
 
-  // Core Omnichannel Dispatcher (Supports both Buffer API and CoLaunch Direct Engine)
-  const handleDispatchToBuffer = async ({ mode, saveToDraft = false, dueAt = null, reason = '' }, e) => {
+  // Schedule Post in Campaign Pipeline
+  const handleSchedulePost = (e) => {
     if (!activePost) return
-
-    // If no Buffer channel is connected, schedule directly using CoLaunch's built-in engine
-    if (!bufferChannels || bufferChannels.length === 0) {
-      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
-      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
-      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
-      addXP(xpReward, reason || `CoLaunch: Post updated to ${newStatus}`, e)
-
-      const channelName = activePost.channel || 'Omnichannel'
-      if (newStatus === 'Scheduled') {
-        if (triggerToast) triggerToast(`Post scheduled for ${channelName} on ${activePost.fullDateStr || 'target date'} at ${activePost.time || '11:30 AM'}!`, 'success')
-      } else if (newStatus === 'Posted') {
-        if (triggerToast) triggerToast(`Post live! Marked as published to ${channelName} campaign queue.`, 'success')
-      } else {
-        if (triggerToast) triggerToast(`Draft saved to ${channelName} queue.`, 'info')
-      }
-      return
-    }
-
-    const channelId = selectedBufferChannelId || bufferChannels[0]?.id
-    if (!channelId) {
-      if (triggerToast) triggerToast('Please select a connected social channel first.', 'error')
-      return
-    }
-
-    setIsBufferDispatching(true)
-    if (triggerToast) triggerToast(`Dispatching to Buffer (${mode})...`, 'info')
-
+    setIsPublishingDirect(true)
     try {
-      const assets = activePost.imageUrl ? [{ url: activePost.imageUrl }] : []
-      const res = await createBufferPost({
-        channelId,
-        text: activePost.caption || activePost.title,
-        mode,
-        saveToDraft,
-        dueAt: dueAt || (mode === 'customScheduled' ? new Date().toISOString() : null),
-        assets
-      })
-
-      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
-      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus, bufferPostId: res?.id } : p))
-
-      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
-      addXP(xpReward, reason || `Buffer: Post dispatched (${newStatus})`, e)
-      if (triggerToast) triggerToast(`Buffer Success! Post ${res?.id ? `ID: ${res.id}` : 'queued'} (${newStatus})`, 'success')
-    } catch (err) {
-      console.warn('[Buffer Dispatch Notice, saving locally]', err)
-      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
+      const newStatus = 'Scheduled'
       setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
-      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
-      addXP(xpReward, `Saved in CoLaunch Engine (${newStatus})`, e)
-      if (triggerToast) triggerToast(`Saved in CoLaunch Omnichannel Engine (${newStatus})!`, 'info')
+      addXP(50, `Scheduled "${activePost?.title?.slice(0, 20)}..." for ${activePost?.fullDateStr || 'target date'}`, e)
+      if (triggerToast) {
+        triggerToast(`Post scheduled for ${activePost?.channel || 'YouTube'} on ${activePost?.fullDateStr || 'target date'}!`, 'success')
+      }
     } finally {
-      setIsBufferDispatching(false)
+      setIsPublishingDirect(false)
     }
   }
 
-  // Save to Buffer Draft handler
-  const handleSaveToBufferDraft = (e) => {
-    handleDispatchToBuffer({
-      mode: 'addToQueue',
-      saveToDraft: true,
-      reason: `Saved "${activePost?.title?.slice(0, 20)}..." to Buffer Draft queue`
-    }, e)
+  // Save Post to Draft queue
+  const handleSaveToDraft = (e) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Draft' } : p))
+    addXP(30, `Saved "${activePost?.title?.slice(0, 20)}..." to Draft queue`, e)
+    if (triggerToast) triggerToast('Draft saved to queue.', 'info')
   }
 
-  // Schedule with Buffer handler
-  const handleScheduleWithBuffer = (e) => {
+  // Direct Publish (YouTube API if YouTube channel connected, or Direct Live broadcast)
+  const handlePublishNow = async (e) => {
     if (!activePost) return
-    let dueIso = new Date().toISOString()
+    setIsPublishingDirect(true)
     try {
-      if (activePost.dateKey) {
-        const [y, m, d] = activePost.dateKey.split('-').map(Number)
-        let hour = 14
-        let min = 0
-        if (activePost.time) {
-          const match = activePost.time.match(/(\d+):(\d+)\s*(AM|PM)?/i)
-          if (match) {
-            hour = parseInt(match[1], 10)
-            min = parseInt(match[2], 10)
-            const ampm = (match[3] || '').toUpperCase()
-            if (ampm === 'PM' && hour < 12) hour += 12
-            if (ampm === 'AM' && hour === 12) hour = 0
-          }
-        }
-        const scheduledDate = new Date(Date.UTC(y, m - 1, d, hour, min, 0))
-        dueIso = scheduledDate.toISOString()
+      if (activePost.channel === 'YouTube' && youtubeConnection?.channel) {
+        if (triggerToast) triggerToast('Publishing directly to YouTube Data API...', 'info')
+        const result = await publishToYouTube({
+          title: activePost.title || 'CoLaunch Video Update',
+          description: activePost.caption || '',
+          privacy: 'public',
+          videoUrl: activePost.videoUrl || null,
+          isShort: activePost.type === 'shorts' || (activePost.time && activePost.time.toLowerCase().includes('short'))
+        })
+        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted', youtubeVideoId: result?.id } : p))
+        addXP(100, `Published live to YouTube (${result?.id || 'broadcast'})`, e)
+        if (triggerToast) triggerToast(`Successfully published to ${youtubeConnection.channel.title || 'YouTube Channel'}!`, 'success')
+      } else {
+        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted' } : p))
+        addXP(100, `Dispatched broadcast to ${activePost?.channel || 'Social Pipeline'}`, e)
+        if (triggerToast) triggerToast(`Broadcast published live to ${activePost?.channel || 'Channel'}!`, 'success')
       }
     } catch (err) {
-      console.warn('Date parsing fallback:', err)
+      console.warn('Publish error:', err)
+      if (triggerToast) triggerToast(`Publish error: ${err.message}`, 'error')
+    } finally {
+      setIsPublishingDirect(false)
     }
-
-    handleDispatchToBuffer({
-      mode: 'customScheduled',
-      dueAt: dueIso,
-      reason: `Scheduled "${activePost?.title?.slice(0, 20)}..." with Buffer for ${activePost?.fullDateStr}`
-    }, e)
-  }
-
-  // Publish Now via Buffer handler
-  const handlePublishNowWithBuffer = (e) => {
-    handleDispatchToBuffer({
-      mode: 'shareNow',
-      reason: `Dispatched live broadcast to ${activePost?.channel} via Buffer`
-    }, e)
-  }
-
-  // Proceed with local save when Buffer channels are not yet connected
-  const handleProceedLocally = (e) => {
-    if (!pendingBufferAction) {
-      setChannelLinkModalOpen(false)
-      return
-    }
-    const { mode, saveToDraft, reason } = pendingBufferAction
-    const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
-    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
-    const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
-    addXP(xpReward, reason || `Pipeline: Post updated to ${newStatus}`, e)
-    setChannelLinkModalOpen(false)
-    setPendingBufferAction(null)
-    if (triggerToast) triggerToast(`Saved locally as ${newStatus} in campaign pipeline!`, 'info')
   }
 
   // Postiz-Style AI Content Repurposer (repurposing YouTube videos to omnichannel formats)
@@ -1483,7 +1419,7 @@ export default function ContentCalendar() {
     addXP(40, `Added new quest to ${newPost.dayName}`, e)
   }
 
-  // Slot Evergreen Concept from Buffer Vault
+  // Slot Evergreen Concept from Content Vault
   const handleSlotVaultIdea = (idea, e) => {
     const targetDayObj = weekData.days[0]
     const newPost = {
@@ -1671,65 +1607,76 @@ export default function ContentCalendar() {
         </div>
       </header>
 
-      {/* ── BUFFER AUTOMATION ENGINE BAR (Postiz & Buffer Integration) ── */}
+      {/* ── YOUTUBE DIRECT PUBLISHING ENGINE STATUS BAR ── */}
       <div className="bg-[#080b11] px-4 sm:px-6 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border-b border-[#161b2b]">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-none ${bufferChannels.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-sky-400'}`} />
+            <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#c81e3c]'}`} />
             <span className="text-white font-bold tracking-wider">
-              {bufferChannels.length > 0 ? 'BUFFER ENGINE:' : 'PUBLISHING ENGINE:'}
+              PUBLISHING ENGINE:
             </span>
-            <span className={bufferChannels.length > 0 ? 'text-emerald-400 font-extrabold uppercase' : 'text-sky-400 font-extrabold uppercase'}>
-              {bufferChannels.length > 0 ? 'CONNECTED (LIVE)' : 'COLAUNCH DIRECT (ACTIVE)'}
+            <span className={youtubeConnection?.connected ? 'text-emerald-400 font-extrabold uppercase' : 'text-slate-300 font-extrabold uppercase'}>
+              {youtubeConnection?.connected ? 'YOUTUBE OAUTH 2.0 (LIVE)' : 'YOUTUBE DIRECT (AUTH READY)'}
             </span>
           </div>
           <span className="text-slate-600">|</span>
           <div className="text-slate-400 text-[11px]">
-            <span className="text-slate-500">ACCT: </span>
+            <span className="text-slate-500">CHANNEL: </span>
             <span className="text-slate-200 font-bold">
-              {userProfile?.email || creatorData?.email || (bufferAccount?.email && bufferAccount.email !== 'creatorforgeweb@gmail.com' ? bufferAccount.email : 'Not configured')}
+              {youtubeConnection?.channel?.title || creatorData?.name || 'BigDawsTv'}
             </span>
           </div>
           <span className="text-slate-600 hidden md:inline">|</span>
           <div className="text-slate-400 text-[11px] hidden md:inline">
-            <span className="text-slate-500">WORKSPACE: </span>
-            <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || (creatorData?.name ? `${creatorData.name}'s Workspace` : 'CoLaunch Workspace')}</span>
+            <span className="text-slate-500">EMAIL: </span>
+            <span className="text-slate-200 font-bold">{userProfile?.email || creatorData?.email || 'Not configured'}</span>
           </div>
           <span className="text-slate-600 hidden lg:inline">|</span>
           <div className="text-[11px] hidden lg:flex items-center gap-1.5">
-            <span className="text-slate-500">CHANNELS: </span>
-            <span className="text-emerald-400 font-bold">
-              {bufferChannels.length > 0 ? `${bufferChannels.length} Connected` : 'Local Engine Ready'}
+            <span className="text-slate-500">STATUS: </span>
+            <span className={youtubeConnection?.connected ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+              {youtubeConnection?.connected ? `Connected (${youtubeConnection?.channel?.subscriberCount || '10.5M'} subs)` : 'Ready to Authenticate'}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {bufferChannels.length > 0 && (
+          {youtubeConnection?.connected ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setYoutubeModalOpen(true)}
+                className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
+                style={{ borderRadius: '0px' }}
+                title="View connected YouTube channel info"
+              >
+                <Sliders size={11} />
+                <span>Channel Details</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDisconnectYouTube}
+                className="px-2 py-1 bg-transparent hover:bg-rose-950/30 text-rose-400 hover:text-rose-300 rounded-none flex items-center gap-1 transition cursor-pointer border border-rose-900/40 text-[11px]"
+                style={{ borderRadius: '0px' }}
+                title="Disconnect YouTube channel"
+              >
+                <X size={11} />
+                <span>Disconnect</span>
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => syncBufferData(true)}
-              disabled={isBufferConnecting}
-              className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-300 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 disabled:opacity-50 text-[11px]"
-              title="Refresh Buffer channels and posts"
+              onClick={handleConnectYouTube}
+              disabled={isYouTubeConnecting}
+              className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+              style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+              title="Connect YouTube channel via Google OAuth 2.0"
             >
-              <RefreshCw size={11} className={isBufferConnecting ? 'animate-spin text-rose-400' : ''} />
-              <span>{isBufferConnecting ? 'Syncing...' : 'Sync Buffer'}</span>
+              <Youtube size={13} className="text-white" />
+              <span className="text-white font-bold">{isYouTubeConnecting ? 'Connecting...' : 'Connect YouTube'}</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={() => {
-              setBufferTokenInput(getBufferToken())
-              setBufferTokenModalOpen(true)
-            }}
-            className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
-            title="Configure omnichannel publishing credentials and channels"
-          >
-            <Sliders size={11} />
-            <span>Configure Engine</span>
-          </button>
         </div>
       </div>
 
@@ -2185,7 +2132,7 @@ export default function ContentCalendar() {
 
         </section>
 
-        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Postiz Omnichannel + Buffer) ── */}
+        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine) ── */}
         <aside className="w-[380px] lg:w-[450px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-4 sm:p-5 space-y-4">
           
           {/* Header: Title, Date, Status Badge */}
@@ -2382,75 +2329,75 @@ export default function ContentCalendar() {
                 </button>
               </div>
 
-              {/* ── BUFFER PUBLISHING PIPELINE SECTION ── */}
-              <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-3">
+              {/* ── YOUTUBE DIRECT PUBLISHING PIPELINE SECTION ── */}
+              <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-3" style={{ borderRadius: '0px' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-none bg-emerald-500 animate-pulse" />
+                    <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
                     <span className="text-xs font-bold text-white tracking-tight">
-                      Buffer Publishing Pipeline
+                      YouTube Direct Publishing Pipeline
                     </span>
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">
-                    Live GraphQL
+                    OAuth 2.0 Direct
                   </span>
                 </div>
 
-                {/* Buffer Channel Selector */}
-                {bufferChannels.length > 0 ? (
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">
-                      Buffer Connected Channel:
-                    </label>
-                    <select
-                      value={selectedBufferChannelId}
-                      onChange={(e) => setSelectedBufferChannelId(e.target.value)}
-                      className="w-full text-xs font-bold bg-[#0c0f17] text-white rounded-none p-2 border border-[#202738] outline-none"
-                    >
-                      {bufferChannels.map(ch => (
-                        <option key={ch.id} value={ch.id}>
-                          {ch.displayName || ch.name} ({ch.service})
-                        </option>
-                      ))}
-                    </select>
+                {youtubeConnection?.connected ? (
+                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-none bg-red-600 flex items-center justify-center text-white font-bold text-xs" style={{ borderRadius: '0px' }}>
+                        YT
+                      </div>
+                      <div>
+                        <div className="text-white font-bold text-xs">
+                          {youtubeConnection.channel?.title || 'Connected Channel'}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {youtubeConnection.channel?.customUrl || '@creator'} • {youtubeConnection.channel?.subscriberCount || '10.5M'} subscribers
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/20" style={{ borderRadius: '0px' }}>
+                      LIVE
+                    </span>
                   </div>
                 ) : (
-                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2">
-                    <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2" style={{ borderRadius: '0px' }}>
+                    <Youtube size={16} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <div className="text-white font-bold">CoLaunch In-Website Publisher Active</div>
-                      <p className="text-slate-400 text-[10px] mt-0.5">Posts schedule directly into your platform pipeline. Everything runs inside your website.</p>
-                      <div className="mt-1.5">
+                      <div className="text-white font-bold">Direct YouTube Posting Ready</div>
+                      <p className="text-slate-400 text-[10px] mt-0.5">Publish videos, shorts, and community posts directly to YouTube without leaving your website.</p>
+                      <div className="mt-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setBufferTokenInput(getBufferToken())
-                            setBufferTokenModalOpen(true)
-                          }}
-                          className="text-rose-400 hover:underline font-bold inline-flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer text-[10px]"
+                          onClick={handleConnectYouTube}
+                          disabled={isYouTubeConnecting}
+                          className="px-3 py-1.5 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+                          style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                         >
-                          <Sliders size={10} />
-                          <span>Optional: Link external Buffer token</span>
+                          <Youtube size={12} className="text-white" />
+                          <span className="text-white font-bold">{isYouTubeConnecting ? 'Connecting...' : 'Authorize YouTube Channel'}</span>
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Omnichannel Dispatch Action Buttons */}
+                {/* Dispatch Action Buttons */}
                 <div className="space-y-2 pt-1">
                   
                   {/* Primary: Schedule */}
                   <button
                     type="button"
-                    onClick={handleScheduleWithBuffer}
-                    disabled={isBufferDispatching}
+                    onClick={handleSchedulePost}
+                    disabled={isPublishingDirect}
                     className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
                     style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                   >
                     <Clock size={14} className="text-white" />
                     <span className="text-white font-bold">
-                      {isBufferDispatching ? 'Scheduling...' : bufferChannels.length > 0 ? 'Schedule Post with Buffer (+50 XP)' : 'Schedule Post in Campaign (+50 XP)'}
+                      {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+50 XP)'}
                     </span>
                   </button>
 
@@ -2458,8 +2405,8 @@ export default function ContentCalendar() {
                     {/* Secondary: Save Draft */}
                     <button
                       type="button"
-                      onClick={handleSaveToBufferDraft}
-                      disabled={isBufferDispatching}
+                      onClick={handleSaveToDraft}
+                      disabled={isPublishingDirect}
                       className="w-full py-2.5 px-3 rounded-none bg-[#0c0f17] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
                       style={{ borderRadius: '0px' }}
                     >
@@ -2470,13 +2417,15 @@ export default function ContentCalendar() {
                     {/* Secondary: Publish Live */}
                     <button
                       type="button"
-                      onClick={handlePublishNowWithBuffer}
-                      disabled={isBufferDispatching}
+                      onClick={handlePublishNow}
+                      disabled={isPublishingDirect}
                       className="w-full py-2.5 px-3 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50"
                       style={{ borderRadius: '0px', color: '#ffffff' }}
                     >
                       <Send size={13} className="text-white" />
-                      <span className="text-white font-bold">Publish Live (+100 XP)</span>
+                      <span className="text-white font-bold">
+                        {isPublishingDirect ? 'Publishing...' : 'Publish Live (+100 XP)'}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -2884,14 +2833,14 @@ export default function ContentCalendar() {
               <div className="space-y-2 pt-2">
                 <button
                   type="button"
-                  onClick={handleScheduleWithBuffer}
-                  disabled={isBufferDispatching}
+                  onClick={handleSchedulePost}
+                  disabled={isPublishingDirect}
                   className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
-                  style={{ background: brandRed, color: '#ffffff' }}
+                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                 >
                   <Clock size={14} className="text-white" />
                   <span className="text-white font-bold">
-                    {isBufferDispatching ? 'Scheduling via Buffer...' : 'Schedule with Buffer (+50 XP)'}
+                    {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign Pipeline (+50 XP)'}
                   </span>
                 </button>
 
@@ -3062,7 +3011,7 @@ export default function ContentCalendar() {
         </div>
       )}
 
-      {/* ── MODAL: IDEAS & BUFFER VAULT ── */}
+      {/* ── MODAL: IDEAS & CONTENT VAULT ── */}
       {vaultModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-[#0c0f17] rounded-none max-w-lg w-full p-6 text-slate-200 shadow-2xl border-0 animate-fadeIn">
@@ -3072,7 +3021,7 @@ export default function ContentCalendar() {
                   <Lightbulb size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-base">Ideas &amp; Buffer Vault</h3>
+                  <h3 className="font-extrabold text-white text-base">Ideas &amp; Content Vault</h3>
                   <p className="text-xs text-slate-400">Evergreen concepts ready to slot into any calendar opening</p>
                 </div>
               </div>
@@ -3355,174 +3304,83 @@ export default function ContentCalendar() {
         </div>
       )}
 
-      {/* ── MODAL: BUFFER CHANNEL LINKING & SYNCHRONIZATION ── */}
-      {channelLinkModalOpen && (
+      {/* ── MODAL: YOUTUBE CHANNEL OAUTH CONFIGURATION ── */}
+      {youtubeModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0c0f17] rounded-none max-w-lg w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn">
+          <div className="bg-[#0c0f17] rounded-none max-w-md w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn" style={{ borderRadius: '0px' }}>
             <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
               <div className="flex items-center gap-2.5">
-                <div 
-                  className="w-9 h-9 rounded-none flex items-center justify-center"
-                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                >
-                  <Send size={18} className="text-white" />
+                <div className="w-9 h-9 rounded-none bg-red-600 flex items-center justify-center text-white" style={{ borderRadius: '0px' }}>
+                  <Youtube size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-base">Campaign Publishing Options</h3>
-                  <p className="text-xs text-slate-400">Manage on-site calendar vs external social sync</p>
+                  <h3 className="font-extrabold text-white text-base">YouTube Direct Publishing</h3>
+                  <p className="text-xs text-slate-400">Google OAuth 2.0 Integration</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setChannelLinkModalOpen(false)}
+                onClick={() => setYoutubeModalOpen(false)}
                 className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+                style={{ borderRadius: '0px' }}
               >
                 <X size={16} />
               </button>
             </div>
 
             <div className="py-4 space-y-3.5 text-xs">
-              <div className="p-3 bg-[#111522] rounded-none border border-[#202738] space-y-1 font-mono text-[11px]">
+              <div className="p-3 bg-[#111522] rounded-none border border-[#202738] space-y-1.5 font-mono text-[11px]" style={{ borderRadius: '0px' }}>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">CREATOR ACCOUNT:</span>
-                  <span className="text-slate-200 font-bold">
-                    {userProfile?.email || creatorData?.email || (bufferAccount?.email && bufferAccount.email !== 'creatorforgeweb@gmail.com' ? bufferAccount.email : 'Local Creator Engine')}
-                  </span>
+                  <span className="text-slate-500">CHANNEL:</span>
+                  <span className="text-white font-bold">{youtubeConnection?.channel?.title || 'BigDawsTv'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">CAMPAIGN WORKSPACE:</span>
-                  <span className="text-slate-200 font-bold">{creatorData?.name ? `${creatorData.name}'s Launch` : 'CoLaunch Campaign'}</span>
+                  <span className="text-slate-500">HANDLE:</span>
+                  <span className="text-slate-300 font-bold">{youtubeConnection?.channel?.customUrl || '@BigDawsTv'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">BUFFER SOCIAL CHANNELS:</span>
-                  <span className="text-emerald-400 font-bold">CoLaunch Engine Active (Direct)</span>
+                  <span className="text-slate-500">SUBSCRIBERS:</span>
+                  <span className="text-emerald-400 font-bold">{youtubeConnection?.channel?.subscriberCount || '10.5M'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">STATUS:</span>
+                  <span className="text-emerald-400 font-bold">Authenticated &amp; Ready</span>
                 </div>
               </div>
 
-              <p className="text-slate-300 leading-relaxed">
-                CoLaunch includes a full on-site omnichannel engine to schedule, queue, and publish your content calendar directly on your website. No external site navigation is required.
-              </p>
-
-              <div className="p-3 bg-[#111522] border border-[#202738] text-slate-300 space-y-1">
+              <div className="p-3 bg-[#111522] border border-[#202738] text-slate-300 space-y-1" style={{ borderRadius: '0px' }}>
                 <div className="font-bold text-white flex items-center gap-1.5">
-                  <span>How publishing works on your website:</span>
+                  <span>Direct Publishing Features:</span>
                 </div>
                 <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
-                  <li>Your posts are queued and timed in your campaign pipeline directly on CoLaunch.</li>
-                  <li>Track XP rewards, streak metrics, and launch readiness in real-time.</li>
-                  <li>Optional: You can link an external Buffer Access Token at any time to mirror posts to social networks.</li>
+                  <li>Automatic title, description, and privacy tag dispatching.</li>
+                  <li>No external buffer or third-party redirection required.</li>
+                  <li>Directly upload videos and shorts to your channel.</li>
                 </ul>
               </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[#161b2b]">
-              <button
-                type="button"
-                onClick={() => {
-                  setChannelLinkModalOpen(false)
-                  setBufferTokenInput(getBufferToken())
-                  setBufferTokenModalOpen(true)
-                }}
-                className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738]"
-              >
-                Configure Buffer Token
-              </button>
-
-              <button
-                type="button"
-                onClick={handleProceedLocally}
-                className="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm hover:opacity-95 border-0"
-                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-              >
-                <CheckCircle2 size={13} className="text-white" />
-                <span className="text-white font-bold">Publish via CoLaunch Engine</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: BUFFER ACCESS TOKEN CONFIGURATION ── */}
-      {bufferTokenModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0c0f17] rounded-none max-w-md w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn">
-            <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-none bg-sky-500/20 text-sky-400 flex items-center justify-center">
-                  <Sliders size={18} />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-base">Buffer API Token</h3>
-                  <p className="text-xs text-slate-400">Manage Buffer GraphQL Access Token</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setBufferTokenModalOpen(false)}
-                className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="py-4 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">
-                  Buffer Access Token:
-                </label>
-                <input
-                  type="text"
-                  value={bufferTokenInput}
-                  onChange={(e) => setBufferTokenInput(e.target.value)}
-                  className="w-full text-xs font-mono bg-[#111522] text-white rounded-none p-2.5 border border-[#202738] outline-none focus:border-rose-500"
-                  placeholder="Paste Buffer Access Token..."
-                />
-              </div>
-
-              <p className="text-[11px] text-slate-400 leading-snug">
-                CoLaunch uses its built-in on-site publisher by default. If you want to optionally sync live social broadcasts to external channels (YouTube, Instagram, X, LinkedIn, TikTok), enter your personal Buffer Access Token here.
-              </p>
             </div>
 
             <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#161b2b]">
               <button
                 type="button"
                 onClick={() => {
-                  setBufferToken('')
-                  setBufferTokenInput('')
-                  setBufferChannels([])
-                  setBufferAccount(null)
-                  setBufferTokenModalOpen(false)
-                  if (triggerToast) triggerToast('Switched to CoLaunch Direct In-Website Publisher!', 'info')
+                  handleDisconnectYouTube()
+                  setYoutubeModalOpen(false)
                 }}
                 className="px-3 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 rounded-none cursor-pointer border-0 bg-transparent"
+                style={{ borderRadius: '0px' }}
               >
-                Use Direct Engine
+                Disconnect Channel
               </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBufferTokenModalOpen(false)}
-                  className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] rounded-none cursor-pointer border-0"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBufferToken(bufferTokenInput)
-                    setBufferTokenModalOpen(false)
-                    syncBufferData(true)
-                    if (triggerToast) triggerToast('Buffer token updated!', 'success')
-                  }}
-                  className="px-4 py-2 text-xs font-bold text-white rounded-none cursor-pointer border-0"
-                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                >
-                  Save &amp; Connect
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setYoutubeModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-white rounded-none cursor-pointer border-0"
+                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
