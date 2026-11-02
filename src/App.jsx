@@ -24,6 +24,7 @@ import CreatorParticipationManager from './components/launch/CreatorParticipatio
 import BetaTestingPortal from './components/launch/BetaTestingPortal'
 import LaunchAuth from './components/launch/LaunchAuth'
 import SupportWidget from './components/support/SupportWidget'
+import { exchangeYouTubeAuthCode } from './services/youtubeApi'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
@@ -253,6 +254,15 @@ export default function App() {
       localStorage.removeItem('forge_crm_cached_creators')
 
       const path = window.location.pathname
+      const search = window.location.search
+
+      // OAuth callback detection: If returned from Google OAuth with code= or error=
+      if (search && (search.includes('code=') || search.includes('error='))) {
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        try { localStorage.setItem('forge_dashboard_active_tab', 'content-calendar') } catch {}
+        return 'dashboard'
+      }
+
       if (path === '/' || path === '') return 'welcome'
       if (path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
@@ -625,8 +635,9 @@ export default function App() {
       const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || ('cr_' + cleanHandle)
       if (cId) {
         const targetPath = `/dashboard/${cId}`
+        const currentSearch = window.location.search || ''
         if (window.location.pathname !== targetPath) {
-          window.history.replaceState(null, '', targetPath)
+          window.history.replaceState(null, '', `${targetPath}${currentSearch}`)
         }
       }
     }
@@ -799,7 +810,64 @@ export default function App() {
   useEffect(() => {
     const handleNavigation = () => {
       const path = window.location.pathname
+      const search = window.location.search
       const cachedCreator = localStorage.getItem('forge_creator_data')
+
+      // Google OAuth Return Callback Handler (?code=... or ?error=...)
+      if (search && (search.includes('code=') || search.includes('error='))) {
+        let returnPath = ''
+        try {
+          const params = new URLSearchParams(search)
+          const state = params.get('state')
+          if (state) {
+            const decoded = decodeURIComponent(state)
+            if (decoded.startsWith('/dashboard')) returnPath = decoded
+          }
+          if (!returnPath) {
+            returnPath = sessionStorage.getItem('forge_oauth_return_path') || localStorage.getItem('forge_oauth_return_path')
+          }
+        } catch (_) {}
+
+        if (!returnPath && cachedCreator) {
+          try {
+            const parsed = JSON.parse(cachedCreator)
+            if (parsed?.id) returnPath = `/dashboard/${parsed.id}`
+          } catch (_) {}
+        }
+        if (!returnPath) returnPath = '/dashboard'
+
+        setStep('dashboard')
+        setActiveTab('content-calendar')
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        try { localStorage.setItem('forge_dashboard_active_tab', 'content-calendar') } catch {}
+
+        const pathParts = returnPath.split('?')[0].split('/').filter(Boolean)
+        if (pathParts[0] === 'dashboard' && pathParts[1]) {
+          const routeCreatorId = pathParts[1]
+          setCreatorData(prev => {
+            if (prev?.id === routeCreatorId) return prev
+            const updated = { ...(prev || {}), id: routeCreatorId }
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            return updated
+          })
+        }
+
+        // Check if there is an auth code to exchange
+        const params = new URLSearchParams(search)
+        const code = params.get('code')
+        if (code) {
+          exchangeYouTubeAuthCode(code)
+            .then(channel => {
+              console.log('[YouTube OAuth] Channel connected:', channel?.title)
+            })
+            .catch(err => {
+              console.warn('[YouTube OAuth] Code exchange notice:', err)
+            })
+        }
+
+        window.history.replaceState(null, '', returnPath)
+        return
+      }
 
       if (path === '/' || path === '') {
         setStep('welcome')

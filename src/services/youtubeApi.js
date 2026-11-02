@@ -20,7 +20,7 @@ const YOUTUBE_SCOPES = [
  * Returns the Google OAuth 2.0 authorization URL
  */
 export function getYouTubeAuthUrl(redirectUri = null, state = null) {
-  const targetRedirect = redirectUri || (typeof window !== 'undefined' ? window.location.origin : GOOGLE_REDIRECT_URI)
+  const targetRedirect = redirectUri || GOOGLE_REDIRECT_URI
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: targetRedirect,
@@ -37,9 +37,18 @@ export function getYouTubeAuthUrl(redirectUri = null, state = null) {
 /**
  * Initiates the Google OAuth 2.0 connection redirect
  */
-export function startYouTubeOAuth(state = 'content_calendar') {
+export function startYouTubeOAuth(state = null) {
   if (typeof window === 'undefined') return
-  const authUrl = getYouTubeAuthUrl(window.location.origin, state)
+  const currentPath = window.location.pathname || '/dashboard'
+  try {
+    sessionStorage.setItem('forge_oauth_return_path', currentPath)
+    localStorage.setItem('forge_oauth_return_path', currentPath)
+    localStorage.setItem('forge_dashboard_active_tab', 'content-calendar')
+    localStorage.setItem('forge_onboarding_step', 'dashboard')
+  } catch (_) {}
+
+  const statePayload = state || currentPath
+  const authUrl = getYouTubeAuthUrl(GOOGLE_REDIRECT_URI, encodeURIComponent(statePayload))
   window.location.href = authUrl
 }
 
