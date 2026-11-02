@@ -100,15 +100,15 @@ function GlobalToast({ toast, onClose }) {
 
   return (
     <div
-      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] pointer-events-auto w-auto max-w-[90vw]"
+      className="fixed top-6 left-1/2 z-[9999] pointer-events-auto w-auto max-w-[90vw]"
       style={{
-        animation: 'toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
+        animation: 'toastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
       }}
     >
       <style>{`
-        @keyframes toastSlideIn {
-          0% { opacity: 0; transform: translateY(16px); }
-          100% { opacity: 1; transform: translateY(0); }
+        @keyframes toastSlideDown {
+          0% { opacity: 0; transform: translate(-50%, -20px); }
+          100% { opacity: 1; transform: translate(-50%, 0); }
         }
       `}</style>
 
