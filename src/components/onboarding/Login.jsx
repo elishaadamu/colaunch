@@ -368,20 +368,11 @@ export default function Login() {
           {/* Subtle Top Red Accent Line */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c81e3c] to-transparent" />
 
-          {/* Card Sub-Header Meta */}
-          <div className="flex items-center justify-between text-[10px] font-mono tracking-wider uppercase text-slate-400 mb-4 pb-3 border-b border-[#162033]">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              DIRECT AUTH MATRIX
-            </span>
-            <span className="text-slate-500 font-mono">256-BIT TLS</span>
-          </div>
-
           {/* Heading */}
           <div className="mb-6">
             <h1 className="text-2xl font-black text-white tracking-tight">Sign In</h1>
             <p className="text-xs text-slate-400 mt-1">
-              Access your CoLaunch workspace, marketing calendar, and launch assets.
+              Sign in to your CoLaunch account.
             </p>
           </div>
 
@@ -441,7 +432,7 @@ export default function Login() {
             </div>
           ) : (
             <>
-              {/* Segmented Auth Mode Selector: Password vs Email Code */}
+              {/* Segmented Auth Mode Selector: Password vs Email */}
               <div 
                 className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-5"
                 style={{ borderRadius: '0px' }}
@@ -461,7 +452,7 @@ export default function Login() {
                   style={{ borderRadius: '0px' }}
                 >
                   <Lock size={13} className={authMode === 'password' ? 'text-[#c81e3c]' : ''} />
-                  <span>Password Login</span>
+                  <span>Password</span>
                 </button>
 
                 <button
@@ -480,7 +471,7 @@ export default function Login() {
                   style={{ borderRadius: '0px' }}
                 >
                   <Mail size={13} className={authMode === 'code' ? 'text-[#c81e3c]' : ''} />
-                  <span>Email Code Login</span>
+                  <span>Email</span>
                 </button>
               </div>
 
@@ -574,19 +565,16 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={loading || !identifier.trim() || !password}
-                    className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                    className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     style={{ borderRadius: '0px' }}
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={15} className="animate-spin text-white" />
-                        <span>{loadingText || 'Signing In…'}</span>
+                        <Loader2 size={14} className="animate-spin text-white" />
+                        <span>Signing In…</span>
                       </>
                     ) : (
-                      <>
-                        <span>Sign In with Password</span>
-                        <ArrowRight size={14} />
-                      </>
+                      <span>Sign In</span>
                     )}
                   </button>
                 </form>
@@ -617,27 +605,21 @@ export default function Login() {
                             style={{ borderRadius: '0px' }}
                           />
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-                          We will send a 6-digit authentication code directly to your email inbox. No dashboard password required.
-                        </p>
                       </div>
 
                       <button
                         type="submit"
                         disabled={loading || !(codeEmail || identifier).includes('@')}
-                        className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ borderRadius: '0px' }}
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={15} className="animate-spin text-white" />
-                            <span>{loadingText || 'Sending Code…'}</span>
+                            <Loader2 size={14} className="animate-spin text-white" />
+                            <span>Sending code…</span>
                           </>
                         ) : (
-                          <>
-                            <span>Send 6-Digit Code</span>
-                            <ArrowRight size={14} />
-                          </>
+                          <span>Continue</span>
                         )}
                       </button>
                     </form>
@@ -704,19 +686,16 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={loading || code.trim().length !== 6}
-                        className="w-full py-3.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg shadow-[#c81e3c]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ borderRadius: '0px' }}
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={15} className="animate-spin text-white" />
-                            <span>{loadingText || 'Verifying…'}</span>
+                            <Loader2 size={14} className="animate-spin text-white" />
+                            <span>Signing in…</span>
                           </>
                         ) : (
-                          <>
-                            <ShieldCheck size={15} />
-                            <span>Verify Code & Launch</span>
-                          </>
+                          <span>Sign In</span>
                         )}
                       </button>
                     </form>
