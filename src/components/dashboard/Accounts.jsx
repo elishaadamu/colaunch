@@ -1,113 +1,163 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForge } from '../../App'
-import { Youtube, Instagram, Twitter, Check, Plus, ExternalLink, AlertCircle, Clock, Radio, ChevronRight, Edit3, X } from 'lucide-react'
-
-
-const PLATFORMS = [
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    icon: Youtube,
-    description: 'Auto-post Shorts and Community posts',
-    features: ['Community posts', 'Shorts publishing', 'Live scheduling'],
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    icon: Instagram,
-    description: 'Schedule Reels, Posts, and Stories',
-    features: ['Reels', 'Feed posts', 'Story publishing'],
-  },
-  {
-    id: 'twitter',
-    name: 'Twitter / X',
-    icon: Twitter,
-    description: 'Auto-post threads and tweets',
-    features: ['Tweets', 'Threads', 'Spaces reminder'],
-  },
-  {
-    id: 'tiktok',
-    name: 'TikTok',
-    icon: () => <span className="font-black text-[13px]">TT</span>,
-    description: 'Schedule and publish TikToks',
-    features: ['Video publishing', 'Caption auto-fill'],
-  },
-  {
-    id: 'email',
-    name: 'Email (ConvertKit / Beehiiv)',
-    icon: () => <span className="font-bold text-[11px]">✉</span>,
-    description: 'Sync your list and trigger sequences',
-    features: ['List sync', 'Sequence trigger', 'Broadcast send'],
-  },
-]
-
-const RECENT_POSTS = [
-  { platform: 'Instagram', content: 'Launch teaser - something big is coming', status: 'scheduled', time: 'Today 9am' },
-  { platform: 'Twitter', content: '5 things most creators get wrong about monetization', status: 'scheduled', time: 'Today 2pm' },
-  { platform: 'Email', content: 'Early access announcement email', status: 'draft', time: '-' },
-  { platform: 'YouTube', content: 'Community post - launch countdown', status: 'draft', time: '-' },
-]
+import {
+  Youtube,
+  Instagram,
+  Twitter,
+  Check,
+  Plus,
+  ExternalLink,
+  AlertCircle,
+  Clock,
+  Radio,
+  ChevronRight,
+  Edit3,
+  X,
+  Sliders,
+  RefreshCw,
+  Trash2,
+  Send,
+  Sparkles,
+  ShieldCheck,
+  UserCheck
+} from 'lucide-react'
+import {
+  getStoredYouTubeConnection,
+  startYouTubeOAuth,
+  exchangeYouTubeAuthCode,
+  disconnectYouTubeChannel
+} from '../../services/youtubeApi'
 
 const STATUS_STYLES = {
-  scheduled: { bg: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', label: 'Scheduled' },
-  draft: { bg: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', label: 'Draft' },
-  posted: { bg: 'rgba(255,255,255,0.15)', color: 'white', label: 'Posted' },
-  failed: { bg: 'rgba(255,50,50,0.12)', color: 'rgba(255,100,100,0.8)', label: 'Failed' },
+  scheduled: { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', label: 'Scheduled' },
+  draft: { bg: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', label: 'Draft' },
+  posted: { bg: 'rgba(16,185,129,0.15)', color: '#34d399', label: 'Posted' },
+  failed: { bg: 'rgba(200,30,60,0.15)', color: '#f87171', label: 'Failed' },
 }
+
+const BRAND_RED = '#c81e3c'
 
 export default function Accounts() {
   const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast } = useForge()
+
+  // Real YouTube Connection from OAuth 2.0
+  const [youtubeConn, setYoutubeConn] = useState(() => getStoredYouTubeConnection())
+  const [isYouTubeConnecting, setIsYouTubeConnecting] = useState(false)
+  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
+
+  // Instagram Manual / Custom Modal
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
   const [manualBusinessId, setManualBusinessId] = useState('')
   const [manualAccessToken, setManualAccessToken] = useState('')
-  const [modalTab, setModalTab] = useState('oauth') // 'oauth' | 'manual'
+  const [modalTab, setModalTab] = useState('oauth')
 
+  // Expanded card settings
+  const [expandedId, setExpandedId] = useState(null)
+  const [connectingPlatform, setConnectingPlatform] = useState(null)
 
-  const [platforms, setPlatforms] = useState(() => {
+  // Other platform states (Instagram, X, TikTok, Email)
+  const [otherAccounts, setOtherAccounts] = useState(() => {
     try {
       const stored = localStorage.getItem('forge_accounts_platforms')
       if (stored) {
-        const parsed = JSON.parse(stored)
-        return PLATFORMS.map(p => {
-          const match = parsed.find(x => x.id === p.id)
-          return match ? { ...p, ...match } : { ...p, connected: false, audience: null, autoPost: false, approveBeforePost: true }
-        })
+        return JSON.parse(stored)
       }
-    } catch (e) {
-      console.error(e)
+    } catch (_) {}
+    return {
+      instagram: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
+      twitter: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
+      tiktok: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
+      email: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
     }
-    
-    // Default: Pre-connect primary platform based on creatorData
-    return PLATFORMS.map(p => {
-      const isPrimary = p.id === creatorData.platform?.toLowerCase()
-      const followersText = creatorData.followers 
-        ? `${(creatorData.followers / 1000).toFixed(0)}K followers` 
-        : '12.5K followers'
-      
-      return {
-        ...p,
-        connected: isPrimary,
-        audience: isPrimary ? followersText : null,
-        autoPost: false,
-        approveBeforePost: true
-      }
-    })
   })
 
+  // Synchronize YouTube connection from storage and window events
+  const refreshYouTubeConnection = useCallback(() => {
+    const conn = getStoredYouTubeConnection()
+    setYoutubeConn(conn)
+  }, [])
+
   useEffect(() => {
-    // Strip function components before saving
-    const serialized = platforms.map(({ id, connected, audience, autoPost, approveBeforePost }) => ({
-      id, connected, audience, autoPost, approveBeforePost
-    }))
-    localStorage.setItem('forge_accounts_platforms', JSON.stringify(serialized))
-  }, [platforms])
+    refreshYouTubeConnection()
 
-  const [connecting, setConnecting] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
+    const handleConnected = (e) => setYoutubeConn(e.detail)
+    const handleDisconnected = () => setYoutubeConn(null)
 
-  const handleConnect = (id) => {
+    window.addEventListener('forge_youtube_connected', handleConnected)
+    window.addEventListener('forge_youtube_disconnected', handleDisconnected)
+    return () => {
+      window.removeEventListener('forge_youtube_connected', handleConnected)
+      window.removeEventListener('forge_youtube_disconnected', handleDisconnected)
+    }
+  }, [refreshYouTubeConnection])
+
+  // Handle incoming OAuth callback query parameter (?code=...) on the accounts page
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+
+    if (code) {
+      setIsYouTubeConnecting(true)
+      if (triggerToast) triggerToast('Exchanging Google OAuth code with YouTube Data API...', 'info')
+
+      exchangeYouTubeAuthCode(code)
+        .then(channel => {
+          setYoutubeConn({ connected: true, channel })
+          if (triggerToast) {
+            triggerToast(`Connected to YouTube: ${channel.title || '@creator'}!`, 'success')
+          }
+          // Clean the URL query params without reloading
+          const cleanUrl = window.location.pathname
+          window.history.replaceState({}, document.title, cleanUrl)
+        })
+        .catch(err => {
+          console.error('[YouTube OAuth Error]', err)
+          if (triggerToast) {
+            triggerToast(`YouTube Connection Error: ${err.message}`, 'error')
+          }
+        })
+        .finally(() => {
+          setIsYouTubeConnecting(false)
+        })
+    }
+
+    if (params.get('ig_connected') === 'true') {
+      setOtherAccounts(prev => ({
+        ...prev,
+        instagram: { ...prev.instagram, connected: true, handle: '@instagram_creator' }
+      }))
+      if (triggerToast) triggerToast('Instagram connected successfully!', 'success')
+      const cleanUrl = window.location.pathname
+      window.history.replaceState({}, document.title, cleanUrl)
+    }
+  }, [triggerToast])
+
+  // Save other account configurations locally
+  useEffect(() => {
+    try {
+      localStorage.setItem('forge_accounts_platforms', JSON.stringify(otherAccounts))
+    } catch (_) {}
+  }, [otherAccounts])
+
+  // Connect YouTube using Real Google OAuth 2.0
+  const handleConnectYouTube = () => {
+    setIsYouTubeConnecting(true)
+    const returnPath = `/dashboard/${creatorData?.id || ''}`
+    startYouTubeOAuth(returnPath, 'accounts')
+  }
+
+  // Disconnect YouTube
+  const handleDisconnectYouTube = async () => {
+    await disconnectYouTubeChannel()
+    setYoutubeConn(null)
+    setYoutubeModalOpen(false)
+    if (triggerToast) triggerToast('YouTube channel disconnected.', 'info')
+  }
+
+  // Connect other platforms
+  const handleConnectOther = (id) => {
     if (id === 'instagram') {
-      // Instead of direct redirect, open our new setup modal!
       setManualBusinessId(creatorData?.instagram_business_id || '')
       setManualAccessToken(creatorData?.instagram_access_token || '')
       setModalTab(creatorData?.instagram_access_token ? 'manual' : 'oauth')
@@ -115,554 +165,754 @@ export default function Accounts() {
       return
     }
 
-    // Default simulation for other platforms
-    setConnecting(id)
+    setConnectingPlatform(id)
     setTimeout(() => {
-      setPlatforms(prev => prev.map(p =>
-        p.id === id
-          ? { 
-              ...p, 
-              connected: true, 
-              audience: creatorData?.followers && p.id === creatorData.platform?.toLowerCase()
-                ? `${(creatorData.followers / 1000).toFixed(0)}K followers`
-                : `${Math.floor(Math.random() * 80 + 10)}K followers` 
-            }
-          : p
-      ))
-      setConnecting(null)
+      setOtherAccounts(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          connected: true,
+          handle: id === 'twitter' ? '@creator_x' : id === 'tiktok' ? '@creator_tiktok' : creatorData?.email || 'list@colaunch.io'
+        }
+      }))
+      setConnectingPlatform(null)
       if (triggerToast) triggerToast(`${id.toUpperCase()} connected successfully!`, 'success')
-    }, 1400)
+    }, 1000)
   }
 
-  // Listen for OAuth callbacks in the URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    
-    if (params.get('ig_connected') === 'true') {
-      setPlatforms(prev => prev.map(p => 
-        p.id === 'instagram' 
-          ? { 
-              ...p, 
-              connected: true,
-              audience: creatorData?.followers ? `${(creatorData.followers / 1000).toFixed(0)}K followers` : '84K followers'
-            } 
-          : p
-      ))
-      
-      if (triggerToast) {
-        if (params.get('demo_mode') === 'true') {
-          triggerToast('Instagram connected (Demo mode - no real Meta App ID configured)', 'success')
-        } else {
-          triggerToast('INSTAGRAM connected successfully via OAuth!', 'success')
-        }
-      }
-      
-      // Clean up URL
-      const newUrl = window.location.pathname + (params.get('tab') ? `?tab=${params.get('tab')}` : '')
-      window.history.replaceState({}, document.title, newUrl)
-    }
-
-    if (params.get('ig_error') === 'true') {
-      if (triggerToast) triggerToast('Failed to connect to Instagram.', 'error')
-      const newUrl = window.location.pathname + (params.get('tab') ? `?tab=${params.get('tab')}` : '')
-      window.history.replaceState({}, document.title, newUrl)
-    }
-  }, [creatorData?.followers, triggerToast])
-
-  const handleDisconnect = (id) => {
-    setPlatforms(prev => prev.map(p =>
-      p.id === id ? { ...p, connected: false, audience: null, autoPost: false } : p
-    ))
+  const handleDisconnectOther = (id) => {
+    setOtherAccounts(prev => ({
+      ...prev,
+      [id]: { ...prev[id], connected: false, handle: '' }
+    }))
     if (id === 'instagram') {
-      updateCreator({
-        instagram_access_token: null,
-        instagram_business_id: null
-      })
+      updateCreator({ instagram_access_token: null, instagram_business_id: null })
     }
     if (triggerToast) triggerToast(`${id.toUpperCase()} disconnected.`, 'info')
   }
 
-  const toggleAutoPost = (id) => {
-    setPlatforms(prev => prev.map(p =>
-      p.id === id ? { ...p, autoPost: !p.autoPost } : p
-    ))
+  const toggleAutoPostOther = (id) => {
+    setOtherAccounts(prev => ({
+      ...prev,
+      [id]: { ...prev[id], autoPost: !prev[id]?.autoPost }
+    }))
   }
 
-  const toggleApprove = (id) => {
-    setPlatforms(prev => prev.map(p =>
-      p.id === id ? { ...p, approveBeforePost: !p.approveBeforePost } : p
-    ))
+  const toggleApproveOther = (id) => {
+    setOtherAccounts(prev => ({
+      ...prev,
+      [id]: { ...prev[id], approveBeforePost: !prev[id]?.approveBeforePost }
+    }))
   }
 
-  const handleEditQueuePost = (platform) => {
-    const typeMap = {
-      'Instagram': 'ig-caption',
-      'Twitter': 'x-post',
-      'Email': 'email-announce',
-      'YouTube': 'yt-community'
-    }
-    const typeId = typeMap[platform] || 'ig-caption'
-    if (setPreloadStudioType) {
-      setPreloadStudioType(typeId)
-    }
-    if (setActiveTab) {
-      setActiveTab('studio')
-    }
-    if (triggerToast) triggerToast(`Opening Studio to edit ${platform} draft...`, 'info')
-  }
-
-  const connectedCount = platforms.filter(p => p.connected).length
+  // Count active channels
+  const isYouTubeActive = !!youtubeConn?.connected
+  const activeCount = (isYouTubeActive ? 1 : 0) +
+    (otherAccounts.instagram?.connected ? 1 : 0) +
+    (otherAccounts.twitter?.connected ? 1 : 0) +
+    (otherAccounts.tiktok?.connected ? 1 : 0) +
+    (otherAccounts.email?.connected ? 1 : 0)
 
   return (
-    <div className="p-3 sm:p-6 max-w-2xl space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div>
-        <p className="forge-label mb-3">Accounts</p>
-        <h2 className="forge-heading mb-1.5" style={{ fontSize: 'clamp(22px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
-          Social connections
+    <div className="p-4 sm:p-8 max-w-4xl space-y-6 text-slate-200">
+      
+      {/* ── HEADER ── */}
+      <div className="border-b border-[#1b2234] pb-5">
+        <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-1">
+          ACCOUNTS &amp; INTEGRATIONS
+        </p>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+          Connected Social Accounts
         </h2>
-        <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.38)' }}>
-          Connect your accounts to generate, schedule, and auto-post directly from CoLaunch.
+        <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+          Manage your live social broadcasting channels. Any account you configure here is automatically recognized across your <strong className="text-slate-200">Content Calendar</strong>, <strong className="text-slate-200">Marketing Pipeline</strong>, and <strong className="text-slate-200">Studio</strong>.
         </p>
       </div>
 
-      {/* Status banner */}
-      {connectedCount === 0 ? (
-        <div className="flex items-center gap-3 p-4 rounded-xl border animate-pulse" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
-          <AlertCircle size={15} className="text-white/40 flex-shrink-0" />
-          <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Connect at least one account to enable scheduling and auto-posting.
-          </p>
+      {/* ── CONNECTION STATUS SUMMARY BANNER ── */}
+      <div
+        className="p-4 border flex items-center justify-between flex-wrap gap-3"
+        style={{
+          borderRadius: '0px',
+          background: activeCount > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+          borderColor: activeCount > 0 ? 'rgba(16, 185, 129, 0.25)' : '#202738'
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 flex items-center justify-center font-bold text-xs"
+            style={{
+              borderRadius: '0px',
+              background: activeCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: activeCount > 0 ? '#34d399' : '#94a3b8'
+            }}
+          >
+            {activeCount > 0 ? <Check size={18} /> : <AlertCircle size={18} />}
+          </div>
+          <div>
+            <div className="text-sm font-bold text-white flex items-center gap-2">
+              <span>{activeCount} of 5 Channels Connected</span>
+              {isYouTubeActive && (
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  YOUTUBE LIVE
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {activeCount > 0
+                ? 'Your publishing engine is active. Posts scheduled in your Content Calendar will broadcast to connected channels.'
+                : 'Connect at least one channel below to enable direct live publishing and scheduling.'}
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20" style={{ background: 'rgba(16,185,129,0.04)' }}>
-          <Check size={15} className="text-emerald-400 flex-shrink-0" />
-          <p className="text-[13px] text-emerald-300">
-            Connections active. Auto-post features available for {connectedCount} account{connectedCount > 1 ? 's' : ''}.
+
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setActiveTab && setActiveTab('content-calendar')}
+            className="px-3.5 py-1.5 text-xs font-bold text-white transition hover:opacity-95 cursor-pointer border-0 flex items-center gap-1.5"
+            style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+          >
+            <span>Open Content Calendar</span>
+            <ChevronRight size={13} />
+          </button>
+        )}
+      </div>
+
+      {/* ── SECTION: PRIMARY CHANNELS ── */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold font-mono uppercase tracking-wider text-slate-400">
+            Broadcasting Channels
           </p>
+          <span className="text-xs text-slate-500 font-mono">Direct API &amp; OAuth 2.0</span>
         </div>
-      )}
 
-      {/* Platform cards */}
-      <section>
-        <p className="forge-label mb-3">Connected accounts</p>
-        <div className="space-y-2">
-          {platforms.map(platform => {
-            const isExpanded = expandedId === platform.id
+        <div className="space-y-3">
+          
+          {/* ══════════════════════════════════════════════════════════════
+              CARD 1: YOUTUBE (OAUTH 2.0 REAL CONNECTION)
+             ══════════════════════════════════════════════════════════════ */}
+          <div
+            className="p-4 border transition-all"
+            style={{
+              borderRadius: '0px',
+              background: isYouTubeActive ? '#0c111c' : '#0c0f17',
+              borderColor: isYouTubeActive ? 'rgba(239, 68, 68, 0.4)' : '#1e2436'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                {/* Avatar / Icon */}
+                <div
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
+                  style={{
+                    borderRadius: '0px',
+                    background: isYouTubeActive ? '#c81e3c' : 'rgba(255,255,255,0.05)',
+                    color: '#ffffff'
+                  }}
+                >
+                  {youtubeConn?.channel?.thumbnail ? (
+                    <img
+                      src={youtubeConn.channel.thumbnail}
+                      alt={youtubeConn.channel.title || 'YouTube Avatar'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Youtube size={24} className="text-white" />
+                  )}
+                </div>
 
-            return (
-              <div
-                key={platform.id}
-                className="rounded-2xl border overflow-hidden transition-all duration-200"
-                style={{
-                  background: platform.connected ? 'rgba(255,255,255,0.04)' : '#111',
-                  borderColor: platform.connected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
-                }}
-              >
-                {/* Main row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4">
-                  <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
-                      <platform.icon size={18} />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[14px] font-semibold text-white">{platform.name}</span>
-                        {platform.connected && (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>
-                            <Check size={9} strokeWidth={3} />
-                            Connected
-                          </div>
-                        )}
-                        {platform.connected && platform.autoPost && (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
-                            <Radio size={9} />
-                            Auto-posting
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        {platform.connected ? platform.audience : platform.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                    {platform.connected ? (
-                      <>
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : platform.id)}
-                          className="text-[12px] px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-150"
-                          style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
-                        >
-                          Settings
-                          <ChevronRight size={11} style={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
-                        </button>
-                        <button onClick={() => handleDisconnect(platform.id)}
-                          className="text-[12px] px-3 py-1.5 rounded-full transition-all duration-150"
-                          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}
-                          onMouseEnter={e => { e.target.style.color = 'rgba(255,255,255,0.6)' }}
-                          onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.3)' }}
-                        >
-                          Disconnect
-                        </button>
-                      </>
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-bold text-white">YouTube</span>
+                    {isYouTubeActive ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                        CONNECTED (OAUTH 2.0)
+                      </span>
                     ) : (
-                      <button onClick={() => handleConnect(platform.id)} disabled={connecting === platform.id}
-                        className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5 disabled:opacity-60"
-                      >
-                        {connecting === platform.id ? (
-                          <>
-                            <div className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" />
-                            Connecting
-                          </>
-                        ) : (
-                          <><Plus size={12} />Connect</>
-                        )}
-                      </button>
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                        OFFLINE
+                      </span>
                     )}
                   </div>
-                </div>
 
-                {/* Expanded settings */}
-                {isExpanded && platform.connected && (
-                  <div className="px-4 pb-4 border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                    <div className="space-y-3">
-                      {/* Auto-post toggle */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[13px] font-medium text-white">Auto-post</p>
-                          <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Publish scheduled content automatically</p>
-                        </div>
-                        <button onClick={() => toggleAutoPost(platform.id)}
-                          className="relative flex-shrink-0 transition-all duration-200"
-                          style={{ width: '36px', height: '20px', borderRadius: '100px', background: platform.autoPost ? 'white' : 'rgba(255,255,255,0.12)' }}
-                        >
-                          <div className="absolute top-1 rounded-full transition-all duration-200"
-                            style={{ width: '14px', height: '14px', left: platform.autoPost ? '19px' : '3px', background: platform.autoPost ? 'black' : 'rgba(255,255,255,0.3)' }}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Approve before post */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[13px] font-medium text-white">Approve before posting</p>
-                          <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Review each post before it goes live</p>
-                        </div>
-                        <button onClick={() => toggleApprove(platform.id)}
-                          className="relative flex-shrink-0 transition-all duration-200"
-                          style={{ width: '36px', height: '20px', borderRadius: '100px', background: platform.approveBeforePost ? 'white' : 'rgba(255,255,255,0.12)' }}
-                        >
-                          <div className="absolute top-1 rounded-full transition-all duration-200"
-                            style={{ width: '14px', height: '14px', left: platform.approveBeforePost ? '19px' : '3px', background: platform.approveBeforePost ? 'black' : 'rgba(255,255,255,0.3)' }}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Instagram manual credentials section */}
-                      {platform.id === 'instagram' && (creatorData?.instagram_access_token || creatorData?.instagram_business_id) && (
-                        <div className="p-3 rounded-xl border border-white/5 bg-white/[0.02] space-y-2 mt-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Instagram Developer Keys</p>
-                            <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              Custom credentials configured
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-1 text-[11px] font-mono text-white/70">
-                            <div className="flex justify-between">
-                              <span className="text-white/40">Business ID:</span>
-                              <span>{creatorData.instagram_business_id || 'Not Set'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-white/40">Access Token:</span>
-                              <span>
-                                {creatorData.instagram_access_token 
-                                  ? `${creatorData.instagram_access_token.slice(0, 8)}...${creatorData.instagram_access_token.slice(-8)}`
-                                  : 'Not Set'}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setManualBusinessId(creatorData.instagram_business_id || '')
-                              setManualAccessToken(creatorData.instagram_access_token || '')
-                              setModalTab('manual')
-                              setIsManualModalOpen(true)
-                            }}
-                            className="text-[11px] font-semibold text-white/60 hover:text-white px-2.5 py-1.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 transition-all w-full text-center"
-                          >
-                            Update Credentials
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Supported features */}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {platform.features.map(f => (
-                          <span key={f} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
-                            ✓ {f}
-                          </span>
-                        ))}
-                      </div>
+                  {isYouTubeActive ? (
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-200 truncate">
+                        {youtubeConn.channel?.title || 'Connected YouTube Channel'}
+                      </p>
+                      <p className="text-[11px] text-slate-400 font-mono">
+                        {youtubeConn.channel?.customUrl || '@creator'} • {youtubeConn.channel?.subscriberCount || '0'} subscribers • {youtubeConn.channel?.videoCount || '0'} videos
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Auto-post Shorts, Community posts, and Videos directly to your channel without third-party redirection.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                {isYouTubeActive ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setYoutubeModalOpen(true)}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition flex items-center gap-1.5"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <Sliders size={12} />
+                      <span>Channel Details</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDisconnectYouTube}
+                      className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleConnectYouTube}
+                    disabled={isYouTubeConnecting}
+                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2 disabled:opacity-50"
+                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Youtube size={14} className="text-white" />
+                    <span className="text-white font-bold">
+                      {isYouTubeConnecting ? 'Connecting...' : '+ Connect YouTube'}
+                    </span>
+                  </button>
                 )}
               </div>
-            )
-          })}
-        </div>
-      </section>
+            </div>
 
-      {/* Publishing queue */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <p className="forge-label">Publishing queue</p>
-          <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{RECENT_POSTS.length} posts</span>
-        </div>
-        <div className="space-y-2">
-          {RECENT_POSTS.map((post, i) => {
-            const s = STATUS_STYLES[post.status]
-            return (
-              <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-xl border group" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
-                <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded w-8 text-center flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
-                    {post.platform.slice(0, 2).toUpperCase()}
-                  </span>
-                  <span className="text-[13px] flex-1 truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{post.content}</span>
+            {/* Scope badges if active */}
+            {isYouTubeActive && (
+              <div className="mt-3 pt-3 border-t border-[#1b2336] flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                <span className="text-slate-500 font-mono text-[10px]">ACTIVE PERMISSIONS:</span>
+                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.upload</span>
+                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ youtube.readonly</span>
+                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ Resumable video upload</span>
+              </div>
+            )}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              CARD 2: INSTAGRAM (META GRAPH API)
+             ══════════════════════════════════════════════════════════════ */}
+          <div
+            className="p-4 border transition-all"
+            style={{
+              borderRadius: '0px',
+              background: otherAccounts.instagram?.connected ? '#0c111c' : '#0c0f17',
+              borderColor: otherAccounts.instagram?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0"
+                  style={{
+                    borderRadius: '0px',
+                    background: otherAccounts.instagram?.connected ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                    color: otherAccounts.instagram?.connected ? '#f472b6' : '#94a3b8'
+                  }}
+                >
+                  <Instagram size={22} />
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
-                  {post.time !== '-' && (
-                    <span className="text-[11px] flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      <Clock size={10} />
-                      {post.time}
-                    </span>
-                  )}
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={s}>{s.label}</span>
-                  <button 
-                    onClick={() => handleEditQueuePost(post.platform)}
-                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-white"
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-bold text-white">Instagram</span>
+                    {otherAccounts.instagram?.connected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        CONNECTED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                        OFFLINE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {otherAccounts.instagram?.connected
+                      ? `Connected profile (${otherAccounts.instagram?.handle || '@instagram'}). Ready for Reels & Stories.`
+                      : 'Schedule Reels, Feed Posts, and Stories via Meta Graph API.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                {otherAccounts.instagram?.connected ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(expandedId === 'instagram' ? null : 'instagram')}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Settings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDisconnectOther('instagram')}
+                      className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleConnectOther('instagram')}
+                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
                   >
-                    <Edit3 size={12} />
+                    <Instagram size={14} className="text-white" />
+                    <span className="text-white font-bold">+ Connect</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Instagram Settings Panel */}
+            {expandedId === 'instagram' && otherAccounts.instagram?.connected && (
+              <div className="mt-3 pt-3 border-t border-[#1b2336] space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-white">Auto-Publish Reels</span>
+                    <p className="text-[11px] text-slate-400">Dispatch scheduled Reels to Instagram automatically</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleAutoPostOther('instagram')}
+                    className="px-3 py-1 text-xs font-bold cursor-pointer border"
+                    style={{
+                      borderRadius: '0px',
+                      background: otherAccounts.instagram.autoPost ? BRAND_RED : '#111522',
+                      borderColor: otherAccounts.instagram.autoPost ? BRAND_RED : '#202738',
+                      color: '#ffffff'
+                    }}
+                  >
+                    {otherAccounts.instagram.autoPost ? 'ENABLED' : 'DISABLED'}
                   </button>
                 </div>
               </div>
-            )
-          })}
+            )}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              CARD 3: TWITTER / X
+             ══════════════════════════════════════════════════════════════ */}
+          <div
+            className="p-4 border transition-all"
+            style={{
+              borderRadius: '0px',
+              background: otherAccounts.twitter?.connected ? '#0c111c' : '#0c0f17',
+              borderColor: otherAccounts.twitter?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0"
+                  style={{
+                    borderRadius: '0px',
+                    background: otherAccounts.twitter?.connected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
+                    color: otherAccounts.twitter?.connected ? '#38bdf8' : '#94a3b8'
+                  }}
+                >
+                  <Twitter size={20} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-bold text-white">Twitter / X</span>
+                    {otherAccounts.twitter?.connected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        CONNECTED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                        OFFLINE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {otherAccounts.twitter?.connected
+                      ? `Connected handle (${otherAccounts.twitter?.handle || '@creator'}). Ready for tweets & threads.`
+                      : 'Auto-post threads, announcements, and launch updates via X API v2.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                {otherAccounts.twitter?.connected ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnectOther('twitter')}
+                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleConnectOther('twitter')}
+                    disabled={connectingPlatform === 'twitter'}
+                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Plus size={14} className="text-white" />
+                    <span className="text-white font-bold">{connectingPlatform === 'twitter' ? 'Connecting...' : '+ Connect'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              CARD 4: TIKTOK
+             ══════════════════════════════════════════════════════════════ */}
+          <div
+            className="p-4 border transition-all"
+            style={{
+              borderRadius: '0px',
+              background: otherAccounts.tiktok?.connected ? '#0c111c' : '#0c0f17',
+              borderColor: otherAccounts.tiktok?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 font-extrabold text-sm"
+                  style={{
+                    borderRadius: '0px',
+                    background: otherAccounts.tiktok?.connected ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255,255,255,0.05)',
+                    color: otherAccounts.tiktok?.connected ? '#f472b6' : '#94a3b8'
+                  }}
+                >
+                  TT
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-bold text-white">TikTok</span>
+                    {otherAccounts.tiktok?.connected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        CONNECTED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                        OFFLINE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Schedule and publish TikTok videos and clips directly via Content Posting API.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                {otherAccounts.tiktok?.connected ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnectOther('tiktok')}
+                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleConnectOther('tiktok')}
+                    disabled={connectingPlatform === 'tiktok'}
+                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Plus size={14} className="text-white" />
+                    <span className="text-white font-bold">{connectingPlatform === 'tiktok' ? 'Connecting...' : '+ Connect'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              CARD 5: EMAIL (CONVERTKIT / BEEHIIV)
+             ══════════════════════════════════════════════════════════════ */}
+          <div
+            className="p-4 border transition-all"
+            style={{
+              borderRadius: '0px',
+              background: otherAccounts.email?.connected ? '#0c111c' : '#0c0f17',
+              borderColor: otherAccounts.email?.connected ? 'rgba(16, 185, 129, 0.3)' : '#1e2436'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div
+                  className="w-12 h-12 flex items-center justify-center flex-shrink-0 font-bold text-base"
+                  style={{
+                    borderRadius: '0px',
+                    background: otherAccounts.email?.connected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
+                    color: otherAccounts.email?.connected ? '#f59e0b' : '#94a3b8'
+                  }}
+                >
+                  ✉
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-bold text-white">Email (ConvertKit / Beehiiv)</span>
+                    {otherAccounts.email?.connected ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        CONNECTED
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                        OFFLINE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Sync audience subscribers, trigger VIP sequences, and send launch announcements.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                {otherAccounts.email?.connected ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDisconnectOther('email')}
+                    className="px-3 py-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleConnectOther('email')}
+                    disabled={connectingPlatform === 'email'}
+                    className="px-4 py-2 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                    style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Plus size={14} className="text-white" />
+                    <span className="text-white font-bold">{connectingPlatform === 'email' ? 'Connecting...' : '+ Connect'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      <p className="text-[12px] text-center" style={{ color: 'rgba(255,255,255,0.18)' }}>
-        CoLaunch uses OAuth by default, with manual key fallback for testing.
-      </p>
-
-      {/* Instagram setup modal */}
-      {isManualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <style>{`
-            @keyframes modalSlideIn {
-              0% { opacity: 0; transform: translateY(20px) scale(0.95); }
-              100% { opacity: 1; transform: translateY(0) scale(1); }
-            }
-          `}</style>
-          <div 
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d0d] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
-            style={{
-              animation: 'modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both'
-            }}
+      {/* ── MODAL: YOUTUBE CHANNEL METADATA & PERMISSIONS ── */}
+      {youtubeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div
+            className="w-full max-w-md bg-[#0c0f17] border border-[#202738] p-6 shadow-2xl space-y-4"
+            style={{ borderRadius: '0px' }}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <Instagram size={18} className="text-white/80" />
-                <h3 className="text-[15px] font-bold text-white">Link Instagram Account</h3>
+            <div className="flex items-center justify-between pb-3 border-b border-[#1b2336]">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 flex items-center justify-center text-white"
+                  style={{ background: BRAND_RED, borderRadius: '0px' }}
+                >
+                  <Youtube size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">YouTube Channel Details</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">Google OAuth 2.0 Connection</p>
+                </div>
               </div>
-              <button 
-                onClick={() => setIsManualModalOpen(false)}
-                className="text-white/40 hover:text-white transition-colors"
+              <button
+                type="button"
+                onClick={() => setYoutubeModalOpen(false)}
+                className="p-1 hover:bg-[#161c2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+                style={{ borderRadius: '0px' }}
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Modal Tabs */}
-            <div className="flex border-b border-white/5 bg-white/[0.01]">
-              <button
-                onClick={() => setModalTab('oauth')}
-                className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-wider transition-all ${
-                  modalTab === 'oauth' 
-                    ? 'text-white border-b-2 border-white' 
-                    : 'text-white/40 hover:text-white/60'
-                }`}
-              >
-                Automatic OAuth
-              </button>
-              <button
-                onClick={() => setModalTab('manual')}
-                className={`flex-1 py-3 text-[12px] font-bold uppercase tracking-wider transition-all ${
-                  modalTab === 'manual' 
-                    ? 'text-white border-b-2 border-white' 
-                    : 'text-white/40 hover:text-white/60'
-                }`}
-              >
-                Manual Keys
-              </button>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-[#111522] border border-[#202738] space-y-1.5 font-mono text-[11px]" style={{ borderRadius: '0px' }}>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">CHANNEL:</span>
+                  <span className="text-white font-bold">{youtubeConn?.channel?.title || 'YouTube Channel'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">HANDLE:</span>
+                  <span className="text-slate-300 font-bold">{youtubeConn?.channel?.customUrl || '@creator'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">SUBSCRIBERS:</span>
+                  <span className="text-emerald-400 font-bold">{youtubeConn?.channel?.subscriberCount || '0'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">TOTAL VIDEOS:</span>
+                  <span className="text-slate-300 font-bold">{youtubeConn?.channel?.videoCount || '0'}</span>
+                </div>
+                {youtubeConn?.channel?.email && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">GOOGLE ACCOUNT:</span>
+                    <span className="text-slate-300">{youtubeConn.channel.email}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-slate-500">STATUS:</span>
+                  <span className="text-emerald-400 font-bold">Authenticated &amp; Ready</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#111522] border border-[#202738] text-slate-300 space-y-1" style={{ borderRadius: '0px' }}>
+                <div className="font-bold text-white flex items-center gap-1.5 text-[11px]">
+                  <ShieldCheck size={13} className="text-emerald-400" />
+                  <span>Configured Capabilities:</span>
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
+                  <li>Automatic title, description, and privacy tag dispatching.</li>
+                  <li>Directly upload videos and shorts to your channel.</li>
+                  <li>All actions executed natively from your CoLaunch dashboard.</li>
+                </ul>
+              </div>
             </div>
 
-            {/* Modal Content Scroll Area */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar text-[13px] leading-relaxed">
-              {modalTab === 'oauth' ? (
-                <div className="space-y-4">
-                  <p className="text-white/60">
-                    Connect automatically via Meta's secure login. This requires the site owner to have configured the main Meta developer credentials.
-                  </p>
-                  <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-2">
-                    <h4 className="font-semibold text-white/80">Permissions requested:</h4>
-                    <ul className="list-disc pl-4 text-white/40 space-y-1 text-[12px]">
-                      <li>Access your Instagram Business Profile Info (`instagram_business_basic`)</li>
-                      <li>Publish media, posts, and Reels to your profile (`instagram_business_content_publish`)</li>
-                      <li>Manage your linked pages & accounts list (`pages_show_list`, `pages_read_engagement`)</li>
-                    </ul>
-                  </div>
-                  <div 
-                    className="p-3.5 rounded-xl border space-y-1"
-                    style={{
-                      background: 'var(--theme-accent-bg)',
-                      borderColor: 'var(--theme-accent-border)',
-                    }}
-                  >
-                    <p className="font-bold text-[12px] flex items-center gap-1.5" style={{ color: 'var(--theme-accent)' }}>
-                      <Radio size={13} className="animate-pulse" />
-                      Auto-Publishing Flow
-                    </p>
-                    <p className="text-white/50 text-[11px] leading-normal">
-                      Once connected, schedule any post in the **Content Calendar** tab, then toggle **Auto-post** to **ON** in your connected account settings to publish automatically!
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setConnecting('instagram')
-                      setIsManualModalOpen(false)
-                      const handleParam = creatorData?.handle || 'default'
-                      window.location.href = `/api/auth/instagram/login?handle=${encodeURIComponent(handleParam)}`
-                    }}
-                    className="w-full forge-btn-primary py-2.5 rounded-xl font-bold flex items-center justify-center gap-2"
-                  >
-                    <Instagram size={14} />
-                    Sign in with Facebook
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.02]">
-                    <p className="text-emerald-400 font-bold mb-1 flex items-center gap-1.5 text-[12px]">
-                      <AlertCircle size={13} />
-                      Creator Self-Connection Guide
-                    </p>
-                    <p className="text-white/50 text-[11px] leading-normal">
-                      To publish posts from this app without using a global OAuth connection, you can generate your own local tokens on Meta's developer dashboard.
-                    </p>
-                  </div>
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#1b2336]">
+              <button
+                type="button"
+                onClick={handleDisconnectYouTube}
+                className="px-3 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 cursor-pointer border-0 bg-transparent"
+                style={{ borderRadius: '0px' }}
+              >
+                Disconnect Channel
+              </button>
 
-                  <div className="space-y-2.5">
-                    <p className="font-bold text-white/80">Follow these steps to connect & auto-post:</p>
-                    <ol className="list-decimal pl-4 space-y-2 text-white/60 text-[12px]">
-                      <li>
-                        Ensure your Instagram is a <strong className="text-white">Business or Creator</strong> account and linked to a Facebook Page.
-                      </li>
-                      <li>
-                        Register as a developer on <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-white underline inline-flex items-center gap-0.5 hover:text-white/80">developers.facebook.com <ExternalLink size={10} /></a>.
-                      </li>
-                      <li>
-                        Click **Create App** → Choose **Other** → **Business** App and add **Instagram Graph API** to it.
-                      </li>
-                      <li>
-                        Open the <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-white underline inline-flex items-center gap-0.5 hover:text-white/80">Graph API Explorer <ExternalLink size={10} /></a>. Select your App, and add these scopes:
-                        <div className="mt-1 font-mono bg-white/5 p-2 rounded text-white/80 text-[10px] select-all border border-white/5 break-all">
-                          instagram_business_basic, instagram_business_content_publish, pages_read_engagement, pages_show_list
-                        </div>
-                      </li>
-                      <li>
-                        Click **Generate Access Token** and approve permissions in the popup to authorize your Page.
-                      </li>
-                      <li>
-                        Find your **Instagram Business Account ID** by making this query:
-                        <div className="mt-1 font-mono bg-white/5 p-2 rounded text-white/80 text-[10px] border border-white/5">
-                          GET /me/accounts?fields=instagram_business_account,name
-                        </div>
-                      </li>
-                      <li>
-                        Enter your ID and Token below. To post automatically, schedule any draft in the **Content Calendar** tab, then toggle **Auto-post** to **ON** in this **Accounts** tab.
-                      </li>
-                    </ol>
-                  </div>
-
-                  {/* Form inputs */}
-                  <div className="space-y-3.5 pt-3.5 border-t border-white/5">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Instagram Business Account ID</label>
-                      <input 
-                        type="text" 
-                        value={manualBusinessId}
-                        onChange={(e) => setManualBusinessId(e.target.value)}
-                        placeholder="e.g. 178414053987165"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-[13px] font-mono"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Developer User Access Token</label>
-                      <textarea 
-                        value={manualAccessToken}
-                        onChange={(e) => setManualAccessToken(e.target.value)}
-                        placeholder="Paste your generated Facebook Access Token here..."
-                        className="w-full h-20 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-[12px] font-mono resize-none custom-scrollbar"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (!manualBusinessId.trim() || !manualAccessToken.trim()) {
-                        if (triggerToast) triggerToast('Please enter both Business Account ID and Access Token', 'error')
-                        return
-                      }
-                      
-                      // Save keys inside creatorData
-                      updateCreator({
-                        instagram_business_id: manualBusinessId.trim(),
-                        instagram_access_token: manualAccessToken.trim()
-                      })
-                      
-                      // Mark Instagram connected in platforms list
-                      setPlatforms(prev => prev.map(p => 
-                        p.id === 'instagram' 
-                          ? { 
-                              ...p, 
-                              connected: true,
-                              audience: 'Connected (Manual)' 
-                            } 
-                          : p
-                      ))
-                      
-                      setIsManualModalOpen(false)
-                      if (triggerToast) triggerToast('Instagram manually connected with custom credentials!', 'success')
-                    }}
-                    className="w-full forge-btn-primary py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 mt-4"
-                  >
-                    Save & Connect Account
-                  </button>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => setYoutubeModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-white cursor-pointer border-0"
+                style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── MODAL: INSTAGRAM SETUP MODAL ── */}
+      {isManualModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div
+            className="w-full max-w-lg bg-[#0c0f17] border border-[#202738] p-6 shadow-2xl space-y-4"
+            style={{ borderRadius: '0px' }}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#1b2336]">
+              <div className="flex items-center gap-2">
+                <Instagram size={18} className="text-pink-400" />
+                <h3 className="font-bold text-white text-base">Link Instagram Account</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsManualModalOpen(false)}
+                className="text-slate-400 hover:text-white transition cursor-pointer border-0"
+                style={{ borderRadius: '0px' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <p className="text-slate-400 leading-relaxed">
+                Connect your Instagram Business or Creator account to publish Reels, Stories, and carousel posts directly.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Instagram Business Account ID
+                </label>
+                <input
+                  type="text"
+                  value={manualBusinessId}
+                  onChange={(e) => setManualBusinessId(e.target.value)}
+                  placeholder="e.g. 178414053987165"
+                  className="w-full bg-[#111522] border border-[#202738] px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 font-mono text-xs"
+                  style={{ borderRadius: '0px' }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  User Access Token
+                </label>
+                <textarea
+                  value={manualAccessToken}
+                  onChange={(e) => setManualAccessToken(e.target.value)}
+                  placeholder="Paste Meta User Access Token..."
+                  className="w-full h-20 bg-[#111522] border border-[#202738] p-3 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 font-mono text-xs resize-none"
+                  style={{ borderRadius: '0px' }}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#1b2336]">
+              <button
+                type="button"
+                onClick={() => setIsManualModalOpen(false)}
+                className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white cursor-pointer border-0 bg-transparent"
+                style={{ borderRadius: '0px' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!manualBusinessId.trim() || !manualAccessToken.trim()) {
+                    if (triggerToast) triggerToast('Please enter both Business Account ID and Access Token', 'error')
+                    return
+                  }
+                  updateCreator({
+                    instagram_business_id: manualBusinessId.trim(),
+                    instagram_access_token: manualAccessToken.trim()
+                  })
+                  setOtherAccounts(prev => ({
+                    ...prev,
+                    instagram: { ...prev.instagram, connected: true, handle: '@instagram_business' }
+                  }))
+                  setIsManualModalOpen(false)
+                  if (triggerToast) triggerToast('Instagram connected successfully!', 'success')
+                }}
+                className="px-4 py-2 text-xs font-bold text-white cursor-pointer border-0"
+                style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+              >
+                Save &amp; Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
-

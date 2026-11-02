@@ -758,11 +758,9 @@ export default function ContentCalendar() {
   const [isGeneratingHooks, setIsGeneratingHooks] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
-  // YouTube OAuth 2.0 Direct Integration State
+  // YouTube Social Connection State (configured in Accounts page)
   const [youtubeConnection, setYoutubeConnection] = useState(() => getStoredYouTubeConnection())
-  const [isYouTubeConnecting, setIsYouTubeConnecting] = useState(false)
   const [isPublishingDirect, setIsPublishingDirect] = useState(false)
-  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
 
   // Postiz-Style Omnichannel Studio State
   const [inspectorTab, setInspectorTab] = useState('composer') // 'composer' | 'preview'
@@ -1052,27 +1050,9 @@ export default function ContentCalendar() {
   const xCount = filteredPosts.filter(p => p.channel === 'X').length
   const ttCount = filteredPosts.filter(p => p.channel === 'TikTok').length
 
-  // Listen for YouTube OAuth 2.0 callback in URL and update status
+  // Synchronize YouTube connection from Accounts page
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const code = params.get('code')
-    if (code) {
-      setIsYouTubeConnecting(true)
-      exchangeYouTubeAuthCode(code)
-        .then(channel => {
-          setYoutubeConnection({ connected: true, channel })
-          if (triggerToast) triggerToast(`YouTube Connected: ${channel?.title || 'Creator'}!`, 'success')
-          const cleanUrl = window.location.pathname
-          window.history.replaceState({}, document.title, cleanUrl)
-        })
-        .catch(err => {
-          console.warn('[YouTube OAuth Callback Error]', err)
-          if (triggerToast) triggerToast('Could not finalize YouTube connection.', 'error')
-        })
-        .finally(() => setIsYouTubeConnecting(false))
-    }
-
     const handleConnectEvent = (e) => setYoutubeConnection(e.detail)
     const handleDisconnectEvent = () => setYoutubeConnection(null)
     window.addEventListener('forge_youtube_connected', handleConnectEvent)
@@ -1082,17 +1062,6 @@ export default function ContentCalendar() {
       window.removeEventListener('forge_youtube_disconnected', handleDisconnectEvent)
     }
   }, [])
-
-  const handleConnectYouTube = () => {
-    setIsYouTubeConnecting(true)
-    startYouTubeOAuth('content_calendar')
-  }
-
-  const handleDisconnectYouTube = async () => {
-    await disconnectYouTubeChannel()
-    setYoutubeConnection(null)
-    if (triggerToast) triggerToast('YouTube channel disconnected.', 'info')
-  }
 
   // Update target social channel for active post (Postiz Omnichannel Selector)
   const updateActivePostChannel = (channel) => {
@@ -1642,39 +1611,25 @@ export default function ContentCalendar() {
 
         <div className="flex items-center gap-2">
           {youtubeConnection?.connected ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setYoutubeModalOpen(true)}
-                className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
-                style={{ borderRadius: '0px' }}
-                title="View connected YouTube channel info"
-              >
-                <Sliders size={11} />
-                <span>Channel Details</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDisconnectYouTube}
-                className="px-2 py-1 bg-transparent hover:bg-rose-950/30 text-rose-400 hover:text-rose-300 rounded-none flex items-center gap-1 transition cursor-pointer border border-rose-900/40 text-[11px]"
-                style={{ borderRadius: '0px' }}
-                title="Disconnect YouTube channel"
-              >
-                <X size={11} />
-                <span>Disconnect</span>
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('accounts')}
+              className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
+              style={{ borderRadius: '0px' }}
+              title="Manage connected channels in Accounts"
+            >
+              <Sliders size={11} />
+              <span>Manage in Accounts →</span>
+            </button>
           ) : (
             <button
               type="button"
-              onClick={handleConnectYouTube}
-              disabled={isYouTubeConnecting}
-              className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+              onClick={() => setActiveTab && setActiveTab('accounts')}
+              className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
               style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-              title="Connect YouTube channel via Google OAuth 2.0"
+              title="Connect social channels in Accounts"
             >
-              <Youtube size={13} className="text-white" />
-              <span className="text-white font-bold">{isYouTubeConnecting ? 'Connecting...' : 'Connect YouTube'}</span>
+              <span>Configure in Accounts →</span>
             </button>
           )}
         </div>
@@ -2366,18 +2321,17 @@ export default function ContentCalendar() {
                   <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2" style={{ borderRadius: '0px' }}>
                     <Youtube size={16} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <div className="text-white font-bold">Direct YouTube Posting Ready</div>
-                      <p className="text-slate-400 text-[10px] mt-0.5">Publish videos, shorts, and community posts directly to YouTube without leaving your website.</p>
+                      <div className="text-white font-bold">Social Channel Not Connected</div>
+                      <p className="text-slate-400 text-[10px] mt-0.5">Link your YouTube channel or other platforms in the Accounts page to broadcast directly.</p>
                       <div className="mt-2">
                         <button
                           type="button"
-                          onClick={handleConnectYouTube}
-                          disabled={isYouTubeConnecting}
-                          className="px-3 py-1.5 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+                          onClick={() => setActiveTab && setActiveTab('accounts')}
+                          className="px-3 py-1.5 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
                           style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                         >
-                          <Youtube size={12} className="text-white" />
-                          <span className="text-white font-bold">{isYouTubeConnecting ? 'Connecting...' : 'Authorize YouTube Channel'}</span>
+                          <Sliders size={12} className="text-white" />
+                          <span className="text-white font-bold">Configure in Accounts Page →</span>
                         </button>
                       </div>
                     </div>
@@ -3298,88 +3252,6 @@ export default function ContentCalendar() {
                 className="px-5 py-2.5 text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-none transition cursor-pointer border-0"
               >
                 Add to Campaign (+40 XP)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: YOUTUBE CHANNEL OAUTH CONFIGURATION ── */}
-      {youtubeModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0c0f17] rounded-none max-w-md w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn" style={{ borderRadius: '0px' }}>
-            <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-none bg-red-600 flex items-center justify-center text-white" style={{ borderRadius: '0px' }}>
-                  <Youtube size={18} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-base">YouTube Direct Publishing</h3>
-                  <p className="text-xs text-slate-400">Google OAuth 2.0 Integration</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setYoutubeModalOpen(false)}
-                className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
-                style={{ borderRadius: '0px' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="py-4 space-y-3.5 text-xs">
-              <div className="p-3 bg-[#111522] rounded-none border border-[#202738] space-y-1.5 font-mono text-[11px]" style={{ borderRadius: '0px' }}>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">CHANNEL:</span>
-                  <span className="text-white font-bold">{youtubeConnection?.channel?.title || 'BigDawsTv'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">HANDLE:</span>
-                  <span className="text-slate-300 font-bold">{youtubeConnection?.channel?.customUrl || '@BigDawsTv'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">SUBSCRIBERS:</span>
-                  <span className="text-emerald-400 font-bold">{youtubeConnection?.channel?.subscriberCount || '10.5M'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">STATUS:</span>
-                  <span className="text-emerald-400 font-bold">Authenticated &amp; Ready</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-[#111522] border border-[#202738] text-slate-300 space-y-1" style={{ borderRadius: '0px' }}>
-                <div className="font-bold text-white flex items-center gap-1.5">
-                  <span>Direct Publishing Features:</span>
-                </div>
-                <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
-                  <li>Automatic title, description, and privacy tag dispatching.</li>
-                  <li>No external buffer or third-party redirection required.</li>
-                  <li>Directly upload videos and shorts to your channel.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#161b2b]">
-              <button
-                type="button"
-                onClick={() => {
-                  handleDisconnectYouTube()
-                  setYoutubeModalOpen(false)
-                }}
-                className="px-3 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 rounded-none cursor-pointer border-0 bg-transparent"
-                style={{ borderRadius: '0px' }}
-              >
-                Disconnect Channel
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setYoutubeModalOpen(false)}
-                className="px-4 py-2 text-xs font-bold text-white rounded-none cursor-pointer border-0"
-                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-              >
-                Done
               </button>
             </div>
           </div>

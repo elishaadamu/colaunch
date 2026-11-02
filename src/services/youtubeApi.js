@@ -4,7 +4,7 @@
  * and direct video / community post publishing for creators.
  */
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1060262666913-0vu142mc8f59csp2db3heqs0rnphgqtb.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || (typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app')
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
 
@@ -37,17 +37,17 @@ export function getYouTubeAuthUrl(redirectUri = null, state = null) {
 /**
  * Initiates the Google OAuth 2.0 connection redirect
  */
-export function startYouTubeOAuth(state = null) {
+export function startYouTubeOAuth(state = null, returnTab = 'accounts') {
   if (typeof window === 'undefined') return
   const currentPath = window.location.pathname || '/dashboard'
   try {
     sessionStorage.setItem('forge_oauth_return_path', currentPath)
     localStorage.setItem('forge_oauth_return_path', currentPath)
-    localStorage.setItem('forge_dashboard_active_tab', 'content-calendar')
+    localStorage.setItem('forge_dashboard_active_tab', returnTab)
     localStorage.setItem('forge_onboarding_step', 'dashboard')
   } catch (_) {}
 
-  const statePayload = state || currentPath
+  const statePayload = state || `${currentPath}?tab=${returnTab}`
   const authUrl = getYouTubeAuthUrl(GOOGLE_REDIRECT_URI, encodeURIComponent(statePayload))
   window.location.href = authUrl
 }
@@ -56,38 +56,37 @@ export function startYouTubeOAuth(state = null) {
  * Exchanges authorization code for tokens and retrieves YouTube channel info
  */
 export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
-  const targetRedirect = redirectUri || (typeof window !== 'undefined' ? window.location.origin : GOOGLE_REDIRECT_URI)
+  const targetRedirect = redirectUri || GOOGLE_REDIRECT_URI
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/youtube/exchange-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirect_uri: targetRedirect })
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      if (data.channel) {
-        saveLocalYouTubeConnection(data.channel)
-        return data.channel
-      }
-    }
-  } catch (err) {
-    console.warn('[YouTube API] Backend exchange notice, using verified channel connection:', err)
+  const payload = {
+    code,
+    redirect_uri: targetRedirect,
+    client_id: GOOGLE_CLIENT_ID,
+    client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || ''
   }
 
-  // Graceful fallback for local / client-side sandbox
-  const mockChannel = {
-    hasChannel: true,
-    id: 'UC_verified_channel',
-    title: 'Connected Creator Channel',
-    customUrl: '@creator',
-    thumbnail: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
-    subscriberCount: '10.5M',
-    videoCount: '840'
+  const res = await fetch(`${BACKEND_URL}/api/youtube/exchange-token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    let errorDetail = `Status ${res.status}`
+    try {
+      const errJson = await res.json()
+      errorDetail = errJson.detail || errJson.message || errorDetail
+    } catch (_) {}
+    throw new Error(`Google OAuth Exchange Failed: ${errorDetail}`)
   }
-  saveLocalYouTubeConnection(mockChannel)
-  return mockChannel
+
+  const data = await res.json()
+  if (data.channel) {
+    saveLocalYouTubeConnection(data.channel)
+    return data.channel
+  }
+
+  throw new Error('Google did not return channel metadata.')
 }
 
 /**

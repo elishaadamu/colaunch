@@ -259,7 +259,7 @@ export default function App() {
       // OAuth callback detection: If returned from Google OAuth with code= or error=
       if (search && (search.includes('code=') || search.includes('error='))) {
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
-        try { localStorage.setItem('forge_dashboard_active_tab', 'content-calendar') } catch {}
+        try { localStorage.setItem('forge_dashboard_active_tab', 'accounts') } catch {}
         return 'dashboard'
       }
 
@@ -816,12 +816,18 @@ export default function App() {
       // Google OAuth Return Callback Handler (?code=... or ?error=...)
       if (search && (search.includes('code=') || search.includes('error='))) {
         let returnPath = ''
+        let targetTab = 'accounts'
         try {
           const params = new URLSearchParams(search)
           const state = params.get('state')
           if (state) {
             const decoded = decodeURIComponent(state)
-            if (decoded.startsWith('/dashboard')) returnPath = decoded
+            if (decoded.includes('tab=')) {
+              const urlParts = decoded.split('?')
+              const searchP = new URLSearchParams(urlParts[1])
+              targetTab = searchP.get('tab') || 'accounts'
+            }
+            if (decoded.startsWith('/dashboard')) returnPath = decoded.split('?')[0]
           }
           if (!returnPath) {
             returnPath = sessionStorage.getItem('forge_oauth_return_path') || localStorage.getItem('forge_oauth_return_path')
@@ -837,9 +843,9 @@ export default function App() {
         if (!returnPath) returnPath = '/dashboard'
 
         setStep('dashboard')
-        setActiveTab('content-calendar')
+        setActiveTab(targetTab)
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
-        try { localStorage.setItem('forge_dashboard_active_tab', 'content-calendar') } catch {}
+        try { localStorage.setItem('forge_dashboard_active_tab', targetTab) } catch {}
 
         const pathParts = returnPath.split('?')[0].split('/').filter(Boolean)
         if (pathParts[0] === 'dashboard' && pathParts[1]) {
