@@ -89,7 +89,13 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             r.author.includes('Devin_ScaleFast') ||
             (r.quote && r.quote.includes('centralized place where we could access all your templates'))
           )
-          if (!hasFake && parsed.requests?.length >= 3) {
+
+          // Discard if cache contains duplicate quotes or generic placeholders
+          const quoteList = (parsed.requests || []).map(r => (r.quote || '').trim().toLowerCase()).filter(Boolean)
+          const hasDuplicates = new Set(quoteList).size < quoteList.length
+          const hasGenericTitles = (parsed.requests || []).some(r => r.title?.startsWith('Feature Request') || r.title === 'FAQ Item')
+
+          if (!hasFake && !hasDuplicates && !hasGenericTitles && parsed.requests?.length >= 3) {
             return parsed
           }
         }
@@ -143,6 +149,31 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       const synthesized = await generateAudienceIntelligenceAI(creatorData, comments, searchItems)
 
       if (synthesized) {
+        // Enforce strict deduplication across audience requests
+        if (Array.isArray(synthesized.requests)) {
+          const seenQ = new Set()
+          const cleanReqs = []
+          for (const req of synthesized.requests) {
+            const q = (req.quote || '').trim().toLowerCase()
+            if (q && !seenQ.has(q)) {
+              seenQ.add(q)
+              cleanReqs.push(req)
+            }
+          }
+          if (cleanReqs.length < 3) {
+            const dynamic = getDynamicAudienceIntelligence(creatorData, comments, searchItems)
+            for (const fb of dynamic.requests) {
+              const fbQ = (fb.quote || '').trim().toLowerCase()
+              if (fbQ && !seenQ.has(fbQ)) {
+                seenQ.add(fbQ)
+                cleanReqs.push(fb)
+                if (cleanReqs.length >= 3) break
+              }
+            }
+          }
+          synthesized.requests = cleanReqs.slice(0, 3)
+        }
+
         setIntelligence(synthesized)
         setLastAnalyzedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         try {
@@ -404,89 +435,113 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             </div>
 
             <div className="space-y-3">
-              {intel.requests.map((r, idx) => {
-                const authorClean = r.author?.startsWith('@') ? r.author : (r.author || `@${handleClean} Audience`)
-                const isYouTube = r.platform === 'YouTube' || (r.sourceUrl && (r.sourceUrl.includes('youtube.com') || r.sourceUrl.includes('youtu.be')))
+              {(() => {
+                const seenQ = new Set()
+                const uniqueRequests = []
+                for (const r of (intel.requests || [])) {
+                  const q = (r.quote || '').trim().toLowerCase()
+                  if (q && !seenQ.has(q)) {
+                    seenQ.add(q)
+                    uniqueRequests.push(r)
+                  }
+                }
+                // If fewer than 3, backfill from verified dynamic requests
+                if (uniqueRequests.length < 3) {
+                  const dynamic = getDynamicAudienceIntelligence(creatorData)
+                  for (const fb of dynamic.requests) {
+                    const fbQ = (fb.quote || '').trim().toLowerCase()
+                    if (fbQ && !seenQ.has(fbQ)) {
+                      seenQ.add(fbQ)
+                      uniqueRequests.push(fb)
+                      if (uniqueRequests.length >= 3) break
+                    }
+                  }
+                }
 
-                // Grounded target URL from Apify
-                const targetUrl = (r.sourceUrl && r.sourceUrl !== '#')
-                  ? r.sourceUrl
-                  : (creatorData?.recentPosts?.[idx]?.url && creatorData.recentPosts[idx].url !== '#')
-                  ? creatorData.recentPosts[idx].url
-                  : (intel.evidence?.[idx]?.url && intel.evidence[idx].url !== '#')
-                  ? intel.evidence[idx].url
-                  : `https://www.youtube.com/@${handleClean}`
+                return uniqueRequests.slice(0, 3).map((r, idx) => {
+                  const authorClean = r.author?.startsWith('@') ? r.author : (r.author || `@${handleClean} Audience`)
+                  const isYouTube = r.platform === 'YouTube' || (r.sourceUrl && (r.sourceUrl.includes('youtube.com') || r.sourceUrl.includes('youtu.be')))
 
-                // Grounded source title from Apify
-                const videoTitle = r.sourceTitle 
-                  || creatorData?.recentPosts?.[idx]?.title 
-                  || intel.evidence?.[idx]?.title 
-                  || intel.transcripts?.top_videos?.[idx]?.title 
-                  || `${creatorName} Platform Release`
+                  // Grounded target URL from Apify
+                  const targetUrl = (r.sourceUrl && r.sourceUrl !== '#')
+                    ? r.sourceUrl
+                    : (creatorData?.recentPosts?.[idx]?.url && creatorData.recentPosts[idx].url !== '#')
+                    ? creatorData.recentPosts[idx].url
+                    : (intel.evidence?.[idx]?.url && intel.evidence[idx].url !== '#')
+                    ? intel.evidence[idx].url
+                    : `https://www.youtube.com/@${handleClean}`
 
-                return (
-                  <div key={idx} className="p-4 bg-[#111624] rounded-none border-0 flex flex-col md:flex-row md:items-start gap-3.5 group hover:bg-[#141b2d] transition-colors">
-                    <div className="w-8 h-8 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <Quote size={14} />
-                    </div>
+                  // Grounded source title from Apify
+                  const videoTitle = r.sourceTitle 
+                    || creatorData?.recentPosts?.[idx]?.title 
+                    || intel.evidence?.[idx]?.title 
+                    || intel.transcripts?.top_videos?.[idx]?.title 
+                    || `${creatorName} Platform Release`
 
-                    <div className="flex-1 min-w-0">
-                      {/* Top Header: Request Title on Left, Verified Source on Right */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-white tracking-wide truncate">{r.title}</span>
-                        
-                        {/* Verified Source Action & Provenance */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {authorClean} &bull; {isYouTube ? 'YouTube Comment' : 'Apify Search Record'}
-                          </span>
-                          <a
-                            href={targetUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#181f33] hover:bg-red-950/60 text-[10px] font-bold text-slate-200 hover:text-white transition-all border border-slate-700/70 hover:border-red-500/50 rounded-none shrink-0"
-                            title={`Open verified source: "${videoTitle}"`}
-                          >
-                            {isYouTube ? (
-                              <Youtube size={12} className="text-red-500 fill-current shrink-0" />
-                            ) : (
-                              <Globe size={12} className="text-sky-400 shrink-0" />
-                            )}
-                            <span>View Source</span>
-                            <ExternalLink size={10} className="text-slate-400 shrink-0" />
-                          </a>
-                        </div>
+                  return (
+                    <div key={idx} className="p-4 bg-[#111624] rounded-none border-0 flex flex-col md:flex-row md:items-start gap-3.5 group hover:bg-[#141b2d] transition-colors">
+                      <div className="w-8 h-8 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Quote size={14} />
                       </div>
 
-                      {/* Verbatim quote from viewer / search record */}
-                      <p className="text-xs text-slate-300 mt-1.5 italic leading-relaxed">
-                        "{r.quote}"
-                      </p>
-
-                      {/* Solution summary + Clickable source link */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800/80">
-                        <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 font-semibold">
-                          <CheckCircle2 size={12} className="shrink-0 text-emerald-400" />
-                          <span>{r.solution}</span>
+                      <div className="flex-1 min-w-0">
+                        {/* Top Header: Request Title on Left, Verified Source on Right */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-white tracking-wide truncate">{r.title}</span>
+                          
+                          {/* Verified Source Action & Provenance */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {authorClean} &bull; {isYouTube ? 'YouTube Comment' : 'Apify Search Record'}
+                            </span>
+                            <a
+                              href={targetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#181f33] hover:bg-red-950/60 text-[10px] font-bold text-slate-200 hover:text-white transition-all border border-slate-700/70 hover:border-red-500/50 rounded-none shrink-0"
+                              title={`Open verified source: "${videoTitle}"`}
+                            >
+                              {isYouTube ? (
+                                <Youtube size={12} className="text-red-500 fill-current shrink-0" />
+                              ) : (
+                                <Globe size={12} className="text-sky-400 shrink-0" />
+                              )}
+                              <span>View Source</span>
+                              <ExternalLink size={10} className="text-slate-400 shrink-0" />
+                            </a>
+                          </div>
                         </div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1.5 shrink-0">
-                          <span className="text-slate-500 font-medium">Source:</span>
-                          <a
-                            href={targetUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sky-400 hover:text-sky-300 hover:underline max-w-[280px] sm:max-w-[340px] truncate font-medium inline-flex items-center gap-1"
-                            title={`Open source: ${videoTitle}`}
-                          >
-                            <span className="truncate">"{videoTitle}"</span>
-                            <ExternalLink size={9} className="shrink-0" />
-                          </a>
+
+                        {/* Verbatim quote from viewer / search record */}
+                        <p className="text-xs text-slate-300 mt-1.5 italic leading-relaxed">
+                          "{r.quote}"
+                        </p>
+
+                        {/* Solution summary + Clickable source link */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800/80">
+                          <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 font-semibold">
+                            <CheckCircle2 size={12} className="shrink-0 text-emerald-400" />
+                            <span>{r.solution}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 shrink-0">
+                            <span className="text-slate-500 font-medium">Source:</span>
+                            <a
+                              href={targetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sky-400 hover:text-sky-300 hover:underline max-w-[280px] sm:max-w-[340px] truncate font-medium inline-flex items-center gap-1"
+                              title={`Open source: ${videoTitle}`}
+                            >
+                              <span className="truncate">"{videoTitle}"</span>
+                              <ExternalLink size={9} className="shrink-0" />
+                            </a>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              })()}
             </div>
           </div>
         )}

@@ -972,7 +972,7 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
 
       if (targetUrls.length === 0) {
         try {
-          const vids = await fetchCreatorYouTubeVideos(clean, 5)
+          const vids = await fetchCreatorYouTubeVideos(clean, 10)
           if (Array.isArray(vids) && vids.length > 0) {
             targetUrls = vids.map(v => v.url || `https://www.youtube.com/watch?v=${v.videoId || v.id}`).filter(Boolean)
           }
@@ -980,22 +980,33 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
       }
 
       if (targetUrls.length > 0) {
+        const startUrls = targetUrls.slice(0, 10).map(url => ({ url }))
         const apifyRes = await apifyRunSync(
           'streamers~youtube-comments-scraper',
           { 
-            startUrls: targetUrls.slice(0, 5).map(url => ({ url })), 
-            maxComments: limit,
+            startUrls, 
+            maxComments: Math.max(limit * 3, 30),
             sortCommentsBy: 'TOP_COMMENTS'
           },
           apifyToken,
           45
         )
         if (Array.isArray(apifyRes) && apifyRes.length > 0) {
-          const formatted = apifyRes.map((c, i) => {
+          const seenComments = new Set()
+          const formatted = []
+
+          for (let i = 0; i < apifyRes.length; i++) {
+            const c = apifyRes[i]
             const txt = (c.text || c.comment || c.commentText || '').trim()
+            if (!txt || txt === 'NO_RESULTS' || c.error) continue
+            const norm = txt.toLowerCase()
+            if (seenComments.has(norm)) continue
+            seenComments.add(norm)
+
             const vUrl = c.pageUrl || c.videoUrl || (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : '')
             const vTitle = c.title || c.videoTitle || (targetUrls[0] ? 'Channel Upload' : '')
-            return {
+
+            formatted.push({
               id: c.cid || c.commentId || c.id || `apify_${i}`,
               author: c.author || c.authorChannelName || c.authorText || '@viewer',
               text: txt,
@@ -1007,8 +1018,8 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
               videoTitle: vTitle,
               videoUrl: vUrl,
               source: 'Apify YouTube Comments'
-            }
-          }).filter(c => c.text && c.text !== 'NO_RESULTS' && !c.error)
+            })
+          }
 
           if (formatted.length > 0) {
             try {
