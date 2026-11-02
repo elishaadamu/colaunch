@@ -350,6 +350,18 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('forge_open_pricing', handleOpenPricing)
   }, [])
 
+  // Listen for cross-component tab change events (e.g. ContentCalendar -> Accounts)
+  useEffect(() => {
+    const handleTabChange = (e) => {
+      const targetTab = e.detail?.tab
+      if (targetTab && TAB_COMPONENTS[targetTab] && typeof setActiveTab === 'function') {
+        setActiveTab(targetTab)
+      }
+    }
+    window.addEventListener('forge_tab_change', handleTabChange)
+    return () => window.removeEventListener('forge_tab_change', handleTabChange)
+  }, [setActiveTab])
+
   const TabComponent = TAB_COMPONENTS[activeTab] || Marketing
 
   return (
@@ -597,7 +609,7 @@ export default function DashboardLayout() {
         <div className="flex-1 flex overflow-hidden">
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
-            <TabComponent chatOpen={chatOpen} />
+            <TabComponent chatOpen={chatOpen} setActiveTab={setActiveTab} />
           </div>
 
           {/* Forge Chat panel */}

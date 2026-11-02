@@ -460,7 +460,7 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
       strategy: 'LAUNCH',
       title: `The Story Behind ${prod}: Why We Built It`,
       caption: `For months, our community has asked how to take everything we do on channel to the next level.\n\nHere is our journey building ${prod} from the ground up for you.\n\n#${name.replace(/\s+/g, '')} #Launch #BehindTheScenes`,
-      status: 'Posted',
+      status: 'Draft',
       time: '9:00 AM',
       imageUrl: null
     },
@@ -475,7 +475,7 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
       strategy: 'BTS',
       title: `Behind the Scenes: Engineering ${prod}`,
       caption: `Unfiltered look behind the scenes at our process creating ${prod}.\n\nDrop a comment with your thoughts!\n\n#${name.replace(/\s+/g, '')} #BTS`,
-      status: 'Posted',
+      status: 'Draft',
       time: '12:00 PM',
       imageUrl: null
     },
@@ -490,7 +490,7 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
       strategy: 'PROOF',
       title: `3 Big Reasons You'll Love ${prod}`,
       caption: `Early feedback from our core community has been incredible. Here's a quick preview!\n\n#Shorts #${name.replace(/\s+/g, '')}`,
-      status: 'Posted',
+      status: 'Draft',
       time: '4:00 PM',
       imageUrl: null
     },
@@ -574,6 +574,33 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
   ]
 }
 
+// Checks if a given social channel is actively connected and authorized
+export function isChannelConnected(channel, ytConn = null, creatorData = null) {
+  const norm = (channel || '').toLowerCase().trim()
+  const effectiveYt = ytConn || getStoredYouTubeConnection()
+  if (norm === 'youtube') {
+    return Boolean(
+      effectiveYt?.connected || 
+      creatorData?.youtube_connected || 
+      creatorData?.channel_title
+    )
+  }
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('forge_accounts_platforms') : null
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (norm === 'instagram' && parsed.instagram?.connected) return true
+      if ((norm === 'x' || norm === 'twitter') && parsed.twitter?.connected) return true
+      if (norm === 'tiktok' && parsed.tiktok?.connected) return true
+      if (norm === 'email' && (parsed.email?.connected || creatorData?.email)) return true
+    }
+  } catch (_) {}
+  if (norm === 'email') {
+    return Boolean(creatorData?.email && creatorData.email.includes('@'))
+  }
+  return false
+}
+
 // Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
 export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
   const handle = creatorData?.handle || 'default'
@@ -639,7 +666,12 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       const format = mapTypeToFormat(p.type || p.format)
       const strategy = (p.theme || p.strategy || 'LAUNCH').toUpperCase()
       const title = p.title || p.label || `Launch Post ${pIdx + 1}`
-      const status = (p.status === 'posted' || p.done) ? 'Posted' : ((p.status === 'scheduled' || p.status === 'Scheduled') && p.scheduledAt) ? 'Scheduled' : 'Draft'
+      const isConnected = isChannelConnected(channel, null, creatorData)
+      const status = isConnected && (p.status === 'posted' || p.done)
+        ? 'Posted'
+        : (isConnected && (p.status === 'scheduled' || p.status === 'Scheduled') && p.scheduledAt)
+          ? 'Scheduled'
+          : 'Draft'
       const time = p.time || defaultTimes[pIdx % defaultTimes.length]
       const caption = generateTailoredCaption(p, creatorData, productName)
 
@@ -664,13 +696,31 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     })
   })
 
-  // Get surrounding weeks for navigation (-1 and +1)
-  const surrounding = getDefaultCampaignPosts(productName, creatorData)
+  // Get surrounding weeks for navigation (-1 and +1) — un-connected channels are strictly Drafts
+  const surrounding = getDefaultCampaignPosts(productName, creatorData).map(p => {
+    const isConn = isChannelConnected(p.channel, null, creatorData)
+    return isConn ? p : { ...p, status: 'Draft', scheduledAt: null }
+  })
   return [...week0Posts, ...surrounding]
 }
 
-export default function ContentCalendar() {
-  const { creatorData, userProfile, triggerToast } = useForge()
+export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
+  const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab } = useForge()
+  const setActiveTab = propSetActiveTab || contextSetActiveTab
+
+  // Direct router to Accounts page
+  const navigateToAccounts = useCallback(() => {
+    if (typeof setActiveTab === 'function') {
+      setActiveTab('accounts')
+    }
+    try {
+      localStorage.setItem('forge_dashboard_active_tab', 'accounts')
+      const url = new URL(window.location.href)
+      url.searchParams.set('tab', 'accounts')
+      window.history.pushState({}, '', url.toString())
+      window.dispatchEvent(new CustomEvent('forge_tab_change', { detail: { tab: 'accounts' } }))
+    } catch (_) {}
+  }, [setActiveTab])
 
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
@@ -769,8 +819,27 @@ export default function ContentCalendar() {
 
   // 7-Day Campaign Post Dataset - dynamically synced 1:1 with Marketing Launch Plan
   const [posts, setPosts] = useState(() => {
-    return loadSyncedCampaignPosts(creatorData, productName, handleClean)
+    const initial = loadSyncedCampaignPosts(creatorData, productName, handleClean)
+    const ytConn = getStoredYouTubeConnection()
+    return initial.map(p => {
+      const isConn = isChannelConnected(p.channel, ytConn, creatorData)
+      if (!isConn && p.status !== 'Draft') {
+        return { ...p, status: 'Draft', scheduledAt: null }
+      }
+      return p
+    })
   })
+
+  // Whenever social channel connection changes, enforce that un-connected channels stay as Drafts
+  useEffect(() => {
+    setPosts(prev => prev.map(p => {
+      const isConn = isChannelConnected(p.channel, youtubeConnection, creatorData)
+      if (!isConn && p.status !== 'Draft') {
+        return { ...p, status: 'Draft', scheduledAt: null }
+      }
+      return p
+    }))
+  }, [youtubeConnection?.connected, creatorData?.youtube_connected])
 
   // Dynamic XP computation derived from real creator actions, database posts, and connected accounts
   // Pre-generated templates do NOT award passive XP — XP is only earned through genuine creator actions.
@@ -1101,9 +1170,16 @@ export default function ContentCalendar() {
     if (map[channel]) setPreviewPlatform(map[channel])
   }
 
-  // Schedule Post in Campaign Pipeline
+  // Schedule Post in Campaign Pipeline — strictly blocked if account is not connected
   const handleSchedulePost = (e) => {
     if (!activePost) return
+    const isConn = isChannelConnected(activePost.channel, youtubeConnection, creatorData)
+    if (!isConn) {
+      if (triggerToast) {
+        triggerToast(`Cannot schedule: ${activePost.channel} is not connected. Connect your account in Accounts first.`, 'error')
+      }
+      return
+    }
     setIsPublishingDirect(true)
     try {
       const newStatus = 'Scheduled'
@@ -1132,9 +1208,16 @@ export default function ContentCalendar() {
     if (triggerToast) triggerToast('Draft saved to queue.', 'info')
   }
 
-  // Direct Publish (YouTube API if YouTube channel connected, or Direct Live broadcast)
+  // Direct Publish — strictly blocked if account is not connected
   const handlePublishNow = async (e) => {
     if (!activePost) return
+    const isConn = isChannelConnected(activePost.channel, youtubeConnection, creatorData)
+    if (!isConn) {
+      if (triggerToast) {
+        triggerToast(`Cannot publish: ${activePost.channel} is not connected. Connect your account in Accounts first.`, 'error')
+      }
+      return
+    }
     setIsPublishingDirect(true)
     try {
       if (activePost.channel === 'YouTube' && youtubeConnection?.channel) {
@@ -1206,29 +1289,43 @@ export default function ContentCalendar() {
 
   const handleApproveAndSchedule = (e) => {
     if (!activePost) return
-    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Scheduled' } : p))
+    const isConn = isChannelConnected(activePost.channel, youtubeConnection, creatorData)
+    if (!isConn) {
+      if (triggerToast) {
+        triggerToast(`Cannot schedule: ${activePost.channel} is not connected. Connect your account in Accounts first.`, 'error')
+      }
+      return
+    }
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Scheduled', scheduledAt: new Date().toISOString() } : p))
     addXP(50, `Scheduled "${activePost.title.slice(0, 24)}..." for ${activePost.fullDateStr}`, e)
   }
 
   const handleInstantPostLive = (e) => {
     if (!activePost) return
+    const isConn = isChannelConnected(activePost.channel, youtubeConnection, creatorData)
+    if (!isConn) {
+      if (triggerToast) {
+        triggerToast(`Cannot publish: ${activePost.channel} is not connected. Connect your account in Accounts first.`, 'error')
+      }
+      return
+    }
     setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: 'Posted' } : p))
     addXP(100, `Published live to ${activePost.channel}`, e)
   }
 
   const handleScheduleAllReady = (e) => {
-    const drafts = filteredPosts.filter(p => p.status === 'Draft')
-    if (drafts.length === 0) {
-      if (triggerToast) triggerToast('All posts are already scheduled or published!', 'info')
+    const readyDrafts = filteredPosts.filter(p => p.status === 'Draft' && isChannelConnected(p.channel, youtubeConnection, creatorData))
+    if (readyDrafts.length === 0) {
+      if (triggerToast) triggerToast('No drafts have connected accounts. Connect your channels in Accounts first to schedule.', 'error')
       return
     }
     setPosts(prev => prev.map(p => {
-      if ((p.weekOffset ?? 0) === weekOffset && p.status === 'Draft') {
-        return { ...p, status: 'Scheduled' }
+      if ((p.weekOffset ?? 0) === weekOffset && p.status === 'Draft' && isChannelConnected(p.channel, youtubeConnection, creatorData)) {
+        return { ...p, status: 'Scheduled', scheduledAt: new Date().toISOString() }
       }
       return p
     }))
-    addXP(drafts.length * 40, `All ${drafts.length} drafts approved and scheduled to pipeline`, e)
+    addXP(readyDrafts.length * 40, `All ${readyDrafts.length} ready drafts scheduled to pipeline`, e)
   }
 
   const handleShareDraftPreview = () => {
@@ -1645,7 +1742,7 @@ export default function ContentCalendar() {
           {youtubeConnection?.connected ? (
             <button
               type="button"
-              onClick={() => setActiveTab && setActiveTab('accounts')}
+              onClick={navigateToAccounts}
               className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
               style={{ borderRadius: '0px' }}
               title="Manage connected channels in Accounts"
@@ -1656,7 +1753,7 @@ export default function ContentCalendar() {
           ) : (
             <button
               type="button"
-              onClick={() => setActiveTab && setActiveTab('accounts')}
+              onClick={navigateToAccounts}
               className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
               style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
               title="Connect social channels in Accounts"
@@ -2374,12 +2471,12 @@ export default function ContentCalendar() {
                   <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2" style={{ borderRadius: '0px' }}>
                     <Youtube size={16} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <div className="text-white font-bold">Social Channel Not Connected</div>
-                      <p className="text-slate-400 text-[10px] mt-0.5">Link your YouTube channel or other platforms in the Accounts page to broadcast directly.</p>
+                      <div className="text-white font-bold">{activePost?.channel || 'Social Channel'} Not Connected</div>
+                      <p className="text-slate-400 text-[10px] mt-0.5">Link your {activePost?.channel || 'YouTube'} account in the Accounts page to schedule or broadcast directly.</p>
                       <div className="mt-2">
                         <button
                           type="button"
-                          onClick={() => setActiveTab && setActiveTab('accounts')}
+                          onClick={navigateToAccounts}
                           className="px-3 py-1.5 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
                           style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                         >
@@ -2395,7 +2492,19 @@ export default function ContentCalendar() {
                 <div className="space-y-2 pt-1">
                   
                   {/* Primary Action Button */}
-                  {activePost?.status === 'Scheduled' ? (
+                  {!isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? (
+                    <button
+                      type="button"
+                      onClick={navigateToAccounts}
+                      className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0"
+                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Sliders size={14} className="text-white" />
+                      <span className="text-white font-bold">
+                        Connect {activePost?.channel || 'Channel'} to Schedule
+                      </span>
+                    </button>
+                  ) : activePost?.status === 'Scheduled' ? (
                     <div className="p-2.5 bg-sky-950/40 border border-sky-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
                       <div className="flex items-center gap-2">
                         <Clock size={15} className="text-sky-400 shrink-0" />
@@ -2423,7 +2532,7 @@ export default function ContentCalendar() {
                     >
                       <Clock size={14} className="text-white" />
                       <span className="text-white font-bold">
-                        {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+75 XP)'}
+                        {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+50 XP)'}
                       </span>
                     </button>
                   )}
@@ -2444,14 +2553,23 @@ export default function ContentCalendar() {
                     {/* Secondary: Publish Live */}
                     <button
                       type="button"
-                      onClick={handlePublishNow}
+                      onClick={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? handlePublishNow : navigateToAccounts}
                       disabled={isPublishingDirect}
-                      className="w-full py-2.5 px-3 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50"
-                      style={{ borderRadius: '0px', color: '#ffffff' }}
+                      className={`w-full py-2.5 px-3 rounded-none font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50 ${
+                        isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
+                          ? 'bg-emerald-600 hover:bg-emerald-700'
+                          : 'bg-[#182030] text-slate-400 hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                      title={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? 'Publish live' : 'Connect channel first'}
                     >
                       <Send size={13} className="text-white" />
-                      <span className="text-white font-bold">
-                        {isPublishingDirect ? 'Publishing...' : 'Publish Live (+150 XP)'}
+                      <span className="font-bold">
+                        {isPublishingDirect
+                          ? 'Publishing...'
+                          : isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
+                            ? 'Publish Live (+100 XP)'
+                            : 'Connect to Publish'}
                       </span>
                     </button>
                   </div>

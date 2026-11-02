@@ -2088,7 +2088,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         ...postShape,
         title: postShape.label,
         body,
-        status: 'scheduled',
+        status: 'draft',
         done: false,
       }
 
