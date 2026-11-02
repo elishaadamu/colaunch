@@ -731,19 +731,16 @@ export default function CreatorPortal({ portalId }) {
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
             <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-[#0F172A] border border-slate-800 flex items-center justify-center shadow-xs text-white shrink-0">
               {resolvedAvatar && !avatarLoadError ? (
-                <>
-                  <img
-                    src={resolvedAvatar}
-                    alt={creatorName || 'Creator'}
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarLoadError(true)}
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#0F172A] border border-slate-700 flex items-center justify-center p-0.5 shadow-xs z-10">
-                    <CoLaunchLogo size={8} showText={false} theme="dark" />
-                  </div>
-                </>
+                <img
+                  src={resolvedAvatar}
+                  alt={creatorName || 'Creator'}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarLoadError(true)}
+                />
               ) : (
-                <CoLaunchLogo size={18} showText={false} theme="dark" />
+                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white font-bold text-xs uppercase">
+                  {(creatorName || 'C').charAt(0)}
+                </div>
               )}
             </div>
 

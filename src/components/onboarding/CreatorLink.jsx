@@ -317,7 +317,7 @@ export default function CreatorLink() {
 
       {/* TOP NAVIGATION BAR */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-        {/* Left: Back Button + Logo */}
+        {/* Left: Back Button */}
         <div className="flex items-center gap-5">
           <button 
             type="button"
@@ -328,23 +328,6 @@ export default function CreatorLink() {
             <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
             <span>Back</span>
           </button>
-
-          <div className="h-4 w-px bg-[#1f242c] hidden sm:block"></div>
-
-          {/* CoLaunch Logo & Mark */}
-          <div 
-            onClick={() => goTo('welcome')}
-            className="inline-flex items-center gap-2.5 group cursor-pointer transition-opacity hover:opacity-90 select-none"
-            title="Back to Home"
-          >
-            <div className="grid grid-cols-2 gap-1 p-1 bg-[#111317] border border-[#1f242c] rounded-lg transition-colors group-hover:border-[#c81e3c]/40">
-              <div className="w-1.5 h-1.5 rounded-sm bg-[#c81e3c] transition-colors"></div>
-              <div className="w-1.5 h-1.5 rounded-sm bg-neutral-300 group-hover:bg-white transition-colors"></div>
-              <div className="w-1.5 h-1.5 rounded-sm bg-neutral-300 group-hover:bg-white transition-colors"></div>
-              <div className="w-1.5 h-1.5 rounded-sm bg-[#c81e3c] transition-colors"></div>
-            </div>
-            <span className="text-sm font-bold tracking-tight text-white group-hover:text-neutral-100">CoLaunch</span>
-          </div>
         </div>
 
         {/* Right: Reset Creator Button + Step Indicator Dots & Counter */}

@@ -2027,7 +2027,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
         author: `${domain} • Public Index`,
         sourceTitle: s.title || `${name} Public Record`,
         sourceUrl: s.url || `https://www.google.com/search?q=${encodeURIComponent(name)}`,
-        platform: 'Google Search (Apify)',
+        platform: 'Google Search',
         likes: 'Indexed',
         time: s.date || 'Verified Query',
         solution: `Solved by ${productName}: Addressing verified public use cases.`

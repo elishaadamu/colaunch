@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import { Check, Play, Eye, Heart, Clock, Trash2 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
-import { getScrapePromise } from '../../services/scraper'
+import { getScrapePromise, fetchCreatorComments, searchGoogleApify } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
-import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator, parseFollowerCount } from '../../services/ai'
+import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator, parseFollowerCount, generateAudienceIntelligenceAI, getDynamicAudienceIntelligence } from '../../services/ai'
 import { extractBrandColorFromAvatar, getDeterministicBrandColor, hexToRgb } from '../../utils/avatarColorExtractor'
 
 // Helper: RGB to HSL
@@ -33,31 +33,37 @@ const ANALYSIS_STEPS = [
     id: 'profile',
     label: 'Scanning creator profile & indexing media',
     why: 'Pulling verified follower metrics, engagement patterns, and channel telemetry directly from the platform.',
-    duration: 3200,
+    duration: 2800,
   },
   {
     id: 'identity',
     label: 'Extracting audience signals & sentiment',
     why: 'Analyzing audience resonance, comment velocity, and buyer readiness across recent content releases.',
-    duration: 3400,
+    duration: 3000,
   },
   {
     id: 'audience',
     label: 'Synthesizing market demand & pricing rails',
     why: 'Benchmarking customer willingness to pay and high-retention software niches proven for your audience.',
-    duration: 3600,
+    duration: 3200,
+  },
+  {
+    id: 'intelligence',
+    label: 'Synthesizing 10-point audience & market intelligence',
+    why: 'Extracting verbatim community inquiries, sentiment breakdown, demographics, and competitive market gaps.',
+    duration: 3400,
   },
   {
     id: 'demand',
     label: 'Architecting custom software blueprint',
     why: 'Synthesizing feature specifications, membership paywalls, and interactive platform modules.',
-    duration: 3500,
+    duration: 3200,
   },
   {
     id: 'model',
     label: 'Selecting optimal monetization engine',
     why: 'Finalizing unit economics, recurring subscription tiers, and go-to-market launch sequences.',
-    duration: 3100,
+    duration: 3000,
   },
 ]
 
@@ -211,21 +217,80 @@ export default function Analyzing() {
     followers > 0
       ? `${engRate > 0 ? engRate + '% engagement' : 'Audience'} — high purchase intent detected`
       : 'Audience signals mapped',
+    '10-point audience telemetry & demand mapped',
     'Monetizable demand found in your niche',
     'Optimal business model selected for your profile',
   ]
 
   const scrapeDoneRef = useRef(false)
   const stepsDoneRef = useRef(false)
+  const intelDoneRef = useRef(false)
   const hasAdvancedRef = useRef(false)
 
   const finishAndAdvance = () => {
     if (hasAdvancedRef.current) return
+    // Wait until steps, scrape, and 10 points analysis are all finished
+    if (!stepsDoneRef.current || !scrapeDoneRef.current || !intelDoneRef.current) return
     hasAdvancedRef.current = true
     setProgress(100)
     setConfidence(96)
     setDone(true)
     setTimeout(next, 700)
+  }
+
+  // Synthesize 10-point audience intelligence during analysis
+  const runTenPointsAnalysis = async (targetData) => {
+    try {
+      const cleanHandle = String(targetData?.handle || creatorData?.handle || 'creator').replace(/^@/, '').trim().toLowerCase()
+      const creatorName = targetData?.name || cleanHandle
+      const niche = targetData?.niche || 'Digital Content Creation'
+      const platform = targetData?.platform || 'youtube'
+
+      let comments = []
+      try {
+        comments = await fetchCreatorComments(cleanHandle, platform, 12)
+        if (!comments || comments.length === 0) {
+          const urls = (targetData?.recentPosts || []).map(p => p.url).filter(Boolean)
+          if (urls.length > 0) {
+            comments = await fetchCreatorComments(urls[0], platform, 12)
+          }
+        }
+      } catch (err) {
+        console.warn('[Forge] Analyzing comments error:', err)
+      }
+
+      let searchItems = []
+      try {
+        searchItems = await searchGoogleApify(`${creatorName} ${niche} software tools reviews`)
+        try {
+          localStorage.setItem(`forge_apify_search_${cleanHandle}`, JSON.stringify(searchItems))
+        } catch {}
+      } catch (err) {
+        console.warn('[Forge] Analyzing search error:', err)
+      }
+
+      let synthesized = null
+      try {
+        synthesized = await generateAudienceIntelligenceAI(targetData, comments, searchItems)
+      } catch (err) {
+        console.warn('[Forge] Analyzing AI synthesis notice:', err)
+        synthesized = getDynamicAudienceIntelligence(targetData, comments, searchItems)
+      }
+
+      if (synthesized) {
+        try {
+          localStorage.setItem(`forge_audience_intel_${cleanHandle}`, JSON.stringify(synthesized))
+        } catch {}
+        updateCreator({ audienceIntelligence: synthesized })
+      }
+    } catch (e) {
+      console.warn('[Forge] 10-point analysis notice:', e)
+    } finally {
+      intelDoneRef.current = true
+      if (stepsDoneRef.current && scrapeDoneRef.current) {
+        finishAndAdvance()
+      }
+    }
   }
 
   // Await real scrape promise
@@ -235,6 +300,7 @@ export default function Analyzing() {
     if (!promise) {
       scrapeDoneRef.current = true
       updateCreator({ brandColor: '#c81e3c', brandHex: '#c81e3c' })
+      runTenPointsAnalysis(creatorData)
       startBgJob('onboarding-recs', async (sig) => {
         const aiRecs = await generateRecommendationsAI(creatorData, sig)
         if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
@@ -256,6 +322,7 @@ export default function Analyzing() {
         }
         setLiveData(enrichedData)
         updateCreator(enrichedData)
+        runTenPointsAnalysis(enrichedData)
         
         // Start onboarding-recs job specifically for the newly analyzed creator
         startBgJob('onboarding-recs', async (sig) => {
@@ -300,12 +367,13 @@ export default function Analyzing() {
           throw new Error("Empty recommendations response")
         })
 
-        if (stepsDoneRef.current) {
+        if (stepsDoneRef.current && intelDoneRef.current) {
           finishAndAdvance()
         }
       })
       .catch(err => {
         scrapeDoneRef.current = true
+        runTenPointsAnalysis(creatorData)
         const fallbackColor = getDeterministicBrandColor(creatorData).primaryHex
         if (!creatorData.brandColor || creatorData.brandColor === '#ff3b30') {
           updateCreator({ brandColor: fallbackColor, brandHex: fallbackColor })
@@ -333,7 +401,7 @@ export default function Analyzing() {
           throw new Error("Empty recommendations response")
         })
 
-        if (stepsDoneRef.current) {
+        if (stepsDoneRef.current && intelDoneRef.current) {
           finishAndAdvance()
         }
       })
@@ -364,14 +432,23 @@ export default function Analyzing() {
       if (stepIdx >= ANALYSIS_STEPS.length) {
         stepsDoneRef.current = true
         if (timerRef.current) clearInterval(timerRef.current)
-        if (scrapeDoneRef.current || !getScrapePromise()) {
+        if (scrapeDoneRef.current && intelDoneRef.current) {
           finishAndAdvance()
         } else {
-          setTimeout(() => {
-            if (!hasAdvancedRef.current) {
+          const checkDoneInterval = setInterval(() => {
+            if (intelDoneRef.current && scrapeDoneRef.current) {
+              clearInterval(checkDoneInterval)
               finishAndAdvance()
             }
-          }, 10000)
+          }, 250)
+          setTimeout(() => {
+            clearInterval(checkDoneInterval)
+            if (!hasAdvancedRef.current) {
+              intelDoneRef.current = true
+              scrapeDoneRef.current = true
+              finishAndAdvance()
+            }
+          }, 16000)
         }
         return
       }

@@ -396,7 +396,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
         {[
           { label: 'Projected MRR', val: `${cleanMrr}/mo`, badge: '+18.4% MoM', desc: 'Active subscriptions' },
           { label: 'Subscribers', val: creatorData?.followers || 'Community Reach', badge: 'Official Audience', desc: 'Verified subscriber count' },
-          { label: 'Channel Views', val: creatorData?.totalViews || 'Apify Scraped', badge: 'Total Impact', desc: 'Cumulative video views' },
+          { label: 'Channel Views', val: creatorData?.totalViews || 'Verified', badge: 'Total Impact', desc: 'Cumulative video views' },
           { label: 'Catalog Uploads', val: `${creatorData?.videoCount || recentVideoList.length || '12'} Videos`, badge: 'Official Archive', desc: 'Verified channel videos' },
         ].map((m, i) => (
           <div 
@@ -505,7 +505,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: dynamicAccent }} />
-                  Channel Comments (Apify)
+                  Channel Comments (Live)
                 </span>
                 <span className="text-[9px] font-mono text-emerald-400 font-medium">
                   {channelComments.length} Synced
@@ -1721,7 +1721,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               >
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-300 font-medium">No comments synced yet from Apify.</p>
+              <p className="text-xs text-slate-300 font-medium">No comments synced yet.</p>
               {creatorUrl && (
                 <a 
                   href={creatorUrl} 

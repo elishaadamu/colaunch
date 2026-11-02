@@ -1361,6 +1361,15 @@ export default function Blueprint() {
               </div>
             </div>
 
+            {/* 10-MODULE AUDIENCE INTELLIGENCE ENGINE (Placed at top directly after YouTube Videos) */}
+            <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.12s' }}>
+              <AudienceIntelligenceEngine 
+                creatorData={creatorData} 
+                activeBlueprint={activeBlueprint} 
+                accent={accent} 
+              />
+            </div>
+
             {/* Recommendation Section Header */}
             <div className="pt-4 space-y-1.5" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
               <div 
@@ -1575,13 +1584,6 @@ export default function Blueprint() {
               </div>
 
             </div>
-
-            {/* 10-MODULE AUDIENCE INTELLIGENCE ENGINE (Apify Scrapers & Google Search Actor 563JCPLOqM1kMmbbP) */}
-            <AudienceIntelligenceEngine 
-              creatorData={creatorData} 
-              activeBlueprint={activeBlueprint} 
-              accent={accent} 
-            />
           </>
         )}
       </main>

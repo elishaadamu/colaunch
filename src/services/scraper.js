@@ -1017,7 +1017,7 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
               videoId: c.videoId || '',
               videoTitle: vTitle,
               videoUrl: vUrl,
-              source: 'Apify YouTube Comments'
+              source: 'YouTube Comments'
             })
           }
 

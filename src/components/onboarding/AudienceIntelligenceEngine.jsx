@@ -112,11 +112,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   // Run full intelligence pipeline: Apify comments + Apify Google Search + AI synthesis
   const runFullPipeline = async (forceRefresh = false) => {
     setIsAnalyzing(true)
-    setAnalysisStatus('Scanning channel uploads & metadata via Apify...')
+    setAnalysisStatus('Scanning channel uploads & metadata...')
 
     try {
-      // 1. Pull real comments via Apify comments scraper
-      setAnalysisStatus('Pulling audience comments via Apify Comments Scraper...')
+      // 1. Pull real comments via comments scraper
+      setAnalysisStatus('Pulling audience comments & feedback...')
       let comments = []
       try {
         comments = await fetchCreatorComments(handleClean, platform, 12)
@@ -127,11 +127,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
           }
         }
       } catch (err) {
-        console.warn('[Forge] Notice fetching comments via Apify:', err)
+        console.warn('[Forge] Notice fetching comments:', err)
       }
 
-      // 2. Query Apify Google Search (Actor 563JCPLOqM1kMmbbP) for competitive landscape
-      setAnalysisStatus('Querying Google competitor landscape via Apify Actor 563JCPLOqM1kMmbbP...')
+      // 2. Query market search for competitive landscape
+      setAnalysisStatus('Querying market competitor landscape & benchmarks...')
       let searchItems = []
       try {
         const query = googleQuery || `${creatorName} ${niche} software tools reviews`
@@ -141,11 +141,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
           localStorage.setItem(`forge_apify_search_${handleClean}`, JSON.stringify(searchItems))
         } catch {}
       } catch (err) {
-        console.warn('[Forge] Apify Google search notice:', err)
+        console.warn('[Forge] Market search notice:', err)
       }
 
-      // 3. Synthesize audience intelligence strictly from real Apify signals
-      setAnalysisStatus('Synthesizing audience intelligence from Apify signals...')
+      // 3. Synthesize audience intelligence strictly from real signals
+      setAnalysisStatus('Synthesizing 10-module audience intelligence...')
       const synthesized = await generateAudienceIntelligenceAI(creatorData, comments, searchItems)
 
       if (synthesized) {
@@ -204,12 +204,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       const items = await searchGoogleApify(googleQuery)
       setGoogleResults(items)
       if (!items || items.length === 0) {
-        setSearchNotice('Apify Actor 563 completed. Live query returned 0 items from dataset; displaying verified niche intelligence benchmarks.')
+        setSearchNotice('Market search query completed with 0 new items; displaying verified niche intelligence benchmarks.')
       } else {
-        setSearchNotice(`Apify Actor 563 successfully returned ${items.length} live Google search items.`)
+        setSearchNotice(`Search index query successfully returned ${items.length} live market items.`)
       }
     } catch (err) {
-      setSearchNotice('Live Apify connection timed out. Falling back to cached benchmark market telemetry.')
+      setSearchNotice('Live search connection timed out. Falling back to cached benchmark market telemetry.')
     } finally {
       setIsSearchingGoogle(false)
     }
@@ -222,7 +222,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     { id: 'requests', label: '3. Product & Tool Requests', icon: MessageSquare, badge: 'Community' },
     { id: 'transcripts', label: '4. Transcripts & Themes', icon: FileText, badge: 'NLP Cluster' },
     { id: 'demographics', label: '5. Demographics & Sentiment', icon: Users, badge: 'Audience' },
-    { id: 'competitors', label: '6. Competitors & Gaps', icon: Search, badge: 'Apify Actor 563' },
+    { id: 'competitors', label: '6. Competitors & Gaps', icon: Search, badge: 'Market Index' },
     { id: 'purchasing', label: '7. Purchasing Intent', icon: CreditCard, badge: 'Commercial' },
     { id: 'pmf', label: '8. PMF & Rationale', icon: Target, badge: `${intelligence?.pmf?.score || 96}% Fit` },
     { id: 'pricing', label: '9. Pricing & MRR Potential', icon: DollarSign, badge: 'Economics' },
@@ -234,7 +234,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   return (
     <div className="mt-8 rounded-none bg-[#090c13] border-0 text-slate-200 overflow-hidden shadow-2xl">
       
-      {/* ── HEADER STRIP (With Live Apify Status & Re-Sync Button) ── */}
+      {/* ── HEADER STRIP (With Live Status & Re-Sync Button) ── */}
       <div className="px-5 py-4 bg-[#0e131f] flex flex-col md:flex-row md:items-center justify-between gap-3 border-0">
         <div>
           <div className="flex items-center gap-2">
@@ -242,10 +242,10 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               className="px-2 py-0.5 rounded-none text-[10px] font-mono font-bold tracking-wider uppercase text-white shadow-xs"
               style={{ background: brandRed, color: '#ffffff' }}
             >
-              Apify Engine
+              Intelligence Engine
             </span>
             <span className="text-[11px] font-mono text-slate-400">
-              Actor ID: 563JCPLOqM1kMmbbP &bull; Channel Telemetry
+              Market Intelligence &bull; Channel Telemetry
             </span>
             {lastAnalyzedTime && (
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-none">
@@ -257,7 +257,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             Audience Intelligence &amp; Market Feasibility Analysis
           </h3>
           <p className="text-xs text-slate-400">
-            Synthesized across verified uploads, viewer comments, and Google search market benchmarks for @{handleClean}.
+            Synthesized across verified uploads, viewer comments, and search market benchmarks for @{handleClean}.
           </p>
         </div>
 
@@ -269,10 +269,10 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             disabled={isAnalyzing}
             className="px-3.5 py-2 text-xs font-bold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer hover:opacity-95 shrink-0 border-0 disabled:opacity-50"
             style={{ background: brandRed, color: '#ffffff' }}
-            title="Re-run live Apify comments and competitive search synthesis"
+            title="Re-run live comments and competitive search synthesis"
           >
             <RefreshCw size={12} className={isAnalyzing ? 'animate-spin text-white' : 'text-white'} />
-            <span>{isAnalyzing ? 'Analyzing with Apify...' : 'Re-Sync Live Apify Telemetry'}</span>
+            <span>{isAnalyzing ? 'Analyzing Telemetry...' : 'Re-Sync Audience Telemetry'}</span>
           </button>
 
           <div className="hidden sm:block px-3 py-1.5 bg-[#141a29] rounded-none text-left">
@@ -286,7 +286,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       {isAnalyzing && (
         <div className="px-5 py-2.5 bg-rose-500/10 border-0 flex items-center gap-2 text-xs text-rose-300 animate-pulse">
           <RefreshCw size={13} className="animate-spin text-rose-400 shrink-0" />
-          <span><b>Live Apify Ingestion Active:</b> {analysisStatus}</span>
+          <span><b>Live Analysis Active:</b> {analysisStatus}</span>
         </div>
       )}
 
@@ -333,7 +333,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   <Activity size={15} className="text-rose-400" />
                   <span>Channel Telemetry &amp; Engagement Velocity</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">Verified public platform statistics extracted via Apify YouTube Scraper.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Verified public platform statistics extracted via channel telemetry.</p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-none font-bold">
                 Telemetry Live
@@ -492,7 +492,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                           {/* Verified Source Action & Provenance */}
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-[10px] text-slate-400 font-mono">
-                              {authorClean} &bull; {isYouTube ? 'YouTube Comment' : 'Apify Search Record'}
+                              {authorClean} &bull; {isYouTube ? 'YouTube Comment' : 'Public Search Record'}
                             </span>
                             <a
                               href={targetUrl}
@@ -685,11 +685,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   <span>Competitor Landscape &amp; Market Gaps</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Powered by Apify Google Search Scraper (Actor 563JCPLOqM1kMmbbP).
+                  Verified public market intelligence &amp; competitor search indexing.
                 </p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-rose-500/15 text-rose-300 rounded-none font-bold shrink-0">
-                Actor 563JCPLOqM1kMmbbP Active
+                Market Index Active
               </span>
             </div>
 
@@ -702,7 +702,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   value={googleQuery}
                   onChange={(e) => setGoogleQuery(e.target.value)}
                   className="bg-transparent text-xs text-white placeholder-slate-500 outline-none w-full border-0"
-                  placeholder="Enter keyword to run Apify Google Search Actor..."
+                  placeholder="Enter keyword to search competitor footprint..."
                 />
               </div>
               <button
@@ -715,12 +715,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                 {isSearchingGoogle ? (
                   <>
                     <RefreshCw size={12} className="animate-spin text-white" />
-                    <span>Scraping with Apify...</span>
+                    <span>Querying index...</span>
                   </>
                 ) : (
                   <>
                     <Zap size={12} className="text-white" />
-                    <span>Run Apify Search</span>
+                    <span>Run Market Search</span>
                   </>
                 )}
               </button>
@@ -950,7 +950,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="p-3.5 bg-[#0e131f] rounded-none border-0 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-emerald-400" />
-                <span>Audience provenance grounded in live channel metadata and Apify telemetry.</span>
+                <span>Audience provenance grounded in live channel metadata and verified telemetry.</span>
               </span>
               <span className="font-mono text-[11px] text-slate-500">v3.8 Provenance Protocol</span>
             </div>

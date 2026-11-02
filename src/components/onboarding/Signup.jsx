@@ -211,7 +211,7 @@ export default function Signup() {
             <div className="space-y-0.5">
               <h4 className="text-[12px] font-semibold text-white">Do Not Refresh Your Browser</h4>
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
-                All generated assets, platform recommendations, and Apify scraper logs are saved locally. Refreshing could reset your session.
+                All generated assets, platform recommendations, and telemetry logs are saved locally. Refreshing could reset your session.
               </p>
             </div>
           </div>
