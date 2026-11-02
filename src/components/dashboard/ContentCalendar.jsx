@@ -351,134 +351,113 @@ function generateWeekCampaignPosts(productName, offset = 0) {
   })
 }
 
-// Pre-seeded campaign dataset dynamically anchored to the current month & date
-function getDefaultCampaignPosts(productName) {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth()
-  const currentDay = now.getDate()
+// Map platform names to standard channel keys
+function mapPlatformToChannel(platform = '') {
+  const p = (platform || '').toLowerCase()
+  if (p.includes('you') || p === 'yt') return 'YouTube'
+  if (p.includes('insta') || p === 'ig') return 'Instagram'
+  if (p.includes('tik')) return 'TikTok'
+  if (p.includes('x') || p.includes('twit')) return 'X'
+  if (p.includes('link')) return 'LinkedIn'
+  if (p.includes('email') || p.includes('mail')) return 'Email'
+  return 'Instagram'
+}
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-  const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+// Map types to standard format keys
+function mapTypeToFormat(type = '') {
+  const t = (type || '').toUpperCase()
+  if (t.includes('REEL')) return 'REEL'
+  if (t.includes('SHORT')) return 'SHORTS'
+  if (t.includes('VIDEO')) return 'VIDEO'
+  if (t.includes('STORY')) return 'STORY'
+  if (t.includes('THREAD')) return 'THREAD'
+  if (t.includes('COMMUNITY')) return 'COMMUNITY'
+  if (t.includes('EMAIL')) return 'EMAIL'
+  return 'POST'
+}
 
-  const makeDate = (dayOffset) => {
-    const d = new Date(y, m, currentDay + dayOffset)
-    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    const fullDateStr = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
-    const dayName = dayNamesShort[d.getDay()]
-    const fullDayName = dayNamesFull[d.getDay()]
-    const dayIndex = (d.getDay() + 6) % 7 // Monday = 0
-    return { d, dateKey, fullDateStr, dayName, fullDayName, dayIndex }
+// Generate tailored caption for post if none exists
+function generateTailoredCaption(post, creatorData, productName) {
+  if (post.body && post.body.trim().length > 10) return post.body
+  if (post.caption && post.caption.trim().length > 10) return post.caption
+
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const prod = productName || creatorData?.productName || 'our new launch platform'
+  const title = post.title || 'Launch Update'
+  const channel = mapPlatformToChannel(post.platform || post.channel)
+
+  if (channel === 'YouTube') {
+    return `${title}\n\nToday marks an exciting new chapter for our community! We are officially unveiling ${prod}.\n\nIn this video, I walk you through everything we built, why we made it, and how it directly empowers you.\n\nWatch now and grab early founding access at the link in description.\n\n#${name.replace(/\s+/g, '')} #NewLaunch #Community`
   }
+  if (channel === 'Instagram') {
+    return `${title}\n\nIt's finally here! We've been putting in the work behind the scenes to bring ${prod} to life for all of you. Drop a comment below with your thoughts and check out the link in our bio for instant access!\n\n#${name.replace(/\s+/g, '')} #FoundingMembers #Launch`
+  }
+  if (channel === 'TikTok') {
+    return `${title}\n\nPOV: We just launched ${prod} and the reaction has been insane! Check the link in bio right now.\n\n#fyp #${name.replace(/\s+/g, '')} #viral`
+  }
+  if (channel === 'X') {
+    return `${title}\n\n1/3 Excited to announce that ${prod} is officially live.\n\n2/3 Built from the ground up for our supporters and community.\n\n3/3 Join the first cohort here: [LINK]`
+  }
+  if (channel === 'Email') {
+    return `Subject: ${title}\n\nHey everyone,\n\nDoors are officially open for ${prod}. We built this specifically for you, and early access is now unlocked.\n\nCheck out the full launch here:\n[PRODUCT_LINK]\n\nBest,\n${name}`
+  }
+  return `${title}\n\nExcited to share ${prod} with you today! Check our main link for full details.`
+}
 
-  const dToday = makeDate(0)
-  const dPastLaunch = makeDate(-6)
-  const dPastTeaser = makeDate(-3)
-  const dScheduledPoll = makeDate(3)
-  const dScheduledProof = makeDate(7)
+// Tailored fallback week generator (matches Marketing fallback)
+function buildTailoredFallbackWeek(creatorData) {
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@/, '')
+  const prod = creatorData?.productName || `${name} Foundation & Marketplace`
+  return [
+    { day: 'Mon', posts: [
+      { id: 1, type: 'Video', title: `SURPRISE!! We Built a Foundation to Help EVERYONE in Our Community`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 2, type: 'Reel', title: `The BIGGEST Announcement You've Been Waiting For: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
+    ]},
+    { day: 'Tue', posts: [
+      { id: 3, type: 'Shorts', title: `See the JOY! How YOUR Purchases Fund Real Good Deeds`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 4, type: 'Post', title: `How Your Good Deeds Gear Makes a Difference: 3 Simple Ways`, platform: 'Instagram', theme: 'value', status: 'draft' }
+    ]},
+    { day: 'Wed', posts: [
+      { id: 5, type: 'Story', title: `Designing the 'Impact Tee': A Glimpse into Our Process`, platform: 'Instagram', theme: 'bts', status: 'draft' },
+      { id: 6, type: 'Thread', title: `From Pranks to Purpose: My Journey to Starting ${prod}`, platform: 'Twitter', theme: 'story', status: 'draft' }
+    ]},
+    { day: 'Thu', posts: [
+      { id: 7, type: 'Community', title: `What's the BEST way to make someone's day? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
+      { id: 8, type: 'Email', title: `IT'S LIVE! The ${prod} VIP Early Access`, platform: 'Email', theme: 'launch', status: 'draft' }
+    ]},
+    { day: 'Fri', posts: [
+      { id: 9, type: 'Reel', title: `Outfit Check: Doing Good & Looking Good! + Shop Our First Drop`, platform: 'Instagram', theme: 'cta', status: 'draft' },
+      { id: 10, type: 'Shorts', title: `Quick Look: Our BESTSELLING Foundation Gear!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
+    ]},
+    { day: 'Sat', posts: [
+      { id: 11, type: 'Video', title: `POV: You just funded a good deed by getting some merch`, platform: 'TikTok', theme: 'value', status: 'draft' },
+      { id: 12, type: 'Community', title: `What's one good deed you want to see our foundation tackle next?`, platform: 'YouTube', theme: 'community', status: 'draft' }
+    ]},
+    { day: 'Sun', posts: [
+      { id: 13, type: 'Post', title: `A HUGE Thank You! ❤️ Week 1 of the ${prod}`, platform: 'Instagram', theme: 'proof', status: 'draft' },
+      { id: 14, type: 'Email', title: `Your Impact So Far! A Look Back at Our First Week & What's Next`, platform: 'Email', theme: 'cta', status: 'draft' }
+    ]}
+  ]
+}
+
+// Pre-seeded campaign dataset dynamically anchored to the current month & date for surrounding weeks
+function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorData = {}) {
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const prod = productName || 'our new launch platform'
 
   return [
-    {
-      id: `post-today-${dToday.dateKey}`,
-      weekOffset: 0,
-      dayIndex: dToday.dayIndex,
-      dayName: dToday.dayName,
-      fullDayName: dToday.fullDayName,
-      dateKey: dToday.dateKey,
-      fullDateStr: dToday.fullDateStr,
-      channel: 'YouTube',
-      format: 'VIDEO',
-      strategy: 'LAUNCH',
-      title: 'Big things are coming.',
-      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
-      status: 'Draft',
-      time: '11:30 AM',
-      imageUrl: null
-    },
-    {
-      id: `post-launch-${dPastLaunch.dateKey}`,
-      weekOffset: 0,
-      dayIndex: dPastLaunch.dayIndex,
-      dayName: dPastLaunch.dayName,
-      fullDayName: dPastLaunch.fullDayName,
-      dateKey: dPastLaunch.dateKey,
-      fullDateStr: dPastLaunch.fullDateStr,
-      channel: 'YouTube',
-      format: 'VIDEO',
-      strategy: 'LAUNCH',
-      title: 'Launch video',
-      caption: `Official launch of ${productName}! Watch our full demonstration of real-time stem separation and chord transposition.\n\nLink in description to start today.\n\n#newlaunch #worshipleader #churchmusic`,
-      status: 'Posted',
-      time: '9:00 AM',
-      imageUrl: null
-    },
-    {
-      id: `post-teaser-${dPastTeaser.dateKey}`,
-      weekOffset: 0,
-      dayIndex: dPastTeaser.dayIndex,
-      dayName: dPastTeaser.dayName,
-      fullDayName: dPastTeaser.fullDayName,
-      dateKey: dPastTeaser.dateKey,
-      fullDateStr: dPastTeaser.fullDateStr,
-      channel: 'Instagram',
-      format: 'REEL',
-      strategy: 'BTS',
-      title: 'Teaser clip',
-      caption: `Sneak peek behind the scenes at our music arrangement studio.\n\nSee how easy preparing Sunday's music set becomes.\n\n#teaser #behindthescenes #churchrehearsal`,
-      status: 'Posted',
-      time: '12:00 PM',
-      imageUrl: null
-    },
-    {
-      id: `post-poll-${dScheduledPoll.dateKey}`,
-      weekOffset: 0,
-      dayIndex: dScheduledPoll.dayIndex,
-      dayName: dScheduledPoll.dayName,
-      fullDayName: dScheduledPoll.fullDayName,
-      dateKey: dScheduledPoll.dateKey,
-      fullDateStr: dScheduledPoll.fullDateStr,
-      channel: 'Instagram',
-      format: 'STORY',
-      strategy: 'COMMUNITY',
-      title: 'Story poll',
-      caption: `Which feature helps your church team most? Tap to vote in today's story poll!`,
-      status: 'Scheduled',
-      time: '3:00 PM',
-      imageUrl: null
-    },
-    {
-      id: `post-proof-${dScheduledProof.dateKey}`,
-      weekOffset: 0,
-      dayIndex: dScheduledProof.dayIndex,
-      dayName: dScheduledProof.dayName,
-      fullDayName: dScheduledProof.fullDayName,
-      dateKey: dScheduledProof.dateKey,
-      fullDateStr: dScheduledProof.fullDateStr,
-      channel: 'YouTube',
-      format: 'VIDEO',
-      strategy: 'PROOF',
-      title: 'Community proof breakdown',
-      caption: `Here is how our community members are achieving outcome-driven results with ${productName}.\n\nFull case study in video!`,
-      status: 'Scheduled',
-      time: '4:00 PM',
-      imageUrl: null
-    },
-
     // ── PREVIOUS WEEK (weekOffset: -1) ──
     {
       id: 'post-prev-1',
       weekOffset: -1,
       dayIndex: 0,
       dayName: 'Mon',
+      fullDayName: 'Monday',
       channel: 'YouTube',
       format: 'VIDEO',
       strategy: 'LAUNCH',
-      title: `The Story Behind ${productName}: Why We Built It`,
-      caption: `For years, worship leaders have lost hours wrestling with misplaced keys and inconsistent rehearsals.\n\nHere is our journey building ${productName} from scratch for modern church teams.\n\nFull story on our channel.\n\n#WorshipLeader #ChurchMusic #BehindTheScenes`,
+      title: `The Story Behind ${prod}: Why We Built It`,
+      caption: `For months, our community has asked how to take everything we do on channel to the next level.\n\nHere is our journey building ${prod} from the ground up for you.\n\n#${name.replace(/\s+/g, '')} #Launch #BehindTheScenes`,
       status: 'Posted',
       time: '9:00 AM',
       imageUrl: null
@@ -488,11 +467,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: -1,
       dayIndex: 2,
       dayName: 'Wed',
+      fullDayName: 'Wednesday',
       channel: 'Instagram',
       format: 'REEL',
       strategy: 'BTS',
-      title: 'Studio Rehearsal Run-Through',
-      caption: `Testing our audio multitrack player with the Sunday band. Seamless tempo transitions make all the difference.\n\nDrop a comment if your church needs this!\n\n#worshiptips #christianmusic #rehearsal`,
+      title: `Behind the Scenes: Engineering ${prod}`,
+      caption: `Unfiltered look behind the scenes at our process creating ${prod}.\n\nDrop a comment with your thoughts!\n\n#${name.replace(/\s+/g, '')} #BTS`,
       status: 'Posted',
       time: '12:00 PM',
       imageUrl: null
@@ -502,127 +482,14 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: -1,
       dayIndex: 4,
       dayName: 'Fri',
+      fullDayName: 'Friday',
       channel: 'YouTube',
       format: 'SHORTS',
       strategy: 'PROOF',
-      title: 'How 1 Chord Chart Transpose Saves 30 Minutes',
-      caption: `Watch how quickly you can transpose a 5-song set into any key with zero pencil scribbles.\n\n#Shorts #WorshipLeader #ChurchTech`,
+      title: `3 Big Reasons You'll Love ${prod}`,
+      caption: `Early feedback from our core community has been incredible. Here's a quick preview!\n\n#Shorts #${name.replace(/\s+/g, '')}`,
       status: 'Posted',
       time: '4:00 PM',
-      imageUrl: null
-    },
-
-    // ── CURRENT SPRINT WEEK (weekOffset: 0) ──
-    {
-      id: 'post-1',
-      weekOffset: 0,
-      dayIndex: 0,
-      dayName: 'Mon',
-      channel: 'YouTube',
-      format: 'VIDEO',
-      strategy: 'LAUNCH',
-      title: `How ${productName} Can Transform Your Sunday Service`,
-      caption: `Sunday mornings shouldn't come with panic over missing audio stems or incorrect chords.\n\nToday, we're officially unveiling the brand-new ${productName} Session Engine. See how our members prepare a full 5-song set in under 20 minutes.\n\nLink in description to start your 7-day free trial.\n\n#ChurchTech #WorshipLeader #MusicDirector`,
-      status: 'Draft',
-      time: '9:00 AM',
-      imageUrl: null
-    },
-    {
-      id: 'post-2',
-      weekOffset: 0,
-      dayIndex: 1,
-      dayName: 'Tue',
-      channel: 'Instagram',
-      format: 'REEL',
-      strategy: 'BTS',
-      title: 'Sneak Peek: Upcoming Exclusive Songs for Members!',
-      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you. Worship leaders asked, and we delivered the full chord charts + stem downloads.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #worshiptips #excited`,
-      status: 'Draft',
-      time: '11:30 AM',
-      imageUrl: null
-    },
-    {
-      id: 'post-3',
-      weekOffset: 0,
-      dayIndex: 2,
-      dayName: 'Wed',
-      channel: 'YouTube',
-      format: 'SHORTS',
-      strategy: 'PROOF',
-      title: `3 Reasons ${productName} is a Game Changer`,
-      caption: `Watch how Pastor Dave cut rehearsal time by 50% using our chord chart transpose feature. Proof that preparation beats talent when stress is on the line.\n\nDrop a comment if your band needs this!\n\n#Shorts #Productivity #ChurchLife`,
-      status: 'Draft',
-      time: '1:00 PM',
-      imageUrl: null
-    },
-    {
-      id: 'post-3b',
-      weekOffset: 0,
-      dayIndex: 2,
-      dayName: 'Wed',
-      channel: 'Instagram',
-      format: 'STORY',
-      strategy: 'COMMUNITY',
-      title: `Poll: What's Your Favorite Part of ${productName}?`,
-      caption: `Quick question for our crew: Chord transpose or multitrack audio isolation? Vote in the sticker below!`,
-      status: 'Draft',
-      time: '3:00 PM',
-      imageUrl: null
-    },
-    {
-      id: 'post-4',
-      weekOffset: 0,
-      dayIndex: 3,
-      dayName: 'Thu',
-      channel: 'YouTube',
-      format: 'COMMUNITY',
-      strategy: 'STORY',
-      title: `Q&A: How Our Members Use ${productName} Every Week`,
-      caption: `Real vulnerability: 3 years ago I was burned out running 3 campuses with handwritten paper sheets. Here's why we built this software.\n\nRead the full founder note in the community tab.`,
-      status: 'Draft',
-      time: '10:00 AM',
-      imageUrl: null
-    },
-    {
-      id: 'post-5',
-      weekOffset: 0,
-      dayIndex: 4,
-      dayName: 'Fri',
-      channel: 'YouTube',
-      format: 'VIDEO',
-      strategy: 'CTA',
-      title: 'Before and After: Elevate Your Worship Sessions',
-      caption: `Doors to our Founding Member tier close this Sunday at midnight! Lock in $29/mo before prices go up.\n\nClick the link in description now.`,
-      status: 'Scheduled',
-      time: '4:00 PM',
-      imageUrl: null
-    },
-    {
-      id: 'post-6',
-      weekOffset: 0,
-      dayIndex: 5,
-      dayName: 'Sat',
-      channel: 'Instagram',
-      format: 'REEL',
-      strategy: 'PROOF',
-      title: `User Testament: Life Changing Benefits of ${productName}`,
-      caption: `"I got my Saturday nights back with my family instead of transposing keys at 11 PM." - Sarah M.\n\nYour time is worth it.`,
-      status: 'Draft',
-      time: '12:00 PM',
-      imageUrl: null
-    },
-    {
-      id: 'post-7',
-      weekOffset: 0,
-      dayIndex: 6,
-      dayName: 'Sun',
-      channel: 'YouTube',
-      format: 'SHORTS',
-      strategy: 'VALUE',
-      title: `Quick Tips: Making the Most of ${productName}`,
-      caption: `Happy Sunday everyone! Here are 3 micro-hacks in our mobile app for quick audio monitoring.\n\nHave an amazing service today!`,
-      status: 'Posted',
-      time: '8:00 AM',
       imageUrl: null
     },
 
@@ -632,11 +499,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: 1,
       dayIndex: 0,
       dayName: 'Mon',
+      fullDayName: 'Monday',
       channel: 'YouTube',
       format: 'VIDEO',
       strategy: 'VALUE',
-      title: `Mastering Key Modulation with ${productName}`,
-      caption: `How to lead clean, smooth key modulations during Sunday worship without losing the vocalists.\n\nInside this week's member breakdown.\n\n#WorshipWorkshop #Chords #ChristianMusicians`,
+      title: `Masterclass: Getting Maximum Value from ${prod}`,
+      caption: `How to get the most out of our new platform and level up your results.\n\nWatch the full breakdown on YouTube!\n\n#${name.replace(/\s+/g, '')} #Masterclass`,
       status: 'Draft',
       time: '9:00 AM',
       imageUrl: null
@@ -646,11 +514,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: 1,
       dayIndex: 1,
       dayName: 'Tue',
+      fullDayName: 'Tuesday',
       channel: 'Instagram',
       format: 'REEL',
       strategy: 'COMMUNITY',
-      title: 'Community Q&A: Your Stems Questions Answered',
-      caption: `Answering the top 5 questions from our new members about multitrack routing.\n\nGot a question? Drop it below for tomorrow's live answering session!`,
+      title: 'Community Q&A: Answering Your Top Questions',
+      caption: `Answering the top questions from our founding members about ${prod}.\n\nDrop any questions below for our next live session!\n\n#${name.replace(/\s+/g, '')} #Community`,
       status: 'Draft',
       time: '11:00 AM',
       imageUrl: null
@@ -660,11 +529,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: 1,
       dayIndex: 3,
       dayName: 'Thu',
+      fullDayName: 'Thursday',
       channel: 'YouTube',
       format: 'SHORTS',
       strategy: 'PROOF',
-      title: 'Member Spotlight: How St. Jude Fellowship Uses Our Stems',
-      caption: `See how a 4-piece volunteer worship team sounds like a full studio ensemble with ${productName}.\n\nTry it free for 7 days.`,
+      title: 'Member Spotlight: How Supporters Are Thriving',
+      caption: `Real member stories from week 1 of ${prod}.\n\nJoin our community today! Link in bio.`,
       status: 'Draft',
       time: '2:00 PM',
       imageUrl: null
@@ -674,11 +544,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: 1,
       dayIndex: 4,
       dayName: 'Fri',
+      fullDayName: 'Friday',
       channel: 'YouTube',
       format: 'VIDEO',
       strategy: 'CTA',
-      title: `Weekly Wrap-Up: Top New Songs Added to ${productName}`,
-      caption: `5 new song stems just dropped in the member portal! Log in now to add them to your Sunday setlist.\n\n#NewMusic #SundayPrep #WorshipLeader`,
+      title: `Weekly Wrap-Up: Top Highlights & What's Next`,
+      caption: `Exciting new updates just dropped in ${prod}! Check out the member hub now.\n\n#${name.replace(/\s+/g, '')} #WeeklyUpdate`,
       status: 'Scheduled',
       time: '4:00 PM',
       imageUrl: null
@@ -688,11 +559,12 @@ function getDefaultCampaignPosts(productName) {
       weekOffset: 1,
       dayIndex: 6,
       dayName: 'Sun',
+      fullDayName: 'Sunday',
       channel: 'Instagram',
       format: 'STORY',
       strategy: 'BTS',
-      title: 'Sunday Morning Live Warmup',
-      caption: `Early morning soundcheck! Running the new multitrack stems. Have a blessed service everyone!`,
+      title: 'Sunday Creator Log: Thank You for an Incredible Week',
+      caption: `Wrapping up an unforgettable week with the community. Thank you all for the love on ${prod}!`,
       status: 'Draft',
       time: '7:30 AM',
       imageUrl: null
@@ -700,12 +572,107 @@ function getDefaultCampaignPosts(productName) {
   ]
 }
 
+// Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
+export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
+  const handle = creatorData?.handle || 'default'
+  const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase()
+  const rawH = handle.replace(/^@+/, '')
+  const cacheKeys = [
+    `forge_calendar_${handle}_launch_w0`,
+    `forge_calendar_${handle.toLowerCase()}_launch_w0`,
+    `forge_calendar_${rawH}_launch_w0`,
+    `forge_calendar_${hClean}_launch_w0`
+  ]
+
+  let rawCalendar = null
+  for (const k of cacheKeys) {
+    try {
+      const saved = localStorage.getItem(k)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          rawCalendar = parsed
+          break
+        }
+      }
+    } catch (_) {}
+  }
+
+  // If no calendar in localStorage yet, build tailored week and persist to localStorage
+  if (!rawCalendar) {
+    rawCalendar = buildTailoredFallbackWeek(creatorData)
+    cacheKeys.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}
+    })
+  }
+
+  // Calculate dates for Monday-Sunday of active sprint (weekOffset: 0)
+  const now = new Date()
+  const day = now.getDay()
+  const distanceToMon = day === 0 ? -6 : 1 - day
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + distanceToMon)
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+  const dayNamesShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const dayNamesFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const defaultTimes = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM']
+
+  const week0Posts = []
+
+  rawCalendar.forEach((dayData, dayIdx) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + dayIdx)
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const fullDateStr = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+    const dayName = dayNamesShort[dayIdx]
+    const fullDayName = dayNamesFull[dayIdx]
+
+    const dayPosts = Array.isArray(dayData.posts) ? dayData.posts : []
+    dayPosts.forEach((p, pIdx) => {
+      const channel = mapPlatformToChannel(p.platform || p.channel)
+      const format = mapTypeToFormat(p.type || p.format)
+      const strategy = (p.theme || p.strategy || 'LAUNCH').toUpperCase()
+      const title = p.title || p.label || `Launch Post ${pIdx + 1}`
+      const status = p.status === 'posted' || p.done ? 'Posted' : p.status === 'scheduled' ? 'Scheduled' : 'Draft'
+      const time = p.time || defaultTimes[pIdx % defaultTimes.length]
+      const caption = generateTailoredCaption(p, creatorData, productName)
+
+      week0Posts.push({
+        id: `post-mkt-${dateKey}-${p.id || pIdx}`,
+        marketingId: p.id,
+        weekOffset: 0,
+        dayIndex: dayIdx,
+        dayName,
+        fullDayName,
+        dateKey,
+        fullDateStr,
+        channel,
+        format,
+        strategy,
+        title,
+        caption,
+        status,
+        time,
+        imageUrl: p.imageUrl || null
+      })
+    })
+  })
+
+  // Get surrounding weeks for navigation (-1 and +1)
+  const surrounding = getDefaultCampaignPosts(productName, creatorData)
+  return [...week0Posts, ...surrounding]
+}
+
 export default function ContentCalendar() {
   const { creatorData, userProfile, triggerToast } = useForge()
 
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
-  const productName = creatorData?.productName || 'WorshipLeader+ Membership'
+  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${creatorName} Pro Suite`
 
   // Brand Red styling with guaranteed white text
   const brandRed = '#c81e3c'
@@ -817,39 +784,70 @@ export default function ContentCalendar() {
   const [modalDraftTitle, setModalDraftTitle] = useState('')
   const [modalDraftCaption, setModalDraftCaption] = useState('')
 
-  // 7-Day Campaign Post Dataset
+  // 7-Day Campaign Post Dataset - dynamically synced 1:1 with Marketing Launch Plan
   const [posts, setPosts] = useState(() => {
-    const defaultPosts = getDefaultCampaignPosts(productName)
-    try {
-      const saved = localStorage.getItem(`forge_campaign_posts_${handleClean}`)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.some(p => p.weekOffset === 1)) {
-          return parsed
-        }
-        // Merge so weekOffset -1 and 1 are always available
-        const merged = [...parsed]
-        for (const dp of defaultPosts) {
-          if (!merged.some(m => m.id === dp.id)) {
-            merged.push(dp)
-          }
-        }
-        return merged
-      }
-    } catch {}
-
-    return defaultPosts
+    return loadSyncedCampaignPosts(creatorData, productName, handleClean)
   })
 
-  // Persist posts
+  // Persist posts and keep Marketing Launch Calendar synchronized
   useEffect(() => {
     try {
       localStorage.setItem(`forge_campaign_posts_${handleClean}`, JSON.stringify(posts))
     } catch {}
-  }, [posts, handleClean])
+
+    const week0Posts = posts.filter(p => (p.weekOffset ?? 0) === 0)
+    if (week0Posts.length > 0) {
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      const rawCalendar = dayNames.map((dName, dIdx) => {
+        const dayPosts = week0Posts.filter(p => p.dayIndex === dIdx || p.dayName === dName)
+        return {
+          day: dName,
+          posts: dayPosts.map((p, pIdx) => ({
+            id: p.marketingId || (pIdx + 1),
+            platform: p.channel,
+            type: p.format || 'Post',
+            title: p.title,
+            body: p.caption,
+            theme: (p.strategy || 'launch').toLowerCase(),
+            status: p.status === 'Posted' ? 'posted' : p.status === 'Scheduled' ? 'scheduled' : 'draft',
+            time: p.time
+          }))
+        }
+      })
+
+      const handle = creatorData?.handle || 'default'
+      const hClean = handle.replace(/^@+/, '')
+      const keys = [
+        `forge_calendar_${handle}_launch_w0`,
+        `forge_calendar_${handle.toLowerCase()}_launch_w0`,
+        `forge_calendar_${hClean}_launch_w0`,
+        `forge_calendar_${hClean.toLowerCase()}_launch_w0`
+      ]
+      keys.forEach(k => {
+        try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}
+      })
+      window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'ContentCalendar' } }))
+    }
+  }, [posts, handleClean, creatorData?.handle])
+
+  // Cross-component listener: reload when Marketing updates
+  useEffect(() => {
+    const handleCalendarSync = (e) => {
+      if (e?.detail?.source === 'ContentCalendar') return
+      const synced = loadSyncedCampaignPosts(creatorData, productName, handleClean)
+      if (synced && synced.length > 0) {
+        setPosts(synced)
+      }
+    }
+    window.addEventListener('forge_calendar_updated', handleCalendarSync)
+    return () => window.removeEventListener('forge_calendar_updated', handleCalendarSync)
+  }, [creatorData, productName, handleClean])
 
   // Active Post for Right Inspector Studio
-  const [selectedPostId, setSelectedPostId] = useState('post-2')
+  const [selectedPostId, setSelectedPostId] = useState(() => {
+    const todayPost = posts.find(p => p.dateKey === todayDateKeyStr)
+    return todayPost?.id || posts[0]?.id || 'post-1'
+  })
   
   // Filtered dataset based on platform and active week
   const filteredPosts = useMemo(() => {
@@ -884,6 +882,8 @@ export default function ContentCalendar() {
   // Active inspected post (seamlessly resolves for both calendar and sprint views)
   const activePost = useMemo(() => {
     if (viewMode === 'calendar' && selectedCalendarDateKey) {
+      const matchExact = posts.find(p => p.id === selectedPostId && p.dateKey === selectedCalendarDateKey)
+      if (matchExact) return matchExact
       const matchOnDate = posts.find(p => p.dateKey === selectedCalendarDateKey)
       if (matchOnDate) return matchOnDate
     }
@@ -893,6 +893,12 @@ export default function ContentCalendar() {
     return posts.find(p => p.id === selectedPostId) || posts[0]
   }, [viewMode, selectedCalendarDateKey, filteredPosts, selectedPostId, posts])
 
+  useEffect(() => {
+    if (activePost && activePost.id !== selectedPostId) {
+      setSelectedPostId(activePost.id)
+    }
+  }, [activePost?.id])
+
   // Select a calendar cell in month view
   const handleSelectCalendarDay = (cell) => {
     setSelectedCalendarDateKey(cell.dateKey)
@@ -900,6 +906,7 @@ export default function ContentCalendar() {
     if (match) {
       setSelectedPostId(match.id)
     } else {
+      const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
       const newDraftPost = {
         id: `post-date-${cell.dateKey}`,
         dateKey: cell.dateKey,
@@ -909,8 +916,8 @@ export default function ContentCalendar() {
         channel: 'Instagram',
         format: 'REEL',
         strategy: 'LAUNCH',
-        title: `Campaign Update for ${getFullDayName(cell)}`,
-        caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
+        title: `${creatorCleanName}: ${productName} Campaign Update`,
+        caption: `Exciting update from our team!\n\nWe're continuing our launch week for ${productName} with exclusive founder perks and live member access.\n\nTap the link in bio to join us today!\n\n#${creatorCleanName.replace(/\s+/g, '')} #Launch #Exclusive`,
         status: 'Draft',
         time: '11:30 AM',
         imageUrl: null,
@@ -1227,12 +1234,13 @@ export default function ContentCalendar() {
 
     setTimeout(() => {
       setIsRepurposingAi(false)
+      const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
       const adaptedCopy = {
-        x: `Stop spending 3 hours wrestling with chord charts.\n\n3 reasons worship directors are switching to ${productName}:\n\n1. Instant key transpositions\n2. Audio stem separation\n3. 7-day free trial\n\nLink below 👇\n\n#ChurchTech #WorshipLeader`,
-        instagram: `Big things are coming for worship leaders. 🎹✨\n\nWe looked at the biggest pain points church directors face every Sunday morning—unorganized stems, last-minute key changes, and manual charts.\n\nThat's why we engineered ${productName}.\n\n🔥 Founding member registration is officially open.\n👉 Tap the link in bio to start your 7-day free pass.\n\n#WorshipLeader #ChurchMusic #SundayService #StemPlayer #MusicDirector`,
-        linkedin: `The biggest bottleneck in church creative production isn't lack of talent—it's repetitive manual workflows.\n\nWhen we analyzed our audience of worship leaders, over 70% reported losing 4+ hours every Saturday night manually transposing song stems.\n\nToday, we're launching ${productName} to automate this entire pipeline.\n\nWhat tools has your team implemented this year to reclaim creative time? Would love to hear your thoughts in the comments.\n\n#Leadership #Productivity #CreativeOps #ChurchTech`,
-        youtube: `Which feature would save your church team the most time this weekend?\n\n1. 1-Click Key Transpose for all 5 songs\n2. Real-time Audio Stem Isolation\n3. Pre-made Sunday Rehearsal Packs\n\nVote below! Official demo in our latest video.`,
-        tiktok: `POV: You find out there's a tool that transposes your whole 5-song Sunday set in 10 seconds 🤯\n\nNo more staying up until 1am fixing chords.\n\nLink in bio! #worshipleader #churchtok #churchmusic #musicianhacks`
+        x: `Announcing the launch of ${productName}!\n\n3 reasons our community is loving it:\n1. Direct access & exclusive perks\n2. Built from the ground up for you\n3. Limited founding member spots\n\nLink below 👇\n\n#${creatorCleanName.replace(/\s+/g, '')} #Launch`,
+        instagram: `Big announcement today! ✨\n\nWe poured our heart into engineering ${productName} for everyone who supports what we do.\n\n🔥 Founding member registration is officially open.\n👉 Tap the link in bio to get instant access.\n\n#${creatorCleanName.replace(/\s+/g, '')} #Community #Launch`,
+        linkedin: `Excited to announce the official launch of ${productName}.\n\nWhen we analyzed our audience signals and engagement, the demand was undeniable.\n\nToday we take this live to empower our community members with dedicated software and tools.\n\n#Leadership #CreatorEconomy #ProductLaunch`,
+        youtube: `Which feature in ${productName} are you most excited to try?\n\n1. Community Hub\n2. Direct Founding Access\n3. Exclusive Drops\n\nVote below! Official demo in our latest video.`,
+        tiktok: `POV: We just officially launched ${productName} and the reaction has been insane 🤯\n\nLink in bio right now! #${creatorCleanName.replace(/\s+/g, '')} #viral #launch`
       }
 
       const targetPlatform = activePost.channel === 'X' || activePost.channel === 'Twitter' ? 'x'
@@ -2145,12 +2153,25 @@ export default function ContentCalendar() {
                         {cellPosts.map(p => (
                           <div
                             key={p.id}
-                            className="p-1.5 rounded-none text-white text-[11px] font-bold shadow-xs border-0 truncate leading-tight"
-                            style={{ background: brandRed, color: '#ffffff' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedCalendarDateKey(cell.dateKey)
+                              setSelectedPostId(p.id)
+                            }}
+                            className={`p-1.5 rounded-none text-white text-[11px] font-bold shadow-xs border-0 truncate leading-tight cursor-pointer transition-all hover:brightness-110 ${
+                              selectedPostId === p.id && isSelected ? 'ring-2 ring-white shadow-md' : ''
+                            }`}
+                            style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                             title={`${p.title} (${p.time})`}
                           >
-                            <div className="truncate">{p.title}</div>
-                            <div className="text-[9px] opacity-90 font-medium">{p.time}</div>
+                            <div className="truncate flex items-center gap-1">
+                              <span className="opacity-75 text-[9px] uppercase font-mono">{p.channel}:</span>
+                              <span className="truncate">{p.title}</span>
+                            </div>
+                            <div className="text-[9px] opacity-90 font-medium flex items-center justify-between mt-0.5">
+                              <span>{p.format || 'POST'}</span>
+                              <span>{p.time}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2193,6 +2214,36 @@ export default function ContentCalendar() {
               )}
             </div>
           </div>
+
+          {/* If multiple posts on selected date, show quick post switcher */}
+          {(() => {
+            const datePosts = posts.filter(p => p.dateKey === (activePost?.dateKey || selectedCalendarDateKey))
+            if (datePosts.length <= 1) return null
+            return (
+              <div className="flex items-center gap-1.5 p-1 bg-[#111522] rounded-none border border-white/[0.08] overflow-x-auto">
+                <span className="text-[10px] font-mono uppercase text-slate-400 px-1 font-bold whitespace-nowrap">Posts ({datePosts.length}):</span>
+                {datePosts.map((p, pIdx) => {
+                  const isCurrent = p.id === activePost?.id
+                  return (
+                    <button
+                      key={p.id || pIdx}
+                      type="button"
+                      onClick={() => setSelectedPostId(p.id)}
+                      className={`px-2.5 py-1 text-[10.5px] font-bold rounded-none transition cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                        isCurrent
+                          ? 'bg-[#c81e3c] text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800'
+                      }`}
+                      style={isCurrent ? { background: brandRed, color: '#ffffff', borderRadius: '0px' } : { borderRadius: '0px' }}
+                    >
+                      <span>{p.channel}</span>
+                      <span className="text-[9px] opacity-75 font-mono">({p.format || 'POST'})</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })()}
 
           {/* Postiz Omnichannel Platform Selector */}
           <div>

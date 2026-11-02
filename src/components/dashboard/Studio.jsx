@@ -526,7 +526,17 @@ export default function Studio() {
     }
 
     dayObj.posts = [...(dayObj.posts || []), newPost]
-    localStorage.setItem(cacheKey, JSON.stringify(currentCal))
+    const hClean = handleVal.replace(/^@+/, '')
+    const studioKeys = [
+      cacheKey,
+      `forge_calendar_${handleVal.toLowerCase()}_${activeGoal.toLowerCase()}_w0`,
+      `forge_calendar_${hClean}_${activeGoal}_w0`,
+      `forge_calendar_${hClean.toLowerCase()}_${activeGoal.toLowerCase()}_w0`
+    ]
+    studioKeys.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(currentCal)) } catch (_) {}
+    })
+    window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Studio' } }))
 
     if (creatorData?.handle && syncSessionToDb) setTimeout(() => syncSessionToDb(), 100)
     if (triggerToast) triggerToast(`"${entry.typeLabel}" scheduled to calendar!`, 'success')
@@ -589,8 +599,17 @@ export default function Studio() {
     }
     
     dayObj.posts = [...(dayObj.posts || []), newPost]
-    
-    localStorage.setItem(cacheKey, JSON.stringify(currentCal))
+    const hClean2 = handleVal.replace(/^@+/, '')
+    const studioKeys2 = [
+      cacheKey,
+      `forge_calendar_${handleVal.toLowerCase()}_${activeGoal.toLowerCase()}_w0`,
+      `forge_calendar_${hClean2}_${activeGoal}_w0`,
+      `forge_calendar_${hClean2.toLowerCase()}_${activeGoal.toLowerCase()}_w0`
+    ]
+    studioKeys2.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(currentCal)) } catch (_) {}
+    })
+    window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Studio' } }))
     
     if (creatorData?.handle && syncSessionToDb) {
       setTimeout(() => syncSessionToDb(), 100)

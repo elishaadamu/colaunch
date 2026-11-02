@@ -1347,12 +1347,14 @@ export default function AiDoesItPanel({ onClose }) {
                   onClick={run}
                   className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   style={{
-                    background: `linear-gradient(135deg, ${accent.color}, rgba(${accent.rgb}, 0.8))`,
-                    boxShadow: `0 8px 24px rgba(${accent.rgb}, 0.35)`,
-                    color: '#ffffff'
+                    background: '#c81e3c',
+                    boxShadow: '0 8px 24px rgba(200, 30, 60, 0.35)',
+                    color: '#ffffff',
+                    borderRadius: '0px'
                   }}
                 >
-                  <Sparkles size={15} className="text-white" /> Do all steps with AI
+                  <Sparkles size={15} className="text-white" style={{ color: '#ffffff' }} />
+                  <span className="text-white font-bold" style={{ color: '#ffffff' }}>Do all steps with AI</span>
                 </button>
               </div>
             </div>

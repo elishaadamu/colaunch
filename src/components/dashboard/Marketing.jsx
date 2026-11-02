@@ -245,9 +245,9 @@ function buildFallbackWeek(creatorData) {
 }
 
 function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardClick, chatOpen }) {
-  const dynamicColor = accent?.color || (accentRgb ? `rgb(${accentRgb})` : 'var(--theme-accent, #10B981)')
-  const dynamicRgb = accent?.rgb || accentRgb || '16,185,129'
-  const contrastText = accent?.contrastText || 'var(--theme-btn-primary-text, #090d16)'
+  const dynamicColor = accent?.color || (accentRgb ? `rgb(${accentRgb})` : '#c81e3c')
+  const dynamicRgb = accent?.rgb || accentRgb || '200,30,60'
+  const contrastText = '#ffffff'
 
   const getWeekDates = () => {
     const dates = []
@@ -291,8 +291,8 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
             >
               {isToday && (
                 <span 
-                  className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm"
-                  style={{ background: dynamicColor, color: contrastText }}
+                  className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm text-white"
+                  style={{ background: '#c81e3c', color: '#ffffff', borderRadius: '0px' }}
                 >
                   Today
                 </span>
@@ -398,8 +398,8 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
           >
             {isToday && (
               <span 
-                className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm"
-                style={{ background: dynamicColor, color: contrastText }}
+                className="absolute -top-2.5 right-3 px-1.5 py-0.2 rounded-none font-bold text-[9px] uppercase tracking-wider shadow-sm text-white"
+                style={{ background: '#c81e3c', color: '#ffffff', borderRadius: '0px' }}
               >
                 Today
               </span>
@@ -1645,6 +1645,21 @@ export default function Marketing({ chatOpen: propChatOpen }) {
     return DAYS.map(day => ({ day, posts: [] }))
   }
 
+  const persistSharedCalendar = (rawCal) => {
+    const h = creatorData?.handle || 'default'
+    const hClean = h.replace(/^@+/, '')
+    const keys = [
+      `forge_calendar_${h}_launch_w0`,
+      `forge_calendar_${h.toLowerCase()}_launch_w0`,
+      `forge_calendar_${hClean}_launch_w0`,
+      `forge_calendar_${hClean.toLowerCase()}_launch_w0`
+    ]
+    keys.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(rawCal)) } catch (_) {}
+    })
+    window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Marketing' } }))
+  }
+
   const coachMessage = getCoachMessage(coachTrigger, creatorData)
 
   // Load/reload cached contents when handle resolves or changes
@@ -1720,6 +1735,36 @@ export default function Marketing({ chatOpen: propChatOpen }) {
     }
   }, [creatorData?.handle, dbLoadedTimestamp])
 
+  // ── Sync with Content Calendar when updated across components
+  useEffect(() => {
+    const handleCalendarSync = (e) => {
+      if (e?.detail?.source === 'Marketing') return
+      const h = creatorData?.handle
+      if (!h || h === 'default') return
+      const hClean = h.replace(/^@+/, '')
+      const keys = [
+        `forge_calendar_${h}_launch_w0`,
+        `forge_calendar_${h.toLowerCase()}_launch_w0`,
+        `forge_calendar_${hClean}_launch_w0`,
+        `forge_calendar_${hClean.toLowerCase()}_launch_w0`
+      ]
+      for (const k of keys) {
+        try {
+          const cached = localStorage.getItem(k)
+          if (cached) {
+            const parsed = JSON.parse(cached)
+            if (!isMockupCalendar(parsed)) {
+              setWeek(mapCalendarResult(parsed))
+              break
+            }
+          }
+        } catch (_) {}
+      }
+    }
+    window.addEventListener('forge_calendar_updated', handleCalendarSync)
+    return () => window.removeEventListener('forge_calendar_updated', handleCalendarSync)
+  }, [creatorData?.handle])
+
   // ── Load cache or trigger autofill on mount
   useEffect(() => {
     // Wait for DB profile and AI keys to finish restoring if logged in
@@ -1758,9 +1803,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
       const mapped = mapCalendarResult(autofillJob.result)
       if (mapped) {
         setWeek(mapped)
-        const handle = creatorData?.handle || 'default'
-        const cacheKey = `forge_calendar_${handle}_launch_w0`
-        localStorage.setItem(cacheKey, JSON.stringify(autofillJob.result))
+        persistSharedCalendar(autofillJob.result)
         clearBgJob(AUTOFILL_JOB)
         if (triggerToast) triggerToast('Weekly content calendar autofilled!', 'success')
         setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
@@ -2069,7 +2112,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
             status: p.done ? 'posted' : (p.status || 'draft'),
           }))
         }))
-        localStorage.setItem(`forge_calendar_${h}_launch_w0`, JSON.stringify(raw))
+        persistSharedCalendar(raw)
         return updated
       })
     }
@@ -2127,9 +2170,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
       return d
     })
 
-    const handle = creatorData?.handle || 'default'
-    const cacheKey = `forge_calendar_${handle}_launch_w0`
-    localStorage.setItem(cacheKey, JSON.stringify(updatedRaw))
+    persistSharedCalendar(updatedRaw)
 
     // Update the local state week with mapped format
     const mapped = mapCalendarResult(updatedRaw)
@@ -2172,8 +2213,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
       }
       return d
     })
-    const h = creatorData?.handle || 'default'
-    localStorage.setItem(`forge_calendar_${h}_launch_w0`, JSON.stringify(updatedRaw))
+    persistSharedCalendar(updatedRaw)
     setSelectedPost(null)
     if (triggerToast) triggerToast('Post draft updated!', 'success')
     setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
@@ -2689,58 +2729,7 @@ export default function Marketing({ chatOpen: propChatOpen }) {
         </div>
       </section>
 
-      {/* ─── COMMERCIAL LAUNCH & PRICING POINT CALLOUT ────────────── */}
-      <section className="rounded-none border p-5 sm:p-6 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, rgba(18, 23, 34, 0.95) 0%, rgba(9, 13, 22, 0.98) 100%)',
-          borderColor: `rgba(${accent.rgb}, 0.28)`,
-          boxShadow: `0 12px 36px rgba(0,0,0,0.4), 0 0 24px rgba(${accent.rgb}, 0.1)`,
-          borderRadius: '0px'
-        }}>
-        <div className="absolute top-0 right-0 w-64 h-64 blur-[80px] pointer-events-none opacity-20"
-          style={{ background: accent.color }} />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-[10px] font-bold tracking-wider uppercase text-white shadow-xs"
-              style={{
-                background: `rgba(${accent.rgb}, 0.25)`,
-                border: `1px solid rgba(${accent.rgb}, 0.45)`,
-                color: '#ffffff',
-                borderRadius: '0px'
-              }}>
-              <Zap size={11} className="fill-current text-white" style={{ color: '#ffffff' }} />
-              <span className="text-white font-bold">Launch Point • Ready to Deploy</span>
-            </div>
-            <h3 className="text-[18px] sm:text-[20px] font-bold text-white tracking-tight">
-              Ready to take your product live to your audience?
-            </h3>
-            <p className="text-[12.5px] sm:text-[13px] text-slate-400 leading-relaxed">
-              Your software platform is configured, audience analyzed, and launch week primed. Select your commercial track to activate custom domain routing, Stripe payments, and member onboarding.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-shrink-0">
-            <button
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('forge_open_pricing'))
-                }
-              }}
-              className="px-5 py-3 rounded-none font-bold text-[13px] flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer shadow-sm text-white"
-              style={{
-                background: `linear-gradient(135deg, ${accent.color} 0%, rgba(${accent.rgb}, 0.9) 100%)`,
-                color: brandTextColor || '#ffffff',
-                borderRadius: '0px'
-              }}
-            >
-              <Zap size={14} className="fill-current" style={{ color: brandTextColor || '#ffffff' }} />
-              <span style={{ color: brandTextColor || '#ffffff' }}>Review Launch Plan & Pricing</span>
-              <ChevronRight size={14} style={{ color: brandTextColor || '#ffffff' }} />
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* Scheduled toast */}
       {scheduledToast && (
