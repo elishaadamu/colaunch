@@ -14,7 +14,7 @@ import { useForge, getAccent } from '../../App'
 import { 
   Sparkles, Laptop, Smartphone, Tablet, Menu, LogOut, Zap,
   Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor,
-  Mail, AlertTriangle
+  Mail, AlertTriangle, Headphones
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup, VideoPlayerModal } from '../onboarding/Preview'
@@ -350,6 +350,18 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('forge_open_pricing', handleOpenPricing)
   }, [])
 
+  // Check if user logged in via single-use email code without a password set in dashboard
+  const [showCodeLoginBanner, setShowCodeLoginBanner] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const isDismissed = sessionStorage.getItem('forge_dismiss_code_banner') === 'true'
+      const isCodeLogin = localStorage.getItem('forge_logged_in_via_code') === 'true'
+      return isCodeLogin && !isDismissed
+    } catch (_) {
+      return false
+    }
+  })
+
   // Listen for cross-component tab change events (e.g. ContentCalendar -> Accounts)
   useEffect(() => {
     const handleTabChange = (e) => {
@@ -393,6 +405,49 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0, background: '#090d16' }}>
+        {/* Customer Care Opportunity Banner (when logged in via single-use email code) */}
+        {showCodeLoginBanner && (
+          <div
+            className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0 text-xs"
+            style={{
+              background: '#0d1322',
+              borderColor: 'rgba(200, 30, 60, 0.35)',
+              color: '#ffffff'
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Headphones size={15} className="text-[#c81e3c] shrink-0" />
+              <span className="text-slate-200">
+                You signed in via email code (no password set in dashboard). Need help setting up a password or changing your email?
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('support')
+                  setShowCodeLoginBanner(false)
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-white bg-[#c81e3c] hover:bg-[#b01a35] transition cursor-pointer border-0"
+                style={{ borderRadius: '0px' }}
+              >
+                Contact Customer Care →
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCodeLoginBanner(false)
+                  try { sessionStorage.setItem('forge_dismiss_code_banner', 'true') } catch (_) {}
+                }}
+                className="text-slate-400 hover:text-white p-1 cursor-pointer bg-transparent border-0"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top bar */}
         <div
           className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0"
