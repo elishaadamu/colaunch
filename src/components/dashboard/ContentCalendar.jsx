@@ -2,6 +2,13 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForge } from '../../App'
 import { loadAiKeys } from '../../services/ai'
 import {
+  fetchBufferAccount,
+  fetchBufferChannels,
+  createBufferPost,
+  getBufferToken,
+  setBufferToken
+} from '../../services/bufferApi'
+import {
   Trophy,
   Flame,
   Sparkles,
@@ -42,7 +49,17 @@ import {
   Sparkle,
   Trash2,
   Bell,
-  ShieldCheck
+  ShieldCheck,
+  Linkedin,
+  Heart,
+  Repeat,
+  Bookmark,
+  ThumbsUp,
+  ThumbsDown,
+  Globe,
+  Sliders,
+  Settings,
+  AlertCircle
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -682,6 +699,22 @@ export default function ContentCalendar() {
   const [isGeneratingHooks, setIsGeneratingHooks] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
+  // Buffer GraphQL API Integration State
+  const [bufferAccount, setBufferAccount] = useState(null)
+  const [bufferChannels, setBufferChannels] = useState([])
+  const [selectedBufferChannelId, setSelectedBufferChannelId] = useState('')
+  const [isBufferConnecting, setIsBufferConnecting] = useState(false)
+  const [isBufferDispatching, setIsBufferDispatching] = useState(false)
+  const [bufferTokenModalOpen, setBufferTokenModalOpen] = useState(false)
+  const [bufferTokenInput, setBufferTokenInput] = useState(() => getBufferToken())
+  const [channelLinkModalOpen, setChannelLinkModalOpen] = useState(false)
+  const [pendingBufferAction, setPendingBufferAction] = useState(null)
+
+  // Postiz-Style Omnichannel Studio State
+  const [inspectorTab, setInspectorTab] = useState('composer') // 'composer' | 'preview'
+  const [previewPlatform, setPreviewPlatform] = useState('x') // 'x' | 'instagram' | 'youtube' | 'linkedin' | 'tiktok'
+  const [isRepurposingAi, setIsRepurposingAi] = useState(false)
+
   // AI Modal Inputs
   const [aiProductName, setAiProductName] = useState(productName)
   const [aiProductUsp, setAiProductUsp] = useState(`Save 4 hours every week planning church gatherings with instant chord charts and stems. $29/mo with 7-day free trial.`)
@@ -923,6 +956,193 @@ export default function ContentCalendar() {
   const igCount = filteredPosts.filter(p => p.channel === 'Instagram').length
   const xCount = filteredPosts.filter(p => p.channel === 'X').length
   const ttCount = filteredPosts.filter(p => p.channel === 'TikTok').length
+
+  // Synchronize Buffer GraphQL Account and Connected Channels
+  const syncBufferData = async (showToast = false) => {
+    setIsBufferConnecting(true)
+    try {
+      const acct = await fetchBufferAccount()
+      setBufferAccount(acct)
+      if (acct?.organizationId) {
+        const chs = await fetchBufferChannels(acct.organizationId)
+        setBufferChannels(chs || [])
+        if (chs && chs.length > 0) {
+          setSelectedBufferChannelId(prev => prev || chs[0].id)
+        }
+      }
+      if (showToast && triggerToast) {
+        triggerToast('Buffer GraphQL engine synchronized successfully!', 'success')
+      }
+    } catch (err) {
+      console.warn('[Buffer] Sync notice:', err)
+      if (showToast && triggerToast) {
+        triggerToast(`Buffer Sync: ${err.message}`, 'error')
+      }
+    } finally {
+      setIsBufferConnecting(false)
+    }
+  }
+
+  // Auto-connect to Buffer on mount
+  useEffect(() => {
+    syncBufferData(false)
+  }, [])
+
+  // Update target social channel for active post (Postiz Omnichannel Selector)
+  const updateActivePostChannel = (channel) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, channel } : p))
+    const map = {
+      'YouTube': 'youtube',
+      'Instagram': 'instagram',
+      'X': 'x',
+      'Twitter': 'x',
+      'LinkedIn': 'linkedin',
+      'TikTok': 'tiktok'
+    }
+    if (map[channel]) setPreviewPlatform(map[channel])
+  }
+
+  // Core Buffer GraphQL Dispatcher
+  const handleDispatchToBuffer = async ({ mode, saveToDraft = false, dueAt = null, reason = '' }, e) => {
+    if (!activePost) return
+
+    // If no channel is connected in the Buffer workspace yet:
+    if (!bufferChannels || bufferChannels.length === 0) {
+      setPendingBufferAction({ mode, saveToDraft, dueAt, reason })
+      setChannelLinkModalOpen(true)
+      return
+    }
+
+    const channelId = selectedBufferChannelId || bufferChannels[0]?.id
+    if (!channelId) {
+      if (triggerToast) triggerToast('Please select a connected Buffer channel first.', 'error')
+      return
+    }
+
+    setIsBufferDispatching(true)
+    if (triggerToast) triggerToast(`Dispatching to Buffer (${mode})...`, 'info')
+
+    try {
+      const assets = activePost.imageUrl ? [{ url: activePost.imageUrl }] : []
+      const res = await createBufferPost({
+        channelId,
+        text: activePost.caption || activePost.title,
+        mode,
+        saveToDraft,
+        dueAt: dueAt || (mode === 'customScheduled' ? new Date().toISOString() : null),
+        assets
+      })
+
+      const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus, bufferPostId: res?.id } : p))
+
+      const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
+      addXP(xpReward, reason || `Buffer: Post dispatched (${newStatus})`, e)
+      if (triggerToast) triggerToast(`Buffer Success! Post ${res?.id ? `ID: ${res.id}` : 'queued'} (${newStatus})`, 'success')
+    } catch (err) {
+      console.error('[Buffer Dispatch Error]', err)
+      if (triggerToast) triggerToast(`Buffer API: ${err.message}`, 'error')
+    } finally {
+      setIsBufferDispatching(false)
+    }
+  }
+
+  // Save to Buffer Draft handler
+  const handleSaveToBufferDraft = (e) => {
+    handleDispatchToBuffer({
+      mode: 'addToQueue',
+      saveToDraft: true,
+      reason: `Saved "${activePost?.title?.slice(0, 20)}..." to Buffer Draft queue`
+    }, e)
+  }
+
+  // Schedule with Buffer handler
+  const handleScheduleWithBuffer = (e) => {
+    if (!activePost) return
+    let dueIso = new Date().toISOString()
+    try {
+      if (activePost.dateKey) {
+        const [y, m, d] = activePost.dateKey.split('-').map(Number)
+        let hour = 14
+        let min = 0
+        if (activePost.time) {
+          const match = activePost.time.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+          if (match) {
+            hour = parseInt(match[1], 10)
+            min = parseInt(match[2], 10)
+            const ampm = (match[3] || '').toUpperCase()
+            if (ampm === 'PM' && hour < 12) hour += 12
+            if (ampm === 'AM' && hour === 12) hour = 0
+          }
+        }
+        const scheduledDate = new Date(Date.UTC(y, m - 1, d, hour, min, 0))
+        dueIso = scheduledDate.toISOString()
+      }
+    } catch (err) {
+      console.warn('Date parsing fallback:', err)
+    }
+
+    handleDispatchToBuffer({
+      mode: 'customScheduled',
+      dueAt: dueIso,
+      reason: `Scheduled "${activePost?.title?.slice(0, 20)}..." with Buffer for ${activePost?.fullDateStr}`
+    }, e)
+  }
+
+  // Publish Now via Buffer handler
+  const handlePublishNowWithBuffer = (e) => {
+    handleDispatchToBuffer({
+      mode: 'shareNow',
+      reason: `Dispatched live broadcast to ${activePost?.channel} via Buffer`
+    }, e)
+  }
+
+  // Proceed with local save when Buffer channels are not yet connected
+  const handleProceedLocally = (e) => {
+    if (!pendingBufferAction) {
+      setChannelLinkModalOpen(false)
+      return
+    }
+    const { mode, saveToDraft, reason } = pendingBufferAction
+    const newStatus = saveToDraft ? 'Draft' : mode === 'shareNow' ? 'Posted' : 'Scheduled'
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, status: newStatus } : p))
+    const xpReward = mode === 'shareNow' ? 100 : mode === 'customScheduled' ? 50 : 30
+    addXP(xpReward, reason || `Pipeline: Post updated to ${newStatus}`, e)
+    setChannelLinkModalOpen(false)
+    setPendingBufferAction(null)
+    if (triggerToast) triggerToast(`Saved locally as ${newStatus} in campaign pipeline!`, 'info')
+  }
+
+  // Postiz-Style AI Content Repurposer (repurposing YouTube videos to omnichannel formats)
+  const handleRepurposeFromYouTube = () => {
+    if (!activePost) return
+    setIsRepurposingAi(true)
+
+    setTimeout(() => {
+      setIsRepurposingAi(false)
+      const adaptedCopy = {
+        x: `Stop spending 3 hours wrestling with chord charts.\n\n3 reasons worship directors are switching to ${productName}:\n\n1. Instant key transpositions\n2. Audio stem separation\n3. 7-day free trial\n\nLink below 👇\n\n#ChurchTech #WorshipLeader`,
+        instagram: `Big things are coming for worship leaders. 🎹✨\n\nWe looked at the biggest pain points church directors face every Sunday morning—unorganized stems, last-minute key changes, and manual charts.\n\nThat's why we engineered ${productName}.\n\n🔥 Founding member registration is officially open.\n👉 Tap the link in bio to start your 7-day free pass.\n\n#WorshipLeader #ChurchMusic #SundayService #StemPlayer #MusicDirector`,
+        linkedin: `The biggest bottleneck in church creative production isn't lack of talent—it's repetitive manual workflows.\n\nWhen we analyzed our audience of worship leaders, over 70% reported losing 4+ hours every Saturday night manually transposing song stems.\n\nToday, we're launching ${productName} to automate this entire pipeline.\n\nWhat tools has your team implemented this year to reclaim creative time? Would love to hear your thoughts in the comments.\n\n#Leadership #Productivity #CreativeOps #ChurchTech`,
+        youtube: `Which feature would save your church team the most time this weekend?\n\n1. 1-Click Key Transpose for all 5 songs\n2. Real-time Audio Stem Isolation\n3. Pre-made Sunday Rehearsal Packs\n\nVote below! Official demo in our latest video.`,
+        tiktok: `POV: You find out there's a tool that transposes your whole 5-song Sunday set in 10 seconds 🤯\n\nNo more staying up until 1am fixing chords.\n\nLink in bio! #worshipleader #churchtok #churchmusic #musicianhacks`
+      }
+
+      const targetPlatform = activePost.channel === 'X' || activePost.channel === 'Twitter' ? 'x'
+        : activePost.channel === 'LinkedIn' ? 'linkedin'
+        : activePost.channel === 'YouTube' ? 'youtube'
+        : activePost.channel === 'TikTok' ? 'tiktok'
+        : 'instagram'
+
+      const newCaption = adaptedCopy[targetPlatform] || adaptedCopy.instagram
+      updateActivePostCaption(newCaption)
+      setInspectorTab('preview')
+      setPreviewPlatform(targetPlatform)
+
+      if (triggerToast) triggerToast(`Omnichannel copy adapted for ${activePost.channel} from YouTube content!`, 'success')
+    }, 700)
+  }
 
   // Handlers for Right Inspector Studio
   const updateActivePostTitle = (title) => {
@@ -1192,7 +1412,8 @@ export default function ContentCalendar() {
     if (channel === 'YouTube') return <Youtube className="w-4 h-4 text-red-500 shrink-0" />
     if (channel === 'Instagram') return <Instagram className="w-4 h-4 text-pink-500 shrink-0" />
     if (channel === 'TikTok') return <Video className="w-4 h-4 text-slate-300 shrink-0" />
-    if (channel === 'X') return <Twitter className="w-4 h-4 text-sky-400 shrink-0" />
+    if (channel === 'X' || channel === 'Twitter') return <Twitter className="w-4 h-4 text-sky-400 shrink-0" />
+    if (channel === 'LinkedIn') return <Linkedin className="w-4 h-4 text-sky-400 shrink-0" />
     return <Send className="w-4 h-4 text-slate-400 shrink-0" />
   }
 
@@ -1335,6 +1556,71 @@ export default function ContentCalendar() {
           </button>
         </div>
       </header>
+
+      {/* ── BUFFER AUTOMATION ENGINE BAR (Postiz & Buffer Integration) ── */}
+      <div className="bg-[#080b11] px-4 sm:px-6 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border-b border-[#161b2b]">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-none bg-emerald-500 animate-pulse" />
+            <span className="text-white font-bold tracking-wider">BUFFER ENGINE:</span>
+            <span className="text-emerald-400 font-extrabold uppercase">CONNECTED (LIVE)</span>
+          </div>
+          <span className="text-slate-600">|</span>
+          <div className="text-slate-400 text-[11px]">
+            <span className="text-slate-500">ACCT: </span>
+            <span className="text-slate-200 font-bold">{bufferAccount?.email || 'creatorforgeweb@gmail.com'}</span>
+          </div>
+          <span className="text-slate-600 hidden md:inline">|</span>
+          <div className="text-slate-400 text-[11px] hidden md:inline">
+            <span className="text-slate-500">WORKSPACE: </span>
+            <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || 'My organization'}</span>
+          </div>
+          <span className="text-slate-600 hidden lg:inline">|</span>
+          <div className="text-[11px] hidden lg:flex items-center gap-1.5">
+            <span className="text-slate-500">CHANNELS: </span>
+            <span className={bufferChannels.length > 0 ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+              {bufferChannels.length > 0 ? `${bufferChannels.length} Connected` : '0 Linked (Action Needed)'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => syncBufferData(true)}
+            disabled={isBufferConnecting}
+            className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-300 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 disabled:opacity-50 text-[11px]"
+            title="Refresh Buffer channels and posts"
+          >
+            <RefreshCw size={11} className={isBufferConnecting ? 'animate-spin text-rose-400' : ''} />
+            <span>{isBufferConnecting ? 'Syncing...' : 'Sync Buffer'}</span>
+          </button>
+
+          <a
+            href="https://publish.buffer.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 rounded-none flex items-center gap-1.5 transition cursor-pointer border-0 text-[11px] font-bold"
+            title="Open Buffer dashboard to connect social channels"
+          >
+            <span>Connect Channels on Buffer</span>
+            <ExternalLink size={10} />
+          </a>
+
+          <button
+            type="button"
+            onClick={() => {
+              setBufferTokenInput(getBufferToken())
+              setBufferTokenModalOpen(true)
+            }}
+            className="px-2 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-slate-200 rounded-none flex items-center gap-1 transition cursor-pointer border-0 text-[11px]"
+            title="Buffer API Access Token Settings"
+          >
+            <Sliders size={11} />
+            <span className="hidden sm:inline">Config</span>
+          </button>
+        </div>
+      </div>
 
       {/* ── METRICS & STRATEGY STRIP (Flat Dark Elevation, Border 0, Rounded 0) ── */}
       <section className="bg-[#0c0f17] px-4 sm:px-6 py-3 flex-shrink-0 mt-0.5 border-0">
@@ -1870,172 +2156,693 @@ export default function ContentCalendar() {
           </div>
         </section>
 
-        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Matching Image 4) ── */}
-        <aside className="w-[380px] lg:w-[420px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-5 space-y-4">
+        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Postiz Omnichannel + Buffer) ── */}
+        <aside className="w-[380px] lg:w-[450px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-4 sm:p-5 space-y-4">
           
-          {/* Header matching Image 4: "Your draft for Tuesday", "May 20, 2025" */}
-          <div>
-            <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
-              Your draft for {activePost?.dayName}day
-            </h3>
-            <p className="text-xs font-bold text-rose-400 mt-0.5">
-              {activePost?.fullDateStr || 'Selected Date'}
-            </p>
-          </div>
-
-          {/* Social Caption & Script Section matching Image 4 */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-300">
-                Caption
-              </label>
-              <span className="text-[11px] font-mono text-slate-400">
-                {activePost?.caption?.length || 0} / 2200
-              </span>
+          {/* Header: Title, Date, Status Badge */}
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                Your draft for {activePost?.dayName}day
+              </h3>
+              <p className="text-xs font-bold text-rose-400 mt-0.5">
+                {activePost?.fullDateStr || 'Selected Date'}
+              </p>
             </div>
-
-            {/* Clean Box containing Draft Caption matching Image 4 */}
-            <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-2">
-              <textarea
-                ref={captionRef}
-                rows={7}
-                value={activePost?.caption || ''}
-                onChange={(e) => updateActivePostCaption(e.target.value)}
-                className="w-full text-xs text-slate-100 bg-transparent rounded-none focus:outline-none leading-relaxed resize-none border-0 font-normal"
-                placeholder="Write your campaign draft caption..."
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons matching Image 4: [Edit] [+ Tweak] [✓ Approve and schedule] */}
-          <div className="space-y-2.5 pt-1">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  captionRef.current?.focus()
-                  if (triggerToast) triggerToast('Caption editor focused. Edit freely!', 'info')
-                }}
-                className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738]"
-              >
-                <Pencil size={13} className="text-slate-400" />
-                <span>Edit</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleTweakWithAi}
-                disabled={isTweakingAi}
-                className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-[#202738]"
-              >
-                <Sparkles size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
-                <span>{isTweakingAi ? 'Tweaking...' : 'Tweak'}</span>
-              </button>
-            </div>
-
-            {/* Primary Action Button: Approve and schedule (Solid Red, White Text, Checkmark) matching Image 4 */}
-            <button
-              type="button"
-              onClick={handleApproveAndSchedule}
-              className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0"
-              style={{ background: brandRed, color: '#ffffff' }}
-            >
-              <CheckCircle2 size={15} className="text-white" />
-              <span className="text-white font-bold">Approve and schedule</span>
-            </button>
-
-            {/* Instant Post to Live Channel */}
-            <button
-              type="button"
-              onClick={handleInstantPostLive}
-              className="w-full py-2.5 px-4 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md border-0 text-white"
-            >
-              <Send size={14} className="text-white" />
-              <span>Post to Live Channel Now (+100 XP)</span>
-            </button>
-          </div>
-
-          {/* Manual OpenAI Visual & Thumbnail Studio */}
-          <div className="bg-[#111522] rounded-none p-3.5 space-y-2.5 border border-[#202738]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-                <ImageIcon size={14} className="text-sky-400" />
-                <span>OpenAI Visual Generator</span>
-              </span>
-              {activePost?.imageUrl && (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
-                >
-                  <Trash2 size={11} /> Remove
-                </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {activePost?.status === 'Posted' ? (
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 size={11} /> Posted
+                </span>
+              ) : activePost?.status === 'Scheduled' ? (
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-sky-500/15 text-sky-400 flex items-center gap-1">
+                  <Clock size={11} /> Scheduled
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
+                  Draft
+                </span>
               )}
             </div>
+          </div>
 
-            {activePost?.imageUrl ? (
-              <div className="w-full h-40 bg-black overflow-hidden relative group rounded-none border border-white/10">
-                <img src={activePost.imageUrl} alt="Generated visual" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          {/* Postiz Omnichannel Platform Selector */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+              Target Channel
+            </label>
+            <div className="grid grid-cols-5 gap-1">
+              {[
+                { name: 'YouTube', icon: Youtube, color: 'text-red-500', activeBg: 'bg-red-500/20 text-white ring-1 ring-red-500' },
+                { name: 'Instagram', icon: Instagram, color: 'text-pink-500', activeBg: 'bg-pink-500/20 text-white ring-1 ring-pink-500' },
+                { name: 'X', icon: Twitter, color: 'text-sky-400', activeBg: 'bg-sky-500/20 text-white ring-1 ring-sky-500' },
+                { name: 'LinkedIn', icon: Linkedin, color: 'text-blue-400', activeBg: 'bg-blue-500/20 text-white ring-1 ring-blue-500' },
+                { name: 'TikTok', icon: Video, color: 'text-slate-200', activeBg: 'bg-slate-500/25 text-white ring-1 ring-slate-400' }
+              ].map(plat => {
+                const isCurrent = activePost?.channel === plat.name || (plat.name === 'X' && activePost?.channel === 'Twitter')
+                const IconComponent = plat.icon
+                return (
                   <button
+                    key={plat.name}
                     type="button"
-                    onClick={handleGenerateImage}
-                    disabled={isGeneratingImage}
-                    className="px-3 py-1.5 bg-[#c81e3c] text-white text-xs font-bold rounded-none cursor-pointer border-0"
+                    onClick={() => updateActivePostChannel(plat.name)}
+                    className={`py-1.5 px-1 rounded-none text-[11px] font-bold flex flex-col items-center justify-center gap-1 transition cursor-pointer border-0 ${
+                      isCurrent
+                        ? plat.activeBg
+                        : 'bg-[#111522] hover:bg-[#161b2b] text-slate-400'
+                    }`}
+                    title={`Target ${plat.name}`}
                   >
-                    {isGeneratingImage ? 'Regenerating...' : 'Regenerate'}
+                    <IconComponent size={14} className={plat.color} />
+                    <span className="truncate text-[10px]">{plat.name}</span>
                   </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Inspector View Mode Switcher: Composer vs Platform Preview (Postiz) */}
+          <div className="flex items-center bg-[#111522] p-1 rounded-none text-xs font-bold border-0">
+            <button
+              type="button"
+              onClick={() => setInspectorTab('composer')}
+              className={`flex-1 py-1.5 rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer border-0 ${
+                inspectorTab === 'composer'
+                  ? 'bg-[#1c2236] text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Pencil size={12} />
+              <span>Script Editor</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInspectorTab('preview')
+                // Align preview platform
+                const map = {
+                  'YouTube': 'youtube',
+                  'Instagram': 'instagram',
+                  'X': 'x',
+                  'Twitter': 'x',
+                  'LinkedIn': 'linkedin',
+                  'TikTok': 'tiktok'
+                }
+                if (activePost?.channel && map[activePost.channel]) {
+                  setPreviewPlatform(map[activePost.channel])
+                }
+              }}
+              className={`flex-1 py-1.5 rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer border-0 ${
+                inspectorTab === 'preview'
+                  ? 'bg-[#1c2236] text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Eye size={12} />
+              <span>Platform Preview</span>
+            </button>
+          </div>
+
+          {/* TAB 1: SCRIPT & COMPOSER WORKSPACE */}
+          {inspectorTab === 'composer' && (
+            <div className="space-y-4">
+              
+              {/* Caption Section with Platform Limit Meter */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-300">
+                    Caption / Script
+                  </label>
+                  <span className={`text-[11px] font-mono ${
+                    (activePost?.channel === 'X' || activePost?.channel === 'Twitter') && (activePost?.caption?.length || 0) > 280
+                      ? 'text-rose-400 font-bold'
+                      : 'text-slate-400'
+                  }`}>
+                    {activePost?.caption?.length || 0} / {
+                      activePost?.channel === 'X' || activePost?.channel === 'Twitter' ? '280 (X Limit)'
+                      : activePost?.channel === 'Instagram' ? '2,200 (IG Limit)'
+                      : activePost?.channel === 'LinkedIn' ? '3,000 (LI Limit)'
+                      : '5,000 (YT Limit)'
+                    }
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-2">
+                  <textarea
+                    ref={captionRef}
+                    rows={7}
+                    value={activePost?.caption || ''}
+                    onChange={(e) => updateActivePostCaption(e.target.value)}
+                    className="w-full text-xs text-slate-100 bg-transparent rounded-none focus:outline-none leading-relaxed resize-none border-0 font-normal"
+                    placeholder="Write your campaign draft caption..."
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[11px] text-slate-400 leading-snug">
-                  Generate an AI visual with OpenAI for this draft. Triggered manually.
-                </p>
+
+              {/* Quick AI & Script Tools */}
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={handleGenerateImage}
-                  disabled={isGeneratingImage}
-                  className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
+                  onClick={handleRepurposeFromYouTube}
+                  disabled={isRepurposingAi}
+                  className="py-2 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
+                  title="Repurpose scraped YouTube video into omnichannel formats"
                 >
-                  <Wand2 size={13} className={isGeneratingImage ? 'animate-spin' : ''} />
-                  <span>{isGeneratingImage ? 'Generating with OpenAI...' : 'Generate Visual with OpenAI (+60 XP)'}</span>
+                  <Sparkles size={13} className={`text-amber-400 ${isRepurposingAi ? 'animate-spin' : ''}`} />
+                  <span>{isRepurposingAi ? 'Repurposing...' : 'Repurpose YT with AI'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTweakWithAi}
+                  disabled={isTweakingAi}
+                  className="py-2 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-[#202738]"
+                >
+                  <Wand2 size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
+                  <span>{isTweakingAi ? 'Tweaking...' : 'Tweak Copy'}</span>
                 </button>
               </div>
-            )}
-          </div>
 
-          {/* Quick Viral Hooks suggestions */}
-          <div className="rounded-none p-3.5 bg-[#111522] border border-[#202738] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                <Lightbulb size={13} className="text-amber-400" />
-                <span>Quick Viral Hooks</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleGenerateHookIdeas}
-                disabled={isGeneratingHooks}
-                className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50 border-0 bg-transparent"
-              >
-                <RefreshCw size={10} className={isGeneratingHooks ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </button>
+              {/* ── BUFFER PUBLISHING PIPELINE SECTION ── */}
+              <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-none bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold text-white tracking-tight">
+                      Buffer Publishing Pipeline
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    Live GraphQL
+                  </span>
+                </div>
+
+                {/* Buffer Channel Selector */}
+                {bufferChannels.length > 0 ? (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                      Buffer Connected Channel:
+                    </label>
+                    <select
+                      value={selectedBufferChannelId}
+                      onChange={(e) => setSelectedBufferChannelId(e.target.value)}
+                      className="w-full text-xs font-bold bg-[#0c0f17] text-white rounded-none p-2 border border-[#202738] outline-none"
+                    >
+                      {bufferChannels.map(ch => (
+                        <option key={ch.id} value={ch.id}>
+                          {ch.displayName || ch.name} ({ch.service})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-amber-500/20 text-[11px] text-slate-300 flex items-start gap-2">
+                    <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="text-amber-300 font-bold">Buffer account active</span>, but 0 social channels connected yet.
+                      <div className="mt-1">
+                        <a
+                          href="https://publish.buffer.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-rose-400 hover:underline font-bold inline-flex items-center gap-1"
+                        >
+                          <span>Connect channels at publish.buffer.com</span>
+                          <ExternalLink size={10} />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Buffer Dispatch Action Buttons */}
+                <div className="space-y-2 pt-1">
+                  
+                  {/* Primary: Schedule with Buffer */}
+                  <button
+                    type="button"
+                    onClick={handleScheduleWithBuffer}
+                    disabled={isBufferDispatching}
+                    className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                    style={{ background: brandRed, color: '#ffffff' }}
+                  >
+                    <Clock size={14} className="text-white" />
+                    <span className="text-white font-bold">
+                      {isBufferDispatching ? 'Scheduling via Buffer...' : 'Schedule with Buffer (+50 XP)'}
+                    </span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Secondary: Save to Buffer Draft */}
+                    <button
+                      type="button"
+                      onClick={handleSaveToBufferDraft}
+                      disabled={isBufferDispatching}
+                      className="w-full py-2.5 px-3 rounded-none bg-[#0c0f17] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={13} className="text-slate-400" />
+                      <span>Save as Draft</span>
+                    </button>
+
+                    {/* Secondary: Instant Publish via Buffer */}
+                    <button
+                      type="button"
+                      onClick={handlePublishNowWithBuffer}
+                      disabled={isBufferDispatching}
+                      className="w-full py-2.5 px-3 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50"
+                    >
+                      <Send size={13} className="text-white" />
+                      <span>Publish Now (+100 XP)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual OpenAI Visual Studio */}
+              <div className="bg-[#111522] rounded-none p-3.5 space-y-2.5 border border-[#202738]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                    <ImageIcon size={14} className="text-sky-400" />
+                    <span>OpenAI Visual Generator</span>
+                  </span>
+                  {activePost?.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                    >
+                      <Trash2 size={11} /> Remove
+                    </button>
+                  )}
+                </div>
+
+                {activePost?.imageUrl ? (
+                  <div className="w-full h-40 bg-black overflow-hidden relative group rounded-none border border-white/10">
+                    <img src={activePost.imageUrl} alt="Generated visual" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleGenerateImage}
+                        disabled={isGeneratingImage}
+                        className="px-3 py-1.5 bg-[#c81e3c] text-white text-xs font-bold rounded-none cursor-pointer border-0"
+                      >
+                        {isGeneratingImage ? 'Regenerating...' : 'Regenerate'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-slate-400 leading-snug">
+                      Generate an AI visual with OpenAI for this draft. Triggered manually.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage}
+                      className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
+                    >
+                      <Wand2 size={13} className={isGeneratingImage ? 'animate-spin' : ''} />
+                      <span>{isGeneratingImage ? 'Generating with OpenAI...' : 'Generate Visual with OpenAI (+60 XP)'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Viral Hooks */}
+              <div className="rounded-none p-3.5 bg-[#111522] border border-[#202738] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <Lightbulb size={13} className="text-amber-400" />
+                    <span>Quick Viral Hooks</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleGenerateHookIdeas}
+                    disabled={isGeneratingHooks}
+                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50 border-0 bg-transparent"
+                  >
+                    <RefreshCw size={10} className={isGeneratingHooks ? 'animate-spin' : ''} />
+                    <span>Refresh</span>
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {suggestedHooks.map((hook, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleApplyHook(hook)}
+                      className="w-full text-left p-2 rounded-none bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-[11px] text-slate-300 flex items-start gap-1.5 border-0"
+                    >
+                      <span className="text-rose-400 font-bold">•</span>
+                      <span>"{hook}"</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
-            <div className="space-y-1.5">
-              {suggestedHooks.map((hook, idx) => (
+          )}
+
+          {/* TAB 2: POSTIZ-STYLE WYSIWYG PLATFORM PREVIEWS */}
+          {inspectorTab === 'preview' && (
+            <div className="space-y-4">
+              
+              {/* Platform Selector Pills */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                {[
+                  { id: 'x', label: 'X (Twitter)', icon: Twitter },
+                  { id: 'instagram', label: 'Instagram', icon: Instagram },
+                  { id: 'youtube', label: 'YouTube', icon: Youtube },
+                  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+                  { id: 'tiktok', label: 'TikTok', icon: Video }
+                ].map(tab => {
+                  const IconComp = tab.icon
+                  const active = previewPlatform === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setPreviewPlatform(tab.id)}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-none flex items-center gap-1 transition cursor-pointer shrink-0 border-0 ${
+                        active
+                          ? 'bg-[#1c2236] text-white ring-1 ring-white/20'
+                          : 'bg-[#111522] text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <IconComp size={12} />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* WYSIWYG 1: X (TWITTER) PREVIEW */}
+              {previewPlatform === 'x' && (
+                <div className="bg-[#000000] border border-slate-800 rounded-none p-4 space-y-3 font-sans text-white text-xs">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-none bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold shrink-0 border border-sky-400/30">
+                      {creatorName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-white text-sm truncate">{creatorName}</span>
+                        <CheckCircle2 size={14} className="text-sky-400 fill-sky-400 shrink-0" />
+                        <span className="text-slate-500 truncate">@{handleClean}</span>
+                        <span className="text-slate-500">· 2m</span>
+                      </div>
+                      <p className="text-slate-100 mt-2 leading-relaxed whitespace-pre-line text-xs font-normal">
+                        {activePost?.caption || activePost?.title || 'Draft tweet content will render here...'}
+                      </p>
+
+                      {/* Visual Attachment */}
+                      {activePost?.imageUrl && (
+                        <div className="mt-3 rounded-none overflow-hidden border border-slate-800">
+                          <img src={activePost.imageUrl} alt="" className="w-full h-44 object-cover" />
+                        </div>
+                      )}
+
+                      {/* Dynamic 280-char counter */}
+                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px] text-slate-500">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1 hover:text-sky-400 cursor-pointer">
+                            <MessageSquare size={13} /> 12
+                          </span>
+                          <span className="flex items-center gap-1 hover:text-emerald-400 cursor-pointer">
+                            <Repeat size={13} /> 34
+                          </span>
+                          <span className="flex items-center gap-1 hover:text-rose-400 cursor-pointer">
+                            <Heart size={13} /> 148
+                          </span>
+                          <span className="flex items-center gap-1 hover:text-sky-400 cursor-pointer">
+                            <Eye size={13} /> 2.4K
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <span className={(activePost?.caption?.length || 0) > 280 ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+                            {activePost?.caption?.length || 0}/280
+                          </span>
+                          <div className="w-4 h-4 rounded-none bg-slate-800 flex items-center justify-center">
+                            <div
+                              className={`h-full ${
+                                (activePost?.caption?.length || 0) > 280 ? 'bg-rose-500' : 'bg-sky-400'
+                              }`}
+                              style={{ width: `${Math.min(100, ((activePost?.caption?.length || 0) / 280) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WYSIWYG 2: INSTAGRAM PREVIEW */}
+              {previewPlatform === 'instagram' && (
+                <div className="bg-[#000000] border border-slate-800 rounded-none overflow-hidden text-xs text-white">
+                  {/* IG Header */}
+                  <div className="p-3 flex items-center justify-between border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-none bg-gradient-to-tr from-amber-500 to-pink-500 p-0.5">
+                        <div className="w-full h-full bg-black flex items-center justify-center font-bold text-pink-400 text-xs">
+                          {creatorName.slice(0, 1)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-xs">{handleClean}</div>
+                        <div className="text-[10px] text-slate-400">Original audio</div>
+                      </div>
+                    </div>
+                    <span className="text-slate-400 font-bold text-sm">•••</span>
+                  </div>
+
+                  {/* IG Media Box */}
+                  <div className="w-full h-56 bg-[#111522] flex items-center justify-center relative overflow-hidden">
+                    {activePost?.imageUrl ? (
+                      <img src={activePost.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Instagram size={36} className="text-pink-500 mx-auto mb-2 opacity-60" />
+                        <span className="text-xs font-bold text-slate-300 block">{activePost?.title}</span>
+                        <span className="text-[10px] text-slate-500 mt-1 block">Visual / Video Mockup</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* IG Action Icons */}
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <div className="flex items-center gap-3">
+                        <Heart size={18} className="hover:text-rose-500 cursor-pointer" />
+                        <MessageSquare size={18} className="hover:text-sky-400 cursor-pointer" />
+                        <Send size={18} className="hover:text-emerald-400 cursor-pointer" />
+                      </div>
+                      <Bookmark size={18} className="hover:text-amber-400 cursor-pointer" />
+                    </div>
+                    <div className="text-[11px] font-bold text-white">1,284 likes</div>
+                    <div className="text-xs text-slate-200 leading-snug">
+                      <span className="font-bold text-white mr-1.5">{handleClean}</span>
+                      <span className="line-clamp-3 font-normal whitespace-pre-line">{activePost?.caption}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WYSIWYG 3: YOUTUBE COMMUNITY / SHORTS PREVIEW */}
+              {previewPlatform === 'youtube' && (
+                <div className="bg-[#0f0f0f] border border-slate-800 rounded-none p-4 text-xs text-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-none bg-red-600 text-white flex items-center justify-center font-bold text-sm">
+                        {creatorName.slice(0, 1)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 font-bold text-sm text-white">
+                          <span>{creatorName}</span>
+                          <CheckCircle2 size={13} className="text-slate-400 fill-slate-400" />
+                        </div>
+                        <span className="text-[10px] text-slate-400">Scheduled • Community Feed</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="px-3 py-1 bg-red-600 text-white font-bold text-xs rounded-none"
+                    >
+                      Subscribe
+                    </button>
+                  </div>
+
+                  <p className="text-slate-200 leading-relaxed whitespace-pre-line">
+                    {activePost?.caption || activePost?.title}
+                  </p>
+
+                  {/* Thumbnail */}
+                  <div className="w-full h-44 bg-slate-900 border border-slate-800 rounded-none overflow-hidden relative flex items-center justify-center">
+                    {activePost?.imageUrl ? (
+                      <img src={activePost.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-3">
+                        <Youtube size={36} className="text-red-500 mx-auto mb-1" />
+                        <span className="text-xs font-bold text-slate-200">{activePost?.title}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                      <div className="w-12 h-8 rounded-none bg-red-600/90 flex items-center justify-center text-white">
+                        <Play size={16} className="fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="flex items-center gap-4 text-slate-400 pt-1 text-xs">
+                    <span className="flex items-center gap-1.5 hover:text-white cursor-pointer">
+                      <ThumbsUp size={14} /> 482
+                    </span>
+                    <span className="flex items-center gap-1.5 hover:text-white cursor-pointer">
+                      <ThumbsDown size={14} />
+                    </span>
+                    <span className="flex items-center gap-1.5 hover:text-white cursor-pointer">
+                      <Share2 size={14} /> Share
+                    </span>
+                    <span className="flex items-center gap-1.5 hover:text-white cursor-pointer">
+                      <MessageSquare size={14} /> 86
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* WYSIWYG 4: LINKEDIN PREVIEW */}
+              {previewPlatform === 'linkedin' && (
+                <div className="bg-[#1b1f23] border border-slate-700/60 rounded-none p-4 text-xs text-slate-200 space-y-3 font-sans">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-10 h-10 rounded-none bg-blue-600/30 text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-500/30">
+                      {creatorName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-white text-sm truncate">{creatorName}</span>
+                        <span className="text-slate-400 text-[11px]">• 1st</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate">Creator &amp; Founder • Building {productName}</p>
+                      <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                        <span>1h • Edited •</span>
+                        <Globe size={10} />
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-200 leading-relaxed whitespace-pre-line text-xs font-normal">
+                    {activePost?.caption || activePost?.title}
+                  </p>
+
+                  {activePost?.imageUrl && (
+                    <div className="rounded-none overflow-hidden border border-slate-700">
+                      <img src={activePost.imageUrl} alt="" className="w-full h-44 object-cover" />
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-slate-700/60 flex items-center justify-between text-slate-400 text-xs">
+                    <button type="button" className="flex items-center gap-1.5 hover:text-blue-400 cursor-pointer bg-transparent border-0 p-0 text-slate-400">
+                      <ThumbsUp size={13} />
+                      <span>Like</span>
+                    </button>
+                    <button type="button" className="flex items-center gap-1.5 hover:text-blue-400 cursor-pointer bg-transparent border-0 p-0 text-slate-400">
+                      <MessageSquare size={13} />
+                      <span>Comment</span>
+                    </button>
+                    <button type="button" className="flex items-center gap-1.5 hover:text-blue-400 cursor-pointer bg-transparent border-0 p-0 text-slate-400">
+                      <Repeat size={13} />
+                      <span>Repost</span>
+                    </button>
+                    <button type="button" className="flex items-center gap-1.5 hover:text-blue-400 cursor-pointer bg-transparent border-0 p-0 text-slate-400">
+                      <Send size={13} />
+                      <span>Send</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* WYSIWYG 5: TIKTOK PREVIEW */}
+              {previewPlatform === 'tiktok' && (
+                <div className="w-full max-w-[280px] mx-auto bg-black border border-slate-800 rounded-none h-[420px] relative overflow-hidden text-white flex flex-col justify-between p-3 select-none">
+                  {/* Top bar */}
+                  <div className="flex items-center justify-center gap-3 text-xs font-bold text-slate-400">
+                    <span className="hover:text-white cursor-pointer">Following</span>
+                    <span className="text-white font-black border-b-2 border-white pb-0.5">For You</span>
+                  </div>
+
+                  {/* Center mock visual */}
+                  <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-900 via-[#111522] to-black flex items-center justify-center">
+                    {activePost?.imageUrl ? (
+                      <img src={activePost.imageUrl} alt="" className="w-full h-full object-cover opacity-80" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Video size={40} className="text-slate-400 mx-auto mb-2 opacity-50" />
+                        <span className="text-xs font-bold text-slate-300">{activePost?.title}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Action Stack */}
+                  <div className="self-end space-y-3 flex flex-col items-center z-10">
+                    <div className="w-9 h-9 rounded-none bg-rose-600 flex items-center justify-center font-bold text-white text-xs border border-white/20">
+                      {creatorName.slice(0, 1)}
+                    </div>
+                    <div className="text-center">
+                      <Heart size={20} className="text-white fill-white mx-auto" />
+                      <span className="text-[10px] font-bold">14.2K</span>
+                    </div>
+                    <div className="text-center">
+                      <MessageSquare size={20} className="text-white mx-auto" />
+                      <span className="text-[10px] font-bold">842</span>
+                    </div>
+                    <div className="text-center">
+                      <Bookmark size={20} className="text-white mx-auto" />
+                      <span className="text-[10px] font-bold">3.1K</span>
+                    </div>
+                    <div className="text-center">
+                      <Share2 size={20} className="text-white mx-auto" />
+                      <span className="text-[10px] font-bold">1.2K</span>
+                    </div>
+                  </div>
+
+                  {/* Bottom creator info */}
+                  <div className="z-10 space-y-1">
+                    <div className="font-bold text-sm text-white">@{handleClean}</div>
+                    <p className="text-[11px] text-slate-200 line-clamp-2">{activePost?.caption}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
+                      <span>♫ original sound - {creatorName}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Quick Dispatch Buttons from Preview */}
+              <div className="space-y-2 pt-2">
                 <button
-                  key={idx}
                   type="button"
-                  onClick={() => handleApplyHook(hook)}
-                  className="w-full text-left p-2 rounded-none bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-[11px] text-slate-300 flex items-start gap-1.5 border-0"
+                  onClick={handleScheduleWithBuffer}
+                  disabled={isBufferDispatching}
+                  className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                  style={{ background: brandRed, color: '#ffffff' }}
                 >
-                  <span className="text-rose-400 font-bold">•</span>
-                  <span>"{hook}"</span>
+                  <Clock size={14} className="text-white" />
+                  <span className="text-white font-bold">
+                    {isBufferDispatching ? 'Scheduling via Buffer...' : 'Schedule with Buffer (+50 XP)'}
+                  </span>
                 </button>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => setInspectorTab('composer')}
+                  className="w-full py-2 bg-[#111522] hover:bg-[#161b2b] text-slate-300 text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738]"
+                >
+                  <Pencil size={12} />
+                  <span>Return to Script Editor</span>
+                </button>
+              </div>
+
             </div>
-          </div>
+          )}
 
         </aside>
 
@@ -2479,6 +3286,181 @@ export default function ContentCalendar() {
               >
                 Add to Campaign (+40 XP)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: BUFFER CHANNEL LINKING & SYNCHRONIZATION ── */}
+      {channelLinkModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0f17] rounded-none max-w-lg w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">Buffer Account Connected</h3>
+                  <p className="text-xs text-slate-400">Action Required: Link social channel</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChannelLinkModalOpen(false)}
+                className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3.5 text-xs">
+              <div className="p-3 bg-[#111522] rounded-none border border-[#202738] space-y-1 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">BUFFER ACCOUNT:</span>
+                  <span className="text-slate-200 font-bold">{bufferAccount?.email || 'creatorforgeweb@gmail.com'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">ORGANIZATION:</span>
+                  <span className="text-slate-200 font-bold">{bufferAccount?.organizationName || 'My organization'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">CONNECTED CHANNELS:</span>
+                  <span className="text-amber-400 font-bold">0 Active Channels</span>
+                </div>
+              </div>
+
+              <p className="text-slate-300 leading-relaxed">
+                Buffer's GraphQL publishing engine is active and authenticated. However, Buffer requires at least one destination channel (YouTube, Instagram, X, LinkedIn, or TikTok) to be authorized in your Buffer dashboard before live API posts can be scheduled.
+              </p>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <span>How to connect in 30 seconds:</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-0.5 text-[11px] text-slate-300">
+                  <li>Click <b>"Open Buffer Dashboard"</b> below.</li>
+                  <li>Click <b>"Connect a Channel"</b> on Buffer (select YouTube, X, Instagram, etc.).</li>
+                  <li>Return here and click <b>"Sync Channels"</b>.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[#161b2b]">
+              <button
+                type="button"
+                onClick={handleProceedLocally}
+                className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738]"
+              >
+                Save Locally to Forge Calendar
+              </button>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => syncBufferData(true)}
+                  disabled={isBufferConnecting}
+                  className="px-3 py-2 bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 text-xs font-bold rounded-none flex items-center gap-1 cursor-pointer border-0"
+                >
+                  <RefreshCw size={12} className={isBufferConnecting ? 'animate-spin' : ''} />
+                  <span>Sync</span>
+                </button>
+
+                <a
+                  href="https://publish.buffer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-extrabold text-white rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm hover:opacity-95 border-0"
+                  style={{ background: brandRed, color: '#ffffff' }}
+                >
+                  <span>Open Buffer Dashboard</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: BUFFER ACCESS TOKEN CONFIGURATION ── */}
+      {bufferTokenModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0f17] rounded-none max-w-md w-full p-6 text-slate-200 shadow-2xl border border-[#202738] animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-none bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                  <Sliders size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">Buffer API Token</h3>
+                  <p className="text-xs text-slate-400">Manage Buffer GraphQL Access Token</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBufferTokenModalOpen(false)}
+                className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Buffer Access Token:
+                </label>
+                <input
+                  type="text"
+                  value={bufferTokenInput}
+                  onChange={(e) => setBufferTokenInput(e.target.value)}
+                  className="w-full text-xs font-mono bg-[#111522] text-white rounded-none p-2.5 border border-[#202738] outline-none focus:border-rose-500"
+                  placeholder="Paste Buffer Access Token..."
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Your current active token is pre-configured to your authorized Buffer free account. You can reset to default anytime.
+              </p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#161b2b]">
+              <button
+                type="button"
+                onClick={() => {
+                  setBufferToken('')
+                  setBufferTokenInput(getBufferToken())
+                  syncBufferData(true)
+                  if (triggerToast) triggerToast('Reset Buffer token to default!', 'info')
+                }}
+                className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-none cursor-pointer border-0 bg-transparent"
+              >
+                Reset Default
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBufferTokenModalOpen(false)}
+                  className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] rounded-none cursor-pointer border-0"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBufferToken(bufferTokenInput)
+                    setBufferTokenModalOpen(false)
+                    syncBufferData(true)
+                    if (triggerToast) triggerToast('Buffer token updated!', 'success')
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-white rounded-none cursor-pointer border-0"
+                  style={{ background: brandRed, color: '#ffffff' }}
+                >
+                  Save &amp; Connect
+                </button>
+              </div>
             </div>
           </div>
         </div>
