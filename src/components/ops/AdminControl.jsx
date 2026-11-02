@@ -46,19 +46,41 @@ export default function AdminControl() {
 
   const loadData = async () => {
     setLoading(true)
+    const candidateUrls = [
+      '',
+      'https://creator-forge-backend-jj1y.onrender.com',
+      'https://creator-forge-backend.onrender.com'
+    ]
+
     try {
-      // 1. Fetch registered users
-      const usersRes = await fetch('/api/admin/users')
-      const usersData = await usersRes.json()
-      if (usersData.status === 'success') {
-        setUsers(usersData.users || [])
+      // 1. Fetch registered users with fallback rotation
+      let fetchedUsers = false
+      for (const base of candidateUrls) {
+        try {
+          const usersRes = await fetch(`${base}/api/admin/users`)
+          if (usersRes.ok) {
+            const usersData = await usersRes.json()
+            if (usersData.status === 'success') {
+              setUsers(usersData.users || [])
+              fetchedUsers = true
+              break
+            }
+          }
+        } catch (e) {}
       }
 
-      // 2. Fetch system/database stats
-      const statsRes = await fetch('/api/admin/system-stats')
-      const statsData = await statsRes.json()
-      if (statsData.status === 'success') {
-        setStats(statsData)
+      // 2. Fetch system/database stats with fallback rotation
+      for (const base of candidateUrls) {
+        try {
+          const statsRes = await fetch(`${base}/api/admin/system-stats`)
+          if (statsRes.ok) {
+            const statsData = await statsRes.json()
+            if (statsData.status === 'success') {
+              setStats(statsData)
+              break
+            }
+          }
+        } catch (e) {}
       }
 
       // 3. Fetch global system settings (API keys)
@@ -98,15 +120,24 @@ export default function AdminControl() {
   const handleDeleteUser = async () => {
     if (confirmDeleteText !== deletingUser) return
     setActionLoading(true)
+    const candidateUrls = [
+      '',
+      'https://creator-forge-backend-jj1y.onrender.com',
+      'https://creator-forge-backend.onrender.com'
+    ]
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(deletingUser)}`, {
-        method: 'DELETE'
-      })
-      const data = await res.json()
-      if (data.status === 'success') {
-        setDeletingUser(null)
-        setConfirmDeleteText('')
-        loadData()
+      for (const base of candidateUrls) {
+        try {
+          const res = await fetch(`${base}/api/admin/users/${encodeURIComponent(deletingUser)}`, {
+            method: 'DELETE'
+          })
+          if (res.ok) {
+            setDeletingUser(null)
+            setConfirmDeleteText('')
+            loadData()
+            break
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.error('Failed to delete user:', e)

@@ -62,25 +62,46 @@ export default function EmailConfigModal({
     setLoading(true)
 
     try {
-      const username = userProfile?.username || creatorData?.handle || 'creator'
+      const cleanPassword = password ? password.trim() : ''
+      const cleanHandle = (creatorData?.handle || '').replace(/^@+/, '').trim()
+      const username = userProfile?.username || cleanHandle || creatorData?.name || cleanEmail.split('@')[0]
       
-      // Update backend database
-      try {
-        const res = await fetch('/api/auth/update-profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username,
-            email: cleanEmail,
-            password: password ? password.trim() : undefined
+      const payload = {
+        username,
+        email: cleanEmail,
+        password: cleanPassword || undefined,
+        creator_data: creatorData || {}
+      }
+
+      const candidateUrls = [
+        '',
+        'https://creator-forge-backend-jj1y.onrender.com',
+        'https://creator-forge-backend.onrender.com'
+      ]
+
+      let savedOk = false
+      let lastErr = null
+      for (const baseUrl of candidateUrls) {
+        try {
+          const res = await fetch(`${baseUrl}/api/auth/update-profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
           })
-        })
-        if (!res.ok) {
-          const data = await res.json()
-          console.warn('[EmailConfig] DB update notice:', data.detail)
+          if (res.ok) {
+            savedOk = true
+            break
+          } else {
+            const data = await res.json().catch(() => ({}))
+            if (data.detail) lastErr = new Error(data.detail)
+          }
+        } catch (err) {
+          lastErr = err
         }
-      } catch (err) {
-        console.warn('[EmailConfig] Backend endpoint unreachable, updating local session:', err)
+      }
+
+      if (!savedOk && lastErr && lastErr.message && !lastErr.message.includes('fetch')) {
+        throw lastErr
       }
 
       // Update userProfile in state and localStorage
@@ -88,10 +109,14 @@ export default function EmailConfigModal({
         ...(userProfile || {}),
         username,
         email: cleanEmail,
-        needsCredentials: false
+        password: cleanPassword || (userProfile?.password || ''),
+        has_password: Boolean(cleanPassword || userProfile?.password),
+        needsCredentials: false,
+        needsPassword: false
       }
       try {
         localStorage.setItem('forge_user_profile', JSON.stringify(updatedProfile))
+        localStorage.setItem('forge_active_session', 'true')
       } catch {}
       if (setUserProfile) {
         setUserProfile(updatedProfile)
@@ -104,19 +129,19 @@ export default function EmailConfigModal({
         contactEmail: cleanEmail
       }
       try {
-        localStorage.setItem('forge_creator', JSON.stringify(updatedCreator))
+        localStorage.setItem('forge_creator_data', JSON.stringify(updatedCreator))
       } catch {}
       if (updateCreator) {
         updateCreator({ email: cleanEmail, contactEmail: cleanEmail })
       }
 
       if (triggerToast) {
-        triggerToast(`Email configured successfully: ${cleanEmail}`, 'success')
+        triggerToast(cleanPassword ? `Account registered successfully: ${cleanEmail}` : `Email configured successfully: ${cleanEmail}`, 'success')
       }
 
       onClose()
     } catch (err) {
-      setError(err.message || 'Failed to save email address.')
+      setError(err.message || 'Failed to save account credentials.')
     } finally {
       setLoading(false)
     }
