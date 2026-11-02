@@ -6,14 +6,13 @@
  */
 
 const BUFFER_GRAPHQL_ENDPOINT = 'https://api.buffer.com';
-const DEFAULT_BUFFER_TOKEN = 'bvPvXtI6gbWAaml79XPEK51TkZEIrjjPnKODFQahUK4';
 
 export function getBufferToken() {
   try {
     const custom = localStorage.getItem('forge_buffer_token');
     if (custom && custom.trim()) return custom.trim();
   } catch {}
-  return import.meta.env.VITE_BUFFER_ACCESS_TOKEN || DEFAULT_BUFFER_TOKEN;
+  return import.meta.env.VITE_BUFFER_ACCESS_TOKEN || '';
 }
 
 export function setBufferToken(token) {
@@ -243,3 +242,4 @@ export async function createBufferPost({
 
   return result?.post || null;
 }
+
