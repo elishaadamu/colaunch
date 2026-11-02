@@ -699,6 +699,29 @@ async function apifyRunSync(actorId, input, token, timeoutSecs = 60) {
   return data
 }
 
+// ── Apify Google Search Scraper (Actor 563JCPLOqM1kMmbbP) ───────────────────
+
+export async function searchGoogleApify(keyword, apifyTokenOverride = null) {
+  const { apifyToken } = loadKeys()
+  const token = apifyTokenOverride || apifyToken || (typeof window !== 'undefined' ? localStorage.getItem('forge_apify_token') : '') || ''
+  if (!token || !keyword) return []
+
+  const actorId = '563JCPLOqM1kMmbbP'
+  const input = {
+    keyword: String(keyword).trim(),
+    include_merged: true,
+    limit: 'all',
+  }
+
+  try {
+    const res = await apifyRunSync(actorId, input, token, 45)
+    return Array.isArray(res) ? res : []
+  } catch (err) {
+    console.warn('[Forge] Google search scraper error, returning empty dataset:', err)
+    return []
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function extractHandle(url) {

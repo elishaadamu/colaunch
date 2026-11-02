@@ -16,6 +16,7 @@ import {
   parseFollowerCount
 } from '../../services/ai'
 import { recommendCreator } from '../../services/opsApi'
+import AudienceIntelligenceEngine from './AudienceIntelligenceEngine'
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1574,6 +1575,13 @@ export default function Blueprint() {
               </div>
 
             </div>
+
+            {/* 10-MODULE AUDIENCE INTELLIGENCE ENGINE (Apify Scrapers & Google Search Actor 563JCPLOqM1kMmbbP) */}
+            <AudienceIntelligenceEngine 
+              creatorData={creatorData} 
+              activeBlueprint={activeBlueprint} 
+              accent={accent} 
+            />
           </>
         )}
       </main>
