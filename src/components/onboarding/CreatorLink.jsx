@@ -129,6 +129,30 @@ export default function CreatorLink() {
   const inputRef = useRef(null)
   const timerRef = useRef(null)
   const autoAdvanceTimerRef = useRef(null)
+  const telemetryLogsEndRef = useRef(null)
+
+  const formatElapsedTimer = (ms = 0) => {
+    const totalSeconds = (ms || 0) / 1000
+    const minutes = Math.floor(totalSeconds / 60)
+    const secs = (totalSeconds % 60).toFixed(2)
+    const paddedSecs = (totalSeconds % 60) < 10 ? `0${secs}` : secs
+    return `${String(minutes).padStart(2, '0')}:${paddedSecs}s`
+  }
+
+  const renderTelemetryMessage = (text = '') => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = text.split(urlRegex)
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return (
+          <span key={i} className="text-sky-400 font-mono underline decoration-sky-700/60 break-all select-all">
+            {part}
+          </span>
+        )
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
 
   // Sync state if creatorData changes from external restoration or wipe
   useEffect(() => {
@@ -156,6 +180,12 @@ export default function CreatorLink() {
       if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (isAnalyzing && telemetryLogsEndRef.current) {
+      telemetryLogsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [scrapeTelemetryLogs, activeScrapePhase, isAnalyzing])
 
   const handleInputChange = (val) => {
     setUrl(val)
@@ -322,7 +352,7 @@ export default function CreatorLink() {
           <button 
             type="button"
             onClick={prev}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-neutral-400 bg-[#111317]/70 hover:bg-[#15181e] hover:text-white border border-[#1f242c] rounded-lg transition-all duration-200 active:scale-95 group cursor-pointer"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-neutral-400 bg-[#111317]/70 hover:bg-[#15181e] hover:text-white border border-[#1f242c] rounded-none transition-all duration-200 active:scale-95 group cursor-pointer"
             title="Go to previous step"
           >
             <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
@@ -336,7 +366,7 @@ export default function CreatorLink() {
             <button
               type="button"
               onClick={requestWipeCreator}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 rounded-lg transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 rounded-none transition-all cursor-pointer"
               title="Wipe creator from storage"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -344,21 +374,21 @@ export default function CreatorLink() {
             </button>
           )}
 
-          <div className="flex items-center gap-3 bg-[#111317]/70 border border-[#1f242c] px-3.5 py-1.5 rounded-full">
+          <div className="flex items-center gap-3 bg-[#111317]/70 border border-[#1f242c] px-3.5 py-1.5 rounded-none">
             <span className="text-[11px] font-semibold text-neutral-400 tracking-wider uppercase font-mono mr-1">
               <span className="text-neutral-200">01</span> / 08
             </span>
             <div className="flex items-center gap-1.5">
               {/* Active pill */}
-              <span className="w-5 h-1.5 rounded-full bg-[#c81e3c] shadow-sm shadow-[#c81e3c]/50"></span>
+              <span className="w-5 h-1.5 rounded-none bg-[#c81e3c] shadow-sm shadow-[#c81e3c]/50"></span>
               {/* Inactive dots */}
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
+              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
             </div>
           </div>
         </div>
@@ -369,8 +399,8 @@ export default function CreatorLink() {
         <div className="flex flex-col items-center sm:items-start text-left">
           
           {/* Stage Pill Tag */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c81e3c]/10 border border-[#c81e3c]/25 text-[#ff8068] text-[11px] font-semibold tracking-wider uppercase mb-5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#c81e3c]"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/25 text-[#ff8068] text-[11px] font-semibold tracking-wider uppercase mb-5">
+            <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]"></span>
             Step 1 of 8 &bull; Intelligence Setup
           </div>
 
@@ -391,8 +421,8 @@ export default function CreatorLink() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mb-8">
             
             {/* Feature 1 */}
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
+            <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <TrendingUp className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -402,8 +432,8 @@ export default function CreatorLink() {
             </div>
 
             {/* Feature 2 */}
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
+            <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <Camera className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -413,8 +443,8 @@ export default function CreatorLink() {
             </div>
 
             {/* Feature 3 */}
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
+            <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
                 <Zap className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -430,21 +460,21 @@ export default function CreatorLink() {
             <button 
               type="button" 
               onClick={() => setPreset('https://youtube.com/@Akvofoundation')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Youtube className="w-3 h-3 text-red-400" /> youtube.com/@handle
             </button>
             <button 
               type="button" 
               onClick={() => setPreset('https://tiktok.com/@khaby.lame')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <TikTokIcon className="w-3 h-3 text-teal-400" /> tiktok.com/@creator
             </button>
             <button 
               type="button" 
               onClick={() => setPreset('https://instagram.com/hubermanlab')} 
-              className="text-xs px-2.5 py-1 rounded-md bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Instagram className="w-3 h-3 text-pink-400" /> instagram.com/name
             </button>
@@ -455,9 +485,9 @@ export default function CreatorLink() {
             
             {/* Input field wrapper with glowing active outline */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#c81e3c]/20 via-[#c81e3c]/40 to-[#c81e3c]/20 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#c81e3c]/20 via-[#c81e3c]/40 to-[#c81e3c]/20 rounded-none blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               
-              <div className="relative flex items-center w-full bg-[#111317] border border-[#1f242c] group-focus-within:border-[#c81e3c] rounded-xl overflow-hidden transition-all duration-200 shadow-inner">
+              <div className="relative flex items-center w-full bg-[#111317] border border-[#1f242c] group-focus-within:border-[#c81e3c] rounded-none overflow-hidden transition-all duration-200 shadow-inner">
                 {/* Dynamic Icon on left */}
                 <div className={`pl-4 pr-3 ${platformColorClass} group-focus-within:text-[#c81e3c] transition-colors duration-200`}>
                   <PlatformIcon className="w-4 h-4" />
@@ -501,7 +531,7 @@ export default function CreatorLink() {
             <button
               type="submit"
               disabled={!url.trim() || isAnalyzing}
-              className="relative w-full py-4 px-6 rounded-xl bg-[#c81e3c] hover:bg-[#d92546] text-white font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#c81e3c]/25 hover:shadow-[#c81e3c]/40 active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed group overflow-hidden cursor-pointer"
+              className="relative w-full py-4 px-6 rounded-none bg-[#c81e3c] hover:bg-[#d92546] text-white font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#c81e3c]/25 hover:shadow-[#c81e3c]/40 active:scale-[0.99] disabled:opacity-75 disabled:cursor-not-allowed group overflow-hidden cursor-pointer"
             >
               {/* Shimmer sweep effect on hover */}
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
@@ -514,44 +544,101 @@ export default function CreatorLink() {
               ) : (
                 <span className="flex items-center gap-2 font-mono">
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Scraping account data · [ 00:0{((scrapeElapsedMs || 0)/1000).toFixed(2)}s ]</span>
+                  <span>Scraping account data · [ {formatElapsedTimer(scrapeElapsedMs)} ]</span>
                 </span>
               )}
             </button>
 
             {/* Live Telemetry Build Process HUD */}
             {isAnalyzing && (
-              <div className="w-full mt-4 p-4 rounded-xl bg-[#0b0d10] border border-[#c81e3c]/35 font-mono text-xs animate-fadeIn shadow-lg shadow-black/50">
-                <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1f242c]">
-                  <div className="flex items-center gap-2 text-[#c81e3c]">
-                    <Terminal className="w-3.5 h-3.5 animate-pulse" />
-                    <span className="font-semibold text-[11px] tracking-wider uppercase">Live Account Scraper Telemetry</span>
+              <div className="w-full mt-4 bg-[#080b11] border border-[#c81e3c]/40 font-mono text-xs shadow-[0_0_35px_rgba(200,30,60,0.18)] rounded-none overflow-hidden animate-fadeIn">
+                {/* Terminal Header Chrome */}
+                <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#0d121c] border-b border-[#182030] select-none">
+                  <div className="flex items-center gap-2">
+                    {/* Square Status indicators */}
+                    <div className="flex items-center gap-1.5 mr-1">
+                      <span className="w-2.5 h-2.5 bg-[#c81e3c] block shadow-sm shadow-[#c81e3c]/50"></span>
+                      <span className="w-2.5 h-2.5 bg-[#d97706]/70 block"></span>
+                      <span className="w-2.5 h-2.5 bg-[#059669]/70 block"></span>
+                    </div>
+                    <span className="text-[#c81e3c] font-black text-xs font-mono select-none">&gt;_</span>
+                    <span className="font-mono font-bold text-[11px] sm:text-xs tracking-wider uppercase text-white">
+                      Live Account Scraper Telemetry
+                    </span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#c81e3c]/15 border border-[#c81e3c]/35 text-[#ff4d6d] text-[10px] font-mono font-bold tracking-widest uppercase">
+                      <span className="w-1.5 h-1.5 bg-[#c81e3c] animate-ping"></span>
+                      <span>STREAMING</span>
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 text-neutral-400 font-mono text-[11px]">
+
+                  {/* High Precision Timer */}
+                  <div className="flex items-center gap-2 px-2.5 py-1 bg-[#06080d] border border-[#1f283d] text-neutral-300 font-mono text-xs shadow-inner">
                     <Clock className="w-3.5 h-3.5 text-[#c81e3c]" />
-                    <span className="text-white font-bold">00:0{((scrapeElapsedMs || 0)/1000).toFixed(2)}s</span>
+                    <span className="text-white font-mono font-bold tracking-wider">
+                      {formatElapsedTimer(scrapeElapsedMs)}
+                    </span>
                   </div>
                 </div>
 
-                {/* Micro progress meter */}
-                <div className="w-full h-1 bg-[#1a202c] rounded-full overflow-hidden mb-3">
+                {/* Progress bar track */}
+                <div className="w-full h-1 bg-[#121622] relative overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-[#c81e3c] to-[#ff8068] transition-all duration-100"
+                    className="h-full bg-gradient-to-r from-[#941128] via-[#c81e3c] to-[#ff4d6d] transition-all duration-100 ease-out shadow-[0_0_10px_#c81e3c]"
                     style={{ width: `${Math.min(Math.round(((scrapeElapsedMs || 0) / 2300) * 98), 98)}%` }}
                   />
                 </div>
 
-                {/* Live Step Logs with exact millisecond timings */}
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {scrapeTelemetryLogs.map((log, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-[11px] leading-tight text-neutral-300">
-                      <span className="text-[#c81e3c] flex-shrink-0">›</span>
-                      <span>{log}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2 text-[11px] text-neutral-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c81e3c]" />
-                    <span className="text-neutral-400 italic">{activeScrapePhase}</span>
+                {/* Live Step Logs viewport */}
+                <div className="p-3.5 sm:p-4 space-y-2 max-h-48 overflow-y-auto bg-[#07090e] border-b border-[#182030] scrollbar-thin">
+                  {scrapeTelemetryLogs.map((log, idx) => {
+                    const match = log.match(/^(\[\s*\+[^\]]+\])\s*(.*)$/)
+                    const timestamp = match ? match[1] : ''
+                    const text = match ? match[2] : log
+                    const isSuccess = text.includes('✓')
+
+                    return (
+                      <div key={idx} className="flex items-start gap-2 text-[11.5px] leading-relaxed group">
+                        <span className={`flex-shrink-0 font-bold select-none mt-0.5 ${isSuccess ? 'text-emerald-400' : 'text-[#c81e3c]'}`}>
+                          {isSuccess ? '✓' : '›'}
+                        </span>
+                        {timestamp && (
+                          <span className="text-[#c81e3c]/80 font-mono flex-shrink-0 font-medium">
+                            {timestamp}
+                          </span>
+                        )}
+                        <span className={`break-words ${isSuccess ? 'text-emerald-300 font-medium' : 'text-neutral-300'}`}>
+                          {renderTelemetryMessage(text)}
+                        </span>
+                      </div>
+                    )
+                  })}
+
+                  {/* Active In-Flight Phase */}
+                  <div className="flex items-center gap-2.5 pt-2 border-t border-[#182030]/80 text-[11.5px]">
+                    <span className="relative flex h-2 w-2 flex-shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full bg-[#c81e3c] opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 bg-[#c81e3c]"></span>
+                    </span>
+                    <span className="text-neutral-200 font-medium italic">{activeScrapePhase}</span>
+                    <span className="inline-block w-1.5 h-3.5 bg-[#c81e3c] animate-pulse"></span>
+                  </div>
+                  <div ref={telemetryLogsEndRef} />
+                </div>
+
+                {/* Terminal Footer Status Bar */}
+                <div className="px-3.5 py-2 bg-[#090d14] flex items-center justify-between text-[10px] font-mono text-neutral-400 select-none">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center gap-1.5 text-neutral-300">
+                      <Activity className="w-3.5 h-3.5 text-[#c81e3c]" /> BUFFER: ONLINE
+                    </span>
+                    <span className="text-neutral-700">|</span>
+                    <span className="hidden sm:inline text-neutral-400">PROTOCOL: HTTPS/2 · TLS 1.3</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-400">INGESTION:</span>
+                    <span className="text-[#ff4d6d] font-bold font-mono">
+                      {Math.min(Math.round(((scrapeElapsedMs || 0) / 2300) * 98), 98)}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -561,7 +648,7 @@ export default function CreatorLink() {
 
           {/* SIMULATION / CONNECTED PROFILE RESULT CARD */}
           {showPreview && (
-            <div className="w-full mt-6 p-5 rounded-2xl bg-[#15181e] border border-[#c81e3c]/35 shadow-[0_0_28px_-4px_rgba(200,30,60,0.32)] transition-all duration-300 animate-fadeIn">
+            <div className="w-full mt-6 p-5 rounded-none bg-[#15181e] border border-[#c81e3c]/35 shadow-[0_0_28px_-4px_rgba(200,30,60,0.32)] transition-all duration-300 animate-fadeIn">
               <div className="flex items-center justify-between pb-4 border-b border-[#1f242c]">
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -572,9 +659,9 @@ export default function CreatorLink() {
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
                       }}
-                      className="w-11 h-11 rounded-full object-cover" 
+                      className="w-11 h-11 rounded-none border border-[#1f242c] object-cover" 
                     />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-full flex items-center justify-center text-[9px] text-white font-black shadow">
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-none flex items-center justify-center text-[9px] text-white font-black shadow">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>
                   </div>
@@ -588,7 +675,7 @@ export default function CreatorLink() {
                     </div>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-[#c81e3c]/10 text-[#c81e3c] border border-[#c81e3c]/30">
+                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-none bg-[#c81e3c]/10 text-[#c81e3c] border border-[#c81e3c]/30">
                   Live Connected
                 </span>
               </div>
