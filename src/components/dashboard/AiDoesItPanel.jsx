@@ -239,7 +239,7 @@ function ProductMockup({ creatorData, accent }) {
                 <p className="text-[9px] text-white/40">Includes custom pastry molds & secret Red Pepper Ganache recipe</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: accent.color, color: '#000' }}>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-none text-white" style={{ background: accent.color, color: '#ffffff' }}>
               Preview Box
             </span>
           </div>
@@ -1298,14 +1298,14 @@ export default function AiDoesItPanel({ onClose }) {
 
                 <button
                   onClick={run}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   style={{
                     background: `linear-gradient(135deg, ${accent.color}, rgba(${accent.rgb}, 0.8))`,
                     boxShadow: `0 8px 24px rgba(${accent.rgb}, 0.35)`,
-                    color: '#000'
+                    color: '#ffffff'
                   }}
                 >
-                  <Sparkles size={15} /> Do all steps with AI
+                  <Sparkles size={15} className="text-white" /> Do all steps with AI
                 </button>
               </div>
             </div>
