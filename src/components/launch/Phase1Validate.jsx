@@ -2512,7 +2512,7 @@ export default function Phase1Validate({
 
                 {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
                 <div className="pt-4 max-w-4xl mx-auto">
-                  <ProductMockupDisplay project={project} theme="lime" />
+                  <ProductMockupDisplay project={project} theme="crimson" brandColor="#c81e3c" />
                 </div>
               </div>
 

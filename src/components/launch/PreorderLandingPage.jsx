@@ -590,7 +590,7 @@ export default function PreorderLandingPage({ slug }) {
 
         {/* Visual Designed Mockup Showcase (Full, Non-Editable UI Frame) */}
         <div className="pt-6">
-          <ProductMockupDisplay project={project} theme="lime" brandColor={brandColor} />
+          <ProductMockupDisplay project={project} theme="crimson" brandColor={brandColor || '#c81e3c'} />
         </div>
 
         {/* Creator's Approved Blueprint Spotlight Card */}

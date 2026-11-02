@@ -128,11 +128,12 @@ function ProductMockup({ creatorData, accent }) {
             ].map(file => (
               <div
                 key={file.name}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[10px] cursor-pointer transition-colors"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-none text-[10px] cursor-pointer transition-colors"
                 style={{
-                  background: file.active ? `rgba(${accent.rgb},0.12)` : 'transparent',
-                  color: file.active ? '#fff' : 'rgba(255,255,255,0.45)',
-                  borderLeft: file.active ? `2px solid ${accent.color}` : '2px solid transparent'
+                  background: file.active ? `rgba(${accent.rgb},0.15)` : 'transparent',
+                  color: file.active ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                  borderLeft: file.active ? `2px solid ${accent.color}` : '2px solid transparent',
+                  borderRadius: '0px'
                 }}
               >
                 <Code size={11} style={{ color: file.color }} />
@@ -140,8 +141,8 @@ function ProductMockup({ creatorData, accent }) {
               </div>
             ))}
             <div className="mt-auto pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-              <div className="flex items-center gap-1.5 text-[9px] text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-1.5 text-[9px] text-white">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c] animate-pulse" />
                 <span>Compiler: Ready</span>
               </div>
             </div>
@@ -151,8 +152,8 @@ function ProductMockup({ creatorData, accent }) {
           <div className="flex-1 flex flex-col" style={{ background: '#0e0e12' }}>
             {/* Editor tab bar */}
             <div className="flex items-center border-b px-3 py-1.5 gap-2" style={{ background: '#0a0a0d', borderColor: 'rgba(255,255,255,0.05)' }}>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#16161c] text-[10px] text-white">
-                <span className="w-2 h-2 rounded-full" style={{ background: accent.color }} />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-none bg-[#16161c] text-[10px] text-white" style={{ borderRadius: '0px' }}>
+                <span className="w-2 h-2 rounded-none" style={{ background: accent.color }} />
                 <span>main.py</span>
                 <span className="text-white/30 text-[9px] ml-1">×</span>
               </div>
@@ -168,7 +169,7 @@ function ProductMockup({ creatorData, accent }) {
               <p className="pl-4"><span className="text-pink-400">def</span> <span className="text-blue-300">__init__</span>(<span className="text-purple-300">self</span>):</p>
               <p className="pl-8"><span className="text-purple-300">self</span>.creator = <span className="text-emerald-300">"{handle}"</span></p>
               <p className="pl-8"><span className="text-purple-300">self</span>.members = <span className="text-amber-300">"{followers}+ active builders"</span></p>
-              <p className="pl-8"><span className="text-purple-300">self</span>.status = <span className="text-emerald-300">"Production Deployed"</span></p>
+              <p className="pl-8"><span className="text-purple-300">self</span>.status = <span className="text-[#c81e3c]">"Production Deployed"</span></p>
               <p>&nbsp;</p>
               <p className="pl-4"><span className="text-pink-400">def</span> <span className="text-blue-300">verify_challenge</span>(<span className="text-purple-300">self</span>, code_submission):</p>
               <p className="pl-8"><span className="text-pink-400">return</span> <span className="text-purple-300">self</span>.sandbox.run_automated_tests(code_submission)</p>
@@ -177,12 +178,12 @@ function ProductMockup({ creatorData, accent }) {
             {/* Terminal console */}
             <div className="border-t p-2.5 px-3 flex items-center justify-between" style={{ background: '#09090c', borderColor: 'rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-2 text-[10px]">
-                <span className="text-emerald-400 font-bold">$</span>
-                <span className="text-white/60">pytest --test_suite=brocode_mastery</span>
-                <span className="text-emerald-400 ml-2 font-semibold">✓ 18 tests passed (0.14s)</span>
+                <span className="text-[#c81e3c] font-bold">$</span>
+                <span className="text-white/60">pytest --test_suite=mastery</span>
+                <span className="text-white ml-2 font-semibold">✓ 18 tests passed (0.14s)</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[9px] px-2 py-0.5 rounded font-mono font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}>
+                <span className="text-[9px] px-2 py-0.5 rounded-none font-mono font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: '#ffffff', borderRadius: '0px' }}>
                   Py 3.12
                 </span>
               </div>
@@ -200,7 +201,7 @@ function ProductMockup({ creatorData, accent }) {
         <div className="p-4" style={{ minHeight: 240, background: '#0c0a09' }}>
           <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${accent.color}, #ea580c)` }}>
+              <div className="w-10 h-10 rounded-none flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${accent.color}, #ea580c)`, borderRadius: '0px' }}>
                 <Utensils size={18} className="text-white" />
               </div>
               <div>
@@ -209,31 +210,31 @@ function ProductMockup({ creatorData, accent }) {
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[11px] px-2.5 py-1 rounded-full font-bold uppercase" style={{ background: 'rgba(234, 88, 12, 0.15)', color: '#fb923c' }}>
+              <span className="text-[11px] px-2.5 py-1 rounded-none font-bold uppercase" style={{ background: 'rgba(200, 30, 60, 0.2)', color: '#ffffff', borderRadius: '0px' }}>
                 Cohort Batch #1 Live
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
               <span className="text-[9px] uppercase font-bold text-white/30">Active Orders</span>
               <p className="text-[16px] font-black text-white mt-1">10,000 Boxes</p>
-              <p className="text-[9px] text-emerald-400 mt-0.5">Sold out in 24 hours</p>
+              <p className="text-[9px] text-[#c81e3c] mt-0.5 font-semibold">Sold out in 24 hours</p>
             </div>
-            <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
               <span className="text-[9px] uppercase font-bold text-white/30">Farm-to-Door</span>
               <p className="text-[16px] font-black text-white mt-1">100% Organic</p>
               <p className="text-[9px] text-white/40 mt-0.5">Pre-measured secret spices</p>
             </div>
-            <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
               <span className="text-[9px] uppercase font-bold text-white/30">Chef Vault</span>
               <p className="text-[16px] font-black text-white mt-1">24 Video Guides</p>
-              <p className="text-[9px] text-orange-400 mt-0.5">Step-by-step masterclasses</p>
+              <p className="text-[9px] text-white mt-0.5">Step-by-step masterclasses</p>
             </div>
           </div>
 
-          <div className="rounded-xl p-3 border flex items-center justify-between" style={{ background: `rgba(${accent.rgb}, 0.08)`, borderColor: `rgba(${accent.rgb}, 0.2)` }}>
+          <div className="rounded-none p-3 border flex items-center justify-between" style={{ background: `rgba(${accent.rgb}, 0.08)`, borderColor: `rgba(${accent.rgb}, 0.2)`, borderRadius: '0px' }}>
             <div className="flex items-center gap-2.5">
               <Flame size={16} style={{ color: accent.color }} />
               <div>
@@ -241,7 +242,7 @@ function ProductMockup({ creatorData, accent }) {
                 <p className="text-[9px] text-white/40">Includes custom pastry molds & secret Red Pepper Ganache recipe</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-none text-white" style={{ background: accent.color, color: '#ffffff' }}>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-none text-white" style={{ background: accent.color, color: '#ffffff', borderRadius: '0px' }}>
               Preview Box
             </span>
           </div>
@@ -257,7 +258,7 @@ function ProductMockup({ creatorData, accent }) {
         <div className="p-4" style={{ minHeight: 240, background: '#0a0d0d' }}>
           <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent.color}, #10b981)` }}>
+              <div className="w-10 h-10 rounded-none flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent.color}, #a61830)`, borderRadius: '0px' }}>
                 <Dumbbell size={18} className="text-white" />
               </div>
               <div>
@@ -265,7 +266,7 @@ function ProductMockup({ creatorData, accent }) {
                 <p className="text-[11px] text-white/40">Athletic Conditioning Hub by {name}</p>
               </div>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400">
+            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-none text-white" style={{ background: `rgba(${accent.rgb}, 0.25)`, border: `1px solid rgba(${accent.rgb}, 0.4)`, borderRadius: '0px' }}>
               PROGRAM VERIFIED
             </span>
           </div>
@@ -276,7 +277,7 @@ function ProductMockup({ creatorData, accent }) {
               { val: '4K Form Vault', lab: 'Biomechanical Breakdown' },
               { val: 'Custom Macro', lab: 'Precision Nutrition Engine' },
             ].map(m => (
-              <div key={m.lab} className="rounded-xl p-2.5 text-center border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div key={m.lab} className="rounded-none p-2.5 text-center border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
                 <p className="text-[13px] font-bold text-white">{m.val}</p>
                 <p className="text-[9px] text-white/40 mt-0.5">{m.lab}</p>
               </div>
@@ -294,7 +295,7 @@ function ProductMockup({ creatorData, accent }) {
         <div className="p-4" style={{ minHeight: 240, background: '#090812' }}>
           <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent.color}, #8b5cf6)` }}>
+              <div className="w-10 h-10 rounded-none flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent.color}, #a61830)`, borderRadius: '0px' }}>
                 <Gamepad2 size={18} className="text-white" />
               </div>
               <div>
@@ -302,17 +303,17 @@ function ProductMockup({ creatorData, accent }) {
                 <p className="text-[11px] text-white/40">VIP Guild & Esports Strategy Vault</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-none text-white" style={{ background: `rgba(${accent.rgb}, 0.25)`, border: `1px solid rgba(${accent.rgb}, 0.4)`, borderRadius: '0px' }}>
               DISCORD SYNCED
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
               <p className="text-[11px] font-bold text-white">Ranked Meta Tier List</p>
               <p className="text-[9px] text-white/40 mt-1">Patch 14.8 analytics & replay reviews</p>
             </div>
-            <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
               <p className="text-[11px] font-bold text-white">Private Scrim Matchmaker</p>
               <p className="text-[9px] text-white/40 mt-1">Weekly community tournaments</p>
             </div>
@@ -330,18 +331,20 @@ function ProductMockup({ creatorData, accent }) {
         <div className="w-36 sm:w-44 border-r p-3 flex flex-col gap-1" style={{ background: '#09090b', borderColor: 'rgba(255,255,255,0.05)' }}>
           <div className="flex items-center gap-2 mb-3 px-1">
             {avatarUrl ? (
-              <img src={avatarUrl} className="w-6 h-6 rounded-full object-cover" alt="" onError={e => { e.currentTarget.style.display = 'none' }} />
+              <img src={avatarUrl} className="w-6 h-6 rounded-none object-cover" alt="" onError={e => { e.currentTarget.style.display = 'none' }} style={{ borderRadius: '0px' }} />
             ) : (
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                style={{ background: `rgba(${accent.rgb},0.25)`, color: accent.color }}>{initials}</div>
+              <div className="w-6 h-6 rounded-none flex items-center justify-center text-[9px] font-bold"
+                style={{ background: `rgba(${accent.rgb},0.25)`, color: '#ffffff', borderRadius: '0px' }}>{initials}</div>
             )}
             <span className="text-[11px] font-bold text-white truncate">{productName}</span>
           </div>
           {['Dashboard', 'Core Curriculum', 'Private Network', 'Live Coaching'].map((item, i) => (
-            <div key={item} className="px-2 py-1.5 rounded-lg text-[10px] font-medium"
+            <div key={item} className="px-2 py-1.5 rounded-none text-[10px] font-medium"
               style={{
-                background: i === 0 ? `rgba(${accent.rgb},0.15)` : 'transparent',
-                color: i === 0 ? accent.color : 'rgba(255,255,255,0.45)'
+                background: i === 0 ? `rgba(${accent.rgb},0.22)` : 'transparent',
+                color: i === 0 ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                borderLeft: i === 0 ? `2px solid ${accent.color}` : '2px solid transparent',
+                borderRadius: '0px'
               }}>
               {item}
             </div>
@@ -354,7 +357,7 @@ function ProductMockup({ creatorData, accent }) {
               <p className="text-[13px] font-bold text-white">Welcome back, Member</p>
               <p className="text-[10px] text-white/40">{niche} Mastery Hub by {name}</p>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-[9px] font-bold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
+            <span className="px-2.5 py-1 rounded-none text-[9px] font-bold text-white" style={{ background: `rgba(${accent.rgb},0.28)`, border: `1px solid rgba(${accent.rgb}, 0.5)`, color: '#ffffff', borderRadius: '0px' }}>
               VIP Cohort
             </span>
           </div>
@@ -364,7 +367,7 @@ function ProductMockup({ creatorData, accent }) {
               [followers, 'Community Reach'],
               ['4.9 / 5', 'Cohort Rating']
             ].map(([n, l]) => (
-              <div key={l} className="rounded-xl p-2.5 text-center border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div key={l} className="rounded-none p-2.5 text-center border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', borderRadius: '0px' }}>
                 <p className="text-[13px] font-bold text-white">{n}</p>
                 <p className="text-[8px] text-white/40 mt-0.5">{l}</p>
               </div>

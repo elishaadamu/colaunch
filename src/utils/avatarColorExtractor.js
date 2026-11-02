@@ -237,10 +237,10 @@ export function analyzeImageData(data) {
         isNeutral: true,
       };
     }
-    const hex = "#10B981";
+    const hex = "#c81e3c";
     return {
       primaryHex: hex,
-      name: "Studio Emerald",
+      name: "Creator Crimson",
       contrastText: getContrastTextColor(hex),
       isLight: isLightColor(hex),
       isFallback: true,
@@ -295,33 +295,23 @@ export function getDeterministicBrandColor(creator) {
     return wrapResult("#D97706", "Broadway Amber");
   }
 
-  if (niche.includes("tech") || niche.includes("code") || niche.includes("software")) {
-    if (name.includes("coach")) return wrapResult("#16A34A", "Studio Emerald");
-    return wrapResult("#0284C7", "Ocean Cyan");
+  if (name.includes("mkbhd") || name.includes("marques") || niche.includes("tech") || niche.includes("code") || niche.includes("software")) {
+    return wrapResult("#c81e3c", "Creator Crimson");
   }
   if (niche.includes("ai") || niche.includes("data") || niche.includes("study")) {
-    return wrapResult("#0284C7", "Electric Cobalt");
+    return wrapResult("#c81e3c", "Creator Crimson");
   }
   if (niche.includes("pet") || niche.includes("community") || niche.includes("puppy") || niche.includes("media")) {
-    return wrapResult("#D97706", "Venture Amber");
+    return wrapResult("#c81e3c", "Creator Crimson");
   }
   if (niche.includes("game") || niche.includes("fitness")) {
-    return wrapResult("#65A30D", "Forge Lime");
+    return wrapResult("#c81e3c", "Creator Crimson");
   }
   if (niche.includes("finance") || niche.includes("invest") || niche.includes("crypto") || niche.includes("money")) {
-    return wrapResult("#10B981", "Venture Emerald");
+    return wrapResult("#c81e3c", "Creator Crimson");
   }
 
-  // Hash based on letters - palette of vibrant, prestigious studio colors (no purple/violet)
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hues = [142, 199, 38, 215, 168, 340, 28]; // Emerald, Cyan, Gold, Cobalt, Teal, Crimson, Orange
-  const chosenHue = hues[Math.abs(hash) % hues.length];
-  const hex = hslToHex(chosenHue, 78, 48);
-
-  return wrapResult(hex, getFriendlyColorName(hex));
+  return wrapResult("#c81e3c", "Creator Crimson");
 }
 
 /**
@@ -333,12 +323,12 @@ export async function extractBrandColorFromAvatar(avatarUrl, creator = null) {
     return getDeterministicBrandColor(creator);
   }
   if (!avatarUrl) {
-    const hex = "#16A34A";
+    const hex = "#c81e3c";
     return {
       primaryHex: hex,
-      name: "Studio Emerald",
-      contrastText: getContrastTextColor(hex),
-      isLight: isLightColor(hex),
+      name: "Creator Crimson",
+      contrastText: "#ffffff",
+      isLight: false,
     };
   }
 

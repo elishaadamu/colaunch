@@ -82,7 +82,18 @@ export function resetFailedAiKeys() {
 }
 
 export function loadAiKeys() {
-  return inMemoryAiKeys;
+  const envOpenai = (import.meta.env?.VITE_OPENAI_API_KEY || "").trim();
+  const envGemini = (import.meta.env?.VITE_GEMINI_API_KEY || "").trim();
+  const envTogether = (import.meta.env?.VITE_TOGETHER_API_KEY || "").trim();
+  const envAnthropic = (import.meta.env?.VITE_ANTHROPIC_API_KEY || "").trim();
+
+  return {
+    geminiKey: inMemoryAiKeys.geminiKey || envGemini,
+    togetherKey: inMemoryAiKeys.togetherKey || envTogether,
+    openaiKey: inMemoryAiKeys.openaiKey || envOpenai,
+    anthropicKey: inMemoryAiKeys.anthropicKey || envAnthropic,
+    activeProvider: inMemoryAiKeys.activeProvider || "openai",
+  };
 }
 
 export function saveAiKeys({
@@ -1175,24 +1186,25 @@ export function buildChannelSpecificImagePrompt(creatorData) {
   const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`
   const niche = (creatorData?.niche || 'creator community').toLowerCase()
   const type = creatorData?.blueprint?.type || 'Platform'
-  const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('bro code')
+  const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('mkbhd') || name.toLowerCase().includes('marques')
   const isCooking = niche.includes('cook') || niche.includes('food') || niche.includes('culinary') || niche.includes('meal') || name.toLowerCase().includes('angry birds') || name.toLowerCase().includes('chef')
   const isGaming = niche.includes('game') || niche.includes('gaming') || niche.includes('play') || niche.includes('stream')
   const isFitness = niche.includes('fit') || niche.includes('workout') || niche.includes('train') || niche.includes('gym')
 
+  // Signature brand color: bold crimson red (#c81e3c) matching the website identity
   if (isCoding) {
-    return `Ultra-high-resolution software screenshot mockup for "${productName}" by developer creator ${name} in ${niche}. A cutting-edge developer IDE interface on a dark glassmorphic canvas with syntax-highlighted code editor, interactive terminal execution window, glowing emerald and cyan code modules, curriculum tree, and live compiler stats. Crisp Figma UI design presentation, photorealistic, 8k render.`
+    return `Ultra-high-resolution commercial product mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. A cutting-edge digital workspace on a sleek matte black and deep graphite canvas with striking signature crimson red (#c81e3c) accent lighting, glowing red interactive CTA buttons, clean developer dashboard panels, live telemetry streams, and crisp white typography. Premium modern aesthetic matching Marques Brownlee studio style, photorealistic, 8k render.`
   }
   if (isCooking) {
-    return `Luxury commercial product photography shot for "${productName}" by ${name} in ${niche}. A gourmet culinary meal kit subscription unboxed on a modern dark slate countertop with fresh organic ingredients, artisan recipe booklet, and an elegant tablet running an interactive video cooking dashboard. Cinematic kitchen lighting, shallow depth of field, 8k commercial photography.`
+    return `Luxury commercial product photography shot for "${productName}" by ${name} in ${niche}. A gourmet culinary box unboxed on a modern dark slate countertop with rich crimson red (#c81e3c) brand packaging accents, fresh organic ingredients, artisan recipe booklet, and an elegant tablet running an interactive dashboard. Cinematic lighting, shallow depth of field, 8k commercial photography.`
   }
   if (isGaming) {
-    return `Futuristic cyberpunk gaming hub and creator platform mockup for "${productName}" by ${name}. High-contrast dark mode dashboard with glowing neon tournament brackets, real-time leaderboard, custom stream integrations, and clan voice lounge. 8k Unreal Engine UI render.`
+    return `Futuristic gaming hub and creator platform mockup for "${productName}" by ${name}. High-contrast dark mode dashboard with glowing crimson red (#c81e3c) neon tournament brackets, real-time leaderboard, custom stream integrations, and sleek graphite accents. 8k Unreal Engine UI render.`
   }
   if (isFitness) {
-    return `Premium athlete training and coaching app mockup for "${productName}" by ${name}. Sleek dark mode mobile interface displaying workout telemetry, heart rate metrics, HD exercise video demonstrations, and nutrition targets. Apple Health and Strava aesthetic, 8k render.`
+    return `Premium athlete training and coaching app mockup for "${productName}" by ${name}. Sleek dark mode mobile interface with striking crimson red (#c81e3c) performance telemetry, heart rate metrics, HD exercise video demonstrations, and nutrition targets. Dark carbon fiber and red accents, 8k render.`
   }
-  return `Award-winning product mockup for "${productName}" created by ${name} for the ${niche} community. Sleek dark mode SaaS application on deep graphite background with glowing glassmorphic panels, clean analytics graphs, module cards, and professional product photography style. Ultra sharp, 8k render.`
+  return `Award-winning commercial product hero mockup for "${productName}" created by ${name} for the ${niche} community. Sleek dark mode application on deep graphite background with striking signature crimson red (#c81e3c) glowing accents, clean telemetry graphs, module cards, and professional product photography style. Ultra sharp, photorealistic, 8k render.`
 }
 
 // ── Gemini image generation (uses existing Gemini key — no extra signup) ───────
@@ -1434,6 +1446,9 @@ async function saveImageToBackendMedia(imageResult) {
 }
 
 export async function generateProductImage(creatorData, signal = undefined) {
+  try {
+    await ensureServerAiKeysLoaded();
+  } catch (_) {}
   const { openaiKey, togetherKey, geminiKey } = loadAiKeys();
   let rawImage = null;
   let lastImageError = null;
@@ -1488,10 +1503,7 @@ export async function generateProductImage(creatorData, signal = undefined) {
 
   // 4. Grounded Channel Hero Fallback (Ensures UI is never left with a broken image box)
   if (!rawImage) {
-    rawImage = getChannelHeroFallbackImage(creatorData);
-    if (!rawImage) {
-      throw new Error(lastImageError || "NO_ACTIVE_IMAGE_KEY");
-    }
+    rawImage = getChannelHeroFallbackImage(creatorData) || "/images/saas_multi_device_showcase.jpg";
     if (lastImageError && typeof window !== "undefined") {
       try {
         const handle = (creatorData?.handle || "creator").replace(/^@+/, "");
@@ -4752,7 +4764,13 @@ CRITICAL FORMATTING & SYNTAX RULES:
 3. Do NOT compress or minify code into a single line. Always use clean multi-line formatting with proper 2-space indentation and real newlines.
 4. If writing HTML or index.html: Include full <!DOCTYPE html>, <head>, Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>), and standard semantic HTML structure. If using JavaScript inside HTML, embed inside clean <script> tags so it executes seamlessly.
 5. If writing React / JSX / JS: Write complete React functional components with Tailwind CSS utility classes and real interactivity.
-6. Never use placeholders like 'TODO', '...', or 'add content here'. Implement full real logic.`
+6. Never use placeholders like 'TODO', '...', or 'add content here'. Implement full real logic.
+7. CRITICAL DESIGN & COLOR RULES:
+   - Primary Brand Accent: Bold signature crimson red (#c81e3c / rgb(200, 30, 60)). All primary CTA buttons, active tabs, highlight borders, and badges must use #c81e3c.
+   - Text Color on Red: All text and icons on red (#c81e3c) backgrounds MUST ALWAYS be crisp pure white (#ffffff / text-white). Never use dark or muted text on red.
+   - Canvas: Matte black and deep graphite surfaces (#090b0e, #0c0e14, #0a0c12).
+   - Border Radius: Strict zero border radius (rounded-none / border-radius: 0px) across all cards, buttons, badges, modals, and containers. Do NOT use rounded-xl, rounded-2xl, or rounded-full.
+   - Never default to generic blue or green.`
 
   const prompt = `File: ${fileName} (${fileLanguage || 'code'})
 Product Name: ${product}
@@ -4829,14 +4847,14 @@ export default function App() {
       {/* Top Header */}
       <header className="h-16 border-b border-white/[0.08] bg-[#0c0e14]/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/20">
+          <div className="w-9 h-9 rounded-none bg-gradient-to-tr from-[#c81e3c] to-[#e11d48] flex items-center justify-center font-black text-white shadow-lg shadow-[#c81e3c]/20">
             ⚡
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm tracking-tight text-white">${product}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="text-[10px] px-2 py-0.5 rounded-none bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35 font-mono font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]"></span>
                 v1.0.0 Live MVP
               </span>
             </div>
@@ -4845,7 +4863,7 @@ export default function App() {
         </div>
 
         {/* Center Tabs */}
-        <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.06] text-xs">
+        <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-none border border-white/[0.06] text-xs">
           {[
             { id: 'workspace', label: 'Workspace Engine' },
             { id: 'telemetry', label: 'Telemetry & Logs' },
@@ -4854,7 +4872,7 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={'px-3 py-1.5 rounded-lg font-medium transition-all ' + (activeTab === tab.id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white')}
+              className={'px-3 py-1.5 rounded-none font-medium transition-all ' + (activeTab === tab.id ? 'bg-[#c81e3c] text-white shadow-sm' : 'text-slate-400 hover:text-white')}
             >
               {tab.label}
             </button>
@@ -4864,9 +4882,9 @@ export default function App() {
         {/* Right Info */}
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-slate-400 hidden sm:inline">
-            Status: <strong className="text-emerald-400">Operational</strong>
+            Status: <strong className="text-white">Operational</strong>
           </span>
-          <button className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white border border-white/[0.08] transition-all">
+          <button className="px-3 py-1.5 rounded-none bg-white/[0.06] hover:bg-white/[0.1] text-xs font-semibold text-white border border-white/[0.08] transition-all">
             API Keys
           </button>
         </div>
@@ -4876,21 +4894,21 @@ export default function App() {
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
         {/* Metric Ribbons */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="p-4 rounded-none bg-white/[0.02] border border-white/[0.06]">
             <p className="text-[11px] text-slate-400 uppercase font-semibold">Active Workflows</p>
             <p className="text-xl font-black text-white mt-1">{telemetry.activeRuns}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="p-4 rounded-none bg-white/[0.02] border border-white/[0.06]">
             <p className="text-[11px] text-slate-400 uppercase font-semibold">Completed Runs</p>
-            <p className="text-xl font-black text-emerald-400 mt-1">{telemetry.completedTasks}</p>
+            <p className="text-xl font-black text-white mt-1">{telemetry.completedTasks}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="p-4 rounded-none bg-white/[0.02] border border-white/[0.06]">
             <p className="text-[11px] text-slate-400 uppercase font-semibold">API Latency</p>
-            <p className="text-xl font-black text-blue-400 mt-1">{telemetry.latencyMs}ms</p>
+            <p className="text-xl font-black text-[#c81e3c] mt-1">{telemetry.latencyMs}ms</p>
           </div>
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="p-4 rounded-none bg-white/[0.02] border border-white/[0.06]">
             <p className="text-[11px] text-slate-400 uppercase font-semibold">Core SLA</p>
-            <p className="text-xl font-black text-indigo-400 mt-1">{telemetry.uptimePercent}%</p>
+            <p className="text-xl font-black text-white mt-1">{telemetry.uptimePercent}%</p>
           </div>
         </div>
 
@@ -4912,16 +4930,16 @@ export default function App() {
         )}
 
         {activeTab === 'telemetry' && (
-          <div className="p-6 rounded-3xl bg-[#0c0e14] border border-white/[0.08] space-y-4">
+          <div className="p-6 rounded-none bg-[#0c0e14] border border-white/[0.08] space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-blue-400" />
+              <Terminal className="w-4 h-4 text-[#c81e3c]" />
               <span>Real-Time Production Event Stream</span>
             </h3>
-            <div className="bg-[#06080a] p-4 rounded-2xl border border-white/[0.06] font-mono text-xs space-y-2 max-h-96 overflow-y-auto">
+            <div className="bg-[#06080a] p-4 rounded-none border border-white/[0.06] font-mono text-xs space-y-2 max-h-96 overflow-y-auto">
               {recentLogs.map(l => (
                 <div key={l.id} className="flex items-center gap-2">
                   <span className="text-slate-500">[{l.time}]</span>
-                  <span className={'px-1.5 py-0.5 rounded text-[10px] font-bold ' + (l.level === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400')}>{l.level}</span>
+                  <span className={'px-1.5 py-0.5 rounded-none text-[10px] font-bold ' + (l.level === 'SUCCESS' ? 'bg-[#c81e3c]/15 text-white' : 'bg-white/10 text-white')}>{l.level}</span>
                   <span className="text-slate-200">{l.msg}</span>
                 </div>
               ))}
@@ -4930,13 +4948,13 @@ export default function App() {
         )}
 
         {activeTab === 'api' && (
-          <div className="p-6 rounded-3xl bg-[#0c0e14] border border-white/[0.08] space-y-4 font-mono text-xs">
+          <div className="p-6 rounded-none bg-[#0c0e14] border border-white/[0.08] space-y-4 font-mono text-xs">
             <h3 className="text-sm font-bold text-white">FastAPI Endpoints</h3>
             <div className="space-y-2 text-slate-300">
-              <p className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]"><strong className="text-blue-400">GET</strong> /health — Service health check</p>
-              <p className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]"><strong className="text-emerald-400">POST</strong> /api/v1/workspace/execute — Execute workflow item</p>
-              <p className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]"><strong className="text-indigo-400">POST</strong> /api/v1/auth/login — OAuth JWT token generator</p>
-              <p className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]"><strong className="text-purple-400">POST</strong> /api/v1/webhooks/stripe — Billing webhook listener</p>
+              <p className="p-2.5 rounded-none bg-white/[0.03] border border-white/[0.04]"><strong className="text-[#c81e3c]">GET</strong> /health — Service health check</p>
+              <p className="p-2.5 rounded-none bg-white/[0.03] border border-white/[0.04]"><strong className="text-white">POST</strong> /api/v1/workspace/execute — Execute workflow item</p>
+              <p className="p-2.5 rounded-none bg-white/[0.03] border border-white/[0.04]"><strong className="text-white">POST</strong> /api/v1/auth/login — OAuth JWT token generator</p>
+              <p className="p-2.5 rounded-none bg-white/[0.03] border border-white/[0.04]"><strong className="text-[#c81e3c]">POST</strong> /api/v1/webhooks/stripe — Billing webhook listener</p>
             </div>
           </div>
         )}
@@ -4982,10 +5000,10 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
   return (
     <div className="space-y-6">
       {/* Hero Action Card */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0c0e14] to-[#121622] border border-white/[0.08] shadow-xl space-y-4">
+      <div className="p-6 rounded-none bg-gradient-to-br from-[#0c0e14] to-[#121622] border border-white/[0.08] shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Interactive Workflow</span>
+            <span className="text-[11px] font-bold text-[#c81e3c] uppercase tracking-wider">Interactive Workflow</span>
             <h2 className="text-lg font-black text-white mt-0.5">{productName} Execution Engine</h2>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
               ${valueProp}. Built for ${targetCustomer}.
@@ -4994,7 +5012,7 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
           <button
             onClick={() => handleExecute('Primary Pipeline Run')}
             disabled={isRunning}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="px-5 py-2.5 rounded-none bg-[#c81e3c] hover:bg-[#a61830] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#c81e3c]/25 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             {isRunning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
             <span>{isRunning ? 'Running Pipeline...' : 'Trigger Pipeline Run'}</span>
@@ -5009,14 +5027,14 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
           {featureList.map((feat, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-2xl bg-[#0c0e14] border border-white/[0.06] hover:border-blue-500/30 transition-all flex items-start justify-between gap-3 group"
+              className="p-4 rounded-none bg-[#0c0e14] border border-white/[0.06] hover:border-[#c81e3c]/40 transition-all flex items-start justify-between gap-3 group"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white group-hover:text-blue-300 transition-colors">
+                  <span className="text-xs font-bold text-white group-hover:text-[#c81e3c] transition-colors">
                     {feat.name}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-white/[0.06] text-slate-400">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-none font-mono font-bold bg-white/[0.06] text-slate-400">
                     {feat.priority || 'P0'}
                   </span>
                 </div>
@@ -5024,7 +5042,7 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
               </div>
               <button
                 onClick={() => handleExecute(feat.name)}
-                className="p-2 rounded-xl bg-white/[0.04] hover:bg-blue-600/20 text-slate-400 hover:text-blue-300 transition-colors shrink-0"
+                className="p-2 rounded-none bg-white/[0.04] hover:bg-[#c81e3c]/20 text-slate-400 hover:text-[#c81e3c] transition-colors shrink-0"
                 title="Execute feature module"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -5036,7 +5054,7 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
 
       {/* Execution Telemetry Inspector */}
       {executionOutput && (
-        <div className="p-5 rounded-3xl bg-[#06080a] border border-white/[0.08] space-y-3 animate-in fade-in duration-200">
+        <div className="p-5 rounded-none bg-[#06080a] border border-white/[0.08] space-y-3 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-2">
             <span className="font-bold text-white flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -5044,7 +5062,7 @@ export default function Workspace({ productName = '${product}', onTriggerRun }) 
             </span>
             <span className="text-[10px] font-mono text-slate-400">{executionOutput.timestamp}</span>
           </div>
-          <pre className="text-[11px] font-mono text-emerald-300 bg-black/40 p-3 rounded-xl overflow-x-auto">
+          <pre className="text-[11px] font-mono text-emerald-300 bg-black/40 p-3 rounded-none overflow-x-auto">
             {JSON.stringify(executionOutput, null, 2)}
           </pre>
         </div>
@@ -5480,7 +5498,13 @@ export async function generateCompleteMVPCodebaseAI(projectData, signal = undefi
   const tech = projectData?.mvpBuildPlan?.technicalPlan || {}
   const techStack = tech.techStack || { frontend: 'React + Vite', backend: 'FastAPI Python' }
 
-  const system = `You are a Principal Full-Stack Autonomous AI Software Architect. You write clean, functional, production-ready code files for a newly initiated MVP software product. Every file must contain complete, high-quality code. Return ONLY valid JSON.`
+  const system = `You are a Principal Full-Stack Autonomous AI Software Architect. You write clean, functional, production-ready code files for a newly initiated MVP software product. Every file must contain complete, high-quality code. Return ONLY valid JSON.
+CRITICAL DESIGN & THEME SYSTEM MANDATE:
+1. Primary Brand Accent: Bold signature crimson red (#c81e3c / rgb(200, 30, 60)).
+2. Background Surfaces: Deep matte black and graphite canvas (#090b0e, #0c0e14, #0a0c12).
+3. Text on Red Elements: Crisp pure white (#ffffff / text-white). Never use dark or muted text on red buttons/badges.
+4. Border Radius: Strict zero border radius (rounded-none / border-radius: 0px) across all buttons, cards, containers, badges, and modals.
+5. Do NOT use generic blue or green themes.`
   const prompt = `Generate a full multi-file initial codebase for:
 Product Name: ${product}
 Target Customer: ${spec.targetCustomer || projectData?.validationPlan?.customer || 'Core Users'}

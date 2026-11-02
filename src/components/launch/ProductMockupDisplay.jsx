@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react'
 
-export default function ProductMockupDisplay({ project, theme = 'lime', brandColor = null }) {
+export default function ProductMockupDisplay({ project, theme = 'crimson', brandColor = '#c81e3c' }) {
   const productName = project?.productName || 'The DataLab Hub System'
   const creatorName = project?.creatorName || 'Keith Galli'
   const niche = project?.niche || 'Data Science & Machine Learning'
@@ -237,36 +237,52 @@ export default function ProductMockupDisplay({ project, theme = 'lime', brandCol
 
   // Theme styling
   const themeMap = {
+    crimson: {
+      border: 'border-[#252B32]',
+      glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c] text-white',
+      text: 'text-[#c81e3c]',
+      gradient: 'from-[#101419] to-[#0D1014]'
+    },
+    red: {
+      border: 'border-[#252B32]',
+      glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c] text-white',
+      text: 'text-[#c81e3c]',
+      gradient: 'from-[#101419] to-[#0D1014]'
+    },
     lime: {
       border: 'border-[#252B32]',
-      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
-      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
-      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
-      text: 'text-[#C8FF3D]',
+      glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c] text-white',
+      text: 'text-[#c81e3c]',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     emerald: {
       border: 'border-[#252B32]',
-      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
-      badge: 'bg-[#78E08F]/15 text-[#78E08F] border border-[#78E08F]/30',
-      primaryBg: 'bg-[#78E08F] text-[#080A0C]',
-      text: 'text-[#78E08F]',
+      glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c] text-white',
+      text: 'text-[#c81e3c]',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     purple: {
       border: 'border-[#252B32]',
-      glow: 'shadow-[0_20px_50px_rgba(0,0,0,0.6)]',
-      badge: 'bg-[#C8FF3D]/10 text-[#C8FF3D] border border-[#C8FF3D]/30',
-      primaryBg: 'bg-[#C8FF3D] text-[#080A0C]',
-      text: 'text-[#C8FF3D]',
+      glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c] text-white',
+      text: 'text-[#c81e3c]',
       gradient: 'from-[#101419] to-[#0D1014]'
     }
   }
-  const currentTheme = themeMap[theme] || themeMap.lime
-  const accentHex = brandColor || (theme === 'emerald' ? '#78E08F' : '#C8FF3D')
+  const currentTheme = themeMap[theme] || themeMap.crimson
+  const accentHex = brandColor || '#c81e3c'
 
   return (
-    <div className={`w-full rounded-2xl bg-[#101419] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4 text-left select-none keep-dark product-mockup-display`}>
+    <div className={`w-full rounded-none bg-[#101419] border ${currentTheme.border} p-4 sm:p-6 shadow-2xl ${currentTheme.glow} transition-all space-y-4 text-left select-none keep-dark product-mockup-display`} style={{ borderRadius: '0px' }}>
       {/* macOS Window Titlebar */}
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 border-b border-[#252B32] pb-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -275,15 +291,15 @@ export default function ProductMockupDisplay({ project, theme = 'lime', brandCol
             <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
           </div>
-          <div className="px-2.5 py-1 rounded-lg bg-[#0D1014] border border-[#252B32] text-[10px] font-mono flex items-center gap-1.5 max-w-[200px] sm:max-w-xs truncate" style={{ color: accentHex }}>
+          <div className="px-2.5 py-1 rounded-none bg-[#0D1014] border border-[#252B32] text-[10px] font-mono flex items-center gap-1.5 max-w-[200px] sm:max-w-xs truncate" style={{ color: accentHex, borderRadius: '0px' }}>
             <span className="truncate font-semibold">{productName || 'Software Architecture'}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <span
-            className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold whitespace-nowrap ${currentTheme.badge}`}
-            style={brandColor ? { backgroundColor: `${accentHex}18`, color: accentHex, borderColor: `${accentHex}40` } : {}}
+            className={`px-2.5 py-0.5 rounded-none text-[9px] font-mono font-bold whitespace-nowrap ${currentTheme.badge}`}
+            style={{ backgroundColor: `${accentHex}20`, color: '#ffffff', borderColor: `${accentHex}50`, borderRadius: '0px' }}
           >
             {config.badgeText}
           </span>
@@ -296,12 +312,12 @@ export default function ProductMockupDisplay({ project, theme = 'lime', brandCol
       {/* Main SaaS App UI Container */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
         {/* App Sidebar Navigation */}
-        <div className="md:col-span-3 bg-[#0D1014] border border-[#252B32] rounded-xl p-3 space-y-3">
+        <div className="md:col-span-3 bg-[#0D1014] border border-[#252B32] rounded-none p-3 space-y-3" style={{ borderRadius: '0px' }}>
           {/* Brand Header */}
           <div className="flex items-center gap-2 px-1">
             <div
-              className={`w-8 h-8 rounded-lg ${currentTheme.primaryBg} flex items-center justify-center font-black text-xs shadow-md shrink-0`}
-              style={brandColor ? { backgroundColor: accentHex, color: '#080A0C' } : {}}
+              className={`w-8 h-8 rounded-none ${currentTheme.primaryBg} flex items-center justify-center font-black text-xs shadow-md shrink-0`}
+              style={{ backgroundColor: accentHex, color: '#ffffff', borderRadius: '0px' }}
             >
               <Code2 className="w-4 h-4" />
             </div>

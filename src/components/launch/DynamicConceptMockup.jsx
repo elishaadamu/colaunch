@@ -42,6 +42,7 @@ import { getFriendlyColorName, hexToRgba } from "../../utils/avatarColorExtracto
  * Guaranteed readability and contrast against dark slate / obsidian canvases.
  */
 export const BRAND_COLORS = [
+  { name: "Creator Crimson", hex: "#c81e3c", bg: "bg-[#c81e3c]", text: "text-[#c81e3c]", border: "border-[#c81e3c]/40", glow: "rgba(200, 30, 60, 0.35)" },
   { name: "Electric Emerald", hex: "#10B981", bg: "bg-emerald-600", text: "text-emerald-400", border: "border-emerald-500/40", glow: "rgba(16, 185, 129, 0.35)" },
   { name: "Forge Lime", hex: "#C8FF3D", bg: "bg-[#C8FF3D]", text: "text-[#C8FF3D]", border: "border-[#C8FF3D]/40", glow: "rgba(200, 255, 61, 0.3)" },
   { name: "Ocean Cyan", hex: "#06B6D4", bg: "bg-cyan-600", text: "text-cyan-400", border: "border-cyan-500/40", glow: "rgba(6, 182, 212, 0.35)" },
@@ -141,7 +142,7 @@ function LandingPagePreviewModal({
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#090B10] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-auto text-slate-100 flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-4xl bg-[#090B10] border border-slate-800 rounded-none shadow-2xl overflow-hidden my-auto text-slate-100 flex flex-col max-h-[92vh]" style={{ borderRadius: '0px' }}>
         {/* Modal Top Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-[#0D1017] border-b border-slate-800">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
@@ -150,11 +151,12 @@ function LandingPagePreviewModal({
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="text-[10px] font-bold px-2.5 py-0.5 rounded-md border shadow-xs"
+              className="text-[10px] font-bold px-2.5 py-0.5 rounded-none border shadow-xs"
               style={{
-                color: safeAccent,
-                backgroundColor: `${safeAccent}1a`,
-                borderColor: `${safeAccent}45`
+                color: '#ffffff',
+                backgroundColor: `${safeAccent}35`,
+                borderColor: `${safeAccent}60`,
+                borderRadius: '0px'
               }}
             >
               Interactive Preview
@@ -162,8 +164,9 @@ function LandingPagePreviewModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-none hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="Close Preview"
+              style={{ borderRadius: '0px' }}
             >
               <X className="w-5 h-5" />
             </button>
@@ -176,8 +179,8 @@ function LandingPagePreviewModal({
           <nav className="flex items-center justify-between pb-6 border-b border-slate-800/80">
             <div className="flex items-center gap-2.5">
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shadow-md"
-                style={{ backgroundColor: safeAccent, color: contrastText }}
+                className="w-8 h-8 rounded-none flex items-center justify-center font-black text-sm shadow-md"
+                style={{ backgroundColor: safeAccent, color: '#ffffff', borderRadius: '0px' }}
               >
                 {conceptName.charAt(0)}
               </div>
@@ -193,8 +196,8 @@ function LandingPagePreviewModal({
               <span className="text-xs text-slate-400 hover:text-white cursor-pointer hidden sm:inline">Log in</span>
               <button
                 type="button"
-                className="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-md hover:opacity-95"
-                style={{ backgroundColor: safeAccent, color: contrastText }}
+                className="px-3.5 py-1.5 rounded-none font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-md hover:opacity-95"
+                style={{ backgroundColor: safeAccent, color: '#ffffff', borderRadius: '0px' }}
               >
                 Get Started Free →
               </button>
@@ -203,11 +206,12 @@ function LandingPagePreviewModal({
 
           {/* Hero Section */}
           <div className="text-center max-w-2xl mx-auto space-y-5 pt-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold border shadow-xs"
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-none text-xs font-semibold border shadow-xs"
               style={{
-                color: safeAccent,
-                backgroundColor: `${safeAccent}18`,
-                borderColor: `${safeAccent}40`
+                color: '#ffffff',
+                backgroundColor: `${safeAccent}30`,
+                borderColor: `${safeAccent}50`,
+                borderRadius: '0px'
               }}
             >
               <span>Co-Launched with {creatorName} &mdash; Built for {niche}</span>

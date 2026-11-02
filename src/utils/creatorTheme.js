@@ -10,6 +10,30 @@ import { getFriendlyColorName } from './avatarColorExtractor'
 
 export const CREATOR_THEMES = [
   {
+    id: 'crimson',
+    name: 'Creator Crimson',
+    subtitle: 'Flagship Signature Red & Studio Tech',
+    primaryHex: '#c81e3c',
+    primaryHover: '#a61830',
+    glow: 'rgba(200, 30, 60, 0.25)',
+    bgCanvas: '#090d16',
+    bgCard: '#0f131f',
+    bgCardSubtle: '#141824',
+    borderCard: '#22293d',
+    borderActive: '#c81e3c',
+    textHeading: '#ffffff',
+    textBody: '#cbd5e1',
+    textMuted: '#94a3b8',
+    badgeBg: 'rgba(200, 30, 60, 0.15)',
+    badgeText: '#ffffff',
+    badgeBorder: 'rgba(200, 30, 60, 0.35)',
+    accentBtnBg: '#c81e3c',
+    accentBtnText: '#ffffff',
+    gradientAccent: 'linear-gradient(90deg, #c81e3c 0%, #e11d48 100%)',
+    dotColor: '#cbd5e1',
+    ringColor: 'rgba(200, 30, 60, 0.25)',
+  },
+  {
     id: 'emerald',
     name: 'Studio Emerald',
     subtitle: 'Growth, SaaS & Tech',
@@ -184,25 +208,10 @@ export const CREATOR_THEMES = [
  */
 export function getAiRecommendedTheme(niche = '', productName = '') {
   const text = `${niche} ${productName}`.toLowerCase()
-  if (text.includes('game') || text.includes('gaming') || text.includes('fitness') || text.includes('sport') || text.includes('workout') || text.includes('creator') || text.includes('lifestyle')) {
-    return CREATOR_THEMES.find(t => t.id === 'lime') || CREATOR_THEMES[0]
+  if (text.includes('mkbhd') || text.includes('marques') || text.includes('red') || text.includes('crimson') || text.includes('tech') || text.includes('hardware') || text.includes('panel')) {
+    return CREATOR_THEMES[0] // Creator Crimson (#c81e3c)
   }
-  if (text.includes('ai') || text.includes('data') || text.includes('bot') || text.includes('automation') || text.includes('workflow') || text.includes('intelligence')) {
-    return CREATOR_THEMES.find(t => t.id === 'indigo') || CREATOR_THEMES[0]
-  }
-  if (text.includes('finance') || text.includes('crypto') || text.includes('invest') || text.includes('trading') || text.includes('executive') || text.includes('wealth')) {
-    return CREATOR_THEMES.find(t => t.id === 'obsidian') || CREATOR_THEMES[0]
-  }
-  if (text.includes('electronics') || text.includes('hardware') || text.includes('circuit') || text.includes('repair') || text.includes('mechanic') || text.includes('industrial') || text.includes('operations') || text.includes('b2b')) {
-    return CREATOR_THEMES.find(t => t.id === 'amber') || CREATOR_THEMES.find(t => t.id === 'steel') || CREATOR_THEMES[0]
-  }
-  if (text.includes('video') || text.includes('media') || text.includes('youtube') || text.includes('course') || text.includes('community') || text.includes('vip') || text.includes('mastermind')) {
-    return CREATOR_THEMES.find(t => t.id === 'amber') || CREATOR_THEMES[0]
-  }
-  if (text.includes('design') || text.includes('dev') || text.includes('code') || text.includes('tool') || text.includes('cloud') || text.includes('software') || text.includes('saas') || text.includes('tech')) {
-    return CREATOR_THEMES.find(t => t.id === 'cyan') || CREATOR_THEMES[0]
-  }
-  return CREATOR_THEMES[0] // Studio Emerald default
+  return CREATOR_THEMES[0] // Creator Crimson (#c81e3c) default
 }
 
 /**
@@ -214,6 +223,9 @@ export function resolveCreatorTheme(colorInput, niche = '', productName = '') {
   }
 
   const raw = String(colorInput).trim().toLowerCase()
+  if (raw.includes('red') || raw.includes('crimson') || raw.includes('c81e3c') || raw.includes('rose') || raw.includes('mkbhd')) {
+    return CREATOR_THEMES[0]
+  }
 
   // Match by theme ID
   const byId = CREATOR_THEMES.find(t => t.id === raw)

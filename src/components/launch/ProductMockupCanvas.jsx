@@ -11,7 +11,7 @@ import { generateProductImageWithOpenAI } from '../../services/ai'
 export default function ProductMockupCanvas({ project, onSaveMockupImage, onShowNotification }) {
   const mockupRef = useRef(null)
   const [viewMode, setViewMode] = useState('interactive') // 'interactive' | 'ai_generated' | 'converted'
-  const [accentColor, setAccentColor] = useState('yellow')
+  const [accentColor, setAccentColor] = useState('crimson')
   const [isCapturing, setIsCapturing] = useState(false)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [convertedImageUrl, setConvertedImageUrl] = useState(() => project?.mockupImage || null)
@@ -117,19 +117,39 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
       text: 'text-amber-400',
       gradient: 'from-amber-950/40 to-[#0e1117]'
     },
-    rose: {
-      border: 'border-rose-500/40',
-      glow: 'shadow-rose-950/50',
-      badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-      primaryBg: 'bg-rose-600',
+    crimson: {
+      border: 'border-[#c81e3c]/40',
+      glow: 'shadow-[#c81e3c]/20',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c]',
       primaryText: 'text-white font-bold',
-      bar: 'bg-rose-500',
-      text: 'text-rose-400',
-      gradient: 'from-rose-950/40 to-[#0e1117]'
+      bar: 'bg-[#c81e3c]',
+      text: 'text-[#c81e3c]',
+      gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
+    },
+    red: {
+      border: 'border-[#c81e3c]/40',
+      glow: 'shadow-[#c81e3c]/20',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c]',
+      primaryText: 'text-white font-bold',
+      bar: 'bg-[#c81e3c]',
+      text: 'text-[#c81e3c]',
+      gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
+    },
+    rose: {
+      border: 'border-[#c81e3c]/40',
+      glow: 'shadow-[#c81e3c]/20',
+      badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
+      primaryBg: 'bg-[#c81e3c]',
+      primaryText: 'text-white font-bold',
+      bar: 'bg-[#c81e3c]',
+      text: 'text-[#c81e3c]',
+      gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
     },
   }
 
-  const currentTheme = themeMap[accentColor] || themeMap.yellow || themeMap.lime
+  const currentTheme = themeMap[accentColor] || themeMap.crimson || themeMap.red
 
   // Convert live rendered DOM to PNG image
   const handleConvertToImage = async () => {
