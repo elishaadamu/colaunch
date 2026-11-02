@@ -82,20 +82,32 @@ function GlobalToast({ toast, onClose }) {
   const isSuccess = toast.type === 'success'
   const isError = toast.type === 'error'
 
-  // Clean solid theme accents (NO gradients, NO progress bar, matching user reference)
+  // Clean light theme matching reference image: 4px left accent stripe, soft tinted surface, solid circular icon badge
   const theme = isSuccess
     ? {
-        accent: '#10b981', // solid emerald
-        title: toast.title || 'Success',
+        borderLeft: '#16a34a',
+        bg: '#dcfce7',
+        titleColor: '#166534',
+        msgColor: '#15803d',
+        closeColor: 'text-emerald-700 hover:text-emerald-950',
+        title: toast.title || 'Message sent',
       }
     : isError
       ? {
-          accent: '#ef4444', // solid red
-          title: toast.title || 'Error',
+          borderLeft: '#ef4444',
+          bg: '#fee2e2',
+          titleColor: '#991b1b',
+          msgColor: '#b91c1c',
+          closeColor: 'text-rose-700 hover:text-rose-950',
+          title: toast.title || 'Something has wrong',
         }
       : {
-          accent: '#3b82f6', // solid blue / info
-          title: toast.title || 'Information',
+          borderLeft: '#f59e0b',
+          bg: '#fef9c3',
+          titleColor: '#854d0e',
+          msgColor: '#a16207',
+          closeColor: 'text-amber-700 hover:text-amber-950',
+          title: toast.title || 'Keep in mind information',
         }
 
   return (
@@ -112,48 +124,57 @@ function GlobalToast({ toast, onClose }) {
         }
       `}</style>
 
-      {/* Solid card with solid left accent stripe, zero gradients, zero progress bar, zero border radius */}
+      {/* Light card with 4px solid left accent stripe, zero gradients, zero progress bar, zero border radius */}
       <div
-        className="relative flex items-stretch rounded-none border-0 shadow-[0_20px_48px_rgba(0,0,0,0.7)] overflow-hidden"
+        className="relative flex items-stretch rounded-none border-0 shadow-[0_12px_36px_rgba(0,0,0,0.18)] overflow-hidden"
         style={{
-          background: '#0f121a',
+          background: theme.bg,
           minWidth: 320,
-          maxWidth: 440,
+          maxWidth: 460,
           borderRadius: '0px'
         }}
       >
-        {/* Solid left accent vertical stripe */}
+        {/* Solid left accent vertical stripe (4px) */}
         <div
-          className="w-1.5 shrink-0"
-          style={{ background: theme.accent }}
+          className="w-1 shrink-0"
+          style={{ background: theme.borderLeft }}
         />
 
         {/* Inner Content */}
-        <div className="flex items-center gap-3.5 px-4 py-3.5 flex-1 min-w-0">
+        <div className="flex items-center gap-3 px-4 py-3 flex-1 min-w-0">
           {/* Solid circular badge with white icon */}
           <div
-            className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm"
-            style={{ background: theme.accent }}
+            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white shadow-xs"
+            style={{ background: theme.borderLeft }}
           >
             {isSuccess ? (
-              <Check size={14} strokeWidth={3} className="text-white" />
+              <Check size={13} strokeWidth={3} className="text-white" />
             ) : isError ? (
-              <AlertCircle size={14} strokeWidth={2.5} className="text-white" />
+              <AlertCircle size={13} strokeWidth={2.5} className="text-white" />
             ) : (
-              <Info size={14} strokeWidth={2.5} className="text-white" />
+              <Info size={13} strokeWidth={2.5} className="text-white" />
             )}
           </div>
 
-          {/* Text content */}
+          {/* Text content matching reference typography */}
           <div className="flex-1 min-w-0 pr-1">
-            <h5 className="text-[13px] font-bold text-white tracking-tight leading-snug truncate">
+            <h5 
+              className="text-[13px] font-bold tracking-tight leading-snug truncate"
+              style={{ color: theme.titleColor }}
+            >
               {theme.title}
             </h5>
-            <p className="text-[12px] text-slate-300 leading-snug mt-0.5">
+            <p 
+              className="text-[12px] font-medium leading-snug mt-0.5"
+              style={{ color: theme.msgColor }}
+            >
               {toast.message}
             </p>
             {toast.subtitle && (
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p 
+                className="text-[11px] opacity-85 mt-0.5"
+                style={{ color: theme.msgColor }}
+              >
                 {toast.subtitle}
               </p>
             )}
@@ -163,10 +184,10 @@ function GlobalToast({ toast, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="w-6 h-6 rounded-none flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-1"
+            className={`w-5 h-5 rounded-none flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1 ${theme.closeColor}`}
             title="Dismiss notification"
           >
-            <X size={13} />
+            <X size={14} strokeWidth={2.5} />
           </button>
         </div>
       </div>

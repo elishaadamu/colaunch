@@ -905,10 +905,10 @@ function ProductLandingPage({
         className="w-full relative selection:bg-rose-500/20"
       >
 
-      {/* 2. Content-First Hero Section with Creator Identity */}
+      {/* 2. Content-First Hero Section with Creator Identity (Solid Flat Dark, Zero Gradients) */}
       <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
         style={{
-          background: `radial-gradient(ellipse at top center, rgba(${accent.rgb}, 0.12) 0%, transparent 65%), #0c0e16`
+          background: '#0c0e16'
         }}
       >
         <div className="max-w-4xl mx-auto space-y-4 relative z-10">

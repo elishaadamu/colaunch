@@ -67,164 +67,129 @@ function DashboardAppPreview() {
 
   return (
     <div className="h-full flex flex-col p-4 sm:p-6 bg-[#090d16] overflow-hidden">
-      {/* Top Header & Interactive Studio Control Bar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 mb-4 pb-4 border-b border-white/[0.08] flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-200 shrink-0">
-            <Monitor size={17} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                Live Platform &amp; App Preview
-              </h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 hidden sm:inline-block">
-                Production Simulator
-              </span>
-            </div>
-            <p className="text-[11px] sm:text-[12px] text-slate-400">
-              Interactive preview of what your community and members experience in production.
-            </p>
-          </div>
+      {/* Top Header matching user reference Image 3: Centered, clean, flat, zero gradients */}
+      <div className="text-center mb-5 pt-1 flex-shrink-0">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+          Live App Preview
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          This is how your space looks to your audience.
+        </p>
+
+        {/* Centered Device Switcher matching Image 3: Desktop vs Mobile */}
+        <div className="inline-flex items-center gap-1.5 p-1 mt-3.5 bg-[#0e1320] border border-[#202738] rounded-none">
+          <button
+            type="button"
+            onClick={() => setDevice('desktop')}
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold transition cursor-pointer rounded-none ${
+              device === 'desktop'
+                ? 'text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            style={device === 'desktop' ? { background: '#c81e3c', color: '#ffffff' } : {}}
+          >
+            <Laptop size={14} className={device === 'desktop' ? 'text-white' : 'text-slate-400'} />
+            <span>Desktop</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDevice('mobile')}
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold transition cursor-pointer rounded-none ${
+              device === 'mobile'
+                ? 'text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            style={device === 'mobile' ? { background: '#c81e3c', color: '#ffffff' } : {}}
+          >
+            <Smartphone size={14} className={device === 'mobile' ? 'text-white' : 'text-slate-400'} />
+            <span>Mobile</span>
+          </button>
         </div>
 
-        {/* Studio Controls: View Mode, Device, and Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* View Mode Toggle: Landing Page vs Member Space */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0e1320] border border-[#202738] shadow-inner">
+        {/* Secondary View Mode Bar (Public Landing vs Member App) */}
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <div className="inline-flex items-center gap-1 p-0.5 bg-[#0e1320] border border-[#202738] rounded-none">
             <button
               type="button"
               onClick={() => setViewMode('landing')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold transition cursor-pointer rounded-none ${
                 viewMode === 'landing'
-                  ? 'bg-[#c81e3c] text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:text-white'
               }`}
-              title="View Public Conversion Landing Page"
             >
-              <Globe size={13} />
+              <Globe size={12} />
               <span>Public Landing</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('product')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold transition cursor-pointer rounded-none ${
                 viewMode === 'product'
-                  ? 'bg-[#c81e3c] text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:text-white'
               }`}
-              title="View Authenticated Member Portal"
             >
-              <Layers size={13} />
+              <Layers size={12} />
               <span>Member App</span>
             </button>
           </div>
 
-          <div className="h-5 w-[1px] bg-white/[0.1] hidden sm:block" />
-
-          {/* Device Viewport Toggle: Desktop, Tablet, Mobile */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0e1320] border border-[#202738] shadow-inner">
-            <button
-              type="button"
-              onClick={() => setDevice('desktop')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                device === 'desktop'
-                  ? 'bg-white/10 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-              title="Desktop View (1280px)"
-            >
-              <Laptop size={13} />
-              <span className="hidden md:inline">Desktop</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDevice('tablet')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                device === 'tablet'
-                  ? 'bg-white/10 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-              title="Tablet View (768px)"
-            >
-              <Tablet size={13} />
-              <span className="hidden md:inline">Tablet</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDevice('mobile')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                device === 'mobile'
-                  ? 'bg-white/10 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-              title="Mobile View (375px)"
-            >
-              <Smartphone size={13} />
-              <span className="hidden md:inline">Mobile</span>
-            </button>
-          </div>
-
-          <div className="h-5 w-[1px] bg-white/[0.1] hidden md:block" />
-
-          {/* Quick Actions: Copy Link & Open in Tab */}
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-xs font-medium transition cursor-pointer"
-              title="Copy Preview URL"
-            >
-              {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-              <span className="hidden lg:inline">{copied ? 'Copied' : 'Copy Link'}</span>
-            </button>
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-xs font-medium transition cursor-pointer"
-              title="Open Platform in Fullscreen New Tab"
-            >
-              <ExternalLink size={13} />
-              <span className="hidden lg:inline">Open Tab</span>
-            </a>
-          </div>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-none border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-[11px] font-medium transition cursor-pointer"
+            title="Copy Preview URL"
+          >
+            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+            <span>{copied ? 'Copied' : 'Copy Link'}</span>
+          </button>
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-none border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-[11px] font-medium transition cursor-pointer"
+            title="Open in new window"
+          >
+            <ExternalLink size={12} />
+            <span>Open Tab</span>
+          </a>
         </div>
       </div>
 
       {/* Main Viewport Stage */}
       <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden relative">
         {device === 'desktop' && (
-          <div className="w-full max-w-6xl h-full flex flex-col rounded-2xl border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
-            {/* Sleek Browser Window Chrome */}
-            <div className="px-4 py-3 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+          <div className="w-full max-w-6xl h-full flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
+            {/* Sleek Browser Window Chrome matching user Image 3 */}
+            <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
+              <div className="flex items-center space-x-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
               </div>
 
               {/* Center Address Pill */}
               <div className="flex-1 max-w-md mx-3">
-                <div className="bg-[#121624] border border-[#222a3d] rounded-lg px-3.5 py-1.5 text-xs flex items-center justify-between shadow-inner">
+                <div className="bg-[#121624] border border-[#222a3d] rounded-none px-3.5 py-1 text-xs flex items-center justify-between shadow-inner">
                   <div className="flex items-center space-x-2 truncate min-w-0">
                     <Lock size={12} className="text-emerald-400 flex-shrink-0" />
                     <span className="truncate font-mono font-medium text-slate-300 text-[11px]">
                       {previewDomain}{viewMode === 'product' ? '/app' : ''}
                     </span>
                   </div>
-                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400 shrink-0 ml-2">
+                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded-none bg-white/5 border border-white/10 text-slate-400 shrink-0 ml-2">
                     {viewMode === 'landing' ? 'Public' : 'Member Portal'}
                   </span>
                 </div>
               </div>
 
               {/* Right Chrome Controls */}
-              <div className="flex items-center space-x-2.5 text-slate-400">
+              <div className="flex items-center space-x-2 text-slate-400">
                 <button
                   type="button"
                   onClick={handleReload}
-                  className="p-1 rounded-md hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  className="p-1 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
                   title="Reload Preview"
                 >
                   <RotateCcw size={13} className={`transition-transform duration-500 ${isReloading ? 'rotate-180 text-white' : ''}`} />
@@ -233,7 +198,7 @@ function DashboardAppPreview() {
                   href={previewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1 rounded-md hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  className="p-1 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
                   title="Open in new window"
                 >
                   <ExternalLink size={13} />
@@ -259,38 +224,10 @@ function DashboardAppPreview() {
           </div>
         )}
 
-        {device === 'tablet' && (
-          <div className="w-[760px] max-w-full h-full max-h-[760px] p-3.5 rounded-[36px] border-4 border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative ring-1 ring-white/10 my-auto transition-all duration-300">
-            {/* Tablet Camera dot */}
-            <div className="w-2.5 h-2.5 rounded-full bg-black mx-auto mb-2.5 border border-white/10" />
-
-            {/* Screen Viewport */}
-            <div className="flex-1 rounded-[24px] overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar">
-              <AppMockup
-                theme={theme}
-                activeTab={mockupActiveTab}
-                setActiveTab={setMockupActiveTab}
-                blueprint={blueprint}
-                creatorData={creatorData}
-                extraTabs={extraTabs}
-                isMobile={false}
-                viewMode={viewMode}
-                onSwitchView={(mode) => setViewMode(mode)}
-                onPlayVideo={(v) => setPlayingVideo(v)}
-              />
-            </div>
-          </div>
-        )}
-
         {device === 'mobile' && (
-          <div className="w-[360px] max-w-full h-full max-h-[740px] p-3 rounded-[48px] border-4 border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative ring-1 ring-white/10 my-auto transition-all duration-300">
-            {/* iPhone Dynamic Island */}
-            <div className="w-28 h-5 bg-black rounded-full mx-auto mb-2 flex items-center justify-center gap-2 border border-white/5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#151515] border border-white/10" />
-            </div>
-
+          <div className="w-[360px] max-w-full h-full max-h-[740px] p-2.5 rounded-none border border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative my-auto transition-all duration-300">
             {/* Screen Viewport */}
-            <div className="flex-1 rounded-[36px] overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar">
+            <div className="flex-1 rounded-none overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar border border-white/5">
               <AppMockup
                 theme={theme}
                 activeTab={mockupActiveTab}
@@ -304,9 +241,6 @@ function DashboardAppPreview() {
                 onPlayVideo={(v) => setPlayingVideo(v)}
               />
             </div>
-
-            {/* Home Indicator */}
-            <div className="w-32 h-1 bg-white/20 rounded-full mx-auto mt-2 mb-0.5" />
           </div>
         )}
       </div>

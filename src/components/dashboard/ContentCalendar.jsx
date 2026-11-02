@@ -40,7 +40,8 @@ import {
   Gamepad2,
   Layers,
   Sparkle,
-  Trash2
+  Trash2,
+  Bell
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -92,6 +93,12 @@ const STRATEGY_CONFIG = {
   STORY: { bg: 'bg-orange-500/15', text: 'text-orange-300', tag: 'RELATABILITY', desc: 'Personal storytelling connecting audience pain to solution.' }
 }
 
+// Month names constant
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
 // Dynamic week date computation helper
 function calculateWeekData(offset = 0) {
   const now = new Date()
@@ -135,9 +142,231 @@ function calculateWeekData(offset = 0) {
   return { headerTitle, weekNum, days, monday, sunday }
 }
 
-// Pre-seeded campaign dataset across past week (-1), current launch sprint (0), and next retention week (+1)
+// Dynamic Month Calendar Grid calculation (7 columns: Mon to Sun)
+function getMonthCalendarGrid(year, monthIndex) {
+  const firstDay = new Date(year, monthIndex, 1)
+  const lastDay = new Date(year, monthIndex + 1, 0)
+  
+  // (0 = Sun, 1 = Mon ... 6 = Sat) -> Mon=0 ... Sun=6
+  const startDayOfWeek = (firstDay.getDay() + 6) % 7
+  const daysInMonth = lastDay.getDate()
+  const prevMonthLastDay = new Date(year, monthIndex, 0).getDate()
+  
+  const cells = []
+  
+  // Leading days from prev month
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const dayNum = prevMonthLastDay - i
+    const d = new Date(year, monthIndex - 1, dayNum)
+    cells.push({
+      dayNumber: dayNum,
+      isCurrentMonth: false,
+      dateObj: d,
+      dateKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`,
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(d.getDay() + 6) % 7]
+    })
+  }
+  
+  // Days of current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, monthIndex, d)
+    cells.push({
+      dayNumber: d,
+      isCurrentMonth: true,
+      dateObj,
+      dateKey: `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(dateObj.getDay() + 6) % 7]
+    })
+  }
+  
+  // Trailing days from next month to make complete 7-day rows (e.g., 35 or 42 cells)
+  const remaining = (7 - (cells.length % 7)) % 7
+  for (let d = 1; d <= remaining; d++) {
+    const dateObj = new Date(year, monthIndex + 1, d)
+    cells.push({
+      dayNumber: d,
+      isCurrentMonth: false,
+      dateObj,
+      dateKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      dayName: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(dateObj.getDay() + 6) % 7]
+    })
+  }
+  
+  return cells
+}
+
+// Generate structured campaign posts for ANY week offset (guaranteeing week navigation is never empty)
+function generateWeekCampaignPosts(productName, offset = 0) {
+  const weekData = calculateWeekData(offset)
+  const templates = [
+    {
+      dayIndex: 0,
+      dayName: 'Mon',
+      channel: 'YouTube',
+      format: 'VIDEO',
+      strategy: 'LAUNCH',
+      time: '9:00 AM',
+      title: offset > 0 
+        ? `Masterclass: Scaling Sunday Setlists with ${productName}` 
+        : `How ${productName} Transforms Your Sunday Morning Preparation`,
+      caption: `Sunday mornings shouldn't come with panic over missing audio stems or incorrect chords.\n\nToday, we're officially unveiling the brand-new ${productName} Session Engine. See how our members prepare a full 5-song set in under 20 minutes.\n\nLink in description to start your 7-day free trial.\n\n#ChurchTech #WorshipLeader #MusicDirector`
+    },
+    {
+      dayIndex: 1,
+      dayName: 'Tue',
+      channel: 'Instagram',
+      format: 'REEL',
+      strategy: 'BTS',
+      time: '11:30 AM',
+      title: 'Sneak Peek: Upcoming Exclusive Songs for Members!',
+      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews #worshiptips`
+    },
+    {
+      dayIndex: 2,
+      dayName: 'Wed',
+      channel: 'YouTube',
+      format: 'SHORTS',
+      strategy: 'PROOF',
+      time: '1:00 PM',
+      title: `3 Reasons ${productName} is a Game Changer`,
+      caption: `Watch how our worship team cut rehearsal prep time by 50% using real-time key transposition.\n\nDrop a comment if your church needs this!\n\n#Shorts #Productivity #ChurchTech`
+    },
+    {
+      dayIndex: 3,
+      dayName: 'Thu',
+      channel: 'Instagram',
+      format: 'STORY',
+      strategy: 'COMMUNITY',
+      time: '3:00 PM',
+      title: `Story Poll: Chord Transpose vs Multitracks?`,
+      caption: `Quick question for our crew: Chord transpose or audio stem isolation? Vote in our story poll!`
+    },
+    {
+      dayIndex: 4,
+      dayName: 'Fri',
+      channel: 'YouTube',
+      format: 'VIDEO',
+      strategy: 'CTA',
+      time: '4:00 PM',
+      title: `Before and After: Elevate Your Worship Sessions`,
+      caption: `Founding member registration is live! Get full access to our complete music library and video stems for $29/mo.\n\nLink in description.`
+    },
+    {
+      dayIndex: 5,
+      dayName: 'Sat',
+      channel: 'Instagram',
+      format: 'REEL',
+      strategy: 'PROOF',
+      time: '12:00 PM',
+      title: `User Feedback: Weekend Saved with ${productName}`,
+      caption: `"I got my Saturday nights back with my family instead of manually transposing keys." - Sarah M.\n\nJoin the platform today!`
+    },
+    {
+      dayIndex: 6,
+      dayName: 'Sun',
+      channel: 'YouTube',
+      format: 'SHORTS',
+      strategy: 'VALUE',
+      time: '8:00 AM',
+      title: `Sunday Quick Tip: Quick Audio Monitoring Hacks`,
+      caption: `Happy Sunday everyone! Here are 3 quick tips for smooth audio monitoring during your service.\n\nHave a blessed morning!`
+    }
+  ]
+
+  return templates.map((t, idx) => {
+    const dayInfo = weekData.days[t.dayIndex]
+    const d = new Date(weekData.monday)
+    d.setDate(weekData.monday.getDate() + t.dayIndex)
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    return {
+      id: `post-gen-${offset}-${idx}-${Date.now()}`,
+      weekOffset: offset,
+      dayIndex: t.dayIndex,
+      dayName: t.dayName,
+      fullDateStr: dayInfo?.fullDateStr || `${t.dayName}day`,
+      dateKey,
+      channel: t.channel,
+      format: t.format,
+      strategy: t.strategy,
+      title: t.title,
+      caption: t.caption,
+      status: offset < 0 ? 'Posted' : offset === 0 && idx === 0 ? 'Scheduled' : 'Draft',
+      time: t.time,
+      imageUrl: null
+    }
+  })
+}
+
+// Pre-seeded campaign dataset across May 2025 (matching user reference mockup) + past, current, and future weeks
 function getDefaultCampaignPosts(productName) {
   return [
+    // ── MAY 2025 REFERENCE POSTS (Matching exact reference image 4) ──
+    {
+      id: 'post-may-6',
+      weekOffset: 0,
+      dayIndex: 1,
+      dayName: 'Tue',
+      dateKey: '2025-05-06',
+      fullDateStr: 'May 6, 2025',
+      channel: 'YouTube',
+      format: 'VIDEO',
+      strategy: 'LAUNCH',
+      title: 'Launch video',
+      caption: `Official launch of ${productName}! Watch our full demonstration of real-time stem separation and chord transposition.\n\nLink in description to start today.\n\n#newlaunch #worshipleader #churchmusic`,
+      status: 'Scheduled',
+      time: '9:00 AM',
+      imageUrl: null
+    },
+    {
+      id: 'post-may-9',
+      weekOffset: 0,
+      dayIndex: 4,
+      dayName: 'Fri',
+      dateKey: '2025-05-09',
+      fullDateStr: 'May 9, 2025',
+      channel: 'Instagram',
+      format: 'REEL',
+      strategy: 'BTS',
+      title: 'Teaser clip',
+      caption: `Sneak peek behind the scenes at our music arrangement studio.\n\nSee how easy preparing Sunday's music set becomes.\n\n#teaser #behindthescenes #churchrehearsal`,
+      status: 'Scheduled',
+      time: '12:00 PM',
+      imageUrl: null
+    },
+    {
+      id: 'post-may-14',
+      weekOffset: 0,
+      dayIndex: 2,
+      dayName: 'Wed',
+      dateKey: '2025-05-14',
+      fullDateStr: 'May 14, 2025',
+      channel: 'Instagram',
+      format: 'STORY',
+      strategy: 'COMMUNITY',
+      title: 'Story poll',
+      caption: `Which feature helps your church team most? Tap to vote in today's story poll!`,
+      status: 'Scheduled',
+      time: '3:00 PM',
+      imageUrl: null
+    },
+    {
+      id: 'post-may-20',
+      weekOffset: 0,
+      dayIndex: 1,
+      dayName: 'Tue',
+      dateKey: '2025-05-20',
+      fullDateStr: 'May 20, 2025',
+      channel: 'Instagram',
+      format: 'REEL',
+      strategy: 'BTS',
+      title: 'Big things are coming.',
+      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
+      status: 'Draft',
+      time: '11:30 AM',
+      imageUrl: null
+    },
+
     // ── PREVIOUS WEEK (weekOffset: -1) ──
     {
       id: 'post-prev-1',
@@ -384,8 +613,15 @@ export default function ContentCalendar() {
   const [weekOffset, setWeekOffset] = useState(0)
   const weekData = useMemo(() => calculateWeekData(weekOffset), [weekOffset])
 
+  // Month Calendar Navigation State (Defaults to May 2025 to match user reference Image 4)
+  const [calendarDate, setCalendarDate] = useState(() => new Date(2025, 4, 1))
+  const [selectedCalendarDateKey, setSelectedCalendarDateKey] = useState('2025-05-20')
+  const monthGrid = useMemo(() => {
+    return getMonthCalendarGrid(calendarDate.getFullYear(), calendarDate.getMonth())
+  }, [calendarDate])
+
   // Active View Mode: 'sprint' (7-day board) vs 'calendar' (monthly grid)
-  const [viewMode, setViewMode] = useState('sprint')
+  const [viewMode, setViewMode] = useState('calendar')
   const [platformFilter, setPlatformFilter] = useState('all')
 
   // Gamification State (XP, Streak, Level, Completed Quests)
@@ -502,13 +738,90 @@ export default function ContentCalendar() {
     })
   }, [posts, platformFilter, weekOffset])
 
-  // Active inspected post
+  // Month Calendar Navigation Handlers
+  const handlePrevMonth = () => {
+    setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+    if (triggerToast) triggerToast('Navigated to previous month', 'info')
+  }
+
+  const handleNextMonth = () => {
+    setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+    if (triggerToast) triggerToast('Navigated to next month', 'info')
+  }
+
+  const handleToday = () => {
+    const now = new Date()
+    setCalendarDate(new Date(now.getFullYear(), now.getMonth(), 1))
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    setSelectedCalendarDateKey(todayKey)
+    if (triggerToast) triggerToast('Jumped to current month & date', 'info')
+  }
+
+  // Active inspected post (seamlessly resolves for both calendar and sprint views)
   const activePost = useMemo(() => {
+    if (viewMode === 'calendar' && selectedCalendarDateKey) {
+      const matchOnDate = posts.find(p => p.dateKey === selectedCalendarDateKey)
+      if (matchOnDate) return matchOnDate
+    }
     const found = filteredPosts.find(p => p.id === selectedPostId)
     if (found) return found
     if (filteredPosts.length > 0) return filteredPosts[0]
     return posts.find(p => p.id === selectedPostId) || posts[0]
-  }, [filteredPosts, selectedPostId, posts])
+  }, [viewMode, selectedCalendarDateKey, filteredPosts, selectedPostId, posts])
+
+  // Select a calendar cell in month view
+  const handleSelectCalendarDay = (cell) => {
+    setSelectedCalendarDateKey(cell.dateKey)
+    const match = posts.find(p => p.dateKey === cell.dateKey)
+    if (match) {
+      setSelectedPostId(match.id)
+    } else {
+      const newDraftPost = {
+        id: `post-date-${cell.dateKey}`,
+        dateKey: cell.dateKey,
+        dayName: cell.dayName,
+        fullDateStr: `${MONTH_NAMES[cell.dateObj.getMonth()]} ${cell.dayNumber}, ${cell.dateObj.getFullYear()}`,
+        channel: 'Instagram',
+        format: 'REEL',
+        strategy: 'LAUNCH',
+        title: `Campaign Update for ${cell.dayName}day`,
+        caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews`,
+        status: 'Draft',
+        time: '11:30 AM',
+        imageUrl: null,
+        weekOffset: 0,
+        dayIndex: (cell.dateObj.getDay() + 6) % 7
+      }
+      setPosts(prev => [newDraftPost, ...prev])
+      setSelectedPostId(newDraftPost.id)
+      if (triggerToast) triggerToast(`Draft loaded for ${cell.dayName}day ${cell.dayNumber}!`, 'info')
+    }
+  }
+
+  // Week Shifting Handler that dynamically generates posts if none exist (guaranteed functional)
+  const handleShiftWeek = (direction) => {
+    const nextOffset = direction === 'next' ? weekOffset + 1 : direction === 'prev' ? weekOffset - 1 : 0
+    setWeekOffset(nextOffset)
+
+    // Check if posts exist for nextOffset, if not generate them immediately
+    setPosts(currentPosts => {
+      const hasPostsForOffset = currentPosts.some(p => (p.weekOffset ?? 0) === nextOffset)
+      if (!hasPostsForOffset) {
+        const generated = generateWeekCampaignPosts(productName, nextOffset)
+        return [...currentPosts, ...generated]
+      }
+      return currentPosts
+    })
+
+    if (triggerToast) {
+      triggerToast(
+        nextOffset === 0
+          ? 'Reset to active sprint week'
+          : `Navigated to ${direction === 'next' ? 'next' : 'previous'} week (${nextOffset > 0 ? `+${nextOffset}` : nextOffset})`,
+        'info'
+      )
+    }
+  }
 
   // Auto-sync selectedPostId when switching week or platform filter
   useEffect(() => {
@@ -888,62 +1201,110 @@ export default function ContentCalendar() {
       {/* ── TOP HEADER (Flat Dark Elevation, Border 0, Rounded 0) ── */}
       <header className="h-16 bg-[#0c0f17] px-4 sm:px-6 flex items-center justify-between flex-shrink-0 border-0">
         <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-          {/* Date & Week Title (Functional week shifting display) */}
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
-              {weekData.headerTitle}
-            </h2>
-            <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
-              Week {weekData.weekNum}
-            </span>
-          </div>
+          {viewMode === 'calendar' ? (
+            /* Month Calendar Header Controls matching user reference Image 4 */
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+              <h2 className="text-base sm:text-xl font-extrabold text-white tracking-tight min-w-[110px]">
+                {MONTH_NAMES[calendarDate.getMonth()]} {calendarDate.getFullYear()}
+              </h2>
 
-          {/* Week Shift Controls (Real Date Navigation) */}
-          <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
-            <button
-              type="button"
-              onClick={() => {
-                setWeekOffset(w => w - 1)
-                if (triggerToast) triggerToast('Navigated to previous week', 'info')
-              }}
-              className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
-              title="Previous Week"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setWeekOffset(0)
-                if (triggerToast) triggerToast('Reset to active sprint week', 'info')
-              }}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-none transition cursor-pointer border-0 ${
-                weekOffset === 0 ? 'bg-[#1c2236] text-white font-bold' : 'hover:bg-[#161b2b] text-slate-300'
-              }`}
-            >
-              Current
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setWeekOffset(w => w + 1)
-                if (triggerToast) triggerToast('Navigated to next week', 'info')
-              }}
-              className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
-              title="Next Week"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
+              <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
+                <button
+                  type="button"
+                  onClick={handleToday}
+                  className="px-3 py-1.5 text-xs font-bold rounded-none bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 transition cursor-pointer border-0"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0 ml-0.5"
+                  title="Previous Month"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  title="Next Month"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
 
-          {/* Strategy Mode Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-rose-500/10 text-rose-400 px-3 py-1 rounded-none text-xs font-semibold border-0">
-            <Target size={13} className="text-rose-400" />
-            <span>Mode: Launch Conversion &amp; Urgency</span>
-          </div>
+              {/* Red New Draft Button matching Image 4 */}
+              <button
+                type="button"
+                onClick={() => {
+                  setModalDraftDay(activePost ? activePost.dayIndex : 0)
+                  setNewDraftModalOpen(true)
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
+                style={{ background: brandRed, color: '#ffffff' }}
+              >
+                <span>New draft</span>
+                <Plus size={14} className="text-white" />
+              </button>
+            </div>
+          ) : (
+            /* Weekly Sprint Header Controls */
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                  {weekData.headerTitle}
+                </h2>
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
+                  Week {weekData.weekNum}
+                </span>
+              </div>
+
+              <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
+                <button
+                  type="button"
+                  onClick={() => handleShiftWeek('prev')}
+                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  title="Previous Week"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShiftWeek('current')}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-none transition cursor-pointer border-0 ${
+                    weekOffset === 0 ? 'bg-[#1c2236] text-white font-bold' : 'hover:bg-[#161b2b] text-slate-300'
+                  }`}
+                >
+                  Current
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShiftWeek('next')}
+                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  title="Next Week"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setModalDraftDay(activePost ? activePost.dayIndex : 0)
+                  setNewDraftModalOpen(true)
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
+                style={{ background: brandRed, color: '#ffffff' }}
+              >
+                <Plus size={14} className="text-white" />
+                <span>New Quest Draft</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Quick Action Buttons (Zero Borders & Zero Border Radius) */}
+        {/* Quick Action Buttons */}
         <div className="flex items-center gap-2">
           {/* Quests Button with Beacon */}
           <button
@@ -960,50 +1321,16 @@ export default function ContentCalendar() {
             </span>
           </button>
 
-          {/* Ideas Vault */}
-          <button
-            type="button"
-            onClick={() => setVaultModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-300 bg-[#111522] hover:bg-[#161b2b] rounded-none transition cursor-pointer border-0"
-            title="Open Ideas & Buffer Vault"
-          >
-            <Lightbulb size={13} className="text-amber-400" />
-            <span>Vault (3)</span>
-          </button>
-
-          {/* AI Auto-Fill Week */}
-          <button
-            type="button"
-            onClick={() => setAiModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-none transition cursor-pointer border-0"
-            title="Auto-fill week with AI"
-          >
-            <Sparkles size={13} className="text-rose-400" />
-            <span className="hidden md:inline">Auto-fill Week with AI</span>
-          </button>
-
-          {/* New Draft Button (Brand Red with Pure White Text & Zero Border Radius) */}
+          {/* Bell Icon Notification Button matching Image 4 */}
           <button
             type="button"
             onClick={() => {
-              setModalDraftDay(activePost ? activePost.dayIndex : 0)
-              setNewDraftModalOpen(true)
+              if (triggerToast) triggerToast('Notifications: 3 campaign quests active today', 'info')
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
-            style={{ background: brandRed, color: '#ffffff' }}
+            className="p-2 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+            title="Notifications"
           >
-            <Plus size={14} className="text-white" />
-            <span>New Quest Draft</span>
-          </button>
-
-          {/* Schedule All Ready */}
-          <button
-            type="button"
-            onClick={handleScheduleAllReady}
-            className="hidden xl:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 rounded-none transition cursor-pointer border-0"
-          >
-            <CheckCircle2 size={13} />
-            <span>Schedule All Ready</span>
+            <Bell size={15} />
           </button>
         </div>
       </header>
@@ -1364,11 +1691,11 @@ export default function ContentCalendar() {
             </div>
           )}
 
-          {/* VIEW B: MONTHLY CALENDAR VIEW (Direct from reference image, Filtered & Functional) */}
+          {/* VIEW B: MONTHLY CALENDAR VIEW (Direct from user reference Image 4) */}
           {viewMode === 'calendar' && (
             <div className="flex-1 bg-[#0c0f17] rounded-none p-4 flex flex-col border-0">
-              {/* Day Name Headers */}
-              <div className="grid grid-cols-7 pb-2 text-center text-xs font-extrabold text-slate-400 uppercase tracking-wider bg-[#111522] py-2 rounded-none border-0">
+              {/* Day Name Headers matching Image 4: Mon, Tue, Wed, Thu, Fri, Sat, Sun */}
+              <div className="grid grid-cols-7 pb-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider bg-[#111522] py-2.5 rounded-none border-0">
                 <div>Mon</div>
                 <div>Tue</div>
                 <div>Wed</div>
@@ -1378,68 +1705,62 @@ export default function ContentCalendar() {
                 <div>Sun</div>
               </div>
 
-              {/* 35 Calendar Cells */}
+              {/* Month Grid Cells matching Image 4 */}
               <div className="grid grid-cols-7 flex-1 rounded-none overflow-hidden bg-[#090d16] gap-1 p-1 border-0">
-                {Array.from({ length: 35 }).map((_, i) => {
-                  const dayNumber = i < 4 ? 28 + i : i <= 34 ? i - 3 : i - 34
-                  const isCurrentMonth = i >= 4 && i <= 34
-                  const isTargetDay = (activePost?.dayIndex ?? 0) === (i % 7) && isCurrentMonth
-
-                  // Match posts to days in month and apply platform filter
+                {monthGrid.map((cell, idx) => {
+                  const isSelected = selectedCalendarDateKey === cell.dateKey
+                  // Find posts matching this dateKey and applying platform filter
                   const cellPosts = posts.filter(p => {
                     const matchPlatform = platformFilter === 'all' || p.channel.toLowerCase() === platformFilter.toLowerCase()
                     if (!matchPlatform) return false
-
-                    // Position sample posts in grid
-                    if (i === 5 && p.dayIndex === 0) return true
-                    if (i === 19 && p.dayIndex === 1) return true
-                    if (i === 20 && p.dayIndex === 2) return true
-                    if (i === 22 && p.dayIndex === 4) return true
-                    if (i === 24 && p.dayIndex === 6) return true
-                    return false
+                    return p.dateKey === cell.dateKey
                   })
 
                   return (
                     <div
-                      key={i}
-                      onClick={() => {
-                        if (cellPosts.length > 0) {
-                          setSelectedPostId(cellPosts[0].id)
-                        } else {
-                          if (triggerToast) triggerToast(`Day ${dayNumber} selected. Click "+ New Quest Draft" to schedule.`, 'info')
-                        }
-                      }}
-                      className={`min-h-[85px] p-2 flex flex-col justify-between transition hover:bg-[#161b2b] cursor-pointer rounded-none ${
-                        isTargetDay ? 'border-2 border-[#c81e3c] bg-[#111522]' : 'border-0'
+                      key={idx}
+                      onClick={() => handleSelectCalendarDay(cell)}
+                      className={`min-h-[92px] p-2 flex flex-col justify-between transition cursor-pointer rounded-none select-none ${
+                        isSelected
+                          ? 'border-2 border-[#c81e3c] bg-[#111522] shadow-xl'
+                          : 'border border-white/[0.04] hover:bg-[#161b2b]'
                       } ${
-                        !isCurrentMonth ? 'bg-[#0c0f17]/40 text-slate-600' : 'bg-[#0c0f17] text-slate-300'
+                        !cell.isCurrentMonth
+                          ? 'bg-[#0a0d14]/50 text-slate-600'
+                          : 'bg-[#0c0f17] text-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs font-bold ${
-                          isTargetDay
-                            ? 'w-5 h-5 rounded-none text-white flex items-center justify-center font-black shadow-sm'
-                            : ''
-                        }`}
-                        style={isTargetDay ? { background: brandRed, color: '#ffffff' } : {}}
-                        >
-                          {dayNumber}
-                        </span>
-                        {cellPosts.length > 0 && (
+                        {/* Day Number: Circled in solid red when active, exactly like Day 20 in Image 4 */}
+                        {isSelected ? (
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-black shadow-sm"
+                            style={{ background: brandRed }}
+                          >
+                            {cell.dayNumber}
+                          </div>
+                        ) : (
+                          <span className={`text-xs font-bold ${cell.isCurrentMonth ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {cell.dayNumber}
+                          </span>
+                        )}
+
+                        {cellPosts.length > 0 && !isSelected && (
                           <span className="w-1.5 h-1.5 rounded-none bg-rose-500" />
                         )}
                       </div>
 
-                      <div className="space-y-1 mt-1">
+                      {/* Scheduled Post Cards on this date: Solid Red Cards matching Image 4 */}
+                      <div className="space-y-1.5 mt-1.5">
                         {cellPosts.map(p => (
                           <div
                             key={p.id}
-                            className="p-1 rounded-none text-white text-[10px] font-bold truncate shadow-xs border-0"
+                            className="p-1.5 rounded-none text-white text-[11px] font-bold shadow-xs border-0 truncate leading-tight"
                             style={{ background: brandRed, color: '#ffffff' }}
                             title={`${p.title} (${p.time})`}
                           >
-                            <span>{p.title}</span>
-                            <span className="block text-[8.5px] opacity-90">{p.time}</span>
+                            <div className="truncate">{p.title}</div>
+                            <div className="text-[9px] opacity-90 font-medium">{p.time}</div>
                           </div>
                         ))}
                       </div>
@@ -1451,259 +1772,173 @@ export default function ContentCalendar() {
           )}
         </section>
 
-        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Border 0, Rounded 0) ── */}
-        <aside className="w-[380px] lg:w-[420px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0">
+        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Matching Image 4) ── */}
+        <aside className="w-[380px] lg:w-[420px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-5 space-y-4">
           
-          {/* Header */}
-          <div className="p-5 flex items-center justify-between bg-[#111522] border-0">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Draft for {activePost?.dayName}day
-                </span>
-                {activePost?.status === 'Posted' ? (
-                  <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-emerald-500/15 text-emerald-400">
-                    Posted
-                  </span>
-                ) : activePost?.status === 'Scheduled' ? (
-                  <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-sky-500/15 text-sky-400">
-                    Scheduled
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-amber-500/15 text-amber-400">
-                    Draft
-                  </span>
-                )}
-              </div>
-              <h3 className="text-base font-extrabold text-white mt-0.5">
-                {activePost?.fullDateStr} • {activePost?.time}
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleShareDraftPreview}
-                title="Copy Caption Link"
-                className="p-2 rounded-none bg-[#161b2b] hover:bg-[#1c2236] text-slate-300 transition cursor-pointer border-0"
-              >
-                <Share2 size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={handleVoicePreview}
-                title="Voice Preview Hook"
-                className="p-2 rounded-none bg-[#161b2b] hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 transition cursor-pointer border-0"
-              >
-                <Volume2 size={14} />
-              </button>
-            </div>
+          {/* Header matching Image 4: "Your draft for Tuesday", "May 20, 2025" */}
+          <div>
+            <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+              Your draft for {activePost?.dayName}day
+            </h3>
+            <p className="text-xs font-bold text-rose-400 mt-0.5">
+              {activePost?.fullDateStr || 'Selected Date'}
+            </p>
           </div>
 
-          {/* Post Configuration Body */}
-          <div className="p-5 flex-1 space-y-4">
-            
-            {/* Channel & Strategy Badges */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {renderChannelIcon(activePost?.channel)}
-                <span className="text-xs font-extrabold text-white">
-                  {activePost?.channel} {activePost?.format}
-                </span>
-              </div>
-              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-none uppercase tracking-wider ${
-                STRATEGY_CONFIG[activePost?.strategy]?.bg || 'bg-sky-500/15'
-              } ${
-                STRATEGY_CONFIG[activePost?.strategy]?.text || 'text-sky-300'
-              }`}>
-                {activePost?.strategy} STRATEGY
+          {/* Social Caption & Script Section matching Image 4 */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                Caption
+              </label>
+              <span className="text-[11px] font-mono text-slate-400">
+                {activePost?.caption?.length || 0} / 2200
               </span>
             </div>
 
-            {/* Campaign Product Focus */}
-            <div className="bg-[#111522] rounded-none p-3 border-0">
-              <div className="text-[10px] uppercase font-bold text-slate-400">
-                Campaign Product Focus
-              </div>
-              <div className="text-xs font-extrabold text-white mt-0.5">
-                {productName}
-              </div>
+            {/* Clean Box containing Draft Caption matching Image 4 */}
+            <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-2">
+              <textarea
+                ref={captionRef}
+                rows={7}
+                value={activePost?.caption || ''}
+                onChange={(e) => updateActivePostCaption(e.target.value)}
+                className="w-full text-xs text-slate-100 bg-transparent rounded-none focus:outline-none leading-relaxed resize-none border-0 font-normal"
+                placeholder="Write your campaign draft caption..."
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons matching Image 4: [Edit] [+ Tweak] [✓ Approve and schedule] */}
+          <div className="space-y-2.5 pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  captionRef.current?.focus()
+                  if (triggerToast) triggerToast('Caption editor focused. Edit freely!', 'info')
+                }}
+                className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738]"
+              >
+                <Pencil size={13} className="text-slate-400" />
+                <span>Edit</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTweakWithAi}
+                disabled={isTweakingAi}
+                className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-[#202738]"
+              >
+                <Sparkles size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
+                <span>{isTweakingAi ? 'Tweaking...' : 'Tweak'}</span>
+              </button>
             </div>
 
-            {/* AI Visual & Thumbnail Studio (OpenAI DALL-E) */}
-            <div className="bg-[#111522] rounded-none p-3 space-y-2 border-0">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-                  <ImageIcon size={14} className="text-sky-400" />
-                  <span>AI Visual &amp; Thumbnail Studio (OpenAI)</span>
-                </span>
-                {activePost?.imageUrl && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    title="Remove Image"
-                    className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
-                  >
-                    <Trash2 size={11} /> Remove
-                  </button>
-                )}
-              </div>
+            {/* Primary Action Button: Approve and schedule (Solid Red, White Text, Checkmark) matching Image 4 */}
+            <button
+              type="button"
+              onClick={handleApproveAndSchedule}
+              className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0"
+              style={{ background: brandRed, color: '#ffffff' }}
+            >
+              <CheckCircle2 size={15} className="text-white" />
+              <span className="text-white font-bold">Approve and schedule</span>
+            </button>
 
-              {activePost?.imageUrl ? (
-                <div className="w-full h-44 bg-black overflow-hidden relative group rounded-none border-0">
-                  <img src={activePost.imageUrl} alt="Generated visual" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleGenerateImage}
-                      disabled={isGeneratingImage}
-                      className="px-3 py-1.5 bg-[#c81e3c] text-white text-xs font-bold rounded-none cursor-pointer border-0"
-                    >
-                      {isGeneratingImage ? 'Regenerating...' : 'Regenerate'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-slate-400 leading-snug">
-                    Generate an attention-grabbing social media visual with OpenAI DALL-E for this draft.
-                  </p>
-                  <input
-                    type="text"
-                    value={imagePrompt}
-                    onChange={(e) => setImagePrompt(e.target.value)}
-                    placeholder="Enter visual prompt..."
-                    className="w-full text-xs text-slate-200 bg-[#0c0f17] rounded-none p-2 focus:ring-1 focus:ring-sky-500 outline-none border-0"
-                  />
+            {/* Instant Post to Live Channel */}
+            <button
+              type="button"
+              onClick={handleInstantPostLive}
+              className="w-full py-2.5 px-4 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md border-0 text-white"
+            >
+              <Send size={14} className="text-white" />
+              <span>Post to Live Channel Now (+100 XP)</span>
+            </button>
+          </div>
+
+          {/* Manual OpenAI Visual & Thumbnail Studio */}
+          <div className="bg-[#111522] rounded-none p-3.5 space-y-2.5 border border-[#202738]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                <ImageIcon size={14} className="text-sky-400" />
+                <span>OpenAI Visual Generator</span>
+              </span>
+              {activePost?.imageUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                >
+                  <Trash2 size={11} /> Remove
+                </button>
+              )}
+            </div>
+
+            {activePost?.imageUrl ? (
+              <div className="w-full h-40 bg-black overflow-hidden relative group rounded-none border border-white/10">
+                <img src={activePost.imageUrl} alt="Generated visual" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={handleGenerateImage}
                     disabled={isGeneratingImage}
-                    className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
+                    className="px-3 py-1.5 bg-[#c81e3c] text-white text-xs font-bold rounded-none cursor-pointer border-0"
                   >
-                    <Wand2 size={13} className={isGeneratingImage ? 'animate-spin' : ''} />
-                    <span>{isGeneratingImage ? 'Generating with OpenAI...' : 'Generate Visual with OpenAI (+60 XP)'}</span>
+                    {isGeneratingImage ? 'Regenerating...' : 'Regenerate'}
                   </button>
                 </div>
-              )}
-            </div>
-
-            {/* Catchy Video Hook / Headline */}
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                Catchy Video Hook / Headline
-              </label>
-              <input
-                type="text"
-                value={activePost?.title || ''}
-                onChange={(e) => updateActivePostTitle(e.target.value)}
-                className="w-full text-sm font-semibold text-white bg-[#111522] rounded-none p-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none transition border-0"
-                placeholder="e.g. Sneak Peek: Upcoming Exclusive Songs for Members!"
-              />
-            </div>
-
-            {/* Social Caption & Script */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Social Caption &amp; Script
-                </label>
-                <span className="text-[11px] font-mono text-slate-400">
-                  {activePost?.caption?.length || 0} / 2,200
-                </span>
               </div>
-              <textarea
-                ref={captionRef}
-                rows={5}
-                value={activePost?.caption || ''}
-                onChange={(e) => updateActivePostCaption(e.target.value)}
-                className="w-full text-sm text-slate-200 bg-[#111522] rounded-none p-3 focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed transition font-normal resize-none border-0"
-              />
-            </div>
-
-            {/* AI Creative Booster / Tweak Tools */}
-            <div className="rounded-none p-3 bg-[#111522] border-0">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-amber-400" />
-                  <span>AI Creative Booster</span>
-                </span>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Generate an AI visual with OpenAI for this draft. Triggered manually.
+                </p>
                 <button
                   type="button"
-                  onClick={handleGenerateHookIdeas}
-                  disabled={isGeneratingHooks}
-                  className="text-[11px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50 border-0 bg-transparent"
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
                 >
-                  <RefreshCw size={11} className={isGeneratingHooks ? 'animate-spin' : ''} />
-                  <span>New Hooks</span>
+                  <Wand2 size={13} className={isGeneratingImage ? 'animate-spin' : ''} />
+                  <span>{isGeneratingImage ? 'Generating with OpenAI...' : 'Generate Visual with OpenAI (+60 XP)'}</span>
                 </button>
               </div>
-
-              <div className="space-y-1.5 text-xs text-slate-300">
-                {suggestedHooks.map((hook, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleApplyHook(hook)}
-                    className="w-full text-left p-2.5 rounded-none bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-xs font-medium text-slate-200 flex items-start gap-1.5 border-0"
-                  >
-                    <Lightbulb size={12} className="text-amber-400 shrink-0 mt-0.5" />
-                    <span>"{hook}"</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons Group (Border 0, Rounded 0, Guaranteed White Text on Red) */}
-            <div className="space-y-2 pt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    captionRef.current?.focus()
-                    if (triggerToast) triggerToast('Script editor focused. Write freely!', 'info')
-                  }}
-                  className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border-0"
-                >
-                  <Pencil size={13} className="text-slate-400" />
-                  <span>Edit Script</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleTweakWithAi}
-                  disabled={isTweakingAi}
-                  className="w-full py-2.5 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
-                >
-                  <Sparkles size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
-                  <span>{isTweakingAi ? 'Polishing...' : 'Tweak with AI'}</span>
-                </button>
-              </div>
-
-              {/* Approve and Schedule (Solid Brand Red, White Text, +50 XP, Rounded-0) */}
-              <button
-                type="button"
-                onClick={handleApproveAndSchedule}
-                className="w-full py-3 px-4 rounded-none font-extrabold text-xs tracking-wide flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0"
-                style={{ background: brandRed, color: '#ffffff' }}
-              >
-                <CheckCircle2 size={15} className="text-white" />
-                <span className="text-white font-bold">Approve and Schedule (+50 XP)</span>
-              </button>
-
-              {/* Instant Post to Live Channel (Solid Emerald, White Text, +100 XP, Rounded-0) */}
-              <button
-                type="button"
-                onClick={handleInstantPostLive}
-                className="w-full py-2.5 px-4 rounded-none bg-emerald-600 hover:bg-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md border-0"
-                style={{ color: '#ffffff' }}
-              >
-                <Send size={14} className="text-white" />
-                <span className="text-white font-bold">Post to Live Channel Now (+100 XP)</span>
-              </button>
-            </div>
-
+            )}
           </div>
+
+          {/* Quick Viral Hooks suggestions */}
+          <div className="rounded-none p-3.5 bg-[#111522] border border-[#202738] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <Lightbulb size={13} className="text-amber-400" />
+                <span>Quick Viral Hooks</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleGenerateHookIdeas}
+                disabled={isGeneratingHooks}
+                className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50 border-0 bg-transparent"
+              >
+                <RefreshCw size={10} className={isGeneratingHooks ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {suggestedHooks.map((hook, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleApplyHook(hook)}
+                  className="w-full text-left p-2 rounded-none bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-[11px] text-slate-300 flex items-start gap-1.5 border-0"
+                >
+                  <span className="text-rose-400 font-bold">•</span>
+                  <span>"{hook}"</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
         </aside>
 
       </div>
