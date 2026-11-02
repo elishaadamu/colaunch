@@ -27,8 +27,7 @@ function DashboardAppPreview() {
   const theme = creatorData.theme || 'dark'
   const blueprint = creatorData.blueprint || { name: 'Creator Academy', type: 'Web App' }
   const extraTabs = creatorData.extraTabs || []
-  const [device, setDevice] = useState('desktop') // 'desktop' | 'tablet' | 'mobile'
-  const [viewMode, setViewMode] = useState('landing') // 'landing' | 'product'
+  const [device, setDevice] = useState('desktop') // 'desktop' | 'mobile'
   const [copied, setCopied] = useState(false)
   const [isReloading, setIsReloading] = useState(false)
   const [playingVideo, setPlayingVideo] = useState(null)
@@ -46,7 +45,7 @@ function DashboardAppPreview() {
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const previewDomain = `${handleClean}.colaunch.app`
-  const previewUrl = `https://${previewDomain}${viewMode === 'product' ? '/app' : ''}`
+  const previewUrl = `https://${previewDomain}/app`
 
   const handleCopyLink = () => {
     try {
@@ -66,107 +65,51 @@ function DashboardAppPreview() {
   }
 
   return (
-    <div className="min-h-full w-full flex flex-col bg-[#090d16]">
-      {/* Top Header outside the box: Permanently fixed at the top with backdrop */}
-      <div className="sticky top-0 z-30 bg-[#090d16]/95 backdrop-blur-md border-b border-white/5 py-3 px-4 text-center flex-shrink-0 shadow-md">
-        <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-          Live App Preview
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-          This is how your space looks to your audience.
-        </p>
-
-        {/* Centered Device Switcher matching Image 3: Desktop vs Mobile */}
-        <div className="inline-flex items-center gap-1.5 p-1 mt-2.5 bg-[#0e1320] border border-[#202738] rounded-none">
-          <button
-            type="button"
-            onClick={() => setDevice('desktop')}
-            className={`flex items-center gap-2 px-5 py-1.5 text-xs font-bold transition cursor-pointer rounded-none ${
-              device === 'desktop'
-                ? 'text-white shadow-sm'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-            style={device === 'desktop' ? { background: '#c81e3c', color: '#ffffff' } : {}}
-          >
-            <Laptop size={14} className={device === 'desktop' ? 'text-white' : 'text-slate-400'} />
-            <span>Desktop</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setDevice('mobile')}
-            className={`flex items-center gap-2 px-5 py-1.5 text-xs font-bold transition cursor-pointer rounded-none ${
-              device === 'mobile'
-                ? 'text-white shadow-sm'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-            style={device === 'mobile' ? { background: '#c81e3c', color: '#ffffff' } : {}}
-          >
-            <Smartphone size={14} className={device === 'mobile' ? 'text-white' : 'text-slate-400'} />
-            <span>Mobile</span>
-          </button>
-        </div>
-
-        {/* Secondary View Mode Bar (Public Landing vs Member App) */}
-        <div className="flex items-center justify-center gap-2 mt-2">
-          <div className="inline-flex items-center gap-1 p-0.5 bg-[#0e1320] border border-[#202738] rounded-none">
-            <button
-              type="button"
-              onClick={() => setViewMode('landing')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold transition cursor-pointer rounded-none ${
-                viewMode === 'landing'
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Globe size={12} />
-              <span>Public Landing</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('product')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold transition cursor-pointer rounded-none ${
-                viewMode === 'product'
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Layers size={12} />
-              <span>Member App</span>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-none border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-[11px] font-medium transition cursor-pointer"
-            title="Copy Preview URL"
-          >
-            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-            <span>{copied ? 'Copied' : 'Copy Link'}</span>
-          </button>
-          <a
-            href={previewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1 rounded-none border border-[#202738] bg-[#0e1320] hover:bg-white/5 text-slate-300 hover:text-white text-[11px] font-medium transition cursor-pointer"
-            title="Open in new window"
-          >
-            <ExternalLink size={12} />
-            <span>Open Tab</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Main Viewport Stage */}
-      <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-6 relative">
+    <div className="h-full w-full flex flex-col bg-[#090d16] p-3 sm:p-5 overflow-hidden">
+      {/* Main Viewport Stage - 90vh App Mockup Focused Directly */}
+      <div className="flex-1 w-full flex items-center justify-center relative min-h-0">
         {device === 'desktop' && (
           <div className="w-full max-w-6xl h-[90vh] min-h-[600px] flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
-            {/* Sleek Browser Window Chrome matching user Image 3 */}
+            {/* Sleek Browser Window Chrome */}
             <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
+                </div>
+
+                {/* Inline Device Switcher */}
+                <div className="hidden sm:inline-flex items-center gap-1 p-0.5 bg-[#121624] border border-[#222a3d] rounded-none">
+                  <button
+                    type="button"
+                    onClick={() => setDevice('desktop')}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
+                      device === 'desktop'
+                        ? 'text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    style={device === 'desktop' ? { background: '#c81e3c', color: '#ffffff' } : {}}
+                    title="Desktop View"
+                  >
+                    <Laptop size={12} />
+                    <span>Desktop</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDevice('mobile')}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
+                      device === 'mobile'
+                        ? 'text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    style={device === 'mobile' ? { background: '#c81e3c', color: '#ffffff' } : {}}
+                    title="Mobile View"
+                  >
+                    <Smartphone size={12} />
+                    <span>Mobile</span>
+                  </button>
+                </div>
               </div>
 
               {/* Center Address Pill */}
@@ -175,21 +118,29 @@ function DashboardAppPreview() {
                   <div className="flex items-center space-x-2 truncate min-w-0">
                     <Lock size={12} className="text-emerald-400 flex-shrink-0" />
                     <span className="truncate font-mono font-medium text-slate-300 text-[11px]">
-                      {previewDomain}{viewMode === 'product' ? '/app' : ''}
+                      {previewDomain}/app
                     </span>
                   </div>
-                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded-none bg-white/5 border border-white/10 text-slate-400 shrink-0 ml-2">
-                    {viewMode === 'landing' ? 'Public' : 'Member Portal'}
+                  <span className="text-[9px] uppercase font-mono font-bold px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0 ml-2">
+                    Member App
                   </span>
                 </div>
               </div>
 
               {/* Right Chrome Controls */}
-              <div className="flex items-center space-x-2 text-slate-400">
+              <div className="flex items-center space-x-1.5 text-slate-400">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="p-1.5 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  title="Copy Preview URL"
+                >
+                  {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                </button>
                 <button
                   type="button"
                   onClick={handleReload}
-                  className="p-1 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  className="p-1.5 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
                   title="Reload Preview"
                 >
                   <RotateCcw size={13} className={`transition-transform duration-500 ${isReloading ? 'rotate-180 text-white' : ''}`} />
@@ -198,7 +149,7 @@ function DashboardAppPreview() {
                   href={previewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  className="p-1.5 rounded-none hover:text-white hover:bg-white/5 transition cursor-pointer"
                   title="Open in new window"
                 >
                   <ExternalLink size={13} />
@@ -216,8 +167,7 @@ function DashboardAppPreview() {
                 creatorData={creatorData}
                 extraTabs={extraTabs}
                 isMobile={false}
-                viewMode={viewMode}
-                onSwitchView={(mode) => setViewMode(mode)}
+                viewMode="product"
                 onPlayVideo={(v) => setPlayingVideo(v)}
               />
             </div>
@@ -226,6 +176,19 @@ function DashboardAppPreview() {
 
         {device === 'mobile' && (
           <div className="w-[380px] max-w-full h-[90vh] min-h-[600px] p-2.5 rounded-none border border-[#252c3e] bg-[#0f121c] shadow-2xl flex flex-col relative my-auto transition-all duration-300">
+            {/* Screen Top Bar */}
+            <div className="flex items-center justify-between pb-2 px-1 text-slate-400 text-xs">
+              <button
+                type="button"
+                onClick={() => setDevice('desktop')}
+                className="flex items-center gap-1 text-[11px] hover:text-white transition cursor-pointer"
+              >
+                <Laptop size={12} />
+                <span>Switch to Desktop</span>
+              </button>
+              <span className="font-mono text-[10px] text-slate-500">Mobile Mockup</span>
+            </div>
+
             {/* Screen Viewport */}
             <div className="flex-1 min-h-0 rounded-none overflow-hidden bg-[#0a0c12] flex flex-col relative overflow-y-auto custom-scrollbar border border-white/5 scroll-smooth">
               <AppMockup
@@ -236,8 +199,7 @@ function DashboardAppPreview() {
                 creatorData={creatorData}
                 extraTabs={extraTabs}
                 isMobile={true}
-                viewMode={viewMode === 'landing' ? 'landing' : 'mobile'}
-                onSwitchView={(mode) => setViewMode(mode)}
+                viewMode="mobile"
                 onPlayVideo={(v) => setPlayingVideo(v)}
               />
             </div>
