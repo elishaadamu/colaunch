@@ -424,9 +424,15 @@ export default function Accounts() {
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                   {/* Channel Avatar / Icon */}
                   <div
-                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 relative overflow-hidden"
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0 relative overflow-hidden border border-white/10"
                     style={{
                       borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
                       background: isYouTubeActive ? '#c81e3c' : 'rgba(255,255,255,0.05)',
                       color: '#ffffff'
                     }}
@@ -435,7 +441,8 @@ export default function Accounts() {
                       <img
                         src={youtubeConn.channel.thumbnail}
                         alt={youtubeConn.channel.title || 'YouTube Avatar'}
-                        className="w-full h-full object-cover"
+                        className="w-14 h-14 object-cover block"
+                        style={{ width: '56px', height: '56px', maxWidth: '56px', maxHeight: '56px' }}
                       />
                     ) : (
                       <Youtube size={26} className="text-white" />
@@ -543,9 +550,15 @@ export default function Accounts() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                   <div
-                    className="w-13 h-13 flex items-center justify-center flex-shrink-0"
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0"
                     style={{
                       borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
                       background: otherAccounts.instagram?.connected ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255,255,255,0.05)',
                       color: otherAccounts.instagram?.connected ? '#f472b6' : '#94a3b8'
                     }}
@@ -647,9 +660,15 @@ export default function Accounts() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                   <div
-                    className="w-13 h-13 flex items-center justify-center flex-shrink-0"
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0"
                     style={{
                       borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
                       background: otherAccounts.twitter?.connected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)',
                       color: otherAccounts.twitter?.connected ? '#38bdf8' : '#94a3b8'
                     }}
@@ -717,9 +736,15 @@ export default function Accounts() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                   <div
-                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 font-extrabold text-sm"
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0 font-extrabold text-sm"
                     style={{
                       borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
                       background: otherAccounts.tiktok?.connected ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255,255,255,0.05)',
                       color: otherAccounts.tiktok?.connected ? '#f472b6' : '#94a3b8'
                     }}
@@ -787,9 +812,15 @@ export default function Accounts() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                   <div
-                    className="w-13 h-13 flex items-center justify-center flex-shrink-0 font-bold text-lg"
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0 font-bold text-lg"
                     style={{
                       borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
                       background: otherAccounts.email?.connected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
                       color: otherAccounts.email?.connected ? '#f59e0b' : '#94a3b8'
                     }}
