@@ -264,8 +264,12 @@ export default function App() {
       }
 
       if (path === '/' || path === '') {
-        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
-        return hasSession ? 'dashboard' : 'login'
+        const savedStep = localStorage.getItem('forge_onboarding_step')
+        const savedCreator = localStorage.getItem('forge_creator_data')
+        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          return savedStep
+        }
+        return 'creator-link'
       }
       if (path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
@@ -309,10 +313,14 @@ export default function App() {
         return 'dashboard'
       }
 
-      const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
-      return hasSession ? 'dashboard' : 'login'
+      const savedStep = localStorage.getItem('forge_onboarding_step')
+      const savedCreator = localStorage.getItem('forge_creator_data')
+      if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+        return savedStep
+      }
+      return 'creator-link'
     } catch { }
-    return 'login'
+    return 'creator-link'
   })
 
   const [userProfile, setUserProfile] = useState(() => {
@@ -620,9 +628,10 @@ export default function App() {
     } catch {}
     let path = '/'
     if (newStep === 'welcome') {
-      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
-      path = hasSession ? '/dashboard' : '/login'
-      newStep = hasSession ? 'dashboard' : 'login'
+      const savedStep = localStorage.getItem('forge_onboarding_step')
+      const savedCreator = localStorage.getItem('forge_creator_data')
+      newStep = (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) ? savedStep : 'creator-link'
+      path = '/'
     } else if (newStep === 'creator-link' || ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(newStep)) {
       path = '/portal'
     } else if (newStep === 'login') {
@@ -752,6 +761,8 @@ export default function App() {
       navigate('celebration')
     } else if (step === 'blueprint' || step === 'analyzing') {
       navigate('creator-link')
+    } else if (step === 'creator-link') {
+      return
     } else {
       const idx = STEPS.indexOf(step)
       if (idx > 0) navigate(STEPS[idx - 1])
@@ -987,7 +998,14 @@ export default function App() {
           return
         }
 
-        setStep('welcome')
+        // Base URL / or unrecognized path: Go to onboarding page (no login page)
+        const savedStep = localStorage.getItem('forge_onboarding_step')
+        const savedCreator = localStorage.getItem('forge_creator_data')
+        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          setStep(savedStep)
+        } else {
+          setStep('creator-link')
+        }
       }
     }
 
@@ -1364,7 +1382,7 @@ export default function App() {
   }
 
   const screens = {
-    'welcome': <Welcome />,
+    'welcome': <CreatorLink key={`creator-link-${resetKey}`} />,
     'creator-link': <CreatorLink key={`creator-link-${resetKey}`} />,
     'analyzing': <Analyzing />,
     'blueprint': <Blueprint />,
@@ -1379,7 +1397,7 @@ export default function App() {
   return (
     <ForgeContext.Provider value={ctx}>
       <div className="min-h-screen bg-forge-bg text-white overflow-x-clip">
-        {screens[step] || <Login />}
+        {screens[step] || <CreatorLink key={`creator-link-${resetKey}`} />}
       </div>
       <SupportWidget currentStage={step} />
       <WipeCreatorModal 

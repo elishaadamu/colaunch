@@ -2,8 +2,9 @@
  * SEO & Dynamic Page Title / Metadata Manager for CoLaunch
  */
 
-const DEFAULT_TITLE = 'CoLaunch — Turn Your Audience Into a Software Business'
-const DEFAULT_DESCRIPTION = 'AI-powered venture studio platform that discovers high-leverage creators, conducts audience intelligence, builds custom SaaS MVPs, and launches 50/50 co-founder partnerships.'
+const DEFAULT_TITLE = 'CoLaunch | Turn your audience into a software business'
+const DEFAULT_DESCRIPTION = 'Subscribe to the CoLaunch platform, launch an app your audience pays for and run it on autopilot, keeping 100 percent. Or let our done-for-you studio build and run it for a handful of creators.'
+const DEFAULT_OG_DESCRIPTION = 'Subscribe to the platform and run your app on autopilot, or let our studio build and run it for you.'
 const DEFAULT_IMAGE = '/og-image.svg'
 
 export function updatePageSEO({
@@ -35,8 +36,9 @@ export function updatePageSEO({
   if (keywords) setMetaTag('name', 'keywords', keywords)
 
   // Update Open Graph tags
+  const ogDesc = description === DEFAULT_DESCRIPTION ? DEFAULT_OG_DESCRIPTION : description
   setMetaTag('property', 'og:title', fullTitle)
-  setMetaTag('property', 'og:description', description)
+  setMetaTag('property', 'og:description', ogDesc)
   setMetaTag('property', 'og:image', image.startsWith('http') ? image : window.location.origin + image)
   if (url || typeof window !== 'undefined') {
     setMetaTag('property', 'og:url', url || window.location.href)
@@ -44,7 +46,7 @@ export function updatePageSEO({
 
   // Update Twitter Card tags
   setMetaTag('name', 'twitter:title', fullTitle)
-  setMetaTag('name', 'twitter:description', description)
+  setMetaTag('name', 'twitter:description', ogDesc)
   setMetaTag('name', 'twitter:image', image.startsWith('http') ? image : window.location.origin + image)
 }
 
@@ -137,8 +139,8 @@ export function getRouteSEO(pathname, step, creatorData) {
   // Onboarding Steps
   const stepTitles = {
     'welcome': {
-      title: 'CoLaunch — Turn Your Audience Into a Software Business',
-      description: 'Discover your audience opportunities, generate custom SaaS concepts, and launch 50/50 co-founder partnerships.',
+      title: 'CoLaunch | Turn your audience into a software business',
+      description: 'Subscribe to the CoLaunch platform, launch an app your audience pays for and run it on autopilot, keeping 100 percent. Or let our done-for-you studio build and run it for a handful of creators.',
     },
     'creator-link': {
       title: 'Connect Your Social Channel — Audience Discovery',

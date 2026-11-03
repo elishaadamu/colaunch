@@ -21,6 +21,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { startScrape } from '../../services/scraper'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
 
 export function TikTokIcon({ className = 'w-4 h-4' }) {
   return (
@@ -347,17 +348,9 @@ export default function CreatorLink() {
 
       {/* TOP NAVIGATION BAR */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-        {/* Left: Back Button */}
-        <div className="flex items-center gap-5">
-          <button 
-            type="button"
-            onClick={prev}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-neutral-400 bg-[#111317]/70 hover:bg-[#15181e] hover:text-white border border-[#1f242c] rounded-none transition-all duration-200 active:scale-95 group cursor-pointer"
-            title="Go to previous step"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            <span>Back</span>
-          </button>
+        {/* Left: CoLaunch Brand Logo */}
+        <div className="flex items-center gap-3">
+          <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </div>
 
         {/* Right: Reset Creator Button + Step Indicator Dots & Counter */}
