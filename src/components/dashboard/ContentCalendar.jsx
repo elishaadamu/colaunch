@@ -48,6 +48,7 @@ import {
   Award,
   Gamepad2,
   Layers,
+  ArrowUp,
   Sparkle,
   Trash2,
   Bell,
@@ -708,6 +709,30 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
 export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab } = useForge()
   const setActiveTab = propSetActiveTab || contextSetActiveTab
+
+  // Dedicated calendar container ref & smooth scroll-to-top controllers
+  const calendarContainerRef = useRef(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  const scrollToTop = useCallback(() => {
+    if (calendarContainerRef.current) {
+      calendarContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    const parentScroll = calendarContainerRef.current?.closest('.overflow-y-auto')
+    if (parentScroll) {
+      parentScroll.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    window.dispatchEvent(new CustomEvent('forge_scroll_to_top'))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  const handleContainerScroll = useCallback((e) => {
+    setShowScrollTop(e.target.scrollTop > 80)
+  }, [])
+
+  useEffect(() => {
+    scrollToTop()
+  }, [scrollToTop])
 
   // Direct router to Accounts page
   const navigateToAccounts = useCallback(() => {
@@ -1688,7 +1713,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#090d16] text-slate-200 overflow-hidden select-none">
+    <div 
+      ref={calendarContainerRef}
+      onScroll={handleContainerScroll}
+      className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none overflow-y-auto custom-scrollbar scroll-smooth relative"
+    >
       
       {/* ── TOP HEADER (Flat Dark Elevation, Border 0, Rounded 0) ── */}
       <header className="h-16 bg-[#0c0f17] px-4 sm:px-6 flex items-center justify-between flex-shrink-0 border-0">
@@ -1703,7 +1732,10 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
                 <button
                   type="button"
-                  onClick={handleToday}
+                  onClick={() => {
+                    handleToday()
+                    scrollToTop()
+                  }}
                   className="px-3 py-1.5 text-xs font-bold rounded-none bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 transition cursor-pointer border-0"
                 >
                   Today
@@ -3693,6 +3725,26 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Floating Scroll to Top button */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-8 z-50 flex items-center gap-2 px-3.5 py-2 text-xs font-black tracking-wide text-white transition-all duration-200 hover:scale-105 cursor-pointer shadow-2xl border animate-fadeIn"
+          style={{
+            background: brandRed,
+            color: '#ffffff',
+            borderRadius: '0px',
+            borderColor: 'rgba(255,255,255,0.25)',
+            boxShadow: '0 8px 30px rgba(200,30,60,0.5)'
+          }}
+          title="Scroll Calendar to Top"
+        >
+          <ArrowUp size={14} className="text-white" />
+          <span>Scroll to Top</span>
+        </button>
       )}
 
     </div>

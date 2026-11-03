@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Sidebar from './Sidebar'
 import Marketing from './Marketing'
 import ContentCalendar from './ContentCalendar'
@@ -386,6 +386,26 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('forge_tab_change', handleTabChange)
   }, [setActiveTab])
 
+  // Dedicated ref to scroll main content container to top
+  const tabContentRef = useRef(null)
+
+  // Scroll to top whenever tab changes or when requested
+  useEffect(() => {
+    if (tabContentRef.current) {
+      tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    const handleScrollTop = () => {
+      if (tabContentRef.current) {
+        tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+    window.addEventListener('forge_scroll_to_top', handleScrollTop)
+    return () => window.removeEventListener('forge_scroll_to_top', handleScrollTop)
+  }, [])
+
   const TabComponent = TAB_COMPONENTS[activeTab] || Marketing
 
   return (
@@ -552,131 +572,136 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Email Not Configured Notification Banner (First view of dashboard prompt) */}
-        {!isEmailConfigured && (
-          <div 
-            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3.5 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.14) 0%, rgba(11, 15, 25, 0.98) 100%)`,
-              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.5)`,
-              borderRadius: '0px'
-            }}
-          >
-            <div className="flex items-center gap-3.5 relative z-10">
-              <div 
-                className="w-10 h-10 rounded-none flex items-center justify-center flex-shrink-0 border"
-                style={{ 
-                  background: creatorBrandColor, 
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.6)`,
-                  borderRadius: '0px'
-                }}
-              >
-                <Mail size={18} className="text-white" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[13px] font-extrabold text-white tracking-tight">
-                    Email Address Not Configured
-                  </h4>
-                  <span 
-                    className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
-                    style={{
-                      background: creatorBrandColor,
-                      color: '#ffffff',
-                      borderRadius: '0px'
-                    }}
-                  >
-                    Action Required
-                  </span>
-                </div>
-                <p className="text-[12px] text-slate-300 leading-relaxed">
-                  Your creator email is not configured. Please add your email address to enable campaign outreach, lead notifications, customer receipts, and member invites.
-                </p>
-              </div>
-            </div>
-
-            <button 
-              type="button"
-              onClick={() => setEmailModalOpen(true)}
-              className="text-[12px] py-2.5 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 font-extrabold transition-all duration-150 cursor-pointer shadow-md hover:opacity-95"
-              style={{
-                background: creatorBrandColor,
-                color: '#ffffff',
-                borderRadius: '0px',
-                border: 'none'
-              }}
-            >
-              <Mail size={14} className="text-white" />
-              <span className="text-white font-bold">Configure Email</span>
-            </button>
-          </div>
-        )}
-
-        {/* Guest Action Suggestion Banner */}
-        {!isRegistered && aiActionsCount >= 3 && (
-          <div 
-            className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)`,
-              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
-              backdropFilter: 'blur(16px)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-              borderRadius: '0px'
-            }}
-          >
-            {/* Ambient creator background glow */}
-            <div 
-              className="absolute -right-8 -top-8 w-24 h-24 blur-xl pointer-events-none" 
-              style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
-            />
-            
-            <div className="flex items-center gap-3.5 relative z-10">
-              <div 
-                className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
-                style={{ 
-                  background: `rgba(${cr}, ${cg}, ${cb}, 0.18)`, 
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
-                  borderRadius: '0px'
-                }}
-              >
-                <Sparkles size={16} className="animate-pulse text-white" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <h4 className="text-[13px] font-semibold text-white tracking-tight flex items-center gap-2">
-                  Upgrade to Secure Account
-                  <span 
-                    className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
-                    style={{
-                      background: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
-                      color: '#ffffff',
-                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.45)`,
-                      borderRadius: '0px'
-                    }}
-                  >
-                    {aiActionsCount} AI Actions
-                  </span>
-                </h4>
-                <p className="text-[12px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
-                  You are currently exploring CoLaunch in a temporary guest session. Register your permanent profile to protect and preserve your transient API keys, calendar configurations, and launch assets.
-                </p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => goTo('signup')} 
-              className="forge-btn-primary text-[12px] py-2 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none"
-              style={{ borderRadius: '0px' }}
-            >
-              Secure Console Account
-            </button>
-          </div>
-        )}
-
         {/* Content row */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
-            <TabComponent chatOpen={chatOpen} setActiveTab={setActiveTab} />
+          {/* Tab content (scrolls smoothly from top to bottom) */}
+          <div 
+            ref={tabContentRef} 
+            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full custom-scrollbar scroll-smooth flex flex-col"
+          >
+            {/* Email Not Configured Notification Banner (First view of dashboard prompt) */}
+            {!isEmailConfigured && (
+              <div 
+                className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3.5 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.14) 0%, rgba(11, 15, 25, 0.98) 100%)`,
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.5)`,
+                  borderRadius: '0px'
+                }}
+              >
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div 
+                    className="w-10 h-10 rounded-none flex items-center justify-center flex-shrink-0 border"
+                    style={{ 
+                      background: creatorBrandColor, 
+                      borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.6)`,
+                      borderRadius: '0px'
+                    }}
+                  >
+                    <Mail size={18} className="text-white" />
+                  </div>
+                  <div className="space-y-0.5 text-left">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[13px] font-extrabold text-white tracking-tight">
+                        Email Address Not Configured
+                      </h4>
+                      <span 
+                        className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
+                        style={{
+                          background: creatorBrandColor,
+                          color: '#ffffff',
+                          borderRadius: '0px'
+                        }}
+                      >
+                        Action Required
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-slate-300 leading-relaxed">
+                      Your creator email is not configured. Please add your email address to enable campaign outreach, lead notifications, customer receipts, and member invites.
+                    </p>
+                  </div>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={() => setEmailModalOpen(true)}
+                  className="text-[12px] py-2.5 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 font-extrabold transition-all duration-150 cursor-pointer shadow-md hover:opacity-95"
+                  style={{
+                    background: creatorBrandColor,
+                    color: '#ffffff',
+                    borderRadius: '0px',
+                    border: 'none'
+                  }}
+                >
+                  <Mail size={14} className="text-white" />
+                  <span className="text-white font-bold">Configure Email</span>
+                </button>
+              </div>
+            )}
+
+            {/* Guest Action Suggestion Banner */}
+            {!isRegistered && aiActionsCount >= 3 && (
+              <div 
+                className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)`,
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
+                  backdropFilter: 'blur(16px)',
+                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+                  borderRadius: '0px'
+                }}
+              >
+                {/* Ambient creator background glow */}
+                <div 
+                  className="absolute -right-8 -top-8 w-24 h-24 blur-xl pointer-events-none" 
+                  style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
+                />
+                
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div 
+                    className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
+                    style={{ 
+                      background: `rgba(${cr}, ${cg}, ${cb}, 0.18)`, 
+                      borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
+                      borderRadius: '0px'
+                    }}
+                  >
+                    <Sparkles size={16} className="animate-pulse text-white" />
+                  </div>
+                  <div className="space-y-0.5 text-left">
+                    <h4 className="text-[13px] font-semibold text-white tracking-tight flex items-center gap-2">
+                      Upgrade to Secure Account
+                      <span 
+                        className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
+                        style={{
+                          background: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
+                          color: '#ffffff',
+                          border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.45)`,
+                          borderRadius: '0px'
+                        }}
+                      >
+                        {aiActionsCount} AI Actions
+                      </span>
+                    </h4>
+                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
+                      You are currently exploring CoLaunch in a temporary guest session. Register your permanent profile to protect and preserve your transient API keys, calendar configurations, and launch assets.
+                    </p>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => goTo('signup')} 
+                  className="forge-btn-primary text-[12px] py-2 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none"
+                  style={{ borderRadius: '0px' }}
+                >
+                  Secure Console Account
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0 flex flex-col">
+              <TabComponent chatOpen={chatOpen} setActiveTab={setActiveTab} />
+            </div>
           </div>
 
           {/* Forge Chat panel */}

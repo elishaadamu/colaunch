@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { useForge } from '../../App'
 
@@ -20,6 +20,24 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
   const { logout, isRegistered, goTo } = useForge()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [sidebarScrolled, setSidebarScrolled] = useState(false)
+  const desktopNavRef = useRef(null)
+  const mobileNavRef = useRef(null)
+
+  // Scroll sidebar to top when tab changes
+  useEffect(() => {
+    if (desktopNavRef.current) {
+      desktopNavRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    if (mobileNavRef.current) {
+      mobileNavRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [activeTab])
+
+  const scrollToTop = () => {
+    desktopNavRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    mobileNavRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // Detect mobile/tablet breakpoint
   useEffect(() => {
@@ -86,7 +104,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
             </div>
 
             {/* Nav items */}
-            <nav className="flex-1 py-3 overflow-y-auto">
+            <nav ref={mobileNavRef} className="flex-1 py-3 overflow-y-auto custom-scrollbar scroll-smooth">
               <div className="space-y-0.5 px-2">
                 {NAV_ITEMS.map(({ id, icon: Icon, label, badge }) => {
                   const isActive = activeTab === id
@@ -197,23 +215,29 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-3 border-b flex-shrink-0 overflow-hidden"
+          className="flex items-center gap-3 border-b flex-shrink-0 overflow-hidden cursor-pointer hover:bg-white/[0.02] transition"
           style={{
             borderColor: 'var(--theme-border-color)',
             padding: isOpen ? '18px 16px' : '18px 0',
             justifyContent: isOpen ? 'flex-start' : 'center',
           }}
+          onClick={scrollToTop}
+          title="Scroll sidebar to top"
         >
           <button
-            onClick={() => setIsOpen(o => !o)}
-            className="w-7 h-7 flex items-center justify-center flex-shrink-0"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsOpen(o => !o)
+            }}
+            className="w-7 h-7 flex items-center justify-center flex-shrink-0 cursor-pointer"
           >
             <WingLogo size={22} />
           </button>
           {isOpen && (
             <span
-              className="text-white font-semibold text-[14px] tracking-tight whitespace-nowrap"
+              className="text-white font-semibold text-[14px] tracking-tight whitespace-nowrap cursor-pointer select-none"
               style={{ opacity: isOpen ? 1 : 0, transition: 'opacity 0.15s' }}
+              onClick={scrollToTop}
             >
               CoLaunch
             </span>
@@ -221,7 +245,11 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-3 overflow-hidden">
+        <nav 
+          ref={desktopNavRef}
+          onScroll={(e) => setSidebarScrolled(e.target.scrollTop > 40)}
+          className="flex-1 py-3 overflow-y-auto custom-scrollbar scroll-smooth"
+        >
           <div className="space-y-0.5 px-2">
             <button
               onClick={() => window.location.href = '/launch'}
@@ -334,6 +362,21 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               )}
               {/* Subtle accent dot */}
               <span className="absolute right-2 top-2 w-1.5 h-1.5 rounded-none" style={{ background: 'var(--theme-accent)' }} />
+            </button>
+          </div>
+        )}
+
+        {/* Scroll sidebar to top shortcut */}
+        {sidebarScrolled && (
+          <div className="px-2 pb-1.5 flex-shrink-0 animate-fadeIn">
+            <button
+              onClick={scrollToTop}
+              title="Scroll sidebar to top"
+              className="w-full py-1 text-[10px] font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-1.5 transition cursor-pointer"
+              style={{ borderRadius: '0px' }}
+            >
+              <ArrowUp size={11} className="text-[#c81e3c]" />
+              {isOpen && <span>Back to Top</span>}
             </button>
           </div>
         )}
