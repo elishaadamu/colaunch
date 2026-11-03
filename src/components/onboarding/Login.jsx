@@ -360,15 +360,15 @@ export default function Login() {
       </header>
 
       {/* ── MAIN AUTHENTICATION CONTAINER ── */}
-      <main className="w-full max-w-md mx-auto my-auto px-4 py-6 z-10">
+      <main className="w-full max-w-md mx-auto my-auto px-4 py-4 sm:py-6 z-10">
         <div 
-          className="bg-[#0b0f19] border border-[#1e293b] p-6 sm:p-8 shadow-2xl relative"
+          className="bg-[#0b0f19] border border-[#1e293b] p-5 sm:p-6 shadow-2xl relative"
           style={{ borderRadius: '0px' }}
         >
           {/* Heading */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-black text-white tracking-tight">Sign In</h1>
-            <p className="text-xs text-slate-400 mt-1">
+          <div className="mb-4">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Sign In</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
               Sign in to your CoLaunch account.
             </p>
           </div>
@@ -376,54 +376,54 @@ export default function Login() {
           {/* Customer Care Opportunity Card (Shown when authenticated via code & no password configured) */}
           {showCareOpportunity ? (
             <div 
-              className="p-5 bg-[#070a12] border border-[#1e293b] space-y-4"
+              className="p-3.5 sm:p-4 bg-[#070a12] border border-[#1e293b] space-y-3"
               style={{ borderRadius: '0px' }}
             >
-              <div className="flex items-center gap-2.5 text-emerald-400">
-                <CheckCircle2 size={22} className="shrink-0" />
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle2 size={18} className="shrink-0" />
                 <div>
-                  <h2 className="text-sm font-extrabold text-white">Identity Verified</h2>
-                  <p className="text-[11px] text-emerald-400 font-mono">Authenticated via Single-Use Email Code</p>
+                  <h2 className="text-xs font-extrabold text-white">Identity Verified</h2>
+                  <p className="text-[10px] text-emerald-400 font-mono">Authenticated via Single-Use Email Code</p>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-[11.5px] text-slate-300 leading-snug">
                 Welcome back! Because your account currently does not have a password configured in the dashboard, we invite you to connect with Customer Care if you would like to set a password or change your email address.
               </p>
 
-              <div className="p-3 bg-[#0d1322] border border-[#1b263b] text-xs text-slate-300 space-y-2" style={{ borderRadius: '0px' }}>
-                <div className="flex items-center gap-2 text-white font-bold">
-                  <Headphones size={14} className="text-[#c81e3c]" />
-                  <span>Customer Care & Account Assistance</span>
+              <div className="p-2.5 bg-[#0d1322] border border-[#1b263b] text-xs text-slate-300 space-y-1.5" style={{ borderRadius: '0px' }}>
+                <div className="flex items-center gap-1.5 text-white font-bold text-[11.5px]">
+                  <Headphones size={13} className="text-white" />
+                  <span className="text-white">Customer Care &amp; Account Assistance</span>
                 </div>
-                <ul className="text-[11px] text-slate-400 space-y-1 pl-4 list-disc">
+                <ul className="text-[10.5px] text-slate-400 space-y-0.5 pl-4 list-disc leading-relaxed">
                   <li>Configure or update your dashboard password</li>
                   <li>Verify or migrate your primary email address</li>
                   <li>1-on-1 launch onboarding and technical assistance</li>
                 </ul>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={() => {
                     localStorage.setItem('forge_dashboard_active_tab', 'support')
                     goTo('dashboard')
                   }}
-                  className="flex-1 py-3 px-4 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md"
-                  style={{ borderRadius: '0px' }}
+                  className="py-2.5 px-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition cursor-pointer border-0 shadow-md whitespace-nowrap"
+                  style={{ borderRadius: '0px', color: '#ffffff' }}
                 >
-                  <Headphones size={14} />
-                  <span>Contact Customer Care</span>
+                  <Headphones size={13} className="text-white shrink-0" />
+                  <span className="text-white">Contact Customer Care</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => goTo('dashboard')}
-                  className="flex-1 py-3 px-4 bg-[#141b2b] hover:bg-[#1a2338] text-slate-200 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#232f48]"
-                  style={{ borderRadius: '0px' }}
+                  className="py-2.5 px-3 bg-[#141b2b] hover:bg-[#1a2338] text-white font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#232f48] whitespace-nowrap"
+                  style={{ borderRadius: '0px', color: '#ffffff' }}
                 >
-                  <span>Continue to Dashboard</span>
-                  <ArrowRight size={14} />
+                  <span className="text-white">Continue to Dashboard</span>
+                  <ArrowRight size={13} className="text-white shrink-0" />
                 </button>
               </div>
             </div>
@@ -431,7 +431,7 @@ export default function Login() {
             <>
               {/* Segmented Auth Mode Selector: Password vs Email */}
               <div 
-                className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-5"
+                className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-4"
                 style={{ borderRadius: '0px' }}
               >
                 <button
@@ -441,14 +441,14 @@ export default function Login() {
                     setError('')
                     setInfoNotice('')
                   }}
-                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold transition cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold transition cursor-pointer ${
                     authMode === 'password'
                       ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 border border-transparent'
                   }`}
-                  style={{ borderRadius: '0px' }}
+                  style={{ borderRadius: '0px', color: authMode === 'password' ? '#ffffff' : undefined }}
                 >
-                  <Lock size={13} className={authMode === 'password' ? 'text-[#c81e3c]' : ''} />
+                  <Lock size={13} className={authMode === 'password' ? 'text-white' : ''} />
                   <span>Password</span>
                 </button>
 
@@ -460,14 +460,14 @@ export default function Login() {
                     setInfoNotice('')
                     if (identifier.includes('@')) setCodeEmail(identifier.trim())
                   }}
-                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold transition cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold transition cursor-pointer ${
                     authMode === 'code'
                       ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 border border-transparent'
                   }`}
-                  style={{ borderRadius: '0px' }}
+                  style={{ borderRadius: '0px', color: authMode === 'code' ? '#ffffff' : undefined }}
                 >
-                  <Mail size={13} className={authMode === 'code' ? 'text-[#c81e3c]' : ''} />
+                  <Mail size={13} className={authMode === 'code' ? 'text-white' : ''} />
                   <span>Email</span>
                 </button>
               </div>
@@ -475,34 +475,34 @@ export default function Login() {
               {/* Error Alert */}
               {error && (
                 <div 
-                  className="p-3 mb-4 bg-rose-950/40 border border-rose-500/50 text-rose-200 text-xs flex items-start gap-2.5"
-                  style={{ borderRadius: '0px' }}
+                  className="p-2.5 mb-3.5 bg-rose-950/40 border border-rose-500/50 text-white text-xs flex items-start gap-2"
+                  style={{ borderRadius: '0px', color: '#ffffff' }}
                 >
-                  <AlertTriangle size={15} className="text-rose-400 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{error}</span>
+                  <AlertTriangle size={14} className="text-white shrink-0 mt-0.5" />
+                  <span className="leading-relaxed text-white">{error}</span>
                 </div>
               )}
 
               {/* Informational Notice */}
               {infoNotice && (
                 <div 
-                  className="p-3 mb-4 bg-sky-950/40 border border-sky-500/50 text-sky-200 text-xs flex items-start gap-2.5"
-                  style={{ borderRadius: '0px' }}
+                  className="p-2.5 mb-3.5 bg-sky-950/40 border border-sky-500/50 text-white text-xs flex items-start gap-2"
+                  style={{ borderRadius: '0px', color: '#ffffff' }}
                 >
-                  <Sparkles size={15} className="text-sky-400 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{infoNotice}</span>
+                  <Sparkles size={14} className="text-white shrink-0 mt-0.5" />
+                  <span className="leading-relaxed text-white">{infoNotice}</span>
                 </div>
               )}
 
               {/* ── MODE A: PASSWORD LOGIN ── */}
               {authMode === 'password' && (
-                <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <form onSubmit={handlePasswordLogin} className="space-y-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
                       Username or Email
                     </label>
                     <div className="relative">
-                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                       <input
                         type="text"
                         value={identifier}
@@ -510,18 +510,18 @@ export default function Login() {
                         placeholder="e.g. elishadamu97@gmail.com"
                         required
                         autoComplete="username"
-                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-3.5 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
                         style={{ borderRadius: '0px' }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
                       Password
                     </label>
                     <div className="relative">
-                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
@@ -529,7 +529,7 @@ export default function Login() {
                         placeholder="Enter your dashboard password"
                         required
                         autoComplete="current-password"
-                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-10 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-9 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
                         style={{ borderRadius: '0px' }}
                       />
                       <button
@@ -538,11 +538,11 @@ export default function Login() {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
                         tabIndex={-1}
                       >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
 
-                    <div className="flex justify-end mt-1.5">
+                    <div className="flex justify-end mt-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -552,7 +552,7 @@ export default function Login() {
                             setCodeEmail(identifier.trim())
                           }
                         }}
-                        className="text-[11px] text-[#c81e3c] hover:underline font-semibold cursor-pointer"
+                        className="text-[11px] text-white hover:underline font-semibold cursor-pointer"
                       >
                         No password set? Sign in with email code →
                       </button>
@@ -562,16 +562,16 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={loading || !identifier.trim() || !password}
-                    className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-                    style={{ borderRadius: '0px' }}
+                    className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                    style={{ borderRadius: '0px', color: '#ffffff' }}
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={14} className="animate-spin text-white" />
-                        <span>Signing In…</span>
+                        <Loader2 size={13} className="animate-spin text-white" />
+                        <span className="text-white">Signing In…</span>
                       </>
                     ) : (
-                      <span>Sign In</span>
+                      <span className="text-white">Sign In</span>
                     )}
                   </button>
                 </form>
@@ -579,15 +579,15 @@ export default function Login() {
 
               {/* ── MODE B: EMAIL CODE LOGIN ── */}
               {authMode === 'code' && (
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {!codeSent ? (
-                    <form onSubmit={handleSendCode} className="space-y-4">
+                    <form onSubmit={handleSendCode} className="space-y-3.5">
                       <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
                           Account Email Address
                         </label>
                         <div className="relative">
-                          <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                          <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                           <input
                             type="email"
                             value={codeEmail || identifier}
@@ -598,7 +598,7 @@ export default function Login() {
                             placeholder="e.g. elishadamu97@gmail.com"
                             required
                             autoComplete="email"
-                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-10 pr-3.5 py-3 outline-none font-medium placeholder:text-slate-600 transition"
+                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
                             style={{ borderRadius: '0px' }}
                           />
                         </div>
@@ -607,22 +607,22 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={loading || !(codeEmail || identifier).includes('@')}
-                        className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ borderRadius: '0px' }}
+                        className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderRadius: '0px', color: '#ffffff' }}
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={14} className="animate-spin text-white" />
-                            <span>Sending code…</span>
+                            <Loader2 size={13} className="animate-spin text-white" />
+                            <span className="text-white">Sending code…</span>
                           </>
                         ) : (
-                          <span>Continue</span>
+                          <span className="text-white">Continue</span>
                         )}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleVerifyCode} className="space-y-4">
-                      <div className="p-3 bg-[#0d1424] border border-[#1e2a42] flex items-center justify-between text-xs" style={{ borderRadius: '0px' }}>
+                    <form onSubmit={handleVerifyCode} className="space-y-3.5">
+                      <div className="p-2.5 bg-[#0d1424] border border-[#1e2a42] flex items-center justify-between text-xs" style={{ borderRadius: '0px' }}>
                         <div>
                           <span className="text-slate-400 block text-[10px] font-mono">TARGET EMAIL</span>
                           <span className="text-white font-bold">{codeEmail}</span>
@@ -635,18 +635,18 @@ export default function Login() {
                             setError('')
                             setInfoNotice('')
                           }}
-                          className="text-[11px] text-[#c81e3c] hover:underline font-semibold cursor-pointer"
+                          className="text-[11px] text-white hover:underline font-semibold cursor-pointer"
                         >
                           Change
                         </button>
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
                           6-Digit Verification Code
                         </label>
                         <div className="relative">
-                          <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                          <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                           <input
                             type="text"
                             inputMode="numeric"
@@ -657,13 +657,13 @@ export default function Login() {
                             placeholder="123456"
                             required
                             autoFocus
-                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-lg tracking-[0.4em] font-mono text-center py-2.5 outline-none font-bold placeholder:text-slate-700 transition"
+                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-base tracking-[0.35em] font-mono text-center py-2 outline-none font-bold placeholder:text-slate-700 transition"
                             style={{ borderRadius: '0px' }}
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] pt-1">
+                      <div className="flex items-center justify-between text-[11px] pt-0.5">
                         <span className="text-slate-500">Didn't receive it?</span>
                         {codeTimer > 0 ? (
                           <span className="text-slate-400 font-mono">Resend in {codeTimer}s</span>
@@ -672,10 +672,10 @@ export default function Login() {
                             type="button"
                             onClick={handleSendCode}
                             disabled={loading}
-                            className="text-[#c81e3c] hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                            className="text-white hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
                           >
-                            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-                            <span>Resend Code</span>
+                            <RefreshCw size={12} className={loading ? 'animate-spin text-white' : 'text-white'} />
+                            <span className="text-white">Resend Code</span>
                           </button>
                         )}
                       </div>
@@ -683,16 +683,16 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={loading || code.trim().length !== 6}
-                        className="w-full py-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ borderRadius: '0px' }}
+                        className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ borderRadius: '0px', color: '#ffffff' }}
                       >
                         {loading ? (
                           <>
-                            <Loader2 size={14} className="animate-spin text-white" />
-                            <span>Signing in…</span>
+                            <Loader2 size={13} className="animate-spin text-white" />
+                            <span className="text-white">Signing in…</span>
                           </>
                         ) : (
-                          <span>Sign In</span>
+                          <span className="text-white">Sign In</span>
                         )}
                       </button>
                     </form>
@@ -703,7 +703,7 @@ export default function Login() {
           )}
 
           {/* Bottom Card Footer */}
-          <div className="mt-6 pt-5 border-t border-[#162033] text-center text-xs text-slate-400">
+          <div className="mt-4 pt-3.5 border-t border-[#162033] text-center text-xs text-slate-400">
             Don't have an account yet?{' '}
             <button
               type="button"

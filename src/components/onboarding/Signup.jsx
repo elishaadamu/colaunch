@@ -202,7 +202,7 @@ export default function Signup() {
       >
         {signupSuccess ? (
           <div 
-            className="w-full max-w-lg p-8 space-y-6 shadow-2xl relative border"
+            className="w-full max-w-md p-6 space-y-4 shadow-2xl relative border"
             style={{ 
               background: '#0c0f17', 
               borderColor: '#1e2638',
@@ -210,88 +210,89 @@ export default function Signup() {
             }}
           >
             {/* Celebration Badge & Headline */}
-            <div className="text-center space-y-3">
+            <div className="text-center space-y-2">
               <div 
-                className="w-16 h-16 mx-auto flex items-center justify-center shadow-lg"
+                className="w-12 h-12 mx-auto flex items-center justify-center shadow-lg"
                 style={{ 
                   background: 'rgba(16, 185, 129, 0.1)', 
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderRadius: '0px'
                 }}
               >
-                <CheckCircle2 size={36} className="text-emerald-400" />
+                <CheckCircle2 size={26} className="text-emerald-400" />
               </div>
               <div>
                 <span 
-                  className="inline-block px-3 py-1 text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-400 mb-2"
+                  className="inline-block px-2.5 py-0.5 text-[9px] font-mono uppercase tracking-widest font-bold text-emerald-400 mb-1"
                   style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '0px' }}
                 >
                   Account Created Successfully
                 </span>
-                <h2 className="text-[26px] font-bold text-white tracking-tight">
+                <h2 className="text-xl font-bold text-white tracking-tight">
                   Welcome to CoLaunch, {username}!
                 </h2>
-                <p className="text-[13px] text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
-                  Your creator workspace is fully provisioned. All your campaign schedules, audience insights, and monetization blueprints are saved securely on MongoDB Atlas.
+                <p className="text-xs text-slate-400 mt-0.5 max-w-xs mx-auto leading-relaxed">
+                  Your creator workspace is fully provisioned on MongoDB Atlas.
                 </p>
               </div>
             </div>
 
             {/* Profile & Security Credentials Spec */}
             <div 
-              className="p-4 space-y-3 border"
+              className="p-3 space-y-2 border"
               style={{ background: '#111624', borderColor: '#1f2a3f', borderRadius: '0px' }}
             >
-              <div className="flex items-center justify-between text-[12px] pb-2.5 border-b border-white/5">
-                <span className="text-slate-400 flex items-center gap-2">
-                  <Mail size={13} className="text-slate-400" /> Registered Email:
+              <div className="flex items-center justify-between text-[11.5px] pb-2 border-b border-white/5">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Mail size={12} className="text-slate-400" /> Registered Email:
                 </span>
                 <div className="flex items-center gap-1.5 font-medium text-white">
                   <span>{email}</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">✓ Verified</span>
+                  <span className="text-[9.5px] text-emerald-400 font-mono">✓ Verified</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-[12px] pb-2.5 border-b border-white/5">
-                <span className="text-slate-400 flex items-center gap-2">
-                  <ShieldCheck size={13} className="text-slate-400" /> Cloud Database:
+              <div className="flex items-center justify-between text-[11.5px] pb-2 border-b border-white/5">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-slate-400" /> Cloud Database:
                 </span>
-                <span className="text-white font-mono text-[11px]">MongoDB Atlas Secured</span>
+                <span className="text-white font-mono text-[10.5px]">MongoDB Atlas Secured</span>
               </div>
 
-              <div className="flex items-center justify-between text-[12px] pb-2.5 border-b border-white/5">
-                <span className="text-slate-400 flex items-center gap-2">
-                  <Sparkles size={13} className="text-slate-400" /> Workspace Host:
+              <div className="flex items-center justify-between text-[11.5px] pb-2 border-b border-white/5">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-slate-400" /> Workspace Host:
                 </span>
-                <span className="text-[#38bdf8] font-mono text-[11px]">app.co-launch.app</span>
+                <span className="text-[#38bdf8] font-mono text-[10.5px]">app.co-launch.app</span>
               </div>
 
-              <div className="flex items-start justify-between text-[12px] pt-1">
-                <span className="text-slate-400 flex items-center gap-2">
-                  <Mail size={13} className="text-slate-400" /> Welcome Pack:
+              <div className="flex items-start justify-between text-[11.5px] pt-0.5">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Mail size={12} className="text-slate-400" /> Welcome Pack:
                 </span>
-                <span className="text-emerald-400 text-[11px] text-right font-medium">
+                <span className="text-emerald-400 text-[10.5px] text-right font-medium">
                   Sent to {email}
                 </span>
               </div>
             </div>
 
             {/* Primary Action Button */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2 pt-1">
               <button
                 type="button"
                 onClick={() => goTo('dashboard')}
-                className="w-full py-3.5 px-6 font-bold text-[13px] uppercase tracking-wider text-white flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.99] cursor-pointer border-0"
+                className="w-full py-2.5 px-4 font-bold text-xs uppercase tracking-wider text-white flex items-center justify-center gap-1.5 transition-all duration-150 hover:brightness-110 active:scale-[0.99] cursor-pointer border-0 shadow-md"
                 style={{
                   background: '#c81e3c',
+                  color: '#ffffff',
                   borderRadius: '0px'
                 }}
               >
-                Launch CoLaunch Console ({countdown}s)
-                <ArrowRight size={15} />
+                <span>Launch CoLaunch Console ({countdown}s)</span>
+                <ArrowRight size={14} />
               </button>
 
-              <p className="text-center text-[11px] text-slate-500 font-mono">
+              <p className="text-center text-[10px] text-slate-500 font-mono">
                 Automatically entering your workspace in {countdown} seconds...
               </p>
             </div>
@@ -462,18 +463,19 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={!isFormValid || submitted}
-                className="w-full text-[13px] font-bold uppercase tracking-wider py-3.5 mt-4 group disabled:opacity-30 disabled:pointer-events-none text-white transition-all flex items-center justify-center gap-2 cursor-pointer border-0"
+                className="w-full text-xs font-bold uppercase tracking-wider py-2.5 mt-3 group disabled:opacity-30 disabled:pointer-events-none text-white transition-all flex items-center justify-center gap-2 cursor-pointer border-0 shadow-md"
                 style={{
                   background: '#c81e3c',
+                  color: '#ffffff',
                   borderRadius: '0px'
                 }}
               >
                 {submitted ? (
-                  <>Saving secure credentials…</>
+                  <span className="text-white">Saving secure credentials…</span>
                 ) : (
                   <>
-                    Create account &amp; launch console
-                    <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                    <span className="text-white">Create account &amp; launch console</span>
+                    <ArrowRight size={14} className="text-white transition-transform duration-200 group-hover:translate-x-0.5" />
                   </>
                 )}
               </button>

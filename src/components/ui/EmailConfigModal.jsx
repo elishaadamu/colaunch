@@ -259,19 +259,19 @@ export default function EmailConfigModal({
         style={{ borderRadius: '0px' }}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#161b2b]">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between pb-3 border-b border-[#161b2b]">
+          <div className="flex items-center gap-2">
             <div 
-              className="w-9 h-9 rounded-none flex items-center justify-center"
+              className="w-8 h-8 rounded-none flex items-center justify-center shrink-0"
               style={{ background: step === 'success' ? '#10b981' : brandRed, color: '#ffffff', borderRadius: '0px' }}
             >
-              {step === 'input' ? <Mail size={18} className="text-white" /> : step === 'verify' ? <KeyRound size={18} className="text-white" /> : <CheckCircle2 size={18} className="text-white" />}
+              {step === 'input' ? <Mail size={16} className="text-white" /> : step === 'verify' ? <KeyRound size={16} className="text-white" /> : <CheckCircle2 size={16} className="text-white" />}
             </div>
             <div>
-              <h3 className="font-extrabold text-white text-base">
+              <h3 className="font-extrabold text-white text-sm">
                 {step === 'input' ? 'Configure & Verify Email' : step === 'verify' ? 'Verify Email Authentication Code' : 'Email Verified Successfully'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 {step === 'input' ? 'Required for campaign outreach & member access' : step === 'verify' ? 'Enter the 6-digit code sent to your email' : 'Your account credentials have been synchronized'}
               </p>
             </div>
@@ -279,25 +279,25 @@ export default function EmailConfigModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+            className="p-1 rounded-none hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
             style={{ borderRadius: '0px' }}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
 
         {/* Modal Body: STEP 1 - EMAIL & PASSWORD INPUT */}
         {step === 'input' && (
-          <form onSubmit={handleSendCode} className="py-4 space-y-4">
+          <form onSubmit={handleSendCode} className="py-3 space-y-3">
             {error && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-none text-xs flex items-start gap-2">
-                <AlertCircle size={15} className="text-rose-400 shrink-0 mt-0.5" />
-                <span>{error}</span>
+              <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-white rounded-none text-xs flex items-start gap-2" style={{ color: '#ffffff' }}>
+                <AlertCircle size={14} className="text-white shrink-0 mt-0.5" />
+                <span className="text-white">{error}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label className="block text-[11px] font-bold text-slate-300 mb-1 uppercase tracking-wider">
                 Your Creator Email Address <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -306,20 +306,20 @@ export default function EmailConfigModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. creator@yourbrand.com"
-                  className="w-full bg-[#111522] text-white rounded-none p-3 pl-9 text-xs border border-[#202738] focus:border-[#c81e3c] outline-none transition"
+                  className="w-full bg-[#111522] text-white rounded-none p-2.5 pl-8 text-xs border border-[#202738] focus:border-[#c81e3c] outline-none transition"
                   style={{ borderRadius: '0px' }}
                   autoFocus
                   required
                 />
-                <Mail size={15} className="absolute left-3 top-3.5 text-slate-500" />
+                <Mail size={14} className="absolute left-2.5 top-3 text-slate-500" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[10.5px] text-slate-400 mt-1">
                 We will send a 6-digit verification code to confirm ownership before activating your account.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label className="block text-[11px] font-bold text-slate-300 mb-1 uppercase tracking-wider">
                 Set / Update Password <span className="text-slate-500 text-[10px] font-normal">(Optional)</span>
               </label>
               <div className="relative">
@@ -328,33 +328,33 @@ export default function EmailConfigModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Leave blank to use email code login"
-                  className="w-full bg-[#111522] text-white rounded-none p-3 pl-9 pr-9 text-xs border border-[#202738] focus:border-[#c81e3c] outline-none transition"
+                  className="w-full bg-[#111522] text-white rounded-none p-2.5 pl-8 pr-8 text-xs border border-[#202738] focus:border-[#c81e3c] outline-none transition"
                   style={{ borderRadius: '0px' }}
                 />
-                <Lock size={15} className="absolute left-3 top-3.5 text-slate-500" />
+                <Lock size={14} className="absolute left-2.5 top-3 text-slate-500" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(p => !p)}
-                  className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 border-0 bg-transparent cursor-pointer"
+                  className="absolute right-2.5 top-3 text-slate-500 hover:text-slate-300 border-0 bg-transparent cursor-pointer"
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
 
-            <div className="p-3 bg-[#111522] border border-[#202738] rounded-none text-[11px] text-slate-300 flex items-start gap-2">
-              <ShieldCheck size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+            <div className="p-2.5 bg-[#111522] border border-[#202738] rounded-none text-[11px] text-slate-300 flex items-start gap-2">
+              <ShieldCheck size={13} className="text-emerald-400 shrink-0 mt-0.5" />
               <span>
                 Your email is encrypted and verified with two-factor authentication. Saved directly to MongoDB Atlas.
               </span>
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#161b2b]">
+            <div className="pt-1.5 flex items-center justify-end gap-2 border-t border-[#161b2b]">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738]"
+                className="px-3.5 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738]"
                 style={{ borderRadius: '0px' }}
               >
                 Cancel
@@ -362,7 +362,7 @@ export default function EmailConfigModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2.5 text-xs font-extrabold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                className="px-4 py-2 text-xs font-extrabold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
                 style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
               >
                 {loading ? (
@@ -383,30 +383,30 @@ export default function EmailConfigModal({
 
         {/* Modal Body: STEP 2 - CODE VERIFICATION */}
         {step === 'verify' && (
-          <form onSubmit={handleVerifyAndSave} className="py-4 space-y-4">
+          <form onSubmit={handleVerifyAndSave} className="py-3 space-y-3">
             {error && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-none text-xs flex items-start gap-2">
-                <AlertCircle size={15} className="text-rose-400 shrink-0 mt-0.5" />
-                <span>{error}</span>
+              <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-white rounded-none text-xs flex items-start gap-2" style={{ color: '#ffffff' }}>
+                <AlertCircle size={14} className="text-white shrink-0 mt-0.5" />
+                <span className="text-white">{error}</span>
               </div>
             )}
 
-            <div className="p-3 bg-[#111522] border border-[#202738] rounded-none flex items-center justify-between text-xs">
+            <div className="p-2.5 bg-[#111522] border border-[#202738] rounded-none flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 text-slate-300">
-                <Mail size={14} className="text-slate-400 shrink-0" />
+                <Mail size={13} className="text-slate-400 shrink-0" />
                 <span className="font-mono text-white font-semibold truncate max-w-[220px]">{email}</span>
               </div>
               <button
                 type="button"
                 onClick={() => { setStep('input'); setError('') }}
-                className="text-xs text-[#38bdf8] hover:underline cursor-pointer border-0 bg-transparent font-medium"
+                className="text-xs text-white hover:underline cursor-pointer border-0 bg-transparent font-medium"
               >
                 Change
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider text-center">
+              <label className="block text-[11px] font-bold text-slate-300 mb-1 uppercase tracking-wider text-center">
                 6-Digit Authentication Code <span className="text-rose-500">*</span>
               </label>
               <input
@@ -418,55 +418,55 @@ export default function EmailConfigModal({
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="••••••"
-                className="w-full bg-[#111522] text-white rounded-none p-3.5 text-center font-mono text-2xl font-extrabold tracking-widest border border-[#202738] focus:border-[#c81e3c] outline-none transition"
-                style={{ borderRadius: '0px', letterSpacing: '0.4em' }}
+                className="w-full bg-[#111522] text-white rounded-none p-2.5 text-center font-mono text-xl font-extrabold tracking-widest border border-[#202738] focus:border-[#c81e3c] outline-none transition"
+                style={{ borderRadius: '0px', letterSpacing: '0.35em' }}
                 autoFocus
                 required
               />
-              <p className="text-[11px] text-slate-400 text-center mt-2">
+              <p className="text-[10.5px] text-slate-400 text-center mt-1.5">
                 Enter the 6-digit code sent to your email inbox. Valid for 15 minutes.
               </p>
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-1">
+            <div className="flex items-center justify-between text-xs pt-0.5">
               <button
                 type="button"
                 onClick={handleSendCode}
                 disabled={resendTimer > 0 || loading}
-                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition cursor-pointer border-0 bg-transparent disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition cursor-pointer border-0 bg-transparent disabled:opacity-40 disabled:cursor-not-allowed text-[11px]"
               >
-                <RotateCcw size={13} className={loading ? 'animate-spin' : ''} />
+                <RotateCcw size={12} className={loading ? 'animate-spin' : ''} />
                 <span>{resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend verification code'}</span>
               </button>
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-between gap-2.5 border-t border-[#161b2b]">
+            <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-[#161b2b]">
               <button
                 type="button"
                 onClick={() => { setStep('input'); setError('') }}
-                className="px-3.5 py-2.5 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738] inline-flex items-center gap-1"
+                className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white bg-[#111522] hover:bg-[#161b2b] rounded-none cursor-pointer border border-[#202738] inline-flex items-center gap-1"
                 style={{ borderRadius: '0px' }}
               >
-                <ArrowLeft size={13} />
+                <ArrowLeft size={12} />
                 <span>Back</span>
               </button>
 
               <button
                 type="submit"
                 disabled={loading || code.trim().length !== 6}
-                className="px-5 py-2.5 text-xs font-extrabold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                className="px-4 py-2 text-xs font-extrabold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
                 style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
               >
                 {loading ? (
                   <>
                     <Loader2 size={13} className="animate-spin text-white" />
-                    <span className="text-white font-bold">Verifying & Saving...</span>
+                    <span className="text-white font-bold">Verifying &amp; Saving...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={13} className="text-white" />
-                    <span className="text-white font-bold">Verify & Link Account</span>
+                    <span className="text-white font-bold">Verify &amp; Link Account</span>
                   </>
                 )}
               </button>
@@ -476,35 +476,35 @@ export default function EmailConfigModal({
 
         {/* Modal Body: STEP 3 - SUCCESS CONFIRMATION */}
         {step === 'success' && (
-          <div className="py-5 space-y-5 text-center">
+          <div className="py-4 space-y-3.5 text-center">
             <div 
-              className="w-14 h-14 mx-auto flex items-center justify-center shadow-lg"
+              className="w-11 h-11 mx-auto flex items-center justify-center shadow-lg"
               style={{
                 background: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.3)',
                 borderRadius: '0px'
               }}
             >
-              <CheckCircle2 size={32} className="text-emerald-400" />
+              <CheckCircle2 size={24} className="text-emerald-400" />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <span 
-                className="inline-block px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-400"
+                className="inline-block px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest font-bold text-emerald-400"
                 style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '0px' }}
               >
                 OTP VERIFIED &amp; PROFILE SECURED
               </span>
-              <h4 className="text-base font-bold text-white tracking-tight">
+              <h4 className="text-sm font-bold text-white tracking-tight">
                 Account Credentials Linked
               </h4>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+              <p className="text-[11.5px] text-slate-400 max-w-xs mx-auto leading-relaxed">
                 Your email <strong className="text-white">{email}</strong> is now verified on MongoDB Atlas. You have full access to campaign scheduling and automated publishing engines.
               </p>
             </div>
 
             <div 
-              className="p-3 border text-left text-xs font-mono space-y-2"
+              className="p-2.5 border text-left text-[11px] font-mono space-y-1.5"
               style={{ background: '#111624', borderColor: '#1f2a3f', borderRadius: '0px' }}
             >
               <div className="flex items-center justify-between text-slate-400">
@@ -524,8 +524,8 @@ export default function EmailConfigModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 font-bold text-xs uppercase tracking-wider text-white transition-all hover:brightness-110 cursor-pointer border-0"
-              style={{ background: brandRed, borderRadius: '0px' }}
+              className="w-full py-2.5 font-bold text-xs uppercase tracking-wider text-white transition-all hover:brightness-110 cursor-pointer border-0"
+              style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
             >
               Done &amp; Return to Workspace
             </button>
