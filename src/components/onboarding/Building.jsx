@@ -281,10 +281,10 @@ export default function Building() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-6 flex-shrink-0">
-        <div className="flex items-center gap-2.5">
+        <a href="https://co-launch.app" className="flex items-center gap-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
           <WingLogo size={22} color={accent.color} />
           <span className="text-white font-semibold text-[15px] tracking-tight">CoLaunch</span>
-        </div>
+        </a>
         <div className="flex items-center gap-3">
           <button
             type="button"

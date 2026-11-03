@@ -1,9 +1,9 @@
-export default function CoLaunchLogo({ size = 22, className = '', showText = true, showWordmark = undefined, theme = 'dark' }) {
+export default function CoLaunchLogo({ size = 22, className = '', showText = true, showWordmark = undefined, theme = 'dark', href = null, onClick = null }) {
   const isLight = theme === 'light'
   const displayWordmark = showWordmark !== undefined ? showWordmark : showText
   const fontSize = Math.max(13, Math.round(size * 0.68))
 
-  return (
+  const logoNode = (
     <div className={`inline-flex items-center gap-2 select-none shrink-0 ${className}`}>
       {/* CoLaunch Rocket Badge */}
       <svg
@@ -47,6 +47,32 @@ export default function CoLaunchLogo({ size = 22, className = '', showText = tru
       )}
     </div>
   )
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        onClick={onClick}
+        className="inline-flex items-center text-inherit no-underline hover:opacity-85 transition-opacity cursor-pointer"
+      >
+        {logoNode}
+      </a>
+    )
+  }
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center text-inherit no-underline hover:opacity-85 transition-opacity cursor-pointer bg-transparent border-0 p-0 m-0"
+      >
+        {logoNode}
+      </button>
+    )
+  }
+
+  return logoNode
 }
 
 export { CoLaunchLogo as CreatorForgeLogo, CoLaunchLogo }

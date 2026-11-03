@@ -2630,7 +2630,7 @@ export default function Preview() {
           
           <div className="h-5 w-[1px] bg-slate-800 hidden sm:block" />
           
-          <div className="flex items-center space-x-2.5">
+          <a href="https://co-launch.app" className="flex items-center space-x-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
             <div 
               className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm bg-[#12141c] border border-[#222634] shadow-sm"
             >
@@ -2639,7 +2639,7 @@ export default function Preview() {
             <span className="font-bold text-base tracking-tight text-white">
               CoLaunch
             </span>
-          </div>
+          </a>
         </div>
 
         {/* Center View Mode Selector */}

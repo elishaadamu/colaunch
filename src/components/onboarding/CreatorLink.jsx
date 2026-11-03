@@ -18,7 +18,8 @@ import {
   Clock,
   Terminal,
   Activity,
-  Loader2
+  Loader2,
+  LogIn
 } from 'lucide-react'
 import { startScrape } from '../../services/scraper'
 import CoLaunchLogo from '../ui/CoLaunchLogo'
@@ -112,7 +113,7 @@ function getTargetArchetype(creator) {
 }
 
 export default function CreatorLink() {
-  const { next, prev, goTo, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator } = useForge()
+  const { next, prev, goTo, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator, userProfile } = useForge()
 
   // Retain creator data from session storage across reloads unless explicitly wiped
   const [url, setUrl]                 = useState(() => creatorData?.url || '')
@@ -348,13 +349,39 @@ export default function CreatorLink() {
 
       {/* TOP NAVIGATION BAR */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-        {/* Left: CoLaunch Brand Logo */}
-        <div className="flex items-center gap-3">
+        {/* Left: CoLaunch Brand Logo -> navigate to co-launch.app */}
+        <a
+          href="https://co-launch.app"
+          className="flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer text-inherit no-underline"
+          title="Visit co-launch.app"
+        >
           <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
-        </div>
+        </a>
 
-        {/* Right: Reset Creator Button + Step Indicator Dots & Counter */}
-        <div className="flex items-center gap-3">
+        {/* Right: Login + Reset Creator Button + Step Indicator Dots & Counter */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {userProfile ? (
+            <button
+              type="button"
+              onClick={() => goTo('dashboard')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-[#111317]/80 hover:bg-[#1a1e26] border border-[#1f242c] hover:border-slate-500 rounded-none transition-all cursor-pointer shadow-sm"
+              title="Go to Dashboard"
+            >
+              <LogIn className="w-3.5 h-3.5 text-slate-400" />
+              <span>Dashboard</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => goTo('login')}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#111317]/80 hover:bg-[#1a1e26] border border-[#1f242c] hover:border-slate-500 rounded-none transition-all cursor-pointer shadow-sm"
+              title="Log in to existing account"
+            >
+              <LogIn className="w-3.5 h-3.5 text-slate-400" />
+              <span>Log in</span>
+            </button>
+          )}
+
           {(creatorData?.handle || url || showPreview) && (
             <button
               type="button"
@@ -739,9 +766,15 @@ export default function CreatorLink() {
           End-to-end read-only verification. We never store personal login credentials.
         </div>
         <div className="flex items-center gap-4">
-          <a href="#" className="hover:text-neutral-400 transition-colors">Need assistance?</a>
+          <button
+            type="button"
+            onClick={() => goTo('login')}
+            className="hover:text-neutral-300 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs text-neutral-400"
+          >
+            Already have an account? <span className="text-[#c81e3c] font-semibold underline underline-offset-2">Log in</span>
+          </button>
           <span className="text-neutral-700">&bull;</span>
-          <a href="#" className="hover:text-neutral-400 transition-colors">Documentation</a>
+          <a href="https://co-launch.app" className="hover:text-neutral-400 transition-colors">co-launch.app</a>
         </div>
       </footer>
 
