@@ -390,7 +390,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               className="w-full py-1 text-[10px] font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-1.5 transition cursor-pointer"
               style={{ borderRadius: '0px' }}
             >
-              <ArrowUp size={11} className="text-[#c81e3c]" />
+              <ArrowUp size={11} className="text-white" />
               {isOpen && <span>Back to Top</span>}
             </button>
           </div>

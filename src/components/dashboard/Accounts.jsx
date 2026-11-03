@@ -1426,7 +1426,7 @@ export default function Accounts() {
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-9 h-9 flex items-center justify-center text-white"
-                  style={{ background: BRAND_RED, borderRadius: '0px' }}
+                  style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
                 >
                   <Youtube size={18} className="text-white" />
                 </div>

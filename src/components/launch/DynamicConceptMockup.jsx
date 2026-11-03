@@ -42,7 +42,7 @@ import { getFriendlyColorName, hexToRgba } from "../../utils/avatarColorExtracto
  * Guaranteed readability and contrast against dark slate / obsidian canvases.
  */
 export const BRAND_COLORS = [
-  { name: "Creator Crimson", hex: "#c81e3c", bg: "bg-[#c81e3c]", text: "text-[#c81e3c]", border: "border-[#c81e3c]/40", glow: "rgba(200, 30, 60, 0.35)" },
+  { name: "Creator Crimson", hex: "#c81e3c", bg: "bg-[#c81e3c] text-white", text: "text-white", border: "border-[#c81e3c]/40", glow: "rgba(200, 30, 60, 0.35)" },
   { name: "Electric Emerald", hex: "#10B981", bg: "bg-emerald-600", text: "text-emerald-400", border: "border-emerald-500/40", glow: "rgba(16, 185, 129, 0.35)" },
   { name: "Forge Lime", hex: "#C8FF3D", bg: "bg-[#C8FF3D]", text: "text-[#C8FF3D]", border: "border-[#C8FF3D]/40", glow: "rgba(200, 255, 61, 0.3)" },
   { name: "Ocean Cyan", hex: "#06B6D4", bg: "bg-cyan-600", text: "text-cyan-400", border: "border-cyan-500/40", glow: "rgba(6, 182, 212, 0.35)" },

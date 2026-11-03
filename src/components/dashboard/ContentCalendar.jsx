@@ -2024,8 +2024,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
       {!isConnected ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
           <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none shadow-2xl space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
-              <Calendar size={28} />
+            <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
+              <Calendar size={28} className="text-white" />
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
@@ -2042,11 +2042,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               <button
                 type="button"
                 onClick={navigateToAccounts}
-                className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
-                style={{ background: '#c81e3c' }}
+                className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto shadow-md"
+                style={{ background: '#c81e3c', color: '#ffffff' }}
               >
-                <ArrowRight size={14} />
-                <span>Go to Accounts to Connect</span>
+                <ArrowRight size={14} className="text-white" />
+                <span className="text-white">Go to Accounts to Connect</span>
               </button>
             </div>
           </div>

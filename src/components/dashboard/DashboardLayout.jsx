@@ -80,8 +80,8 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center bg-[#090d16] p-4 sm:p-8 text-center select-none overflow-y-auto">
         <div className="max-w-lg w-full p-8 bg-[#0c0f17] border border-[#1b2336] rounded-none shadow-2xl space-y-4 my-auto">
-          <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
-            <Layers size={28} />
+          <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
+            <Layers size={28} className="text-white" />
           </div>
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
@@ -98,11 +98,11 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
             <button
               type="button"
               onClick={() => setActiveTab && setActiveTab('accounts')}
-              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
-              style={{ background: '#c81e3c' }}
+              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto shadow-md"
+              style={{ background: '#c81e3c', color: '#ffffff' }}
             >
-              <ExternalLink size={14} />
-              <span>Go to Accounts to Connect</span>
+              <ExternalLink size={14} className="text-white" />
+              <span className="text-white">Go to Accounts to Connect</span>
             </button>
           </div>
         </div>

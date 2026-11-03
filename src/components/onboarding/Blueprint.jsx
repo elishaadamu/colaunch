@@ -313,9 +313,9 @@ function WebAppPreview({ accent, primary, creatorData }) {
           </div>
           <div className="text-[7.5px] text-white/50">Full Video Curriculum · 4.9 ★</div>
         </div>
-        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: accent.color, color: '#000' }}>
-          <Play size={10} fill="#000" className="ml-0.5" />
+        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+          style={{ background: accent.color, color: '#ffffff' }}>
+          <Play size={10} fill="#ffffff" className="ml-0.5 text-white" />
         </div>
       </div>
 

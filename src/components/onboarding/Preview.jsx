@@ -815,7 +815,7 @@ function ProductLandingPage({
         >
           <div 
             className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0 group-hover:scale-105 transition-transform"
-            style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
+            style={{ background: dynamicAccent, borderColor: dynamicAccent, color: '#ffffff' }}
           >
             {resolvedAvatar ? (
               <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
@@ -3285,10 +3285,10 @@ export default function Preview() {
           style={{ borderColor: dynamicAccentBorder, borderRadius: '0px' }}
         >
           <div 
-            className="w-7 h-7 rounded-xl flex items-center justify-center text-xs shadow-sm"
-            style={{ background: dynamicAccentBg, color: dynamicAccent }}
+            className="w-7 h-7 rounded-none flex items-center justify-center text-xs shadow-sm"
+            style={{ background: dynamicAccent, color: '#ffffff' }}
           >
-            <Check className="w-4 h-4 stroke-[3]" />
+            <Check className="w-4 h-4 stroke-[3] text-white" />
           </div>
           <span className="text-xs font-medium text-white">{toastMessage}</span>
         </div>

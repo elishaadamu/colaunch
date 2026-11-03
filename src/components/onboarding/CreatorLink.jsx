@@ -419,9 +419,9 @@ export default function CreatorLink() {
         <div className="flex flex-col items-center sm:items-start text-left">
           
           {/* Stage Pill Tag */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/25 text-[#ff8068] text-[11px] font-semibold tracking-wider uppercase mb-5">
-            <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]"></span>
-            Step 1 of 8 &bull; Intelligence Setup
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-[#c81e3c] border border-[#c81e3c] text-white text-[11px] font-semibold tracking-wider uppercase mb-5">
+            <span className="w-1.5 h-1.5 rounded-none bg-white"></span>
+            <span className="text-white">Step 1 of 8 &bull; Intelligence Setup</span>
           </div>
 
           {/* Main Headline */}
@@ -442,8 +442,8 @@ export default function CreatorLink() {
             
             {/* Feature 1 */}
             <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
-                <TrendingUp className="w-3.5 h-3.5" />
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white text-xs mt-0.5">
+                <TrendingUp className="w-3.5 h-3.5 text-white" />
               </div>
               <div>
                 <div className="text-xs font-semibold text-neutral-200">Real Follower Count</div>
@@ -453,8 +453,8 @@ export default function CreatorLink() {
 
             {/* Feature 2 */}
             <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
-                <Camera className="w-3.5 h-3.5" />
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white text-xs mt-0.5">
+                <Camera className="w-3.5 h-3.5 text-white" />
               </div>
               <div>
                 <div className="text-xs font-semibold text-neutral-200">Dynamic Identity</div>
@@ -464,8 +464,8 @@ export default function CreatorLink() {
 
             {/* Feature 3 */}
             <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
-              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c]/10 border border-[#c81e3c]/20 flex items-center justify-center text-[#c81e3c] text-xs mt-0.5">
-                <Zap className="w-3.5 h-3.5" />
+              <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white text-xs mt-0.5">
+                <Zap className="w-3.5 h-3.5 text-white" />
               </div>
               <div>
                 <div className="text-xs font-semibold text-neutral-200">Engagement Matrix</div>
@@ -541,9 +541,9 @@ export default function CreatorLink() {
 
             {/* Validation Feedback message */}
             {url.trim().length > 3 && (
-              <div className="text-xs text-[#c81e3c] font-medium flex items-center gap-2 pl-1 animate-fadeIn">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#c81e3c]" />
-                <span>Valid creator profile handle detected</span>
+              <div className="text-xs text-white font-medium flex items-center gap-2 pl-1 animate-fadeIn">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-white">Valid creator profile handle detected</span>
               </div>
             )}
 
@@ -557,14 +557,14 @@ export default function CreatorLink() {
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
 
               {!isAnalyzing ? (
-                <span className="flex items-center gap-2">
-                  Analyze my audience
-                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+                <span className="flex items-center gap-2 text-white">
+                  <span className="text-white font-bold">Analyze my audience</span>
+                  <ArrowRight className="w-4 h-4 text-white transition-transform duration-200 group-hover:translate-x-1" />
                 </span>
               ) : (
-                <span className="flex items-center gap-2 font-mono">
+                <span className="flex items-center gap-2 font-mono text-white">
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Scraping account data · [ {formatElapsedTimer(scrapeElapsedMs)} ]</span>
+                  <span className="text-white font-bold">Scraping account data · [ {formatElapsedTimer(scrapeElapsedMs)} ]</span>
                 </span>
               )}
             </button>
@@ -585,15 +585,15 @@ export default function CreatorLink() {
                     <span className="font-mono font-bold text-[11px] sm:text-xs tracking-wider uppercase text-white">
                       Live Account Scraper Telemetry
                     </span>
-                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#c81e3c]/15 border border-[#c81e3c]/35 text-[#ff4d6d] text-[10px] font-mono font-bold tracking-widest uppercase">
-                      <span className="w-1.5 h-1.5 bg-[#c81e3c] animate-ping"></span>
-                      <span>STREAMING</span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#c81e3c] border border-[#c81e3c] text-white text-[10px] font-mono font-bold tracking-widest uppercase">
+                      <span className="w-1.5 h-1.5 bg-white animate-ping"></span>
+                      <span className="text-white">STREAMING</span>
                     </span>
                   </div>
 
                   {/* High Precision Timer */}
                   <div className="flex items-center gap-2 px-2.5 py-1 bg-[#06080d] border border-[#1f283d] text-neutral-300 font-mono text-xs shadow-inner">
-                    <Clock className="w-3.5 h-3.5 text-[#c81e3c]" />
+                    <Clock className="w-3.5 h-3.5 text-white" />
                     <span className="text-white font-mono font-bold tracking-wider">
                       {formatElapsedTimer(scrapeElapsedMs)}
                     </span>
@@ -695,7 +695,7 @@ export default function CreatorLink() {
                     </div>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-none bg-[#c81e3c]/10 text-[#c81e3c] border border-[#c81e3c]/30">
+                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-none bg-[#c81e3c] text-white border border-[#c81e3c]">
                   Live Connected
                 </span>
               </div>
@@ -707,7 +707,7 @@ export default function CreatorLink() {
                 </div>
                 <div className="text-left">
                   <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-medium">Avg Engagement</div>
-                  <div className="text-base font-bold text-[#c81e3c] mt-0.5">{displayEngagement}%</div>
+                  <div className="text-base font-bold text-white mt-0.5">{displayEngagement}%</div>
                 </div>
                 <div className="text-left">
                   <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-medium">Top Format</div>
@@ -725,16 +725,16 @@ export default function CreatorLink() {
                     onClick={handleClear}
                     className="text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-3 h-3 text-neutral-400" />
                     <span>Search different creator</span>
                   </button>
                   <button 
                     type="button" 
                     onClick={handleProceedToStep2} 
-                    className="text-[#c81e3c] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 bg-[#c81e3c] hover:bg-[#b01732] text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm rounded-none transition-colors"
                   >
-                    <span>Moving to Step 2</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <span className="text-white">Moving to Step 2</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-white" />
                   </button>
                 </div>
               </div>

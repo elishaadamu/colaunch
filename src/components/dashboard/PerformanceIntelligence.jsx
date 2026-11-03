@@ -189,8 +189,8 @@ export default function PerformanceIntelligence() {
     return (
       <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
-          <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
-            <Youtube size={28} />
+          <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
+            <Youtube size={28} className="text-white" />
           </div>
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
@@ -207,11 +207,11 @@ export default function PerformanceIntelligence() {
             <button
               type="button"
               onClick={() => setActiveTab && setActiveTab('accounts')}
-              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
-              style={{ background: brandRed }}
+              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto shadow-md"
+              style={{ background: brandRed, color: '#ffffff' }}
             >
-              <LinkIcon size={14} />
-              <span>Go to Accounts to Connect</span>
+              <LinkIcon size={14} className="text-white" />
+              <span className="text-white">Go to Accounts to Connect</span>
             </button>
           </div>
         </div>

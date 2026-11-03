@@ -242,7 +242,7 @@ export default function ProductMockupDisplay({ project, theme = 'crimson', brand
       glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
       primaryBg: 'bg-[#c81e3c] text-white',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     red: {
@@ -250,7 +250,7 @@ export default function ProductMockupDisplay({ project, theme = 'crimson', brand
       glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
       primaryBg: 'bg-[#c81e3c] text-white',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     lime: {
@@ -258,7 +258,7 @@ export default function ProductMockupDisplay({ project, theme = 'crimson', brand
       glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
       primaryBg: 'bg-[#c81e3c] text-white',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     emerald: {
@@ -266,7 +266,7 @@ export default function ProductMockupDisplay({ project, theme = 'crimson', brand
       glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
       primaryBg: 'bg-[#c81e3c] text-white',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#101419] to-[#0D1014]'
     },
     purple: {
@@ -274,7 +274,7 @@ export default function ProductMockupDisplay({ project, theme = 'crimson', brand
       glow: 'shadow-[0_20px_50px_rgba(200,30,60,0.15)]',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
       primaryBg: 'bg-[#c81e3c] text-white',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#101419] to-[#0D1014]'
     }
   }

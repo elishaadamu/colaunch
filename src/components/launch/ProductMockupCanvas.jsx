@@ -121,30 +121,30 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
       border: 'border-[#c81e3c]/40',
       glow: 'shadow-[#c81e3c]/20',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
-      primaryBg: 'bg-[#c81e3c]',
+      primaryBg: 'bg-[#c81e3c] text-white',
       primaryText: 'text-white font-bold',
       bar: 'bg-[#c81e3c]',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
     },
     red: {
       border: 'border-[#c81e3c]/40',
       glow: 'shadow-[#c81e3c]/20',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
-      primaryBg: 'bg-[#c81e3c]',
+      primaryBg: 'bg-[#c81e3c] text-white',
       primaryText: 'text-white font-bold',
       bar: 'bg-[#c81e3c]',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
     },
     rose: {
       border: 'border-[#c81e3c]/40',
       glow: 'shadow-[#c81e3c]/20',
       badge: 'bg-[#c81e3c]/15 text-white border border-[#c81e3c]/35',
-      primaryBg: 'bg-[#c81e3c]',
+      primaryBg: 'bg-[#c81e3c] text-white',
       primaryText: 'text-white font-bold',
       bar: 'bg-[#c81e3c]',
-      text: 'text-[#c81e3c]',
+      text: 'text-white',
       gradient: 'from-[#c81e3c]/20 to-[#0e1117]'
     },
   }
