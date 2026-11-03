@@ -25,6 +25,7 @@ import BetaTestingPortal from './components/launch/BetaTestingPortal'
 import LaunchAuth from './components/launch/LaunchAuth'
 import SupportWidget from './components/support/SupportWidget'
 import { exchangeYouTubeAuthCode } from './services/youtubeApi'
+import { fetchDashboardData, saveDashboardSection } from './services/dashboardApi'
 import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
@@ -551,6 +552,34 @@ export default function App() {
       }
     }
   })
+
+  // MongoDB Dashboard State Store
+  const [dashboardData, setDashboardData] = useState({
+    calendar_data: {},
+    studio_data: {},
+    community_data: {},
+    marketing_data: {},
+    products_data: {},
+    accounts_platforms: {},
+    youtube_connection: null,
+    meta_connection: null
+  })
+
+  // Directly save a dashboard section into MongoDB Atlas user_profiles
+  const saveDashboardData = useCallback((section, data) => {
+    setDashboardData(prev => ({
+      ...prev,
+      [section === 'calendar' ? 'calendar_data' :
+       section === 'studio' ? 'studio_data' :
+       section === 'community' ? 'community_data' :
+       section === 'marketing' ? 'marketing_data' :
+       section === 'products' ? 'products_data' :
+       section === 'accounts' ? 'accounts_platforms' : `${section}_data`]: data
+    }))
+    const uname = userProfile?.username || ''
+    const handle = creatorData?.handle || 'default'
+    return saveDashboardSection(uname, handle, section, data)
+  }, [userProfile?.username, creatorData?.handle])
 
   // Synchronize localStorage configuration to the backend SQLite database
   const syncSessionToDb = useCallback((currentUsername, currentCreatorData) => {
@@ -1192,6 +1221,19 @@ export default function App() {
             if (data.ai_keys) {
               updateAiKeys(data.ai_keys)
             }
+
+            // Hydrate central dashboard MongoDB state
+            setDashboardData({
+              calendar_data: data.calendar_data || {},
+              studio_data: data.studio_data || {},
+              community_data: data.community_data || {},
+              marketing_data: data.marketing_data || {},
+              products_data: data.products_data || {},
+              accounts_platforms: data.accounts_platforms || {},
+              youtube_connection: data.youtube_connection || null,
+              meta_connection: data.meta_connection || null
+            })
+
             setDbLoadedTimestamp(Date.now())
           }
         })
@@ -1282,7 +1324,10 @@ export default function App() {
     preloadStudioType,
     setPreloadStudioType,
     chatOpen,
-    setChatOpen
+    setChatOpen,
+    dashboardData,
+    setDashboardData,
+    saveDashboardData
   }
 
   // /:creatorhandle/:id route — public creator application & live hub url redirects directly to creator dashboard

@@ -406,7 +406,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
 // ─── Main Community Component ─────────────────────────────────────────────────
 
 export default function Community() {
-  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb } = useForge()
+  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dashboardData, saveDashboardData } = useForge()
 
   // Unified single brand color across the entire application (co-launch.app brand red)
   const creatorColor = '#c81e3c'
@@ -467,6 +467,18 @@ export default function Community() {
     return () => window.removeEventListener('focus', handler)
   }, [cleanHandle])
 
+  // Hydrate community data from MongoDB Atlas
+  useEffect(() => {
+    if (dashboardData?.community_data) {
+      if (Array.isArray(dashboardData.community_data.members) && dashboardData.community_data.members.length > 0) {
+        setMembers(dashboardData.community_data.members)
+      }
+      if (Array.isArray(dashboardData.community_data.scheduled_posts) && dashboardData.community_data.scheduled_posts.length > 0) {
+        setScheduledPosts(dashboardData.community_data.scheduled_posts)
+      }
+    }
+  }, [dashboardData?.community_data])
+
   // ── Scheduled posts ──
   const getScheduledKey = () => `forge_${cleanHandle}_community_scheduled`
   const [scheduledPosts, setScheduledPosts] = useState(() => {
@@ -486,7 +498,16 @@ export default function Community() {
 
   const saveScheduledPosts = (posts) => {
     setScheduledPosts(posts)
-    localStorage.setItem(getScheduledKey(), JSON.stringify(posts))
+    try {
+      localStorage.setItem(getScheduledKey(), JSON.stringify(posts))
+    } catch (_) {}
+    if (saveDashboardData) {
+      saveDashboardData('community', {
+        members,
+        scheduled_posts: posts,
+        synced_at: new Date().toISOString()
+      })
+    }
     setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 

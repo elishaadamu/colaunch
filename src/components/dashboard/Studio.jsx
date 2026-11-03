@@ -214,7 +214,9 @@ export default function Studio() {
     setActiveTab,
     preloadStudioType,
     setPreloadStudioType,
-    syncSessionToDb
+    syncSessionToDb,
+    dashboardData,
+    saveDashboardData
   } = useForge()
   const accent = getAccent(creatorData.platform)
   const studioJob = useBgJob(STUDIO_JOB)
@@ -236,21 +238,31 @@ export default function Studio() {
   const handle = creatorData?.handle || 'default'
   const recentKey = `forge_${handle}_studio_recent_outputs`
 
-  // Load recent outputs from localStorage on mount
+  // Hydrate recent outputs from MongoDB Atlas
+  useEffect(() => {
+    if (dashboardData?.studio_data?.recent_outputs && Array.isArray(dashboardData.studio_data.recent_outputs) && dashboardData.studio_data.recent_outputs.length > 0) {
+      setRecentOutputs(dashboardData.studio_data.recent_outputs)
+    }
+  }, [dashboardData?.studio_data])
+
+  // Load recent outputs from localStorage on mount (as fallback)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(recentKey)
-      if (saved) setRecentOutputs(JSON.parse(saved))
+      if (saved && (!recentOutputs || recentOutputs.length === 0)) setRecentOutputs(JSON.parse(saved))
     } catch (e) { /* ignore corrupt data */ }
   }, [recentKey])
 
-  // Save recent outputs to localStorage whenever they change
+  // Save recent outputs to MongoDB Atlas and localStorage
   const saveRecentOutputs = useCallback((outputs) => {
     setRecentOutputs(outputs)
     try {
       localStorage.setItem(recentKey, JSON.stringify(outputs))
     } catch (e) { /* quota exceeded */ }
-  }, [recentKey])
+    if (saveDashboardData) {
+      saveDashboardData('studio', { recent_outputs: outputs, synced_at: new Date().toISOString() })
+    }
+  }, [recentKey, saveDashboardData])
 
   // Push a new output to the history list
   const pushToRecent = useCallback((content, type) => {
@@ -265,18 +277,24 @@ export default function Studio() {
     setRecentOutputs(prev => {
       const next = [entry, ...prev].slice(0, 20) // cap at 20
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
+      if (saveDashboardData) {
+        saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+      }
       return next
     })
     return entry.id
-  }, [recentKey])
+  }, [recentKey, saveDashboardData])
 
   const removeFromRecent = useCallback((id) => {
     setRecentOutputs(prev => {
       const next = prev.filter(o => o.id !== id)
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
+      if (saveDashboardData) {
+        saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+      }
       return next
     })
-  }, [recentKey])
+  }, [recentKey, saveDashboardData])
 
   // Dynamic content types reflecting onboarding modifications
   const productName = creatorData.productName || 'Creator Academy'

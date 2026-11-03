@@ -803,7 +803,7 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
 }
 
 export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
-  const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab } = useForge()
+  const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab, dashboardData, saveDashboardData } = useForge()
   const setActiveTab = propSetActiveTab || contextSetActiveTab
 
   // Dedicated calendar container ref & smooth scroll-to-top controllers
@@ -1054,6 +1054,34 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     window.addEventListener('forge_calendar_updated', handleCalendarSync)
     return () => window.removeEventListener('forge_calendar_updated', handleCalendarSync)
   }, [creatorData, productName, handleClean])
+
+  // Hydrate calendar from MongoDB Atlas user_profiles
+  useEffect(() => {
+    if (dashboardData?.calendar_data) {
+      const cal = dashboardData.calendar_data
+      if (Array.isArray(cal.campaign_posts) && cal.campaign_posts.length > 0) {
+        setPosts(cal.campaign_posts)
+      }
+      if (typeof cal.bonus_xp === 'number') {
+        setBonusXp(cal.bonus_xp)
+      }
+      if (cal.claimed_quests && typeof cal.claimed_quests === 'object') {
+        setClaimedQuests(cal.claimed_quests)
+      }
+    }
+  }, [dashboardData?.calendar_data])
+
+  // Automatically persist calendar state directly to MongoDB Atlas
+  useEffect(() => {
+    if (saveDashboardData && posts && posts.length > 0) {
+      saveDashboardData('calendar', {
+        campaign_posts: posts,
+        bonus_xp: bonusXp,
+        claimed_quests: claimedQuests,
+        synced_at: new Date().toISOString()
+      })
+    }
+  }, [posts, bonusXp, claimedQuests, saveDashboardData])
 
   // Active Post for Right Inspector Studio
   const [selectedPostId, setSelectedPostId] = useState(() => {

@@ -54,7 +54,7 @@ const STATUS_STYLES = {
 const BRAND_RED = '#c81e3c'
 
 export default function Accounts() {
-  const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast, syncSessionToDb, userProfile } = useForge()
+  const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast, syncSessionToDb, userProfile, dashboardData, saveDashboardData } = useForge()
 
   // Real YouTube Connection from OAuth 2.0
   const [youtubeConn, setYoutubeConn] = useState(() => getStoredYouTubeConnection())
@@ -253,15 +253,18 @@ export default function Accounts() {
     }
   }, [triggerToast, syncSessionToDb])
 
-  // Save other account configurations locally and sync to database
+  // Save other account configurations and sync to MongoDB Atlas
   useEffect(() => {
     try {
       localStorage.setItem('forge_accounts_platforms', JSON.stringify(otherAccounts))
+      if (saveDashboardData) {
+        saveDashboardData('accounts', otherAccounts)
+      }
       if (syncSessionToDb && (otherAccounts.facebook?.connected || otherAccounts.instagram?.connected)) {
         syncSessionToDb()
       }
     } catch (_) {}
-  }, [otherAccounts, syncSessionToDb])
+  }, [otherAccounts, saveDashboardData, syncSessionToDb])
 
   // Connect YouTube using Real Google OAuth 2.0
   const handleConnectYouTube = () => {
