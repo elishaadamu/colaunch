@@ -57,38 +57,21 @@ const BRAND_RED = '#c81e3c'
 export default function Accounts() {
   const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast, syncSessionToDb, userProfile, dashboardData, saveDashboardData } = useForge()
 
-  // Real YouTube Connection from OAuth 2.0
-  const [youtubeConn, setYoutubeConn] = useState(() => getStoredYouTubeConnection())
+  // Real YouTube Connection from OAuth 2.0 (strictly user-isolated)
+  const [youtubeConn, setYoutubeConn] = useState(() => {
+    return userProfile?.youtube_connection || dashboardData?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  })
   const [isYouTubeConnecting, setIsYouTubeConnecting] = useState(false)
   const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
 
-  // Meta / Facebook Connection State
-  const [metaConn, setMetaConn] = useState(() => getStoredMetaConnection())
+  // Meta / Facebook Connection State (strictly user-isolated)
+  const [metaConn, setMetaConn] = useState(() => {
+    return userProfile?.meta_connection || dashboardData?.meta_connection || getStoredMetaConnection(userProfile?.email)
+  })
   const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false)
-  const [facebookTokenInput, setFacebookTokenInput] = useState(
-    'EAAV1vSnTG90BS1zkUbZBQmhLvwwgZCh4qBGqP6DZAotLlcWZCdQaJUfQ1iHV1pfvxGJY5mjwKPrY9Q40O7QxdQddGkLQtqO4IjKtZBHurQelIcoi0jC8QWZAxiBjGbOfX3mawfnVAlaN2l2cMjzrlecoJORKRpClj41TlkEYkhkuHwMRIUOKpvNPFnRUJLZCYdBAN576Ns9UjXPU39INo99PDm3E3qFbHpVtVtjQgZDZD'
-  )
-  const [discoveredPages, setDiscoveredPages] = useState([
-    {
-      id: '103228882009161',
-      name: 'Techgen',
-      category: 'E-commerce website',
-      access_token: 'EAAV1vSnTG90BS9vKHxsV4CPXpEvXmCT9caVx3suZAesPHTzaqdP5PxZAAkRlSCALSnQMr2ZCsiEguVP5bcDMFJYFp8PK9o6UyiEfGpSeHHTzImZAoxTdUhbzDjFW25u299grZBueEd82FZC9Q6FbjDbJd0S1bgLGvFPZCmrxOSSCQLLYBnikYQt84mvgkPdF2NIISubewlT0vY2eZCvYGGLTDtW3bl8FxjtKcOPtF46DxB8ZD'
-    },
-    {
-      id: '527462540449391',
-      name: 'pigeon Tech',
-      category: 'Accessories',
-      access_token: 'EAAV1vSnTG90BS055tGM7dUPyDxgNQfyVRBX2S6z9xGenNsXLrFN83FIkJAa3SMUPD3v8NXPPZCVea4bjz9BDzgh3958Od5P5j8ZC3KaNfZCOOiDkPVkawJ6I95HXZBJCXHyuAsLu3ZAe8zCxeXUaFz24AiRVtbfnFX11NiyaB932OTjowsCfjpN3urzOXszPvvzwtZBuMUtLspc6cqXaYSPGo7ioZBeNSysohZBzsqQTHWN9'
-    },
-    {
-      id: '1820886941570083',
-      name: 'Sportstechwest',
-      category: 'Entrepreneur',
-      access_token: 'EAAV1vSnTG90BSwj9RWf4G96UZCoZBdSfIpBZBVSBYoHOFMsVcCmsd6qqpXoBCXGYmHZBNjHIYeQZC0IweCbY5ziaZBZCBKqyDDVp6CW7IDFH5cMDM92pKaKj7hmlyynzFLJWl2lfJEKVTiakIzNROZCj2iZAsjjheo18m4RiBRSSivpZBBweOMBVwrXr5qZAKVcfu8oq2lwjorDZAqBc4IkANvXqx9644GD1ZBqDXLSdQPVF34XpZA'
-    }
-  ])
-  const [selectedPageId, setSelectedPageId] = useState('103228882009161')
+  const [facebookTokenInput, setFacebookTokenInput] = useState('')
+  const [discoveredPages, setDiscoveredPages] = useState([])
+  const [selectedPageId, setSelectedPageId] = useState('')
   const [isVerifyingMeta, setIsVerifyingMeta] = useState(false)
 
   // Instagram Manual / Custom Modal
@@ -151,11 +134,20 @@ export default function Accounts() {
     }
   }, [metaConn])
 
+  // Synchronize state when userProfile or dashboardData updates
+  useEffect(() => {
+    const yt = userProfile?.youtube_connection || dashboardData?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+    setYoutubeConn(yt?.connected ? yt : null)
+
+    const mt = userProfile?.meta_connection || dashboardData?.meta_connection || getStoredMetaConnection(userProfile?.email)
+    setMetaConn(mt?.facebook?.connected ? mt : null)
+  }, [userProfile, dashboardData])
+
   // Synchronize YouTube connection from storage and window events
   const refreshYouTubeConnection = useCallback(() => {
-    const conn = getStoredYouTubeConnection()
-    setYoutubeConn(conn)
-  }, [])
+    const conn = userProfile?.youtube_connection || dashboardData?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+    setYoutubeConn(conn?.connected ? conn : null)
+  }, [userProfile?.email, userProfile?.youtube_connection, dashboardData?.youtube_connection])
 
   useEffect(() => {
     refreshYouTubeConnection()
@@ -171,10 +163,11 @@ export default function Accounts() {
     }
   }, [refreshYouTubeConnection])
 
-  // Check remote backend status if local storage was cleared or fresh session started
+  // Check remote backend status strictly for this authenticated user
   useEffect(() => {
-    if (!youtubeConn?.connected) {
-      checkRemoteYouTubeStatus(userProfile?.username || creatorData?.handle || 'default')
+    const activeId = userProfile?.email || userProfile?.username
+    if (activeId && !youtubeConn?.connected) {
+      checkRemoteYouTubeStatus(activeId)
         .then(res => {
           if (res?.connected && res?.channel) {
             setYoutubeConn({ connected: true, channel: res.channel })
@@ -182,8 +175,8 @@ export default function Accounts() {
         })
         .catch(() => {})
     }
-    if (!metaConn?.facebook?.connected) {
-      checkRemoteMetaStatus(creatorData?.handle || 'default', userProfile?.username || '')
+    if (activeId && !metaConn?.facebook?.connected) {
+      checkRemoteMetaStatus(creatorData?.handle, userProfile?.username, userProfile?.email)
         .then(conn => {
           if (conn?.facebook?.connected) {
             setMetaConn(conn)
@@ -191,7 +184,7 @@ export default function Accounts() {
         })
         .catch(() => {})
     }
-  }, [userProfile?.username, creatorData?.handle])
+  }, [userProfile?.email, userProfile?.username, creatorData?.handle])
 
   // Handle incoming OAuth callback query parameter (?code=...) on the accounts page
   useEffect(() => {
@@ -203,7 +196,8 @@ export default function Accounts() {
       setIsYouTubeConnecting(true)
       if (triggerToast) triggerToast('Exchanging Google OAuth code with YouTube Data API...', 'info')
 
-      exchangeYouTubeAuthCode(code)
+      const activeEmail = userProfile?.email || userProfile?.username
+      exchangeYouTubeAuthCode(code, null, activeEmail)
         .then(async channel => {
           setYoutubeConn({ connected: true, channel })
           if (triggerToast) {
@@ -269,16 +263,18 @@ export default function Accounts() {
     } catch (_) {}
   }, [otherAccounts, saveDashboardData, syncSessionToDb])
 
-  // Connect YouTube using Real Google OAuth 2.0
+  // Connect YouTube using Real Google OAuth 2.0 strictly for this authenticated user
   const handleConnectYouTube = () => {
     setIsYouTubeConnecting(true)
     const returnPath = `/dashboard/${creatorData?.id || ''}`
-    startYouTubeOAuth(returnPath, 'accounts')
+    const activeEmail = userProfile?.email || userProfile?.username
+    startYouTubeOAuth(returnPath, 'accounts', activeEmail)
   }
 
-  // Disconnect YouTube
+  // Disconnect YouTube strictly for this authenticated user
   const handleDisconnectYouTube = async () => {
-    await disconnectYouTubeChannel()
+    const activeEmail = userProfile?.email || userProfile?.username
+    await disconnectYouTubeChannel(activeEmail)
     setYoutubeConn(null)
     setYoutubeModalOpen(false)
     if (triggerToast) triggerToast('YouTube channel disconnected.', 'info')
@@ -314,17 +310,18 @@ export default function Accounts() {
   }
 
   const handleDisconnectOther = (id) => {
+    const activeEmail = userProfile?.email || userProfile?.username
     setOtherAccounts(prev => ({
       ...prev,
       [id]: { ...prev[id], connected: false, handle: '' }
     }))
     if (id === 'facebook') {
       updateCreator({ facebook_connected: false, facebook_page_id: null, facebook_page_name: null, facebook_access_token: null })
-      disconnectMetaChannel('facebook')
+      disconnectMetaChannel('facebook', activeEmail)
     }
     if (id === 'instagram') {
       updateCreator({ instagram_access_token: null, instagram_business_id: null })
-      disconnectMetaChannel('instagram')
+      disconnectMetaChannel('instagram', activeEmail)
     }
     if (triggerToast) triggerToast(`${id.toUpperCase()} disconnected.`, 'info')
   }
@@ -1600,45 +1597,51 @@ export default function Accounts() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                   Select Facebook Page ({discoveredPages.length} Available)
                 </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {discoveredPages.map((page) => {
-                    const isSelected = selectedPageId === page.id
-                    return (
-                      <div
-                        key={page.id}
-                        onClick={() => setSelectedPageId(page.id)}
-                        className={`p-3 border cursor-pointer transition flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-[#141d2f] border-blue-500/60 ring-1 ring-blue-500/50'
-                            : 'bg-[#111522] border-[#202738] hover:border-slate-600'
-                        }`}
-                        style={{ borderRadius: '0px' }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                              isSelected ? 'border-blue-400 bg-blue-500' : 'border-slate-600'
-                            }`}
-                          >
-                            {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                {discoveredPages.length === 0 ? (
+                  <div className="p-4 bg-[#111522] border border-[#202738] text-center text-xs text-slate-400 font-sans">
+                    No Facebook Pages detected yet. Paste your Meta User Access Token above and click <strong className="text-white">Verify</strong> to discover your pages.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {discoveredPages.map((page) => {
+                      const isSelected = selectedPageId === page.id
+                      return (
+                        <div
+                          key={page.id}
+                          onClick={() => setSelectedPageId(page.id)}
+                          className={`p-3 border cursor-pointer transition flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#141d2f] border-blue-500/60 ring-1 ring-blue-500/50'
+                              : 'bg-[#111522] border-[#202738] hover:border-slate-600'
+                          }`}
+                          style={{ borderRadius: '0px' }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                isSelected ? 'border-blue-400 bg-blue-500' : 'border-slate-600'
+                              }`}
+                            >
+                              {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-white">{page.name}</p>
+                              <p className="text-[10px] font-mono text-slate-400">
+                                ID: {page.id} • {page.category || 'Page'}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-white">{page.name}</p>
-                            <p className="text-[10px] font-mono text-slate-400">
-                              ID: {page.id} • {page.category || 'Page'}
-                            </p>
-                          </div>
-                        </div>
 
-                        {isSelected && (
-                          <span className="text-[10px] font-mono font-bold text-blue-400 px-2 py-0.5 bg-blue-950/60 border border-blue-800/60">
-                            SELECTED
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                          {isSelected && (
+                            <span className="text-[10px] font-mono font-bold text-blue-400 px-2 py-0.5 bg-blue-950/60 border border-blue-800/60">
+                              SELECTED
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1657,10 +1660,11 @@ export default function Accounts() {
                 onClick={async () => {
                   const targetPage = discoveredPages.find(p => p.id === selectedPageId) || discoveredPages[0]
                   if (!targetPage) {
-                    if (triggerToast) triggerToast('Please select a Facebook Page to connect', 'error')
+                    if (triggerToast) triggerToast('Please verify a Meta token and select a Facebook Page first', 'error')
                     return
                   }
 
+                  const activeEmail = userProfile?.email || userProfile?.username
                   const payload = {
                     page_id: targetPage.id,
                     page_name: targetPage.name,
@@ -1669,10 +1673,11 @@ export default function Accounts() {
                     category: targetPage.category,
                     tasks: targetPage.tasks,
                     handle: creatorData?.handle || 'default',
-                    username: userProfile?.username || ''
+                    username: userProfile?.username || '',
+                    email: userProfile?.email || ''
                   }
 
-                  await saveMetaSelection(payload)
+                  await saveMetaSelection(payload, activeEmail)
 
                   setOtherAccounts(prev => ({
                     ...prev,

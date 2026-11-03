@@ -224,8 +224,8 @@ export default function Studio() {
   const accent = getAccent(creatorData.platform)
   const studioJob = useBgJob(STUDIO_JOB)
 
-  const ytConn = getStoredYouTubeConnection()
-  const metaConn = getStoredMetaConnection()
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
 
   if (!isConnected) {

@@ -29,10 +29,10 @@ import { getStoredMetaConnection } from '../../services/metaApi'
 import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
 
 function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
-  const { creatorData, triggerToast, setActiveTab: ctxSetActiveTab } = useForge()
+  const { creatorData, triggerToast, setActiveTab: ctxSetActiveTab, userProfile } = useForge()
   const setActiveTab = propSetActiveTab || ctxSetActiveTab
-  const ytConn = getStoredYouTubeConnection()
-  const metaConn = getStoredMetaConnection()
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
 
   const theme = creatorData.theme || 'dark'
@@ -368,8 +368,12 @@ export default function DashboardLayout() {
     }
   }, [userProfile, goTo])
 
-  // Listen for real-time YouTube connection events from OAuth
-  const [ytConn, setYtConn] = useState(() => getStoredYouTubeConnection())
+  // Listen for real-time YouTube connection events from OAuth (strictly user-isolated)
+  const [ytConn, setYtConn] = useState(() => userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email))
+  useEffect(() => {
+    setYtConn(userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email))
+  }, [userProfile?.youtube_connection, userProfile?.email])
+
   useEffect(() => {
     const handleConnected = (e) => setYtConn(e.detail)
     const handleDisconnected = () => setYtConn(null)

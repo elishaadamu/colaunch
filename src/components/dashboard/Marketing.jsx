@@ -1325,8 +1325,8 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
   } = useForge()
   const isChatOpen = propChatOpen ?? contextChatOpen
   const setActiveTab = propSetActiveTab || contextSetActiveTab
-  const ytConn = getStoredYouTubeConnection()
-  const metaConn = getStoredMetaConnection()
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
 
   // If user signed up directly and hasn't connected a channel yet, show empty state with link to Accounts

@@ -7,20 +7,53 @@
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
 const STORAGE_KEY = 'forge_meta_connection'
 
-export function getStoredMetaConnection() {
+function getActiveUserKey(userEmail = null) {
+  let target = userEmail
+  if (!target && typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('forge_user_profile')
+      if (raw) {
+        const p = JSON.parse(raw)
+        target = p.email || p.username
+      }
+    } catch (_) {}
+  }
+  if (!target) return STORAGE_KEY
+  const clean = target.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  return `forge_meta_connection_${clean}`
+}
+
+export function getStoredMetaConnection(userEmail = null) {
   if (typeof window === 'undefined') return null
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    const key = getActiveUserKey(userEmail)
+    const saved = localStorage.getItem(key)
+    if (saved) return JSON.parse(saved)
+
+    // Check if userProfile in localStorage has connection
+    const raw = localStorage.getItem('forge_user_profile')
+    if (raw) {
+      const p = JSON.parse(raw)
+      if (p.meta_connection?.facebook?.connected) return p.meta_connection
+      // User is logged in and has NO connection -> return null
+      return null
+    }
+
+    // Only for non-logged-in guest sessions:
+    const fallback = localStorage.getItem(STORAGE_KEY)
+    if (fallback) return JSON.parse(fallback)
   } catch (_) {}
   return null
 }
 
 /**
- * Checks remote backend for saved Meta / Facebook connection and syncs to localStorage
+ * Checks remote backend for saved Meta / Facebook connection strictly for this user
  */
-export async function checkRemoteMetaStatus(handle = 'default', username = '') {
+export async function checkRemoteMetaStatus(handle = null, username = null, email = null) {
   if (typeof window === 'undefined') return null
+  const targetUser = (email || username || (handle !== 'default' ? handle : null) || '').trim()
+  if (!targetUser) return null
+
   const candidateUrls = [
     '',
     BACKEND_URL,
@@ -31,13 +64,14 @@ export async function checkRemoteMetaStatus(handle = 'default', username = '') {
   for (const baseUrl of candidateUrls) {
     try {
       const q = new URLSearchParams()
-      if (handle) q.set('handle', handle)
+      if (email) q.set('email', email)
       if (username) q.set('username', username)
+      if (handle && handle !== 'default') q.set('handle', handle)
       const res = await fetch(`${baseUrl}/api/meta/connection?${q.toString()}`)
       if (res.ok) {
         const data = await res.json()
         if (data && data.success && data.connection) {
-          saveStoredMetaConnection(data.connection)
+          saveStoredMetaConnection(data.connection, email || username)
           return data.connection
         }
       }
@@ -46,29 +80,52 @@ export async function checkRemoteMetaStatus(handle = 'default', username = '') {
   return null
 }
 
-export function saveStoredMetaConnection(data) {
+export function saveStoredMetaConnection(data, userEmail = null) {
   if (typeof window === 'undefined') return
   try {
+    const key = getActiveUserKey(userEmail)
+    localStorage.setItem(key, JSON.stringify(data))
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     window.dispatchEvent(new CustomEvent('forge_meta_connected', { detail: data }))
   } catch (_) {}
 }
 
-export function disconnectMetaChannel(channelType = 'all') {
+export async function disconnectMetaChannel(channelType = 'all', userEmail = null) {
   if (typeof window === 'undefined') return
   try {
-    const current = getStoredMetaConnection() || {}
+    let target = userEmail
+    if (!target) {
+      try {
+        const raw = localStorage.getItem('forge_user_profile')
+        if (raw) target = JSON.parse(raw).email || JSON.parse(raw).username
+      } catch (_) {}
+    }
+
+    const current = getStoredMetaConnection(target) || {}
+    let updated = null
     if (channelType === 'facebook') {
       delete current.facebook
+      updated = current
     } else if (channelType === 'instagram') {
       delete current.instagram
+      updated = current
     } else {
+      const key = getActiveUserKey(target)
+      localStorage.removeItem(key)
       localStorage.removeItem(STORAGE_KEY)
       window.dispatchEvent(new CustomEvent('forge_meta_disconnected'))
-      return
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(current))
-    window.dispatchEvent(new CustomEvent('forge_meta_updated', { detail: current }))
+
+    if (updated) {
+      saveStoredMetaConnection(updated, target)
+      window.dispatchEvent(new CustomEvent('forge_meta_updated', { detail: updated }))
+    }
+
+    await fetch(`${BACKEND_URL}/api/meta/disconnect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: target, channel_type: channelType })
+    }).catch(() => {})
   } catch (_) {}
 }
 
@@ -118,19 +175,33 @@ export async function verifyMetaToken(accessToken) {
 /**
  * Save selected Page & Instagram account credentials to backend profile & local cache
  */
-export async function saveMetaSelection(payload) {
+export async function saveMetaSelection(payload, userEmail = null) {
+  let activeEmail = userEmail || payload.email
+  if (!activeEmail && typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('forge_user_profile')
+      if (raw) activeEmail = JSON.parse(raw).email || JSON.parse(raw).username
+    } catch (_) {}
+  }
+
+  const backendPayload = {
+    ...payload,
+    email: activeEmail || payload.email || '',
+    username: payload.username || ''
+  }
+
   try {
     await fetch(`${BACKEND_URL}/api/meta/save-selection`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(backendPayload)
     })
   } catch (e) {
     console.warn('[Meta API] Could not persist to backend database:', e)
   }
 
   // Update local storage
-  const current = getStoredMetaConnection() || {}
+  const current = getStoredMetaConnection(activeEmail) || {}
   const updated = {
     ...current,
     facebook: {
@@ -150,7 +221,7 @@ export async function saveMetaSelection(payload) {
       }
     } : {})
   }
-  saveStoredMetaConnection(updated)
+  saveStoredMetaConnection(updated, activeEmail)
   return updated
 }
 

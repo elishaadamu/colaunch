@@ -14,6 +14,22 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-b
 
 const STORAGE_KEY = 'forge_youtube_connection'
 
+function getActiveUserKey(userEmail = null) {
+  let target = userEmail
+  if (!target && typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('forge_user_profile')
+      if (raw) {
+        const p = JSON.parse(raw)
+        target = p.email || p.username
+      }
+    } catch (_) {}
+  }
+  if (!target) return STORAGE_KEY
+  const clean = target.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  return `forge_youtube_connection_${clean}`
+}
+
 const YOUTUBE_SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube.readonly',
@@ -41,7 +57,7 @@ export function getYouTubeAuthUrl(redirectUri = null, state = null) {
 /**
  * Initiates the Google OAuth 2.0 connection redirect
  */
-export function startYouTubeOAuth(state = null, returnTab = 'accounts') {
+export function startYouTubeOAuth(state = null, returnTab = 'accounts', userEmail = null) {
   if (typeof window === 'undefined') return
   const currentPath = window.location.pathname || '/dashboard'
   try {
@@ -49,9 +65,19 @@ export function startYouTubeOAuth(state = null, returnTab = 'accounts') {
     localStorage.setItem('forge_oauth_return_path', currentPath)
     localStorage.setItem('forge_dashboard_active_tab', returnTab)
     localStorage.setItem('forge_onboarding_step', 'dashboard')
+    if (userEmail) {
+      sessionStorage.setItem('forge_oauth_user_email', userEmail)
+    }
   } catch (_) {}
 
-  const statePayload = state || `${currentPath}?tab=${returnTab}`
+  let statePayload = state
+  if (!statePayload) {
+    statePayload = JSON.stringify({
+      path: currentPath,
+      tab: returnTab,
+      email: userEmail || ''
+    })
+  }
   const authUrl = getYouTubeAuthUrl(GOOGLE_REDIRECT_URI, encodeURIComponent(statePayload))
   window.location.href = authUrl
 }
@@ -59,12 +85,25 @@ export function startYouTubeOAuth(state = null, returnTab = 'accounts') {
 /**
  * Exchanges authorization code for tokens and retrieves YouTube channel info
  */
-export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
+export async function exchangeYouTubeAuthCode(code, redirectUri = null, userEmail = null) {
   const targetRedirect = redirectUri || GOOGLE_REDIRECT_URI
+
+  let activeEmail = userEmail
+  if (!activeEmail && typeof window !== 'undefined') {
+    try {
+      activeEmail = sessionStorage.getItem('forge_oauth_user_email')
+      if (!activeEmail) {
+        const raw = localStorage.getItem('forge_user_profile')
+        if (raw) activeEmail = JSON.parse(raw).email || JSON.parse(raw).username
+      }
+    } catch (_) {}
+  }
 
   const payload = {
     code,
     redirect_uri: targetRedirect,
+    identifier: activeEmail || 'default',
+    email: activeEmail || '',
     client_id: GOOGLE_CLIENT_ID,
     ...(import.meta.env.VITE_GOOGLE_CLIENT_SECRET ? { client_secret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET } : {})
   }
@@ -87,7 +126,7 @@ export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
       if (res.ok) {
         const data = await res.json()
         if (data.channel) {
-          saveLocalYouTubeConnection(data.channel, data.tokens)
+          saveLocalYouTubeConnection(data.channel, data.tokens, activeEmail)
           return data.channel
         }
       } else {
@@ -107,22 +146,39 @@ export async function exchangeYouTubeAuthCode(code, redirectUri = null) {
 }
 
 /**
- * Retrieves the current connected YouTube channel
+ * Retrieves the current connected YouTube channel strictly for the active user
  */
-export function getStoredYouTubeConnection() {
+export function getStoredYouTubeConnection(userEmail = null) {
   if (typeof window === 'undefined') return null
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const key = getActiveUserKey(userEmail)
+    const saved = localStorage.getItem(key)
     if (saved) return JSON.parse(saved)
+
+    // Check if userProfile in localStorage has connection
+    const raw = localStorage.getItem('forge_user_profile')
+    if (raw) {
+      const p = JSON.parse(raw)
+      if (p.youtube_connection?.connected) return p.youtube_connection
+      // User is logged in and has NO connection on profile or user key -> return null
+      return null
+    }
+
+    // Only for non-logged-in guest sessions:
+    const fallback = localStorage.getItem(STORAGE_KEY)
+    if (fallback) return JSON.parse(fallback)
   } catch (_) {}
   return null
 }
 
 /**
- * Checks remote backend for active YouTube connection and syncs to localStorage
+ * Checks remote backend for active YouTube connection strictly for the given user
  */
-export async function checkRemoteYouTubeStatus(identifier = 'default') {
+export async function checkRemoteYouTubeStatus(identifier = null) {
   if (typeof window === 'undefined') return null
+  const cleanId = (identifier || '').replace('@', '').trim()
+  if (!cleanId || cleanId === 'default') return null
+
   const candidateUrls = [
     '',
     BACKEND_URL,
@@ -132,11 +188,11 @@ export async function checkRemoteYouTubeStatus(identifier = 'default') {
 
   for (const baseUrl of candidateUrls) {
     try {
-      const res = await fetch(`${baseUrl}/api/youtube/status?identifier=${encodeURIComponent(identifier)}`)
+      const res = await fetch(`${baseUrl}/api/youtube/status?identifier=${encodeURIComponent(cleanId)}&email=${encodeURIComponent(cleanId)}`)
       if (res.ok) {
         const data = await res.json()
         if (data && data.connected && data.channel) {
-          saveLocalYouTubeConnection(data.channel, data.tokens)
+          saveLocalYouTubeConnection(data.channel, data.tokens, cleanId)
           return data
         }
       }
@@ -146,12 +202,12 @@ export async function checkRemoteYouTubeStatus(identifier = 'default') {
 }
 
 /**
- * Saves connected YouTube channel data locally with optional OAuth tokens
+ * Saves connected YouTube channel data locally scoped strictly to user
  */
-export function saveLocalYouTubeConnection(channelData, tokens = null) {
+export function saveLocalYouTubeConnection(channelData, tokens = null, userEmail = null) {
   if (typeof window === 'undefined') return
   try {
-    const existing = getStoredYouTubeConnection() || {}
+    const existing = getStoredYouTubeConnection(userEmail) || {}
     const resolvedTokens = tokens || existing.tokens || null
     const payload = {
       connected: true,
@@ -159,19 +215,37 @@ export function saveLocalYouTubeConnection(channelData, tokens = null) {
       tokens: resolvedTokens,
       connectedAt: new Date().toISOString()
     }
+    const key = getActiveUserKey(userEmail)
+    localStorage.setItem(key, JSON.stringify(payload))
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
     window.dispatchEvent(new CustomEvent('forge_youtube_connected', { detail: payload }))
   } catch (_) {}
 }
 
 /**
- * Disconnects the YouTube channel
+ * Disconnects the YouTube channel strictly for the active user
  */
-export async function disconnectYouTubeChannel() {
+export async function disconnectYouTubeChannel(userEmail = null) {
   if (typeof window === 'undefined') return
   try {
+    const key = getActiveUserKey(userEmail)
+    localStorage.removeItem(key)
     localStorage.removeItem(STORAGE_KEY)
-    await fetch(`${BACKEND_URL}/api/youtube/disconnect`, { method: 'DELETE' }).catch(() => {})
+
+    let target = userEmail
+    if (!target) {
+      try {
+        const raw = localStorage.getItem('forge_user_profile')
+        if (raw) target = JSON.parse(raw).email || JSON.parse(raw).username
+      } catch (_) {}
+    }
+
+    const params = new URLSearchParams()
+    if (target) {
+      params.set('identifier', target)
+      params.set('email', target)
+    }
+    await fetch(`${BACKEND_URL}/api/youtube/disconnect?${params.toString()}`, { method: 'DELETE' }).catch(() => {})
     window.dispatchEvent(new CustomEvent('forge_youtube_disconnected'))
   } catch (_) {}
 }

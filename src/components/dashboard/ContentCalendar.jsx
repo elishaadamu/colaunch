@@ -924,7 +924,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
   // YouTube Social Connection State (configured in Accounts page)
-  const [youtubeConnection, setYoutubeConnection] = useState(() => getStoredYouTubeConnection())
+  const [youtubeConnection, setYoutubeConnection] = useState(() => userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email))
   const [isPublishingDirect, setIsPublishingDirect] = useState(false)
 
   // Postiz-Style Omnichannel Studio State
@@ -947,7 +947,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   // 7-Day Campaign Post Dataset - dynamically synced 1:1 with Marketing Launch Plan
   const [posts, setPosts] = useState(() => {
     const initial = loadSyncedCampaignPosts(creatorData, productName, handleClean)
-    const ytConn = getStoredYouTubeConnection()
+    const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
     return initial.map(p => {
       const isConn = isChannelConnected(p.channel, ytConn, creatorData)
       if (!isConn && p.status !== 'Draft') {
@@ -2012,8 +2012,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     return <Send className="w-4 h-4 text-slate-400 shrink-0" />
   }
 
-  const ytConn = getStoredYouTubeConnection()
-  const metaConn = getStoredMetaConnection()
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
 
   return (

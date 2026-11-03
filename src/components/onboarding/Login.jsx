@@ -163,8 +163,11 @@ export default function Login() {
       })
     }
 
-    // Restore YouTube connection across logins
-    if (data.youtube_connection) {
+    const cleanUser = (data.email || data.username || '').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+
+    // Restore or clear YouTube connection strictly for this user
+    if (data.youtube_connection && data.youtube_connection.connected) {
+      if (cleanUser) localStorage.setItem(`forge_youtube_connection_${cleanUser}`, JSON.stringify(data.youtube_connection))
       localStorage.setItem('forge_youtube_connection', JSON.stringify(data.youtube_connection))
       window.dispatchEvent(new CustomEvent('forge_youtube_connected', { detail: data.youtube_connection }))
     } else if (data.creator_data?.youtube_connected) {
@@ -179,12 +182,18 @@ export default function Login() {
           videoCount: data.creator_data.video_count
         }
       }
+      if (cleanUser) localStorage.setItem(`forge_youtube_connection_${cleanUser}`, JSON.stringify(ytPayload))
       localStorage.setItem('forge_youtube_connection', JSON.stringify(ytPayload))
       window.dispatchEvent(new CustomEvent('forge_youtube_connected', { detail: ytPayload }))
+    } else {
+      if (cleanUser) localStorage.removeItem(`forge_youtube_connection_${cleanUser}`)
+      localStorage.removeItem('forge_youtube_connection')
+      window.dispatchEvent(new CustomEvent('forge_youtube_disconnected'))
     }
 
-    // Restore Meta / Facebook connection across logins
-    if (data.meta_connection) {
+    // Restore or clear Meta / Facebook connection strictly for this user
+    if (data.meta_connection && (data.meta_connection.facebook?.connected || data.meta_connection.connected)) {
+      if (cleanUser) localStorage.setItem(`forge_meta_connection_${cleanUser}`, JSON.stringify(data.meta_connection))
       localStorage.setItem('forge_meta_connection', JSON.stringify(data.meta_connection))
       window.dispatchEvent(new CustomEvent('forge_meta_connected', { detail: data.meta_connection }))
     } else if (data.creator_data?.facebook_connected) {
@@ -204,25 +213,22 @@ export default function Login() {
           }
         } : {})
       }
+      if (cleanUser) localStorage.setItem(`forge_meta_connection_${cleanUser}`, JSON.stringify(metaPayload))
       localStorage.setItem('forge_meta_connection', JSON.stringify(metaPayload))
       window.dispatchEvent(new CustomEvent('forge_meta_connected', { detail: metaPayload }))
+    } else {
+      if (cleanUser) localStorage.removeItem(`forge_meta_connection_${cleanUser}`)
+      localStorage.removeItem('forge_meta_connection')
+      window.dispatchEvent(new CustomEvent('forge_meta_disconnected'))
     }
 
-    // Restore platform configurations across logins
+    // Restore or clear platform configurations across logins
     if (data.accounts_platforms) {
+      if (cleanUser) localStorage.setItem(`forge_accounts_platforms_${cleanUser}`, JSON.stringify(data.accounts_platforms))
       localStorage.setItem('forge_accounts_platforms', JSON.stringify(data.accounts_platforms))
-    } else if (data.meta_connection?.facebook?.connected || data.creator_data?.facebook_connected) {
-      try {
-        const existing = JSON.parse(localStorage.getItem('forge_accounts_platforms') || '{}')
-        existing.facebook = {
-          ...existing.facebook,
-          connected: true,
-          pageId: data.meta_connection?.facebook?.pageId || data.creator_data?.facebook_page_id,
-          pageName: data.meta_connection?.facebook?.pageName || data.creator_data?.facebook_page_name,
-          handle: data.meta_connection?.facebook?.pageName || data.creator_data?.facebook_page_name
-        }
-        localStorage.setItem('forge_accounts_platforms', JSON.stringify(existing))
-      } catch (_) {}
+    } else {
+      if (cleanUser) localStorage.removeItem(`forge_accounts_platforms_${cleanUser}`)
+      localStorage.removeItem('forge_accounts_platforms')
     }
 
     // Restore AI keys from DB if user previously consented

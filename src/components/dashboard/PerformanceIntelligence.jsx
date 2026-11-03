@@ -100,8 +100,8 @@ export default function PerformanceIntelligence() {
   const creatorName = creatorData?.name || creatorData?.creator_name || 'Creator'
   const productName = creatorData?.productName || 'Software Product'
 
-  const ytConn = getStoredYouTubeConnection()
-  const metaConn = getStoredMetaConnection()
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
 
   // Real channel video dataset
