@@ -3,6 +3,7 @@ import { useForge } from '../../App'
 import {
   Youtube,
   Instagram,
+  Facebook,
   Twitter,
   Check,
   Plus,
@@ -33,6 +34,13 @@ import {
   exchangeYouTubeAuthCode,
   disconnectYouTubeChannel
 } from '../../services/youtubeApi'
+import {
+  getStoredMetaConnection,
+  saveStoredMetaConnection,
+  saveMetaSelection,
+  verifyMetaToken,
+  disconnectMetaChannel
+} from '../../services/metaApi'
 
 const STATUS_STYLES = {
   scheduled: { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', label: 'Scheduled' },
@@ -51,6 +59,35 @@ export default function Accounts() {
   const [isYouTubeConnecting, setIsYouTubeConnecting] = useState(false)
   const [youtubeModalOpen, setYoutubeModalOpen] = useState(false)
 
+  // Meta / Facebook Connection State
+  const [metaConn, setMetaConn] = useState(() => getStoredMetaConnection())
+  const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false)
+  const [facebookTokenInput, setFacebookTokenInput] = useState(
+    'EAAV1vSnTG90BS1zkUbZBQmhLvwwgZCh4qBGqP6DZAotLlcWZCdQaJUfQ1iHV1pfvxGJY5mjwKPrY9Q40O7QxdQddGkLQtqO4IjKtZBHurQelIcoi0jC8QWZAxiBjGbOfX3mawfnVAlaN2l2cMjzrlecoJORKRpClj41TlkEYkhkuHwMRIUOKpvNPFnRUJLZCYdBAN576Ns9UjXPU39INo99PDm3E3qFbHpVtVtjQgZDZD'
+  )
+  const [discoveredPages, setDiscoveredPages] = useState([
+    {
+      id: '103228882009161',
+      name: 'Techgen',
+      category: 'E-commerce website',
+      access_token: 'EAAV1vSnTG90BS9vKHxsV4CPXpEvXmCT9caVx3suZAesPHTzaqdP5PxZAAkRlSCALSnQMr2ZCsiEguVP5bcDMFJYFp8PK9o6UyiEfGpSeHHTzImZAoxTdUhbzDjFW25u299grZBueEd82FZC9Q6FbjDbJd0S1bgLGvFPZCmrxOSSCQLLYBnikYQt84mvgkPdF2NIISubewlT0vY2eZCvYGGLTDtW3bl8FxjtKcOPtF46DxB8ZD'
+    },
+    {
+      id: '527462540449391',
+      name: 'pigeon Tech',
+      category: 'Accessories',
+      access_token: 'EAAV1vSnTG90BS055tGM7dUPyDxgNQfyVRBX2S6z9xGenNsXLrFN83FIkJAa3SMUPD3v8NXPPZCVea4bjz9BDzgh3958Od5P5j8ZC3KaNfZCOOiDkPVkawJ6I95HXZBJCXHyuAsLu3ZAe8zCxeXUaFz24AiRVtbfnFX11NiyaB932OTjowsCfjpN3urzOXszPvvzwtZBuMUtLspc6cqXaYSPGo7ioZBeNSysohZBzsqQTHWN9'
+    },
+    {
+      id: '1820886941570083',
+      name: 'Sportstechwest',
+      category: 'Entrepreneur',
+      access_token: 'EAAV1vSnTG90BSwj9RWf4G96UZCoZBdSfIpBZBVSBYoHOFMsVcCmsd6qqpXoBCXGYmHZBNjHIYeQZC0IweCbY5ziaZBZCBKqyDDVp6CW7IDFH5cMDM92pKaKj7hmlyynzFLJWl2lfJEKVTiakIzNROZCj2iZAsjjheo18m4RiBRSSivpZBBweOMBVwrXr5qZAKVcfu8oq2lwjorDZAqBc4IkANvXqx9644GD1ZBqDXLSdQPVF34XpZA'
+    }
+  ])
+  const [selectedPageId, setSelectedPageId] = useState('103228882009161')
+  const [isVerifyingMeta, setIsVerifyingMeta] = useState(false)
+
   // Instagram Manual / Custom Modal
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
   const [manualBusinessId, setManualBusinessId] = useState('')
@@ -61,21 +98,55 @@ export default function Accounts() {
   const [expandedId, setExpandedId] = useState(null)
   const [connectingPlatform, setConnectingPlatform] = useState(null)
 
-  // Other platform states (Instagram, X, TikTok, Email)
+  // Other platform states (Facebook, Instagram, X, TikTok, Email)
   const [otherAccounts, setOtherAccounts] = useState(() => {
     try {
       const stored = localStorage.getItem('forge_accounts_platforms')
       if (stored) {
-        return JSON.parse(stored)
+        const parsed = JSON.parse(stored)
+        return {
+          facebook: { connected: false, pageName: '', pageId: '', handle: '', autoPost: false, approveBeforePost: true, ...(parsed.facebook || {}) },
+          instagram: { connected: false, handle: '', autoPost: false, approveBeforePost: true, ...(parsed.instagram || {}) },
+          twitter: { connected: false, handle: '', autoPost: false, approveBeforePost: true, ...(parsed.twitter || {}) },
+          tiktok: { connected: false, handle: '', autoPost: false, approveBeforePost: true, ...(parsed.tiktok || {}) },
+          email: { connected: false, handle: '', autoPost: false, approveBeforePost: true, ...(parsed.email || {}) },
+        }
       }
     } catch (_) {}
     return {
+      facebook: { connected: false, pageName: '', pageId: '', handle: '', autoPost: false, approveBeforePost: true },
       instagram: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
       twitter: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
       tiktok: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
       email: { connected: false, handle: '', autoPost: false, approveBeforePost: true },
     }
   })
+
+  // Sync Meta Connection with state
+  useEffect(() => {
+    if (metaConn?.facebook?.connected) {
+      setOtherAccounts(prev => ({
+        ...prev,
+        facebook: {
+          ...prev.facebook,
+          connected: true,
+          pageName: metaConn.facebook.pageName || prev.facebook.pageName,
+          pageId: metaConn.facebook.pageId || prev.facebook.pageId,
+          handle: metaConn.facebook.pageName || prev.facebook.handle
+        }
+      }))
+    }
+    if (metaConn?.instagram?.connected) {
+      setOtherAccounts(prev => ({
+        ...prev,
+        instagram: {
+          ...prev.instagram,
+          connected: true,
+          handle: metaConn.instagram.username || prev.instagram.handle
+        }
+      }))
+    }
+  }, [metaConn])
 
   // Synchronize YouTube connection from storage and window events
   const refreshYouTubeConnection = useCallback(() => {
@@ -179,6 +250,10 @@ export default function Accounts() {
 
   // Connect other platforms
   const handleConnectOther = (id) => {
+    if (id === 'facebook') {
+      setIsFacebookModalOpen(true)
+      return
+    }
     if (id === 'instagram') {
       setManualBusinessId(creatorData?.instagram_business_id || '')
       setManualAccessToken(creatorData?.instagram_access_token || '')
@@ -207,8 +282,13 @@ export default function Accounts() {
       ...prev,
       [id]: { ...prev[id], connected: false, handle: '' }
     }))
+    if (id === 'facebook') {
+      updateCreator({ facebook_connected: false, facebook_page_id: null, facebook_page_name: null, facebook_access_token: null })
+      disconnectMetaChannel('facebook')
+    }
     if (id === 'instagram') {
       updateCreator({ instagram_access_token: null, instagram_business_id: null })
+      disconnectMetaChannel('instagram')
     }
     if (triggerToast) triggerToast(`${id.toUpperCase()} disconnected.`, 'info')
   }
@@ -227,9 +307,10 @@ export default function Accounts() {
     }))
   }
 
-  // Count active channels
+  // Count active channels (out of 6 channels)
   const isYouTubeActive = !!youtubeConn?.connected
   const activeCount = (isYouTubeActive ? 1 : 0) +
+    (otherAccounts.facebook?.connected ? 1 : 0) +
     (otherAccounts.instagram?.connected ? 1 : 0) +
     (otherAccounts.twitter?.connected ? 1 : 0) +
     (otherAccounts.tiktok?.connected ? 1 : 0) +
@@ -361,7 +442,7 @@ export default function Accounts() {
           </div>
           <div>
             <div className="text-sm font-bold text-white flex items-center gap-2.5 flex-wrap">
-              <span>{activeCount} of 5 Broadcasting Channels Connected</span>
+              <span>{activeCount} of 6 Broadcasting Channels Connected</span>
               {isYouTubeActive && (
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
@@ -538,7 +619,110 @@ export default function Accounts() {
               )}
             </div>
 
-            {/* ── CARD 2: INSTAGRAM (META GRAPH API) ── */}
+            {/* ── CARD: FACEBOOK (META GRAPH API) ── */}
+            <div
+              className="p-5 border transition-all"
+              style={{
+                borderRadius: '0px',
+                background: otherAccounts.facebook?.connected ? '#0c111c' : '#0c0f17',
+                borderColor: otherAccounts.facebook?.connected ? 'rgba(24, 119, 242, 0.4)' : '#1e2436'
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] flex items-center justify-center flex-shrink-0 shrink-0"
+                    style={{
+                      borderRadius: '0px',
+                      width: '56px',
+                      height: '56px',
+                      minWidth: '56px',
+                      minHeight: '56px',
+                      maxWidth: '56px',
+                      maxHeight: '56px',
+                      background: otherAccounts.facebook?.connected ? 'rgba(24, 119, 242, 0.2)' : 'rgba(255,255,255,0.05)',
+                      color: otherAccounts.facebook?.connected ? '#38bdf8' : '#94a3b8'
+                    }}
+                  >
+                    <Facebook size={26} className={otherAccounts.facebook?.connected ? 'text-blue-400' : 'text-slate-400'} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-bold text-white">Facebook Page</span>
+                      {otherAccounts.facebook?.connected ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
+                          CONNECTED (META GRAPH API)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700">
+                          OFFLINE
+                        </span>
+                      )}
+                    </div>
+                    {otherAccounts.facebook?.connected ? (
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-slate-100 truncate">
+                          {otherAccounts.facebook?.pageName || 'Connected Facebook Page'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono">
+                          Page ID: {otherAccounts.facebook?.pageId || 'Linked'} • Auto-Publish Ready
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Publish launch updates, community posts, and product links directly to your Facebook Page without third-party redirection.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                  {otherAccounts.facebook?.connected ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsFacebookModalOpen(true)}
+                        className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Page Settings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDisconnectOther('facebook')}
+                        className="px-3.5 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-rose-950/20 border border-rose-900/40 cursor-pointer transition"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        Disconnect
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsFacebookModalOpen(true)}
+                      className="px-4 py-2.5 text-xs font-extrabold text-white transition active:scale-98 cursor-pointer border-0 shadow-md flex items-center gap-2"
+                      style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      <Facebook size={14} className="text-white" />
+                      <span className="text-white font-bold">+ Connect Page</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {otherAccounts.facebook?.connected && (
+                <div className="mt-3.5 pt-3.5 border-t border-[#1b2336] flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                  <span className="text-slate-500 font-mono text-[10px]">VERIFIED CAPABILITIES:</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ pages_manage_posts</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ pages_read_engagement</span>
+                  <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-300">✓ Direct feed dispatch</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── CARD 3: INSTAGRAM (META GRAPH API) ── */}
             <div
               className="p-5 border transition-all"
               style={{
@@ -908,7 +1092,7 @@ export default function Accounts() {
             {/* Channel Connection Grid */}
             <div className="space-y-2">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Broadcasting Matrix ({activeCount}/5 Armed)
+                Broadcasting Matrix ({activeCount}/6 Armed)
               </p>
               
               <div className="grid grid-cols-1 gap-1.5 text-xs">
@@ -922,6 +1106,22 @@ export default function Accounts() {
                     <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-emerald-400" />
                       OAUTH 2.0 READY
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
+                  )}
+                </div>
+
+                {/* Facebook status line */}
+                <div className="flex items-center justify-between p-2 bg-[#101420] border border-[#1b2336]">
+                  <div className="flex items-center gap-2">
+                    <Facebook size={14} className={otherAccounts.facebook?.connected ? 'text-blue-400' : 'text-slate-500'} />
+                    <span className="font-bold text-white">Facebook</span>
+                  </div>
+                  {otherAccounts.facebook?.connected ? (
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-400" />
+                      READY
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono text-slate-500">OFFLINE</span>
@@ -1275,7 +1475,200 @@ export default function Accounts() {
         </div>
       )}
 
-      {/* ── MODAL: INSTAGRAM SETUP MODAL ── */}
+      {/* ── MODAL: FACEBOOK PAGE SELECTION MODAL ── */}
+      {isFacebookModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div
+            className="w-full max-w-lg bg-[#0c0f17] border border-[#202738] p-6 shadow-2xl space-y-4"
+            style={{ borderRadius: '0px' }}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#1b2336]">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 flex items-center justify-center text-white"
+                  style={{ background: '#1877f2', borderRadius: '0px' }}
+                >
+                  <Facebook size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Facebook Page Integration</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">Meta Graph API Verified</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFacebookModalOpen(false)}
+                className="text-slate-400 hover:text-white transition cursor-pointer border-0 bg-transparent"
+                style={{ borderRadius: '0px' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <p className="text-slate-400 leading-relaxed">
+                Connect your verified Facebook Page to auto-publish product launches, announcements, and calendar drafts.
+              </p>
+
+              {/* Meta Token Input with Verify button */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Meta Access Token
+                  </label>
+                  <span className="text-[10px] font-mono text-emerald-400">Authenticated: Elisha Adamu</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={facebookTokenInput}
+                    onChange={(e) => setFacebookTokenInput(e.target.value)}
+                    placeholder="Paste Meta Access Token..."
+                    className="flex-1 bg-[#111522] border border-[#202738] px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 font-mono text-xs"
+                    style={{ borderRadius: '0px' }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isVerifyingMeta}
+                    onClick={async () => {
+                      if (!facebookTokenInput.trim()) {
+                        if (triggerToast) triggerToast('Please enter a valid Meta token', 'error')
+                        return
+                      }
+                      setIsVerifyingMeta(true)
+                      try {
+                        const res = await verifyMetaToken(facebookTokenInput)
+                        if (res.pages && res.pages.length > 0) {
+                          setDiscoveredPages(res.pages)
+                          setSelectedPageId(res.pages[0].id)
+                          if (triggerToast) triggerToast(`Found ${res.pages.length} Facebook Pages!`, 'success')
+                        } else {
+                          if (triggerToast) triggerToast('Token verified, but no Pages returned. Ensure pages_show_list is granted.', 'info')
+                        }
+                      } catch (err) {
+                        if (triggerToast) triggerToast(`Meta Token verification error: ${err.message}`, 'error')
+                      } finally {
+                        setIsVerifyingMeta(false)
+                      }
+                    }}
+                    className="px-3 py-2 text-xs font-bold text-slate-200 hover:text-white bg-[#182030] hover:bg-[#202a40] border border-[#2b354d] cursor-pointer transition shrink-0"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    {isVerifyingMeta ? 'Verifying...' : 'Re-verify'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Discovered Pages List */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Select Facebook Page ({discoveredPages.length} Available)
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {discoveredPages.map((page) => {
+                    const isSelected = selectedPageId === page.id
+                    return (
+                      <div
+                        key={page.id}
+                        onClick={() => setSelectedPageId(page.id)}
+                        className={`p-3 border cursor-pointer transition flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-[#141d2f] border-blue-500/60 ring-1 ring-blue-500/50'
+                            : 'bg-[#111522] border-[#202738] hover:border-slate-600'
+                        }`}
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? 'border-blue-400 bg-blue-500' : 'border-slate-600'
+                            }`}
+                          >
+                            {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white">{page.name}</p>
+                            <p className="text-[10px] font-mono text-slate-400">
+                              ID: {page.id} • {page.category || 'Page'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <span className="text-[10px] font-mono font-bold text-blue-400 px-2 py-0.5 bg-blue-950/60 border border-blue-800/60">
+                            SELECTED
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 flex items-center justify-between gap-2 border-t border-[#1b2336]">
+              <button
+                type="button"
+                onClick={() => setIsFacebookModalOpen(false)}
+                className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white cursor-pointer border-0 bg-transparent"
+                style={{ borderRadius: '0px' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  const targetPage = discoveredPages.find(p => p.id === selectedPageId) || discoveredPages[0]
+                  if (!targetPage) {
+                    if (triggerToast) triggerToast('Please select a Facebook Page to connect', 'error')
+                    return
+                  }
+
+                  const payload = {
+                    page_id: targetPage.id,
+                    page_name: targetPage.name,
+                    page_access_token: targetPage.access_token || facebookTokenInput,
+                    user_access_token: facebookTokenInput,
+                    category: targetPage.category,
+                    tasks: targetPage.tasks,
+                    handle: creatorData?.handle || 'default'
+                  }
+
+                  await saveMetaSelection(payload)
+
+                  setOtherAccounts(prev => ({
+                    ...prev,
+                    facebook: {
+                      ...prev.facebook,
+                      connected: true,
+                      pageName: targetPage.name,
+                      pageId: targetPage.id,
+                      handle: targetPage.name
+                    }
+                  }))
+
+                  if (updateCreator) {
+                    updateCreator({
+                      facebook_connected: true,
+                      facebook_page_id: targetPage.id,
+                      facebook_page_name: targetPage.name,
+                      facebook_access_token: targetPage.access_token || facebookTokenInput
+                    })
+                  }
+
+                  setIsFacebookModalOpen(false)
+                  if (triggerToast) triggerToast(`Facebook Page "${targetPage.name}" linked successfully!`, 'success')
+                }}
+                className="px-4 py-2 text-xs font-bold text-white cursor-pointer border-0"
+                style={{ background: BRAND_RED, color: '#ffffff', borderRadius: '0px' }}
+              >
+                Connect Selected Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isManualModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div

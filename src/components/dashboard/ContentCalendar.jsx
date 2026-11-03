@@ -40,6 +40,7 @@ import {
   Gauge,
   Youtube,
   Instagram,
+  Facebook,
   Twitter,
   Eye,
   MessageSquare,
@@ -589,19 +590,32 @@ export function isChannelConnected(channel, ytConn = null, creatorData = null) {
       (creatorData?.channel_id && creatorData?.youtube_oauth_token)
     )
   }
+  if (norm === 'facebook' || norm === 'fb') {
+    if (creatorData?.facebook_connected || creatorData?.facebook_page_id) return true
+  }
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem('forge_accounts_platforms') : null
     if (raw) {
       const parsed = JSON.parse(raw)
+      if ((norm === 'facebook' || norm === 'fb') && parsed.facebook?.connected) return true
       if (norm === 'instagram' && parsed.instagram?.connected) return true
       if ((norm === 'x' || norm === 'twitter') && (parsed.twitter?.connected || parsed.x?.connected)) return true
       if (norm === 'tiktok' && parsed.tiktok?.connected) return true
       if (norm === 'linkedin' && parsed.linkedin?.connected) return true
       if (norm === 'email' && (parsed.email?.connected || creatorData?.email)) return true
     }
+    const rawMeta = typeof window !== 'undefined' ? localStorage.getItem('forge_meta_connection') : null
+    if (rawMeta) {
+      const pMeta = JSON.parse(rawMeta)
+      if ((norm === 'facebook' || norm === 'fb') && pMeta.facebook?.connected) return true
+      if (norm === 'instagram' && pMeta.instagram?.connected) return true
+    }
   } catch (_) {}
+  if (norm === 'facebook' || norm === 'fb') {
+    return Boolean(creatorData?.facebook_connected || creatorData?.facebook_page_id)
+  }
   if (norm === 'instagram') {
-    return Boolean(creatorData?.instagram_connected)
+    return Boolean(creatorData?.instagram_connected || creatorData?.instagram_business_id)
   }
   if (norm === 'x' || norm === 'twitter') {
     return Boolean(creatorData?.twitter_connected || creatorData?.x_connected)
@@ -2127,6 +2141,19 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </button>
             <button
               type="button"
+              onClick={() => setPlatformFilter('Facebook')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'Facebook'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'Facebook' ? { background: brandRed, color: '#ffffff' } : {}}
+            >
+              <Facebook size={12} className="text-blue-500" />
+              <span>Facebook</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setPlatformFilter('TikTok')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
                 platformFilter === 'TikTok'
@@ -2783,10 +2810,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-6 gap-1">
               {[
                 { name: 'YouTube', icon: Youtube, color: 'text-red-500', activeBg: 'bg-red-500/20 text-white ring-1 ring-red-500' },
                 { name: 'Instagram', icon: Instagram, color: 'text-pink-500', activeBg: 'bg-pink-500/20 text-white ring-1 ring-pink-500' },
+                { name: 'Facebook', icon: Facebook, color: 'text-blue-500', activeBg: 'bg-blue-600/20 text-white ring-1 ring-blue-500' },
                 { name: 'X', icon: Twitter, color: 'text-sky-400', activeBg: 'bg-sky-500/20 text-white ring-1 ring-sky-500' },
                 { name: 'LinkedIn', icon: Linkedin, color: 'text-blue-400', activeBg: 'bg-blue-500/20 text-white ring-1 ring-blue-500' },
                 { name: 'TikTok', icon: Video, color: 'text-slate-200', activeBg: 'bg-slate-500/25 text-white ring-1 ring-slate-400' }
@@ -2834,6 +2862,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 const map = {
                   'YouTube': 'youtube',
                   'Instagram': 'instagram',
+                  'Facebook': 'facebook',
                   'X': 'x',
                   'Twitter': 'x',
                   'LinkedIn': 'linkedin',
