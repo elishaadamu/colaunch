@@ -1961,11 +1961,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         {/* LEFT WORKSPACE: Content Calendar Area (Stats, Progress & Calendar Grid scroll together seamlessly) */}
         <section className="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 custom-scrollbar h-full">
 
-          {/* ── YOUTUBE DIRECT PUBLISHING ENGINE STATUS BAR ── */}
-          <div className="bg-[#080b11] px-3.5 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border border-[#161b2b] mb-3 flex-shrink-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#c81e3c]'}`} />
+          {/* ── YOUTUBE DIRECT PUBLISHING ENGINE STATUS BAR (Tight Elevation) ── */}
+          <div className="bg-[#080b11] px-3 py-1.5 flex items-center justify-between flex-wrap gap-2 text-[11px] font-mono border border-[#161b2b] mb-2 flex-shrink-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#c81e3c]'}`} />
                 <span className="text-white font-bold tracking-wider">
                   PUBLISHING ENGINE:
                 </span>
@@ -1974,19 +1974,19 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 </span>
               </div>
               <span className="text-slate-600">|</span>
-              <div className="text-slate-400 text-[11px]">
+              <div className="text-slate-400 text-[10px]">
                 <span className="text-slate-500">CHANNEL: </span>
                 <span className="text-slate-200 font-bold">
                   {youtubeConnection?.channel?.title || creatorData?.name || 'Connected Channel'}
                 </span>
               </div>
               <span className="text-slate-600 hidden md:inline">|</span>
-              <div className="text-slate-400 text-[11px] hidden md:inline">
+              <div className="text-slate-400 text-[10px] hidden md:inline">
                 <span className="text-slate-500">EMAIL: </span>
                 <span className="text-slate-200 font-bold">{userProfile?.email || creatorData?.email || 'Not configured'}</span>
               </div>
               <span className="text-slate-600 hidden lg:inline">|</span>
-              <div className="text-[11px] hidden lg:flex items-center gap-1.5">
+              <div className="text-[10px] hidden lg:flex items-center gap-1.5">
                 <span className="text-slate-500">STATUS: </span>
                 <span className={youtubeConnection?.connected ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
                   {youtubeConnection?.connected
@@ -2001,18 +2001,18 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={navigateToAccounts}
-                  className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
+                  className="px-2 py-0.5 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1 transition cursor-pointer border border-[#202738] text-[10px] font-bold"
                   style={{ borderRadius: '0px' }}
                   title="Manage connected channels in Accounts"
                 >
-                  <Sliders size={11} />
+                  <Sliders size={10} />
                   <span>Manage in Accounts →</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={navigateToAccounts}
-                  className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
+                  className="px-2.5 py-0.5 font-bold text-[10px] flex items-center gap-1 transition cursor-pointer border-0 shadow-sm"
                   style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                   title="Connect social channels in Accounts"
                 >
@@ -2022,78 +2022,75 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </div>
           </div>
 
-          {/* ── METRICS & STRATEGY STRIP (Stats & Progress) ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 items-center mb-3 flex-shrink-0">
+          {/* ── METRICS & STRATEGY STRIP (Stats & Progress - Ultra Tight High Density) ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 items-center mb-2.5 flex-shrink-0">
             {/* Metric 1: Gamified Level & XP */}
-            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
-              <div className="w-8 h-8 rounded-none bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
-                <Trophy size={16} />
+            <div className="flex items-center gap-2 p-2 rounded-none bg-[#111522] border border-[#161b2b] min-w-0">
+              <div className="w-6 h-6 rounded-none bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                <Trophy size={13} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between text-xs font-extrabold text-white">
-                  <span className="text-amber-400">Level {currentLevel} Creator</span>
-                  <span className="text-[10px] font-mono text-slate-400">{xp} / {targetXp} XP</span>
+                <div className="flex items-center justify-between gap-1 text-[11px] font-extrabold text-white leading-tight">
+                  <span className="text-amber-400 truncate">Lvl {currentLevel} Creator</span>
+                  <span className="text-[10px] font-mono text-slate-400 whitespace-nowrap">{xp}/{targetXp} XP</span>
                 </div>
-                <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
+                <div className="w-full bg-[#161b2b] h-1 rounded-none overflow-hidden my-1">
                   <div className="bg-amber-400 h-full rounded-none transition-all duration-500" style={{ width: `${xpPercent}%` }} />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                  <span className="flex items-center gap-1">
-                    <Flame size={11} className="text-rose-400" />
-                    <span>Streak: <b className="text-white">{streak} Days</b></span>
-                  </span>
-                  <span className="text-amber-400/90 font-mono text-[10px]">{Math.max(0, targetXp - xp)} XP to Lvl {currentLevel + 1}</span>
+                <div className="flex items-center justify-between text-[9px] text-slate-400 leading-none">
+                  <span className="truncate">Streak: <b className="text-white">{streak}d</b></span>
+                  <span className="text-amber-400/90 font-mono whitespace-nowrap">{Math.max(0, targetXp - xp)} XP left</span>
                 </div>
               </div>
             </div>
 
             {/* Metric 2: Readiness / Pipeline Progress */}
-            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
-              <div className="w-8 h-8 rounded-none bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                <Gauge size={16} />
+            <div className="flex items-center gap-2 p-2 rounded-none bg-[#111522] border border-[#161b2b] min-w-0">
+              <div className="w-6 h-6 rounded-none bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <Gauge size={13} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between text-xs font-extrabold text-white">
-                  <span>{readyPostsCount} of {totalPostsCount} Scheduled</span>
-                  <span className="text-[11px] text-emerald-400">{readinessPercent}%</span>
+                <div className="flex items-center justify-between gap-1 text-[11px] font-extrabold text-white leading-tight">
+                  <span className="truncate">{readyPostsCount} of {totalPostsCount} Sched</span>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold whitespace-nowrap">{readinessPercent}%</span>
                 </div>
-                <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
+                <div className="w-full bg-[#161b2b] h-1 rounded-none overflow-hidden my-1">
                   <div className="bg-emerald-500 h-full rounded-none transition-all duration-300" style={{ width: `${readinessPercent}%` }} />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                  {draftPostsCount} unscheduled in draft queue
+                <p className="text-[9px] text-slate-400 font-mono truncate leading-none">
+                  {draftPostsCount} unscheduled in queue
                 </p>
               </div>
             </div>
 
             {/* Metric 3: Channel Breakdown */}
-            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
-              <div className="w-8 h-8 rounded-none bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
-                <Share2 size={16} />
+            <div className="flex items-center gap-2 p-2 rounded-none bg-[#111522] border border-[#161b2b] min-w-0">
+              <div className="w-6 h-6 rounded-none bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
+                <Share2 size={13} />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-red-500/15 text-red-400">YT {ytCount}</span>
-                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-pink-500/15 text-pink-400">IG {igCount}</span>
-                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-sky-500/15 text-sky-400">X {xCount}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 overflow-hidden leading-tight">
+                  <span className="px-1.5 py-0.5 rounded-none text-[9px] font-extrabold bg-red-500/15 text-red-400 whitespace-nowrap">YT {ytCount}</span>
+                  <span className="px-1.5 py-0.5 rounded-none text-[9px] font-extrabold bg-pink-500/15 text-pink-400 whitespace-nowrap">IG {igCount}</span>
+                  <span className="px-1.5 py-0.5 rounded-none text-[9px] font-extrabold bg-sky-500/15 text-sky-400 whitespace-nowrap">X {xCount}</span>
                   {ttCount > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-slate-500/15 text-slate-300">TT {ttCount}</span>
+                    <span className="px-1.5 py-0.5 rounded-none text-[9px] font-extrabold bg-slate-500/15 text-slate-300 whitespace-nowrap">TT {ttCount}</span>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium mt-1">Omnichannel distribution active</p>
+                <p className="text-[9px] text-slate-400 font-medium truncate mt-1 leading-none">Omnichannel active</p>
               </div>
             </div>
 
             {/* Metric 4: Campaign Product & Formula */}
-            <div className="flex items-center gap-2.5 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
-              <div className="w-8 h-8 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-                <Zap size={16} />
+            <div className="flex items-center gap-2 p-2 rounded-none bg-[#111522] border border-[#161b2b] min-w-0">
+              <div className="w-6 h-6 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+                <Zap size={13} />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">
-                  Target: {productName}
+              <div className="flex-1 min-w-0 leading-tight">
+                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider truncate block">
+                  Target: {productName || 'Blueprint'}
                 </span>
-                <span className="text-xs font-bold text-white truncate block">
+                <span className="text-[11px] font-bold text-white truncate block mt-0.5">
                   Launch + Proof + Value
                 </span>
               </div>
