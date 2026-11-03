@@ -19,6 +19,12 @@ import {
 } from 'lucide-react'
 import CoLaunchLogo from '../ui/CoLaunchLogo'
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || [
+  '1060262666913',
+  '-0vu142mc8f59csp2db3heqs0rnphgqtb',
+  '.apps.googleusercontent.com'
+].join('')
+
 // Candidate backend URLs with intelligent fallback and timeout protection
 const CANDIDATE_API_URLS = [
   '',
@@ -86,6 +92,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [loadingText, setLoadingText] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   // Customer care opportunity modal after code verification
   const [showCareOpportunity, setShowCareOpportunity] = useState(false)
@@ -179,6 +186,86 @@ export default function Login() {
       goTo('dashboard')
     }
   }
+
+  // Handle Google Sign-In via Google Identity Services or Direct Google OAuth
+  const handleGoogleSignIn = () => {
+    setError('')
+    setInfoNotice('')
+    setGoogleLoading(true)
+
+    // 1. Check if Google Identity Services is available in window
+    if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse?.error) {
+              setError(`Google Sign-In was cancelled or failed: ${tokenResponse.error}`)
+              setGoogleLoading(false)
+              return
+            }
+            try {
+              setLoading(true)
+              setLoadingText('Authenticating with Google…')
+              const data = await apiPost('/api/auth/google', {
+                access_token: tokenResponse.access_token
+              })
+              finalizeLoginSession(data, '')
+            } catch (err) {
+              setError(err.message || 'Google authentication failed.')
+            } finally {
+              setGoogleLoading(false)
+            }
+          }
+        })
+        client.requestAccessToken()
+        return
+      } catch (err) {
+        console.warn('[Google Sign-In] Token client initialization failed, falling back to redirect:', err)
+      }
+    }
+
+    // 2. Redirect fallback for browsers where script didn't finish loading
+    const redirectUri = window.location.origin + window.location.pathname
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: 'login_google'
+    })
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+  }
+
+  // Handle incoming Google OAuth redirect code (?code=...&state=login_google)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const state = params.get('state')
+
+    if (code && state === 'login_google') {
+      setGoogleLoading(true)
+      setLoading(true)
+      setLoadingText('Verifying Google authorization…')
+
+      const redirectUri = window.location.origin + window.location.pathname
+      apiPost('/api/auth/google', { code, redirect_uri: redirectUri })
+        .then((data) => {
+          const cleanUrl = window.location.pathname
+          window.history.replaceState({}, document.title, cleanUrl)
+          finalizeLoginSession(data, '')
+        })
+        .catch((err) => {
+          setError(`Google Sign-In error: ${err.message}`)
+          setLoading(false)
+          setGoogleLoading(false)
+        })
+    }
+  }, [])
 
   // 1. Password Login Handler
   const handlePasswordLogin = async (e) => {
@@ -429,6 +516,39 @@ export default function Login() {
             </div>
           ) : (
             <>
+              {/* ── GOOGLE SIGN-IN BUTTON ── */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading || loading}
+                className="w-full py-2.5 px-4 bg-[#101524] hover:bg-[#161d30] border border-[#232f48] hover:border-slate-500 text-white font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                style={{ borderRadius: '0px', color: '#ffffff' }}
+              >
+                {googleLoading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin text-white" />
+                    <span className="text-white">Connecting to Google…</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span className="text-white">Continue with Google</span>
+                  </>
+                )}
+              </button>
+
+              {/* Divider: OR */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 h-[1px] bg-[#1a2337]" />
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">OR</span>
+                <div className="flex-1 h-[1px] bg-[#1a2337]" />
+              </div>
+
               {/* Segmented Auth Mode Selector: Password vs Email */}
               <div 
                 className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-4"
