@@ -2714,8 +2714,8 @@ partnerships@colaunch.com`
                         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden text-xs shadow-2xs">
                           <div className="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Rocket className="w-4 h-4 text-slate-800" />
-                              <span className="font-extrabold text-slate-950 text-sm">COLAUNCH</span>
+                              <CoLaunchLogo size={20} showText={false} theme="light" />
+                              <span style={{ fontFamily: "'Playfair Display', Georgia, Cambria, serif" }} className="font-bold text-slate-950 text-sm">CoLaunch</span>
                             </div>
                             <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
                               Verified Invite

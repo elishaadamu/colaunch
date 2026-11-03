@@ -88,9 +88,12 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               className="flex items-center justify-between px-4 border-b flex-shrink-0"
               style={{ borderColor: 'var(--theme-border-color)', height: '60px' }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <WingLogo size={22} />
-                <span className="text-white font-semibold text-[14px] tracking-tight">
+                <span
+                  style={{ fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
+                  className="text-white font-semibold text-[15px] tracking-tight"
+                >
                   CoLaunch
                 </span>
               </div>
@@ -235,8 +238,12 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
           </button>
           {isOpen && (
             <span
-              className="text-white font-semibold text-[14px] tracking-tight whitespace-nowrap cursor-pointer select-none"
-              style={{ opacity: isOpen ? 1 : 0, transition: 'opacity 0.15s' }}
+              className="text-white font-semibold text-[15px] tracking-tight whitespace-nowrap cursor-pointer select-none"
+              style={{
+                fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif",
+                opacity: isOpen ? 1 : 0,
+                transition: 'opacity 0.15s',
+              }}
               onClick={scrollToTop}
             >
               CoLaunch

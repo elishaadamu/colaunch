@@ -10,6 +10,7 @@ import CampaignStats from './CampaignStats'
 import AdminControl from './AdminControl'
 import AutonomousOutreach from './AutonomousOutreach'
 import { opsSignOut } from './OpsAuth'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
 
 const NAV = [
   { id: 'leads',      label: 'Lead Discovery',     icon: Users,         badge: null },
@@ -160,15 +161,15 @@ export default function OpsLayout() {
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            <Shield size={13} className="text-white" />
-          </div>
+          <CoLaunchLogo size={26} showWordmark={false} />
           <div>
-            <p className="text-[13px] font-bold text-white tracking-wider uppercase">CoLaunch</p>
-            <p className="text-[8px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Internal Ops</p>
+            <p
+              style={{ fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
+              className="text-[15px] font-semibold text-white leading-tight"
+            >
+              CoLaunch
+            </p>
+            <p className="text-[8.5px] uppercase tracking-widest text-slate-400 font-medium">Internal Ops</p>
           </div>
         </div>
 
