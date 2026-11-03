@@ -438,7 +438,7 @@ export default function DashboardLayout() {
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0, background: '#090d16' }}>
         {/* Customer Care Opportunity Banner (when logged in via single-use email code) */}
-        {showCodeLoginBanner && (
+        {activeTab !== 'calendar' && showCodeLoginBanner && (
           <div
             className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0 text-xs"
             style={{
@@ -480,15 +480,16 @@ export default function DashboardLayout() {
           </div>
         )}
 
-        {/* Top bar */}
-        <div
-          className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0"
-          style={{
-            borderColor: 'rgba(255,255,255,0.08)',
-            background: '#0b0f19',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
+        {/* Top bar (Hidden on calendar tab so calendar is fullscreen height with only sidebar) */}
+        {activeTab !== 'calendar' && (
+          <div
+            className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0"
+            style={{
+              borderColor: 'rgba(255,255,255,0.08)',
+              background: '#0b0f19',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSidebarOpen(o => !o)}
@@ -571,16 +572,21 @@ export default function DashboardLayout() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Content row */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Tab content (scrolls smoothly from top to bottom) */}
+        <div className="flex-1 flex overflow-hidden h-full">
+          {/* Tab content (scrolls smoothly from top to bottom, or fullscreen on calendar) */}
           <div 
             ref={tabContentRef} 
-            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full custom-scrollbar scroll-smooth flex flex-col"
+            className={`flex-1 min-w-0 max-w-full flex flex-col ${
+              activeTab === 'calendar' 
+                ? 'overflow-hidden h-full' 
+                : 'overflow-y-auto overflow-x-hidden custom-scrollbar scroll-smooth'
+            }`}
           >
-            {/* Email Not Configured Notification Banner (First view of dashboard prompt) */}
-            {!isEmailConfigured && (
+            {/* Email Not Configured Notification Banner (First view of dashboard prompt - hidden on calendar) */}
+            {activeTab !== 'calendar' && !isEmailConfigured && (
               <div 
                 className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3.5 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
                 style={{

@@ -47,6 +47,13 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // Listen for external toggle events (e.g. from fullscreen ContentCalendar)
+  useEffect(() => {
+    const handleToggle = () => setIsOpen(o => !o)
+    window.addEventListener('forge_toggle_sidebar', handleToggle)
+    return () => window.removeEventListener('forge_toggle_sidebar', handleToggle)
+  }, [setIsOpen])
+
   // Close sidebar on escape key
   useEffect(() => {
     if (!isMobile || !isOpen) return

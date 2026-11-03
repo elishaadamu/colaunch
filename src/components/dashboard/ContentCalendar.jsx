@@ -63,7 +63,8 @@ import {
   Sliders,
   Settings,
   AlertCircle,
-  UploadCloud
+  UploadCloud,
+  Menu
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -1715,35 +1716,39 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   return (
     <div 
       ref={calendarContainerRef}
-      onScroll={handleContainerScroll}
-      className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none overflow-y-auto custom-scrollbar scroll-smooth relative"
+      className="h-full flex flex-col bg-[#090d16] text-slate-200 select-none overflow-hidden relative"
     >
-      
-      {/* ── TOP HEADER (Flat Dark Elevation, Border 0, Rounded 0) ── */}
-      <header className="h-16 bg-[#0c0f17] px-4 sm:px-6 flex items-center justify-between flex-shrink-0 border-0">
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+      {/* ── UNIFIED FULLSCREEN CALENDAR TOOLBAR (Clean, zero sectioning, fullscreen height) ── */}
+      <div className="bg-[#0c0f17] px-4 sm:px-6 py-2.5 flex items-center justify-between border-b border-[#161b2b] flex-shrink-0 flex-wrap gap-2.5">
+        {/* Left: Date / Week Navigation + Today + New Draft */}
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('forge_toggle_sidebar'))}
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white bg-[#111522] rounded-none border border-[#1f242c]"
+            title="Toggle Sidebar"
+          >
+            <Menu size={15} />
+          </button>
+
           {viewMode === 'calendar' ? (
-            /* Month Calendar Header Controls matching user reference Image 4 */
             <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-              <h2 className="text-base sm:text-xl font-extrabold text-white tracking-tight min-w-[110px]">
+              <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight min-w-[110px]">
                 {MONTH_NAMES[calendarDate.getMonth()]} {calendarDate.getFullYear()}
               </h2>
 
               <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
                 <button
                   type="button"
-                  onClick={() => {
-                    handleToday()
-                    scrollToTop()
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold rounded-none bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 transition cursor-pointer border-0"
+                  onClick={handleToday}
+                  className="px-2.5 py-1 text-xs font-bold rounded-none bg-[#161b2b] hover:bg-[#1c2236] text-slate-200 transition cursor-pointer border-0"
                 >
                   Today
                 </button>
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0 ml-0.5"
+                  className="p-1 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0 ml-0.5"
                   title="Previous Month"
                 >
                   <ChevronLeft size={14} />
@@ -1751,44 +1756,40 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  className="p-1 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
                   title="Next Month"
                 >
                   <ChevronRight size={14} />
                 </button>
               </div>
 
-              {/* Red New Draft Button matching Image 4 */}
               <button
                 type="button"
                 onClick={() => {
                   setModalDraftDay(activePost ? activePost.dayIndex : 0)
                   setNewDraftModalOpen(true)
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
                 style={{ background: brandRed, color: '#ffffff' }}
               >
                 <span>New draft</span>
-                <Plus size={14} className="text-white" />
+                <Plus size={13} className="text-white" />
               </button>
             </div>
           ) : (
-            /* Weekly Sprint Header Controls */
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
-                  {weekData.headerTitle}
-                </h2>
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
-                  Week {weekData.weekNum}
-                </span>
-              </div>
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+              <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                {weekData.headerTitle}
+              </h2>
+              <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300">
+                Week {weekData.weekNum}
+              </span>
 
               <div className="flex items-center bg-[#111522] p-0.5 rounded-none border-0">
                 <button
                   type="button"
                   onClick={() => handleShiftWeek('prev')}
-                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  className="p-1 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
                   title="Previous Week"
                 >
                   <ChevronLeft size={14} />
@@ -1796,7 +1797,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={() => handleShiftWeek('current')}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-none transition cursor-pointer border-0 ${
+                  className={`px-2 py-1 text-xs font-semibold rounded-none transition cursor-pointer border-0 ${
                     weekOffset === 0 ? 'bg-[#1c2236] text-white font-bold' : 'hover:bg-[#161b2b] text-slate-300'
                   }`}
                 >
@@ -1805,7 +1806,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={() => handleShiftWeek('next')}
-                  className="p-1.5 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
+                  className="p-1 hover:bg-[#161b2b] rounded-none text-slate-400 hover:text-white transition cursor-pointer border-0"
                   title="Next Week"
                 >
                   <ChevronRight size={14} />
@@ -1818,294 +1819,119 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                   setModalDraftDay(activePost ? activePost.dayIndex : 0)
                   setNewDraftModalOpen(true)
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-95 border-0"
                 style={{ background: brandRed, color: '#ffffff' }}
               >
-                <Plus size={14} className="text-white" />
+                <Plus size={13} className="text-white" />
                 <span>New Quest Draft</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Quick Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Quests Button with Beacon */}
-          <button
-            type="button"
-            onClick={() => setQuestModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 rounded-none transition cursor-pointer border-0"
-            title="Open Quest Objectives"
-          >
-            <Gamepad2 size={14} className="text-amber-400" />
-            <span className="hidden sm:inline">Quest Objectives</span>
-            <span className="flex h-2 w-2 relative ml-1">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-none bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-none h-2 w-2 bg-amber-500" />
-            </span>
-          </button>
-
-          {/* Bell Icon Notification Button matching Image 4 */}
-          <button
-            type="button"
-            onClick={() => {
-              if (triggerToast) triggerToast('Notifications: 3 campaign quests active today', 'info')
-            }}
-            className="p-2 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
-            title="Notifications"
-          >
-            <Bell size={15} />
-          </button>
-        </div>
-      </header>
-
-      {/* ── YOUTUBE DIRECT PUBLISHING ENGINE STATUS BAR ── */}
-      <div className="bg-[#080b11] px-4 sm:px-6 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border-b border-[#161b2b]">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#c81e3c]'}`} />
-            <span className="text-white font-bold tracking-wider">
-              PUBLISHING ENGINE:
-            </span>
-            <span className={youtubeConnection?.connected ? 'text-emerald-400 font-extrabold uppercase' : 'text-slate-300 font-extrabold uppercase'}>
-              {youtubeConnection?.connected ? 'YOUTUBE OAUTH 2.0 (LIVE)' : 'YOUTUBE DIRECT (AUTH READY)'}
-            </span>
-          </div>
-          <span className="text-slate-600">|</span>
-          <div className="text-slate-400 text-[11px]">
-            <span className="text-slate-500">CHANNEL: </span>
-            <span className="text-slate-200 font-bold">
-              {youtubeConnection?.channel?.title || creatorData?.name || 'BigDawsTv'}
-            </span>
-          </div>
-          <span className="text-slate-600 hidden md:inline">|</span>
-          <div className="text-slate-400 text-[11px] hidden md:inline">
-            <span className="text-slate-500">EMAIL: </span>
-            <span className="text-slate-200 font-bold">{userProfile?.email || creatorData?.email || 'Not configured'}</span>
-          </div>
-          <span className="text-slate-600 hidden lg:inline">|</span>
-          <div className="text-[11px] hidden lg:flex items-center gap-1.5">
-            <span className="text-slate-500">STATUS: </span>
-            <span className={youtubeConnection?.connected ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-              {youtubeConnection?.connected
-                ? `Connected (${youtubeConnection?.channel?.subscriberCount ? String(youtubeConnection.channel.subscriberCount) : (creatorData?.subscribers || '0')} subs)`
-                : 'Ready to Authenticate'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {youtubeConnection?.connected ? (
+        {/* Right: Channel Filter Chips & View Mode Switcher */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1 overflow-x-auto">
             <button
               type="button"
-              onClick={navigateToAccounts}
-              className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
-              style={{ borderRadius: '0px' }}
-              title="Manage connected channels in Accounts"
+              onClick={() => setPlatformFilter('all')}
+              className={`px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'all'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'all' ? { background: brandRed, color: '#ffffff' } : {}}
             >
-              <Sliders size={11} />
-              <span>Manage in Accounts →</span>
+              All Channels
             </button>
-          ) : (
             <button
               type="button"
-              onClick={navigateToAccounts}
-              className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
-              style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-              title="Connect social channels in Accounts"
+              onClick={() => setPlatformFilter('YouTube')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'YouTube'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'YouTube' ? { background: brandRed, color: '#ffffff' } : {}}
             >
-              <span>Configure in Accounts →</span>
+              <Youtube size={12} className="text-red-500" />
+              <span>YouTube</span>
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setPlatformFilter('Instagram')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'Instagram'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'Instagram' ? { background: brandRed, color: '#ffffff' } : {}}
+            >
+              <Instagram size={12} className="text-pink-500" />
+              <span>Instagram</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlatformFilter('TikTok')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'TikTok'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'TikTok' ? { background: brandRed, color: '#ffffff' } : {}}
+            >
+              <Video size={12} className="text-slate-300" />
+              <span>TikTok</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlatformFilter('X')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
+                platformFilter === 'X'
+                  ? 'text-white shadow-sm'
+                  : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
+              }`}
+              style={platformFilter === 'X' ? { background: brandRed, color: '#ffffff' } : {}}
+            >
+              <Twitter size={12} className="text-sky-400" />
+              <span>X</span>
+            </button>
+          </div>
+
+          <div className="flex items-center bg-[#111522] p-0.5 rounded-none text-xs font-bold border-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('sprint')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none transition cursor-pointer border-0 ${
+                viewMode === 'sprint'
+                  ? 'bg-[#1c2236] text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Columns size={12} />
+              <span>7-Day Sprint</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('calendar')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-none transition cursor-pointer border-0 ${
+                viewMode === 'calendar'
+                  ? 'bg-[#1c2236] text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Calendar size={12} />
+              <span>Month Grid</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── METRICS & STRATEGY STRIP (Flat Dark Elevation, Border 0, Rounded 0) ── */}
-      <section className="bg-[#0c0f17] px-4 sm:px-6 py-3 flex-shrink-0 mt-0.5 border-0">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
-          
-          {/* Metric 1: Gamified Level & XP */}
-          <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border-0">
-            <div className="w-8 h-8 rounded-none bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
-              <Trophy size={16} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between text-xs font-extrabold text-white">
-                <span className="text-amber-400">Level {currentLevel} Creator</span>
-                <span className="text-[10px] font-mono text-slate-400">{xp} / {targetXp} XP</span>
-              </div>
-              <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
-                <div className="bg-amber-400 h-full rounded-none transition-all duration-500" style={{ width: `${xpPercent}%` }} />
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                <span className="flex items-center gap-1">
-                  <Flame size={11} className="text-rose-400" />
-                  <span>Streak: <b className="text-white">{streak} Days</b></span>
-                </span>
-                <span className="text-amber-400/90 font-mono text-[10px]">{Math.max(0, targetXp - xp)} XP to Lvl {currentLevel + 1}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Metric 2: Readiness / Pipeline */}
-          <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border-0">
-            <div className="w-8 h-8 rounded-none bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-              <Gauge size={16} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between text-xs font-extrabold text-white">
-                <span>{readyPostsCount} of {totalPostsCount} Scheduled</span>
-                <span className="text-[11px] text-emerald-400">{readinessPercent}%</span>
-              </div>
-              <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
-                <div className="bg-emerald-500 h-full rounded-none transition-all duration-300" style={{ width: `${readinessPercent}%` }} />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                {draftPostsCount} unscheduled in draft queue
-              </p>
-            </div>
-          </div>
-
-          {/* Metric 3: Channel Breakdown */}
-          <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border-0">
-            <div className="w-8 h-8 rounded-none bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
-              <Share2 size={16} />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-red-500/15 text-red-400">YT {ytCount}</span>
-                <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-pink-500/15 text-pink-400">IG {igCount}</span>
-                <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-sky-500/15 text-sky-400">X {xCount}</span>
-                {ttCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-slate-500/15 text-slate-300">TT {ttCount}</span>
-                )}
-              </div>
-              <p className="text-[10px] text-slate-400 font-medium mt-1">Omnichannel distribution active</p>
-            </div>
-          </div>
-
-          {/* Metric 4: Campaign Product & Formula */}
-          <div className="flex items-center gap-2.5 p-2.5 rounded-none bg-[#111522] border-0">
-            <div className="w-8 h-8 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-              <Zap size={16} />
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">
-                Target: {productName}
-              </span>
-              <span className="text-xs font-bold text-white truncate block">
-                Launch + Proof + Value
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── SPLIT MAIN WORKSPACE ── */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* ── SPLIT MAIN WORKSPACE (Fullscreen height, direct sidebar neighbor) ── */}
+      <div className="flex-1 flex overflow-hidden h-full">
         
         {/* LEFT WORKSPACE: Sprint Grid or Month Grid */}
-        <section className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-5 custom-scrollbar">
-          
-          {/* Filter Chips & View Mode Switcher (All Rounded-0) */}
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2.5">
-            {/* Functional Platform Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <button
-                type="button"
-                onClick={() => setPlatformFilter('all')}
-                className={`px-3 py-1.5 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
-                  platformFilter === 'all'
-                    ? 'text-white shadow-sm'
-                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
-                }`}
-                style={platformFilter === 'all' ? { background: brandRed, color: '#ffffff' } : {}}
-              >
-                All Channels
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlatformFilter('YouTube')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
-                  platformFilter === 'YouTube'
-                    ? 'text-white shadow-sm'
-                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
-                }`}
-                style={platformFilter === 'YouTube' ? { background: brandRed, color: '#ffffff' } : {}}
-              >
-                <Youtube size={13} className="text-red-500" />
-                <span>YouTube</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlatformFilter('Instagram')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
-                  platformFilter === 'Instagram'
-                    ? 'text-white shadow-sm'
-                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
-                }`}
-                style={platformFilter === 'Instagram' ? { background: brandRed, color: '#ffffff' } : {}}
-              >
-                <Instagram size={13} className="text-pink-500" />
-                <span>Instagram</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlatformFilter('TikTok')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
-                  platformFilter === 'TikTok'
-                    ? 'text-white shadow-sm'
-                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
-                }`}
-                style={platformFilter === 'TikTok' ? { background: brandRed, color: '#ffffff' } : {}}
-              >
-                <Video size={13} className="text-slate-300" />
-                <span>TikTok</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlatformFilter('X')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-bold transition cursor-pointer border-0 ${
-                  platformFilter === 'X'
-                    ? 'text-white shadow-sm'
-                    : 'bg-[#111522] text-slate-300 hover:bg-[#161b2b] hover:text-white'
-                }`}
-                style={platformFilter === 'X' ? { background: brandRed, color: '#ffffff' } : {}}
-              >
-                <Twitter size={13} className="text-sky-400" />
-                <span>X</span>
-              </button>
-            </div>
-
-            {/* View Mode Toggle: 7-Day Sprint vs Month Grid */}
-            <div className="flex items-center bg-[#111522] p-1 rounded-none text-xs font-bold border-0">
-              <button
-                type="button"
-                onClick={() => setViewMode('sprint')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none transition cursor-pointer border-0 ${
-                  viewMode === 'sprint'
-                    ? 'bg-[#1c2236] text-white shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Columns size={13} />
-                <span>7-Day Sprint</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none transition cursor-pointer border-0 ${
-                  viewMode === 'calendar'
-                    ? 'bg-[#1c2236] text-white shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Calendar size={13} />
-                <span>Month Grid</span>
-              </button>
-            </div>
-          </div>
+        <section className="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 custom-scrollbar h-full">
 
           {/* VIEW A: 7-DAY SPRINT BOARD (GAMIFIED DAY CARDS) */}
           {viewMode === 'sprint' && (
