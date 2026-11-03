@@ -10,6 +10,8 @@ import {
   disconnectYouTubeChannel,
   publishToYouTube
 } from '../../services/youtubeApi'
+import { getStoredMetaConnection } from '../../services/metaApi'
+import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
 import {
   Trophy,
   Flame,
@@ -2010,12 +2012,48 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     return <Send className="w-4 h-4 text-slate-400 shrink-0" />
   }
 
+  const ytConn = getStoredYouTubeConnection()
+  const metaConn = getStoredMetaConnection()
+  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+
   return (
     <div 
       ref={calendarContainerRef}
       className="h-full flex flex-col bg-[#090d16] text-slate-200 select-none overflow-hidden relative"
     >
-      {/* ── UNIFIED FULLSCREEN CALENDAR TOOLBAR (Clean, zero sectioning, fullscreen height) ── */}
+      {!isConnected ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
+          <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none shadow-2xl space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
+              <Calendar size={28} />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
+                7-Day Launch Sprint Engine
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                Connect a Channel to Unlock Your Content Calendar
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+              No posts or campaign schedule are available yet. Connect your YouTube or Facebook channel in Accounts so our AI engine can study your real videos and generate your personalised 7-day content sprint.
+            </p>
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={navigateToAccounts}
+                className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
+                style={{ background: '#c81e3c' }}
+              >
+                <ArrowRight size={14} />
+                <span>Go to Accounts to Connect</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+        {/* ── UNIFIED FULLSCREEN CALENDAR TOOLBAR (Clean, zero sectioning, fullscreen height) ── */}
       <div className="bg-[#0c0f17] px-4 sm:px-6 py-2.5 flex items-center justify-between border-b border-[#161b2b] flex-shrink-0 flex-wrap gap-2.5">
         {/* Left: Date / Week Navigation + Today + New Draft */}
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
@@ -4308,6 +4346,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
           <ArrowUp size={14} className="text-white" />
           <span>Scroll to Top</span>
         </button>
+      )}
+
+        </>
       )}
 
     </div>

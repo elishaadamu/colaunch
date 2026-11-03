@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
 import ApiKeysModal from '../ui/ApiKeysModal'
+import { getStoredYouTubeConnection } from '../../services/youtubeApi'
+import { getStoredMetaConnection } from '../../services/metaApi'
+import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
 
 
 // ─── CONTENT TYPES ───────────────────────────────────────────────────────────
@@ -220,6 +223,44 @@ export default function Studio() {
   } = useForge()
   const accent = getAccent(creatorData.platform)
   const studioJob = useBgJob(STUDIO_JOB)
+
+  const ytConn = getStoredYouTubeConnection()
+  const metaConn = getStoredMetaConnection()
+  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none p-4 sm:p-8 items-center justify-center">
+        <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
+            <Sparkles size={28} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+              AI Content Studio
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Connect a Channel to Unlock AI Studio
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+            The AI Studio generates captions, hooks, and content scripts specifically for your audience and niche. Connect your YouTube or Facebook channel in Accounts first so the AI has your real videos and brand context to work from.
+          </p>
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('accounts')}
+              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
+              style={{ background: '#c81e3c' }}
+            >
+              <ArrowRight size={14} />
+              <span>Go to Accounts to Connect</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const [selectedType, setSelectedType] = useState(null)
   const [showTypeSelectorMobile, setShowTypeSelectorMobile] = useState(false)

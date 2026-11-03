@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import AiDoesItPanel from './AiDoesItPanel'
 import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
+import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { getStoredYouTubeConnection } from '../../services/youtubeApi'
+import { getStoredMetaConnection } from '../../services/metaApi'
 
 // ─── PIXEL COACH ─────────────────────────────────────────────────────────────
 // A tiny pixel-art character that coaches the creator
@@ -1304,7 +1307,7 @@ function mapCalendarResult(result) {
   }))
 }
 
-export default function Marketing({ chatOpen: propChatOpen }) {
+export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSetActiveTab }) {
   const { 
     creatorData, 
     startBgJob, 
@@ -1317,9 +1320,49 @@ export default function Marketing({ chatOpen: propChatOpen }) {
     dbLoadedTimestamp, 
     userProfile,
     chatOpen: contextChatOpen,
-    setChatOpen
+    setChatOpen,
+    setActiveTab: contextSetActiveTab
   } = useForge()
   const isChatOpen = propChatOpen ?? contextChatOpen
+  const setActiveTab = propSetActiveTab || contextSetActiveTab
+  const ytConn = getStoredYouTubeConnection()
+  const metaConn = getStoredMetaConnection()
+  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+
+  // If user signed up directly and hasn't connected a channel yet, show empty state with link to Accounts
+  if (!isConnected) {
+    return (
+      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none p-4 sm:p-8 items-center justify-center">
+        <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
+            <Sparkles size={28} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+              Autonomous Launch Engine
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Connect Your Social Channel
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+            No marketing campaign or high-converting copy is available yet. Connect your YouTube or Facebook channel in Accounts so our AI engine can study your audience, extract your real videos, and engineer your launch campaign.
+          </p>
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('accounts')}
+              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
+              style={{ background: '#c81e3c' }}
+            >
+              <ArrowRight size={14} />
+              <span>Go to Accounts to Connect</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   // Unified single brand color across the entire application (co-launch.app brand red)
   const detectedBrandColor = '#c81e3c'

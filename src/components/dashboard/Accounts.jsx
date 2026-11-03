@@ -43,6 +43,7 @@ import {
   verifyMetaToken,
   disconnectMetaChannel
 } from '../../services/metaApi'
+import { studyConnectedChannelAndBuildAssets } from '../../services/channelStudyService'
 
 const STATUS_STYLES = {
   scheduled: { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', label: 'Scheduled' },
@@ -203,29 +204,31 @@ export default function Accounts() {
       if (triggerToast) triggerToast('Exchanging Google OAuth code with YouTube Data API...', 'info')
 
       exchangeYouTubeAuthCode(code)
-        .then(channel => {
+        .then(async channel => {
           setYoutubeConn({ connected: true, channel })
-          if (updateCreator && channel) {
-            updateCreator({
-              name: channel.title || creatorData?.name,
-              creator_name: channel.title || creatorData?.creator_name,
-              channel_title: channel.title,
-              handle: channel.customUrl || creatorData?.handle,
-              youtube_handle: channel.customUrl || creatorData?.youtube_handle,
-              avatar: channel.thumbnail || creatorData?.avatar,
-              avatarUrl: channel.thumbnail || creatorData?.avatarUrl,
-              subscribers: channel.subscriberCount !== undefined ? String(channel.subscriberCount) : creatorData?.subscribers,
-              video_count: channel.videoCount !== undefined ? String(channel.videoCount) : creatorData?.video_count,
-              youtube_channel_id: channel.id || creatorData?.youtube_channel_id,
-              email: channel.email || creatorData?.email,
-              youtube_connected: true
-            })
+          if (triggerToast) {
+            triggerToast(`Connected to YouTube: ${channel.title || '@creator'}! Studying channel...`, 'info')
           }
+
+          // Study channel, fetch real videos, and build custom landing page & daily content calendar
+          try {
+            await studyConnectedChannelAndBuildAssets({
+              channel,
+              platform: 'youtube',
+              creatorData,
+              userProfile,
+              updateCreator,
+              saveDashboardData
+            })
+            if (triggerToast) {
+              triggerToast(`Analyzed ${channel.title}! Landing page and content calendar synthesized with real videos.`, 'success')
+            }
+          } catch (studyErr) {
+            console.warn('[YouTube Study Notice]', studyErr)
+          }
+
           if (syncSessionToDb) {
             setTimeout(() => syncSessionToDb(), 300)
-          }
-          if (triggerToast) {
-            triggerToast(`Connected to YouTube: ${channel.title || '@creator'}!`, 'success')
           }
           // Clean the URL query params without reloading
           const cleanUrl = window.location.pathname
@@ -1689,6 +1692,26 @@ export default function Accounts() {
                       facebook_page_name: targetPage.name,
                       facebook_access_token: targetPage.access_token || facebookTokenInput
                     })
+                  }
+
+                  try {
+                    await studyConnectedChannelAndBuildAssets({
+                      channel: {
+                        id: targetPage.id,
+                        title: targetPage.name,
+                        name: targetPage.name,
+                        handle: `@${targetPage.name.replace(/\s+/g, '').toLowerCase()}`,
+                        customUrl: `@${targetPage.name.replace(/\s+/g, '').toLowerCase()}`,
+                        subscriberCount: '1,500'
+                      },
+                      platform: 'facebook',
+                      creatorData,
+                      userProfile,
+                      updateCreator,
+                      saveDashboardData
+                    })
+                  } catch (e) {
+                    console.warn('[Facebook Study Notice]', e)
                   }
 
                   if (syncSessionToDb) {

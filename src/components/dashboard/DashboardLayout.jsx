@@ -25,9 +25,16 @@ import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
 import EmailConfigModal from '../ui/EmailConfigModal'
 import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
+import { getStoredMetaConnection } from '../../services/metaApi'
+import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
 
-function DashboardAppPreview() {
-  const { creatorData, triggerToast } = useForge()
+function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
+  const { creatorData, triggerToast, setActiveTab: ctxSetActiveTab } = useForge()
+  const setActiveTab = propSetActiveTab || ctxSetActiveTab
+  const ytConn = getStoredYouTubeConnection()
+  const metaConn = getStoredMetaConnection()
+  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+
   const theme = creatorData.theme || 'dark'
   const blueprint = creatorData.blueprint || { name: 'Creator Academy', type: 'Web App' }
   const extraTabs = creatorData.extraTabs || []
@@ -67,6 +74,40 @@ function DashboardAppPreview() {
     setIsReloading(true)
     if (triggerToast) triggerToast('Refreshed live app preview', 'info')
     setTimeout(() => setIsReloading(false), 600)
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-[#090d16] p-4 sm:p-8 text-center select-none overflow-y-auto">
+        <div className="max-w-lg w-full p-8 bg-[#0c0f17] border border-[#1b2336] rounded-none shadow-2xl space-y-4 my-auto">
+          <div className="w-14 h-14 mx-auto rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-[#c81e3c]">
+            <Layers size={28} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
+              Social Integration Required
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Connect a Channel to Generate Your Landing Page
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
+            You signed in directly without linking a social account. Connect your YouTube channel or Facebook page in Accounts so our AI engine can ingest your real videos, detect your brand niche, and synthesize your custom landing page and member portal.
+          </p>
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('accounts')}
+              className="px-6 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-none transition cursor-pointer border-0 hover:opacity-95 flex items-center gap-2 mx-auto"
+              style={{ background: '#c81e3c' }}
+            >
+              <ExternalLink size={14} />
+              <span>Go to Accounts to Connect</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -878,9 +878,9 @@ export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
 
   let videos = []
 
-  // 1. Try backend YouTube video scraper endpoint
+  // 0. Try authenticated YouTube Data API v3 endpoint first
   try {
-    const res = await fetch(`/api/creators/youtube-videos?handle=${encodeURIComponent(clean)}&limit=${limit}`)
+    const res = await fetch(`/api/youtube/videos?identifier=${encodeURIComponent(clean)}&limit=${limit}`)
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.videos) && data.videos.length > 0) {
@@ -888,6 +888,19 @@ export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
       }
     }
   } catch (e) {}
+
+  // 1. Try backend YouTube video scraper endpoint
+  if (!videos || videos.length === 0) {
+    try {
+      const res = await fetch(`/api/creators/youtube-videos?handle=${encodeURIComponent(clean)}&limit=${limit}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.videos) && data.videos.length > 0) {
+          videos = data.videos
+        }
+      }
+    } catch (e) {}
+  }
 
   // 2. Try proxy feed endpoint
   if (!videos || videos.length === 0) {
