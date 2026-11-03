@@ -898,7 +898,38 @@ export default function App() {
 
   const updateCreator = (data) => {
     setCreatorData(prev => {
-      const updated = { ...prev, ...data }
+      if (!data) return prev
+      const prevH = (prev?.handle || '').toLowerCase().replace(/^@/, '').trim()
+      const newH = (data?.handle || '').toLowerCase().replace(/^@/, '').trim()
+      const prevUrl = (prev?.url || '').toLowerCase().trim()
+      const newUrl = (data?.url || '').toLowerCase().trim()
+
+      const isDifferentCreator = Boolean(
+        (prevH && newH && prevH !== newH) ||
+        (prevUrl && newUrl && prevUrl !== newUrl)
+      )
+
+      const base = isDifferentCreator ? {
+        url: '',
+        platform: null,
+        handle: '',
+        name: '',
+        followers: 0,
+        avatar: null,
+        avatarUrl: '',
+        avatar_url: '',
+        description: '',
+        bio: '',
+        niche: '',
+        recentPosts: [],
+        engagementRate: 0,
+        brandColor: null,
+        blueprint: null,
+        productName: '',
+        buildItems: [],
+      } : (prev || {})
+
+      const updated = { ...base, ...data }
       try {
         if (updated && (updated.handle || updated.url || updated.name)) {
           localStorage.setItem('forge_creator_data', JSON.stringify(updated))

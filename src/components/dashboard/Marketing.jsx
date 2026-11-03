@@ -1374,203 +1374,63 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
     contrastText: '#ffffff'
   }), [])
 
-  // Resolve creator's latest videos (from real scraped posts or tailored high-production fallbacks)
+  // Resolve creator's authentic videos strictly from verified connected channels or live scraping
   const displayVideos = useMemo(() => {
-    if (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length >= 3) {
-      return creatorData.recentPosts.slice(0, 6).map(p => ({
-        title: p.title || 'Latest Video',
-        thumbnail: p.thumbnail,
-        views: p.views || '12K',
-        likes: p.likes,
-        url: p.url || (p.videoId ? `https://www.youtube.com/watch?v=${p.videoId}` : '#')
-      }))
-    }
-    if (Array.isArray(creatorData?.youtube_data?.latest_videos) && creatorData.youtube_data.latest_videos.length >= 3) {
-      return creatorData.youtube_data.latest_videos.slice(0, 6).map(v => ({
-        title: v.title || 'Recent Video',
-        thumbnail: v.thumbnail || v.thumbnailUrl,
-        views: v.views ? (typeof v.views === 'number' ? `${Math.round(v.views/1000)}K` : String(v.views)) : '18K',
-        likes: v.likes,
-        url: v.url || '#'
-      }))
-    }
-    if (Array.isArray(creatorData?.audienceIntelligence?.topContent) && creatorData.audienceIntelligence.topContent.length >= 3) {
-      return creatorData.audienceIntelligence.topContent.slice(0, 6).map(c => ({
-        title: c.title || 'Top Performance Video',
-        thumbnail: c.thumbnail,
-        views: c.views || '45K',
-        likes: c.likes,
-        url: c.url || '#'
-      }))
-    }
-
-    const name = (creatorData?.name || '').toLowerCase()
-    const handle = (creatorData?.handle || '').toLowerCase()
-    const niche = (creatorData?.niche || '').toLowerCase()
-
-    if (name.includes('bbc') || handle.includes('bbc')) {
-      return [
-        {
-          title: 'Top 5 Monkey Moments | BBC Earth',
-          views: '2K',
-          thumbnail: 'https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
-        },
-        {
-          title: 'Ancient Egypt: Pyramids, Tombs & Secrets',
-          views: '2K',
-          thumbnail: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
-        },
-        {
-          title: 'Uncovering the Truth Behind the Legend',
-          views: '2K',
-          thumbnail: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
-        },
-        {
-          title: 'Extraordinary Animal Encounters in the Wild',
-          views: '37K',
-          thumbnail: 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
-        },
-        {
-          title: 'The Remarkable Nature of Arctic Wolves',
-          views: '2K',
-          thumbnail: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
-        },
-        {
-          title: "'Allo 'Allo Series 1 Funny Outtakes & Comedy",
-          views: '7K',
-          thumbnail: 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@BBCStudios'
+    // 1. Authenticated YouTube OAuth uploads
+    const ytVideos = ytConn?.recent_videos || ytConn?.channel?.recent_videos
+    if (Array.isArray(ytVideos) && ytVideos.length > 0) {
+      return ytVideos.slice(0, 6).map(p => {
+        const vidId = p.videoId || p.id || ''
+        const thumb = (p.thumbnail && !p.thumbnail.includes('unsplash.com')) ? p.thumbnail : (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : '')
+        return {
+          title: p.title || 'Video Upload',
+          thumbnail: thumb,
+          views: p.views || (p.viewsNum ? `${p.viewsNum.toLocaleString()} views` : 'Verified'),
+          likes: p.likes,
+          url: p.url || (vidId ? `https://www.youtube.com/watch?v=${vidId}` : '#')
         }
-      ]
+      })
     }
 
-    if (name.includes('brownlee') || handle.includes('mkbhd') || niche.includes('tech') || niche.includes('gear')) {
-      return [
-        {
-          title: 'The Ultimate Studio Tour 2026',
-          views: '1.8M',
-          thumbnail: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        },
-        {
-          title: 'Blind Smartphone Camera Test Results',
-          views: '2.4M',
-          thumbnail: 'https://images.unsplash.com/photo-1511707171634-5f897ff02560?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        },
-        {
-          title: 'Best Desk Setup Gear Under $100',
-          views: '920K',
-          thumbnail: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        },
-        {
-          title: 'Apple Vision Pro 2: Real World Review',
-          views: '3.1M',
-          thumbnail: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        },
-        {
-          title: 'Red Cinema Camera vs Sony FX9 Shootout',
-          views: '640K',
-          thumbnail: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        },
-        {
-          title: 'My Everyday Tech & EDC Essentials',
-          views: '1.2M',
-          thumbnail: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@mkbhd'
-        }
-      ]
-    }
-
-    if (name.includes('ali') || handle.includes('abdaal') || niche.includes('productivity')) {
-      return [
-        {
-          title: 'How I Manage 5 Businesses in 20 Hours a Week',
-          views: '840K',
-          thumbnail: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        },
-        {
-          title: '7 Principles of Real Wealth and Freedom',
-          views: '1.4M',
-          thumbnail: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        },
-        {
-          title: 'My Complete Notion Second Brain System',
-          views: '2.1M',
-          thumbnail: 'https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        },
-        {
-          title: 'How to Build Recurring Software Income',
-          views: '620K',
-          thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        },
-        {
-          title: '10 Books That Completely Changed My Mindset',
-          views: '980K',
-          thumbnail: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        },
-        {
-          title: 'The Ultimate Minimalist Creator Desk Setup',
-          views: '710K',
-          thumbnail: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&auto=format&fit=crop&q=80',
-          url: 'https://www.youtube.com/@aliabdaal'
-        }
-      ]
-    }
-
-    const cName = creatorData?.name || creatorData?.handle?.replace('@','') || 'Creator'
-    return [
-      {
-        title: `${cName}'s Complete Launch Blueprint & Reveal`,
-        views: '142K',
-        thumbnail: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=400&auto=format&fit=crop&q=80',
-        url: '#'
-      },
-      {
-        title: 'Behind the Scenes: How We Built This Platform',
-        views: '88K',
-        thumbnail: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&auto=format&fit=crop&q=80',
-        url: '#'
-      },
-      {
-        title: '5 Core Bottlenecks Our Audience Shared This Month',
-        views: '64K',
-        thumbnail: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400&auto=format&fit=crop&q=80',
-        url: '#'
-      },
-      {
-        title: 'Masterclass: What Actually Converts Followers to Members',
-        views: '210K',
-        thumbnail: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400&auto=format&fit=crop&q=80',
-        url: '#'
-      },
-      {
-        title: 'Exclusive Member Q&A and Community Roadmap',
-        views: '49K',
-        thumbnail: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&auto=format&fit=crop&q=80',
-        url: '#'
-      },
-      {
-        title: 'Everything You Need to Know Before Joining',
-        views: '175K',
-        thumbnail: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&auto=format&fit=crop&q=80',
-        url: '#'
+    // 2. Genuine scraped creator posts (filter out any dummy/unsplash fallbacks)
+    if (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0) {
+      const genuine = creatorData.recentPosts.filter(p => p && (!p.thumbnail || !p.thumbnail.includes('unsplash.com')) && p.title && !p.title.includes('Complete Launch Blueprint'))
+      if (genuine.length > 0) {
+        return genuine.slice(0, 6).map(p => {
+          const vidId = p.videoId || p.id || ''
+          const thumb = (p.thumbnail && !p.thumbnail.includes('unsplash.com')) ? p.thumbnail : (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : '')
+          return {
+            title: p.title || 'Latest Video',
+            thumbnail: thumb,
+            views: p.views ? (typeof p.views === 'number' ? `${p.views.toLocaleString()} views` : String(p.views)) : 'Verified',
+            likes: p.likes,
+            url: p.url || (vidId ? `https://www.youtube.com/watch?v=${vidId}` : '#')
+          }
+        })
       }
-    ]
-  }, [creatorData])
+    }
+
+    // 3. YouTube data latest videos
+    if (Array.isArray(creatorData?.youtube_data?.latest_videos) && creatorData.youtube_data.latest_videos.length > 0) {
+      const genuine = creatorData.youtube_data.latest_videos.filter(v => v && (!v.thumbnail || !v.thumbnail.includes('unsplash.com')))
+      if (genuine.length > 0) {
+        return genuine.slice(0, 6).map(v => {
+          const vidId = v.videoId || v.id || ''
+          const thumb = (v.thumbnail && !v.thumbnail.includes('unsplash.com')) ? (v.thumbnail || v.thumbnailUrl) : (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : '')
+          return {
+            title: v.title || 'Recent Video',
+            thumbnail: thumb,
+            views: v.views ? (typeof v.views === 'number' ? `${v.views.toLocaleString()} views` : String(v.views)) : 'Verified',
+            likes: v.likes,
+            url: v.url || (vidId ? `https://www.youtube.com/watch?v=${vidId}` : '#')
+          }
+        })
+      }
+    }
+
+    // Zero fake fallback videos!
+    return []
+  }, [creatorData, ytConn])
 
   const autofillJob = useBgJob(AUTOFILL_JOB)
 
@@ -2346,89 +2206,102 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
           </div>
         </div>
 
-        {/* Latest videos / posts grid matching Demo Video (0:36s) */}
+        {/* Latest videos / posts grid */}
         <div className="px-5 py-4 border-t" style={{ borderColor: 'var(--theme-border-color)' }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               {creatorData.platform === 'instagram' ? 'Recent posts' : 'Latest videos'}
             </p>
-            <span className="text-[10px] font-semibold flex items-center gap-1.5" style={{ color: accent.color }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
-              Channel sync active
-            </span>
+            {displayVideos.length > 0 ? (
+              <span className="text-[10px] font-semibold flex items-center gap-1.5" style={{ color: accent.color }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color }} />
+                Channel sync active
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                No uploads detected
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pb-0.5">
-            {displayVideos.map((post, i) => {
-              const postUrl = post.url || '#'
-              return (
-                <a
-                  key={i}
-                  href={postUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative rounded-xl overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-600"
-                  style={{
-                    aspectRatio: '16/10',
-                    background: 'rgba(255,255,255,0.03)',
-                    borderColor: 'rgba(255,255,255,0.08)'
-                  }}
-                >
-                  {post.thumbnail ? (
-                    <img 
-                      src={post.thumbnail} 
-                      alt={post.title || ''} 
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={e => {
-                        if (!e.currentTarget.dataset.proxied) {
-                          e.currentTarget.dataset.proxied = 'true';
-                          e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(post.thumbnail)}`;
-                        } else {
+
+          {displayVideos.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pb-0.5">
+              {displayVideos.map((post, i) => {
+                const postUrl = post.url || '#'
+                return (
+                  <a
+                    key={i}
+                    href={postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative rounded-xl overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-600"
+                    style={{
+                      aspectRatio: '16/10',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderColor: 'rgba(255,255,255,0.08)'
+                    }}
+                  >
+                    {post.thumbnail ? (
+                      <img 
+                        src={post.thumbnail} 
+                        alt={post.title || ''} 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={e => {
                           e.currentTarget.style.display = 'none';
                           if (e.currentTarget.nextElementSibling) {
                             e.currentTarget.nextElementSibling.style.display = 'flex';
                           }
-                        }
-                      }} 
-                    />
-                  ) : null}
-                  <div
-                    className="w-full h-full flex items-center justify-center absolute inset-0"
-                    style={{ display: post.thumbnail ? 'none' : 'flex', background: 'rgba(255,255,255,0.04)' }}
-                  >
-                    <Video size={18} style={{ color: accent.color, opacity: 0.7 }} />
-                  </div>
-                  {/* Dark gradient overlay */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%)'
-                    }}
-                  />
-                  {/* Title at top */}
-                  {post.title && (
-                    <div className="absolute top-1.5 left-2 right-2">
-                      <p className="text-[8.5px] font-medium leading-tight line-clamp-2 text-white/90 group-hover:text-white">
-                        {post.title}
-                      </p>
-                    </div>
-                  )}
-                  {/* View count at bottom */}
-                  <div className="absolute bottom-1.5 left-2 right-2 flex justify-between items-center">
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white bg-black/60 backdrop-blur-sm border border-white/10">
-                      {post.views || '2K'}
-                    </span>
+                        }} 
+                      />
+                    ) : null}
                     <div
-                      className="w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: accent.color }}
+                      className="w-full h-full flex items-center justify-center absolute inset-0"
+                      style={{ display: post.thumbnail ? 'none' : 'flex', background: 'rgba(255,255,255,0.04)' }}
                     >
-                      <Play size={8} fill="white" color="white" className="ml-0.5" />
+                      <Video size={18} style={{ color: accent.color, opacity: 0.7 }} />
                     </div>
-                  </div>
-                </a>
-              )
-            })}
-          </div>
+                    {/* Dark gradient overlay */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.4) 100%)'
+                      }}
+                    />
+                    {/* Title at top */}
+                    {post.title && (
+                      <div className="absolute top-1.5 left-2 right-2">
+                        <p className="text-[8.5px] font-medium leading-tight line-clamp-2 text-white/90 group-hover:text-white">
+                          {post.title}
+                        </p>
+                      </div>
+                    )}
+                    {/* View count at bottom */}
+                    <div className="absolute bottom-1.5 left-2 right-2 flex justify-between items-center">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white bg-black/60 backdrop-blur-sm border border-white/10">
+                        {post.views || 'Verified'}
+                      </span>
+                      <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: accent.color }}
+                      >
+                        <Play size={8} fill="white" color="white" className="ml-0.5" />
+                      </div>
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 bg-white/[0.01] text-center">
+              <Video size={20} className="mx-auto text-slate-500 mb-1.5" />
+              <p className="text-xs font-semibold text-slate-300">No Video Uploads Detected</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm mx-auto">
+                Connect your YouTube channel in Accounts or link your social profile to automatically ingest and display your live videos.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

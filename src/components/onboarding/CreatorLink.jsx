@@ -167,7 +167,7 @@ export default function CreatorLink() {
       setIsAnalyzing(false)
       setScrapeElapsedMs(0)
       setScrapeTelemetryLogs([])
-    } else if (creatorData?.handle && creatorData?.url && (!url || url !== creatorData.url) && creatorData?.followers > 0) {
+    } else if (creatorData?.handle && creatorData?.url && !url && creatorData?.followers > 0) {
       setUrl(creatorData.url)
       setHandle(creatorData.handle)
       setPlatform(detectPlatform(creatorData.url))
@@ -195,13 +195,19 @@ export default function CreatorLink() {
     setPlatform(detected)
     const parsedH = extractHandle(val)
     setHandle(parsedH)
-    
+
     // Hide preview whenever the input no longer matches the currently displayed creator
     const cleanVal = (val || '').trim().toLowerCase()
     const activeUrl = (scrapedPreview?.url || creatorData?.url || '').trim().toLowerCase()
     const activeH = (scrapedPreview?.handle || creatorData?.handle || '').trim().toLowerCase().replace(/^@/, '')
     const inputH = (parsedH || '').trim().toLowerCase().replace(/^@/, '')
-    if (!cleanVal || (cleanVal !== activeUrl && inputH !== activeH)) {
+
+    const matchesCurrent = Boolean(
+      (cleanVal && activeUrl && cleanVal === activeUrl) ||
+      (inputH && activeH && inputH === activeH)
+    )
+
+    if (!cleanVal || !matchesCurrent) {
       setShowPreview(false)
       setScrapedPreview(null)
     }
@@ -341,7 +347,7 @@ export default function CreatorLink() {
   const displayEngagement = activeData.engagementRate || 3.3
   const displayFormat = getTopFormat(activeData.platform || platform?.id || 'youtube')
   const displayArchetype = getTargetArchetype(activeData)
-  const displayAvatar = activeData.avatarUrl || activeData.avatar || activeData.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
+  const displayAvatar = (activeData.avatarUrl || activeData.avatar || activeData.avatar_url || '').replace(/https:\/\/images\.unsplash\.com[^\s"']*/g, '')
   const displayName = activeData.name || (activeData.handle || 'Creator').replace(/^@/, '')
   const displayHandle = activeData.handle ? (activeData.handle.startsWith('@') ? activeData.handle : `@${activeData.handle}`) : '@creator'
 
@@ -680,15 +686,26 @@ export default function CreatorLink() {
               <div className="flex items-center justify-between pb-4 border-b border-[#1f242c]">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <img
-                      src={displayAvatar}
-                      alt={displayName}
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
-                      }}
-                      className="w-11 h-11 rounded-none border border-[#1f242c] object-cover"
-                    />
+                    {displayAvatar ? (
+                      <img
+                        src={displayAvatar}
+                        alt={displayName}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                        className="w-11 h-11 rounded-none border border-[#1f242c] object-cover"
+                      />
+                    ) : null}
+                    <div
+                      className="w-11 h-11 rounded-none border border-[#1f242c] bg-[#1a1f2c] items-center justify-center font-bold text-white text-sm"
+                      style={{ display: displayAvatar ? 'none' : 'flex' }}
+                    >
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-none flex items-center justify-center text-[9px] text-white font-black shadow">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>

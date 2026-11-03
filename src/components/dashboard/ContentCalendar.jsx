@@ -413,34 +413,35 @@ function generateTailoredCaption(post, creatorData, productName) {
   return `${title}\n\nExcited to share ${prod} with you today! Check our main link for full details.`
 }
 
-// Tailored fallback week generator (matches Marketing fallback)
+// Tailored fallback week generator (matches creator niche & product)
 function buildTailoredFallbackWeek(creatorData) {
   const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@/, '')
-  const prod = creatorData?.productName || `${name} Foundation & Marketplace`
+  const prod = creatorData?.productName || `${name} Launchpad`
+  const niche = creatorData?.niche || 'Digital Content'
   return [
     { day: 'Mon', posts: [
-      { id: 1, type: 'Video', title: `SURPRISE!! We Built a Foundation to Help EVERYONE in Our Community`, platform: 'YouTube', theme: 'launch', status: 'draft' },
-      { id: 2, type: 'Reel', title: `The BIGGEST Announcement You've Been Waiting For: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
+      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 2, type: 'Reel', title: `The Biggest Announcement of the Year: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Tue', posts: [
-      { id: 3, type: 'Shorts', title: `See the JOY! How YOUR Purchases Fund Real Good Deeds`, platform: 'YouTube', theme: 'launch', status: 'draft' },
-      { id: 4, type: 'Post', title: `How Your Good Deeds Gear Makes a Difference: 3 Simple Ways`, platform: 'Instagram', theme: 'value', status: 'draft' }
+      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 4, type: 'Post', title: `Behind The Scenes: Why We Built ${prod} For Our Community`, platform: 'Instagram', theme: 'value', status: 'draft' }
     ]},
     { day: 'Wed', posts: [
-      { id: 5, type: 'Story', title: `Designing the 'Impact Tee': A Glimpse into Our Process`, platform: 'Instagram', theme: 'bts', status: 'draft' },
-      { id: 6, type: 'Thread', title: `From Pranks to Purpose: My Journey to Starting ${prod}`, platform: 'Twitter', theme: 'story', status: 'draft' }
+      { id: 5, type: 'Story', title: `Platform Architecture & Feature Walkthrough`, platform: 'Instagram', theme: 'bts', status: 'draft' },
+      { id: 6, type: 'Thread', title: `My Journey Building ${prod} for ${name}'s Audience`, platform: 'Twitter', theme: 'story', status: 'draft' }
     ]},
     { day: 'Thu', posts: [
-      { id: 7, type: 'Community', title: `What's the BEST way to make someone's day? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
+      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
       { id: 8, type: 'Email', title: `IT'S LIVE! The ${prod} VIP Early Access`, platform: 'Email', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Fri', posts: [
-      { id: 9, type: 'Reel', title: `Outfit Check: Doing Good & Looking Good! + Shop Our First Drop`, platform: 'Instagram', theme: 'cta', status: 'draft' },
-      { id: 10, type: 'Shorts', title: `Quick Look: Our BESTSELLING Foundation Gear!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
+      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'draft' },
+      { id: 10, type: 'Shorts', title: `Quick Tour: Everything You Get With ${prod}!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
     ]},
     { day: 'Sat', posts: [
-      { id: 11, type: 'Video', title: `POV: You just funded a good deed by getting some merch`, platform: 'TikTok', theme: 'value', status: 'draft' },
-      { id: 12, type: 'Community', title: `What's one good deed you want to see our foundation tackle next?`, platform: 'YouTube', theme: 'community', status: 'draft' }
+      { id: 11, type: 'Video', title: `Top 3 Frameworks for Success in ${niche}`, platform: 'TikTok', theme: 'value', status: 'draft' },
+      { id: 12, type: 'Community', title: `Weekend AMA: Drop your questions about ${prod}`, platform: 'YouTube', theme: 'community', status: 'draft' }
     ]},
     { day: 'Sun', posts: [
       { id: 13, type: 'Post', title: `A HUGE Thank You! ❤️ Week 1 of the ${prod}`, platform: 'Instagram', theme: 'proof', status: 'draft' },

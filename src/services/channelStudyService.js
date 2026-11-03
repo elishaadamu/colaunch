@@ -88,7 +88,7 @@ export async function studyConnectedChannelAndBuildAssets({
         title: `Welcome to ${channelTitle} — Official Channel Launch`,
         url: `https://www.youtube.com/${customUrl}`,
         views: `${subscriberCount} subscribers`,
-        thumbnail: avatar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+        thumbnail: avatar || '',
         publishedAt: 'Recent'
       }
     ]

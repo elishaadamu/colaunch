@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge, getAccent } from '../../App'
-import { 
-  ArrowRight, ArrowLeft, RefreshCw, Send, SlidersHorizontal, Check, Layout, Users, 
-  BarChart2, Settings, Radio, Play, Lock, MessageSquare, Calendar, 
+import {
+  ArrowRight, ArrowLeft, RefreshCw, Send, SlidersHorizontal, Check, Layout, Users,
+  BarChart2, Settings, Radio, Play, Lock, MessageSquare, Calendar,
   Download, ShoppingBag, Laptop, Smartphone, Volume2, Award, RotateCcw, Trash2,
   Heart, MessageCircle, Share2, MoreHorizontal, Maximize2, Minimize2, Globe, Sparkles,
   Layers, Video, Star, CheckCircle2, ShieldCheck, Rocket, CheckCircle,
@@ -45,7 +45,7 @@ function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelCo
   // Use strictly genuine audience comments scraped from Apify / YouTube (no handcoded announcements)
   if (Array.isArray(channelComments) && channelComments.length > 0) {
     return channelComments.map((c, idx) => {
-      const matchedVid = videos.find(v => 
+      const matchedVid = videos.find(v =>
         (v.title && c.videoTitle && v.title.toLowerCase().includes(c.videoTitle.toLowerCase())) ||
         (v.videoId && c.videoId && v.videoId === c.videoId)
       ) || (videos.length > 0 ? videos[idx % videos.length] : null)
@@ -56,8 +56,8 @@ function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelCo
       const authorRaw = c.author || c.user || 'viewer'
       const authorClean = authorRaw.replace(/^@/, '')
       const isCreator = Boolean(
-        c.isCreator || 
-        authorClean.toLowerCase() === handleClean || 
+        c.isCreator ||
+        authorClean.toLowerCase() === handleClean ||
         (creatorDisplayName && authorClean.toLowerCase() === creatorDisplayName)
       )
 
@@ -299,39 +299,39 @@ function getVariationsForCreator(creatorData, extraTabs) {
 }
 
 function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicAccentBorder, creatorData, blueprint, channelComments = [] }) {
-  const creatorName = creatorData.name || creatorData.handle?.replace('@','') || 'Creator'
+  const creatorName = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const mrrVal = Math.round(parseFollowerCount(creatorData?.followers || 0) * 0.015 * 19)
   const cleanMrr = `$${mrrVal > 0 ? mrrVal.toLocaleString() : '8,420'}`
 
   const audienceStream = (Array.isArray(channelComments) && channelComments.length >= 1)
     ? channelComments.slice(0, 5).map((c, i) => {
-        const cleanUser = (c.author || '@member').replace(/^@/, '')
-        const actions = [
-          { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
-          { action: 'Joined Monthly VIP Circle', amount: '+$35.00/mo' },
-          { action: 'Downloaded Strategy Pack', amount: 'Free' },
-          { action: 'Purchased Toolkit Bundle', amount: '+$79.00' },
-          { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
-        ]
-        return {
-          user: cleanUser,
-          action: actions[i % actions.length].action,
-          amount: actions[i % actions.length].amount,
-          time: c.published || c.time || `${(i + 1) * 7}m ago`
-        }
-      })
+      const cleanUser = (c.author || '@member').replace(/^@/, '')
+      const actions = [
+        { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
+        { action: 'Joined Monthly VIP Circle', amount: '+$35.00/mo' },
+        { action: 'Downloaded Strategy Pack', amount: 'Free' },
+        { action: 'Purchased Toolkit Bundle', amount: '+$79.00' },
+        { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
+      ]
+      return {
+        user: cleanUser,
+        action: actions[i % actions.length].action,
+        amount: actions[i % actions.length].amount,
+        time: c.published || c.time || `${(i + 1) * 7}m ago`
+      }
+    })
     : []
 
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto" style={{ background: '#0f1117' }}>
       {/* OS Top Subheader */}
-      <div 
+      <div
         className="flex items-center justify-between px-5 py-3 border-b flex-shrink-0"
         style={{ borderColor: '#222634', background: '#12141c' }}
       >
         <div className="flex items-center gap-3">
-          <div 
+          <div
             className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center font-bold text-xs flex-shrink-0 relative shadow-md"
             style={{ background: dynamicAccentBg, border: `1px solid ${dynamicAccentBorder}` }}
           >
@@ -339,11 +339,11 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
               {creatorName.charAt(0).toUpperCase()}
             </span>
             {resolvedAvatar ? (
-              <img 
-                src={resolvedAvatar} 
-                alt="" 
+              <img
+                src={resolvedAvatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={e => {
                   if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
@@ -351,7 +351,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
                   } else {
                     e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             ) : null}
           </div>
@@ -360,7 +360,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
               <span className="text-sm font-bold tracking-tight text-white">
                 {creatorName} Studio OS
               </span>
-              <span 
+              <span
                 className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider"
                 style={{ background: dynamicAccentBg, color: dynamicAccent, border: `1px solid ${dynamicAccentBorder}` }}
               >
@@ -374,7 +374,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
         </div>
 
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#161922] border border-[#222634]"
           >
             <span className="w-2 h-2 rounded-full" style={{ background: dynamicAccent }} />
@@ -394,13 +394,13 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
           { label: 'Channel Views', val: creatorData?.totalViews || 'Verified', badge: 'Total Impact', desc: 'Cumulative video views' },
           { label: 'Catalog Uploads', val: `${creatorData?.videoCount || recentVideoList.length || '12'} Videos`, badge: 'Official Archive', desc: 'Verified channel videos' },
         ].map((m, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="p-4 rounded-xl border flex flex-col justify-between bg-[#12141c] border-[#222634] hover:border-slate-700 transition shadow-sm"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{m.label}</span>
-              <span 
+              <span
                 className="text-[10px] font-bold px-2 py-0.5 rounded-md"
                 style={{ background: dynamicAccentBg, color: dynamicAccent }}
               >
@@ -418,7 +418,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
       {/* Two Column Layout: Channel Releases & Live Member Activity */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-5 pb-5 flex-1">
         {/* Releases / Pipeline (3 cols) */}
-        <div 
+        <div
           className="md:col-span-3 p-4 rounded-xl border flex flex-col bg-[#12141c] border-[#222634]"
         >
           <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#222634]">
@@ -432,8 +432,8 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
 
           <div className="space-y-2.5">
             {recentVideoList.slice(0, 3).map((vid, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className="p-3 rounded-xl border bg-[#161922] border-[#222634] flex items-center justify-between gap-3"
               >
                 <div className="min-w-0 flex-1">
@@ -446,7 +446,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
                     {vid.views ? `${vid.views} views` : 'Published release'} {vid.published ? `· ${vid.published}` : ''}
                   </p>
                 </div>
-                <a 
+                <a
                   href={vid.url || (vid.videoId ? `https://www.youtube.com/watch?v=${vid.videoId}` : getCreatorChannelUrl(creatorData))}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -462,7 +462,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
         </div>
 
         {/* Live Activity Feed (2 cols) */}
-        <div 
+        <div
           className="md:col-span-2 p-4 rounded-xl border flex flex-col bg-[#12141c] border-[#222634]"
         >
           <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#222634]">
@@ -476,8 +476,8 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
 
           <div className="space-y-2">
             {audienceStream.map((feed, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className="flex items-center justify-between p-2.5 rounded-xl bg-[#161922] border border-[#222634]/60 hover:border-slate-700 transition"
               >
                 <div className="min-w-0 pr-2">
@@ -564,11 +564,11 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
   const thumbUrl = video.thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden"
         style={{ borderRadius: '0px' }}
         onClick={e => e.stopPropagation()}
@@ -578,7 +578,7 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
           <div className="flex items-center gap-2.5 min-w-0 pr-4">
             <span className="w-2 h-2 shrink-0 animate-pulse" style={{ backgroundColor: dynamicAccent }} />
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
-              Live Preview Player · @{(creatorData?.handle || 'creator').replace('@','')}
+              Live Preview Player · @{(creatorData?.handle || 'creator').replace('@', '')}
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-xs font-bold text-white truncate">
@@ -678,12 +678,12 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
   );
 }
 
-function ProductLandingPage({ 
-  styles, 
-  creatorData, 
-  blueprint, 
-  onSwitchToProduct, 
-  channelComments = [], 
+function ProductLandingPage({
+  styles,
+  creatorData,
+  blueprint,
+  onSwitchToProduct,
+  channelComments = [],
   isMobile = false,
   onPlayVideo
 }) {
@@ -779,20 +779,19 @@ function ProductLandingPage({
 
   return (
     <div className="w-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 relative min-h-0 rounded-none">
-      
+
       {/* 1. Navbar - PERMANENTLY STICKY TO THE TOP */}
-      <nav 
+      <nav
         ref={navRef}
-        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-0 z-40 flex-shrink-0 flex items-center justify-between w-full shadow-xl ${
-          isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
-        }`}
+        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-0 z-40 flex-shrink-0 flex items-center justify-between w-full shadow-xl ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
+          }`}
       >
-        <div 
+        <div
           onClick={scrollToTop}
           className="flex items-center gap-3 min-w-0 cursor-pointer group"
           title="Back to top"
         >
-          <div 
+          <div
             className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0 group-hover:scale-105 transition-transform"
             style={{ background: dynamicAccent, borderColor: dynamicAccent, color: '#ffffff' }}
           >
@@ -815,30 +814,30 @@ function ProductLandingPage({
         {/* Anchor Links with Controlled Scroll */}
         {!isMobile && (
           <div className="hidden lg:flex items-center gap-4 xl:gap-6 text-xs font-semibold text-slate-300 shrink-0">
-            <button 
-              type="button" 
-              onClick={scrollToSection('#featured')} 
+            <button
+              type="button"
+              onClick={scrollToSection('#featured')}
               className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Featured Video
             </button>
-            <button 
-              type="button" 
-              onClick={scrollToSection('#archive')} 
+            <button
+              type="button"
+              onClick={scrollToSection('#archive')}
               className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Video Archive
             </button>
-            <button 
-              type="button" 
-              onClick={scrollToSection('#discussions')} 
+            <button
+              type="button"
+              onClick={scrollToSection('#discussions')}
               className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Community Voices
             </button>
-            <button 
-              type="button" 
-              onClick={scrollToSection('#resources')} 
+            <button
+              type="button"
+              onClick={scrollToSection('#resources')}
               className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
             >
               Resources
@@ -861,7 +860,7 @@ function ProductLandingPage({
             type="button"
             onClick={onSwitchToProduct}
             className="px-4 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer rounded-none flex items-center gap-1 text-white"
-            style={{ 
+            style={{
               background: dynamicAccent,
               borderRadius: '0px'
             }}
@@ -873,450 +872,450 @@ function ProductLandingPage({
       </nav>
 
       {/* 2. Scrollable Page Content Container */}
-      <div 
+      <div
         ref={scrollContainerRef}
         className="w-full relative selection:bg-rose-500/20"
       >
 
-      {/* 2. Content-First Hero Section with Creator Identity (Solid Flat Dark, Zero Gradients) */}
-      <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
-        style={{
-          background: '#0c0e16'
-        }}
-      >
-        <div className="max-w-4xl mx-auto space-y-4 relative z-10">
-          
-          {/* Creator Channel Tag */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-mono uppercase tracking-wider rounded-none">
-            <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-            <span>Official Video & Resource Hub · @{handleClean}</span>
-          </div>
+        {/* 2. Content-First Hero Section with Creator Identity (Solid Flat Dark, Zero Gradients) */}
+        <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
+          style={{
+            background: '#0c0e16'
+          }}
+        >
+          <div className="max-w-4xl mx-auto space-y-4 relative z-10">
 
-          {/* Headline */}
-          <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl lg:text-5xl'}`}>
-            {heroHeadline}
-          </h1>
+            {/* Creator Channel Tag */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-mono uppercase tracking-wider rounded-none">
+              <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+              <span>Official Video & Resource Hub · @{handleClean}</span>
+            </div>
 
-          {/* Subtitle */}
-          <p className={`text-slate-300 leading-relaxed max-w-2xl mx-auto ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}>
-            {heroSubtitle}
-          </p>
+            {/* Headline */}
+            <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl lg:text-5xl'}`}>
+              {heroHeadline}
+            </h1>
 
-          {/* Real Channel Stats (No fake A B C D boxes!) */}
-          <div className="pt-2 pb-2 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-300">
-            {creatorData?.followers && (
-              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                <span className="text-white font-bold">{creatorData.followers}</span>
-                <span className="text-slate-400">Subscribers</span>
-              </div>
-            )}
-            {recentVideoList.length > 0 && (
-              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                <span className="text-white font-bold">{creatorData?.videoCount || recentVideoList.length}</span>
-                <span className="text-slate-400">Curated Videos</span>
-              </div>
-            )}
-            {creatorData?.totalViews && (
-              <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                <span className="text-white font-bold">{creatorData.totalViews}</span>
-                <span className="text-slate-400">Channel Views</span>
-              </div>
-            )}
-          </div>
+            {/* Subtitle */}
+            <p className={`text-slate-300 leading-relaxed max-w-2xl mx-auto ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}>
+              {heroSubtitle}
+            </p>
 
-          {/* Direct Outcome CTAs (NO $/mo!) */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onSwitchToProduct}
-              className="w-full sm:w-auto px-7 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2 text-white"
-              style={{
-                background: dynamicAccent,
-                boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`,
-                borderRadius: '0px'
-              }}
-            >
-              <span>Explore Platform & Videos</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            {topVideo ? (
+            {/* Real Channel Stats (No fake A B C D boxes!) */}
+            <div className="pt-2 pb-2 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-300">
+              {creatorData?.followers && (
+                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                  <span className="text-white font-bold">{creatorData.followers}</span>
+                  <span className="text-slate-400">Subscribers</span>
+                </div>
+              )}
+              {recentVideoList.length > 0 && (
+                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                  <span className="text-white font-bold">{creatorData?.videoCount || recentVideoList.length}</span>
+                  <span className="text-slate-400">Curated Videos</span>
+                </div>
+              )}
+              {creatorData?.totalViews && (
+                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
+                  <span className="text-white font-bold">{creatorData.totalViews}</span>
+                  <span className="text-slate-400">Channel Views</span>
+                </div>
+              )}
+            </div>
+
+            {/* Direct Outcome CTAs (NO $/mo!) */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
+                onClick={onSwitchToProduct}
+                className="w-full sm:w-auto px-7 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2 text-white"
+                style={{
+                  background: dynamicAccent,
+                  boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`,
+                  borderRadius: '0px'
+                }}
               >
-                <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
-                <span>Play Featured Video</span>
+                <span>Explore Platform & Videos</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
-            ) : null}
-          </div>
-
-        </div>
-      </section>
-
-      {/* 3. Featured Masterclass / Top Video Showcase */}
-      {topVideo && (
-        <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
-          <div className="max-w-4xl mx-auto space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-                  Featured Channel Video
-                </span>
-                <h3 className="text-base sm:text-xl font-bold text-white mt-1">
-                  {topVideoTitle}
-                </h3>
-              </div>
-              {creatorUrl && (
-                <a
-                  href={topVideoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0"
-                >
-                  <span>Open on YouTube</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-
-            {/* Cinematic Video Player Mockup */}
-            <div className="relative aspect-video w-full bg-[#141824] border border-[#222634] overflow-hidden group shadow-2xl">
-              {topVideoThumb ? (
-                <img 
-                  src={topVideoThumb} 
-                  alt={topVideoTitle}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" 
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#111420]">
-                  <Video className="w-12 h-12 text-slate-600" />
-                </div>
-              )}
-              
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+              {topVideo ? (
                 <button
                   type="button"
                   onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
-                  style={{ background: dynamicAccent, color: '#ffffff' }}
-                  title="Play video in preview"
+                  className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
                 >
-                  <Play className="w-7 h-7 fill-current ml-1 text-white" />
+                  <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
+                  <span>Play Featured Video</span>
                 </button>
-              </div>
-
-              {/* Bottom Video Meta Bar */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
-                <div className="flex items-center gap-3 font-mono">
-                  {topVideo.views && <span>{formatViewsString(topVideo.views)}</span>}
-                  {topVideo.likes && (
-                    <>
-                      <span>·</span>
-                      <span>{topVideo.likes} likes</span>
-                    </>
-                  )}
-                  {topVideo.published && (
-                    <>
-                      <span>·</span>
-                      <span>{topVideo.published}</span>
-                    </>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                  className="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer"
-                >
-                  Play in Preview →
-                </button>
-              </div>
+              ) : null}
             </div>
+
           </div>
         </section>
-      )}
 
-      {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
-      {recentVideoList.length > 0 && (
-        <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div>
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Video Vault & Curated Archive
-                </span>
-                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
-                  Latest Releases from @{handleClean}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Organized by topic with zero advertising interruptions.
-                </p>
-              </div>
-              {creatorUrl && (
-                <a
-                  href={creatorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-mono hover:underline flex items-center gap-1.5 self-start sm:self-auto"
-                  style={{ color: dynamicAccent }}
-                >
-                  <span>Explore Channel on YouTube</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {recentVideoList.slice(0, 6).map((v, idx) => {
-                const vidThumb = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
-                const vidLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
-                return (
-                  <div 
-                    key={idx} 
-                    className="bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition overflow-hidden flex flex-col justify-between group shadow-sm"
+        {/* 3. Featured Masterclass / Top Video Showcase */}
+        {topVideo && (
+          <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
+                    Featured Channel Video
+                  </span>
+                  <h3 className="text-base sm:text-xl font-bold text-white mt-1">
+                    {topVideoTitle}
+                  </h3>
+                </div>
+                {creatorUrl && (
+                  <a
+                    href={topVideoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0"
                   >
-                    <div>
-                      {/* Thumbnail Clickable */}
-                      <div 
-                        onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                        className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center cursor-pointer group/thumb"
-                        title="Click to play video in preview modal"
-                      >
-                        {vidThumb ? (
-                          <img 
-                            src={vidThumb} 
-                            alt="" 
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <Video className="w-8 h-8 text-slate-600" />
-                        )}
-                        <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
-                          <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110"
-                            style={{ background: dynamicAccent, color: '#ffffff' }}
+                    <span>Open on YouTube</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+
+              {/* Cinematic Video Player Mockup */}
+              <div className="relative aspect-video w-full bg-[#141824] border border-[#222634] overflow-hidden group shadow-2xl">
+                {topVideoThumb ? (
+                  <img
+                    src={topVideoThumb}
+                    alt={topVideoTitle}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[#111420]">
+                    <Video className="w-12 h-12 text-slate-600" />
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
+                    className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
+                    style={{ background: dynamicAccent, color: '#ffffff' }}
+                    title="Play video in preview"
+                  >
+                    <Play className="w-7 h-7 fill-current ml-1 text-white" />
+                  </button>
+                </div>
+
+                {/* Bottom Video Meta Bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
+                  <div className="flex items-center gap-3 font-mono">
+                    {topVideo.views && <span>{formatViewsString(topVideo.views)}</span>}
+                    {topVideo.likes && (
+                      <>
+                        <span>·</span>
+                        <span>{topVideo.likes} likes</span>
+                      </>
+                    )}
+                    {topVideo.published && (
+                      <>
+                        <span>·</span>
+                        <span>{topVideo.published}</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
+                    className="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer"
+                  >
+                    Play in Preview →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
+        {recentVideoList.length > 0 && (
+          <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
+            <div className="max-w-4xl mx-auto space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                <div>
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                    Video Vault & Curated Archive
+                  </span>
+                  <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                    Latest Releases from @{handleClean}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Organized by topic with zero advertising interruptions.
+                  </p>
+                </div>
+                {creatorUrl && (
+                  <a
+                    href={creatorUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono hover:underline flex items-center gap-1.5 self-start sm:self-auto"
+                    style={{ color: dynamicAccent }}
+                  >
+                    <span>Explore Channel on YouTube</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {recentVideoList.slice(0, 6).map((v, idx) => {
+                  const vidThumb = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
+                  const vidLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition overflow-hidden flex flex-col justify-between group shadow-sm"
+                    >
+                      <div>
+                        {/* Thumbnail Clickable */}
+                        <div
+                          onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                          className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center cursor-pointer group/thumb"
+                          title="Click to play video in preview modal"
+                        >
+                          {vidThumb ? (
+                            <img
+                              src={vidThumb}
+                              alt=""
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <Video className="w-8 h-8 text-slate-600" />
+                          )}
+                          <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110"
+                              style={{ background: dynamicAccent, color: '#ffffff' }}
+                            >
+                              <Play className="w-6 h-6 fill-current ml-0.5 text-white" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-3.5 space-y-1.5">
+                          <h5
+                            onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
+                            className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug hover:underline cursor-pointer"
                           >
-                            <Play className="w-6 h-6 fill-current ml-0.5 text-white" />
+                            {v.title}
+                          </h5>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
+                            {v.views && <span>{formatViewsString(v.views)}</span>}
+                            {v.published && (
+                              <>
+                                <span>·</span>
+                                <span>{v.published}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-3.5 space-y-1.5">
-                        <h5 
+                      {/* Actions */}
+                      <div className="p-3 pt-0 flex items-center gap-2">
+                        <button
+                          type="button"
                           onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                          className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug hover:underline cursor-pointer"
+                          className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center cursor-pointer"
                         >
-                          {v.title}
-                        </h5>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
-                          {v.views && <span>{formatViewsString(v.views)}</span>}
-                          {v.published && (
-                            <>
-                              <span>·</span>
-                              <span>{v.published}</span>
-                            </>
-                          )}
-                        </div>
+                          Play in Preview
+                        </button>
+                        <a
+                          href={vidLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-400 hover:text-white transition"
+                          title="Watch on YouTube"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="p-3 pt-0 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                        className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center cursor-pointer"
-                      >
-                        Play in Preview
-                      </button>
-                      <a
-                        href={vidLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-400 hover:text-white transition"
-                        title="Watch on YouTube"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* 5. Real Audience Community Discussions (Rendered only when real channel comments exist — zero fake comments) */}
-      {communityComments.length > 0 && (
-        <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
+        {/* 5. Real Audience Community Discussions (Rendered only when real channel comments exist — zero fake comments) */}
+        {communityComments.length > 0 && (
+          <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
+            <div className="max-w-4xl mx-auto space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                    Community Feed
+                  </span>
+                  <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                    What the Community Is Saying
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Direct reactions, discussions, and questions from viewers across recent uploads.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onSwitchToProduct}
+                  className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
+                  style={{ color: dynamicAccent }}
+                >
+                  <span>Join Discussion Room →</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {communityComments.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
+                          style={{ background: dynamicAccentBg }}
+                        >
+                          {(c.author || c.user || 'V').replace('@', '').charAt(0)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs font-bold text-white truncate block">
+                            {c.author || c.user || '@viewer'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono block">
+                            {c.published || c.time || 'Community Member'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
+                        "{c.text || c.quote}"
+                      </p>
+                    </div>
+
+                    {c.videoTitle && (
+                      <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
+                        on: {c.videoTitle}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
+        <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
           <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div className="text-center space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Platform Features
+              </span>
+              <h3 className="text-lg sm:text-2xl font-bold text-white">
+                Everything Accessible Inside the Hub
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+                <Video className="w-5 h-5" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Ad-Free Video Archive</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Stream complete tutorials and masterclasses in chronological order without commercial breaks.
+                </p>
+              </div>
+
+              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+                <Download className="w-5 h-5" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Resource Files & Templates</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Direct access to project assets, code boilerplates, study roadmaps, and cheat sheets.
+                </p>
+              </div>
+
+              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
+                <Users className="w-5 h-5" style={{ color: dynamicAccent }} />
+                <h4 className="text-sm font-bold text-white">Private Community Rooms</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Connect with fellow practitioners, share your progress, and get direct creator feedback.
+                </p>
+              </div>
+            </div>
+
+            {/* Clean Invitation Box (No subscription pricing!) */}
+            <div className="p-6 bg-[#131622] border border-[#23293a] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
               <div>
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Community Feed
-                </span>
-                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
-                  What the Community Is Saying
-                </h3>
+                <h4 className="text-sm font-bold text-white">
+                  Enter @{handleClean}'s Digital Platform
+                </h4>
                 <p className="text-xs text-slate-400 mt-1">
-                  Direct reactions, discussions, and questions from viewers across recent uploads.
+                  Access the complete video archive, download files, and participate in community discussions.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onSwitchToProduct}
-                className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
-                style={{ color: dynamicAccent }}
+                className="px-6 py-3 text-xs uppercase tracking-wider font-bold transition shadow-lg rounded-none text-white shrink-0 cursor-pointer"
+                style={{
+                  background: dynamicAccent,
+                  borderRadius: '0px'
+                }}
               >
-                <span>Join Discussion Room →</span>
+                Get Free Access Now →
               </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {communityComments.map((c, idx) => (
-                <div 
-                  key={idx}
-                  className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
-                        style={{ background: dynamicAccentBg }}
-                      >
-                        {(c.author || c.user || 'V').replace('@','').charAt(0)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-xs font-bold text-white truncate block">
-                          {c.author || c.user || '@viewer'}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono block">
-                          {c.published || c.time || 'Community Member'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
-                      "{c.text || c.quote}"
-                    </p>
-                  </div>
-
-                  {c.videoTitle && (
-                    <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
-                      on: {c.videoTitle}
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
         </section>
-      )}
 
-      {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
-      <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-1">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-              Platform Features
-            </span>
-            <h3 className="text-lg sm:text-2xl font-bold text-white">
-              Everything Accessible Inside the Hub
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <Video className="w-5 h-5" style={{ color: dynamicAccent }} />
-              <h4 className="text-sm font-bold text-white">Ad-Free Video Archive</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Stream complete tutorials and masterclasses in chronological order without commercial breaks.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <Download className="w-5 h-5" style={{ color: dynamicAccent }} />
-              <h4 className="text-sm font-bold text-white">Resource Files & Templates</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Direct access to project assets, code boilerplates, study roadmaps, and cheat sheets.
-              </p>
-            </div>
-
-            <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-              <Users className="w-5 h-5" style={{ color: dynamicAccent }} />
-              <h4 className="text-sm font-bold text-white">Private Community Rooms</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Connect with fellow practitioners, share your progress, and get direct creator feedback.
-              </p>
-            </div>
-          </div>
-
-          {/* Clean Invitation Box (No subscription pricing!) */}
-          <div className="p-6 bg-[#131622] border border-[#23293a] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-            <div>
-              <h4 className="text-sm font-bold text-white">
-                Enter @{handleClean}'s Digital Platform
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                Access the complete video archive, download files, and participate in community discussions.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onSwitchToProduct}
-              className="px-6 py-3 text-xs uppercase tracking-wider font-bold transition shadow-lg rounded-none text-white shrink-0 cursor-pointer"
-              style={{
-                background: dynamicAccent,
-                borderRadius: '0px'
-              }}
+        {/* 7. Creator Authority & Welcome Statement */}
+        <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
+          <div className="max-w-3xl mx-auto p-5 bg-[#121520] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
+            <div
+              className="w-16 h-16 rounded-none flex items-center justify-center font-bold text-lg border overflow-hidden relative flex-shrink-0"
+              style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
             >
-              Get Free Access Now →
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Creator Authority & Welcome Statement */}
-      <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
-        <div className="max-w-3xl mx-auto p-5 bg-[#121520] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
-          <div 
-            className="w-16 h-16 rounded-none flex items-center justify-center font-bold text-lg border overflow-hidden relative flex-shrink-0"
-            style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
-          >
-            {resolvedAvatar ? (
-              <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-            ) : (
-              <span>{creatorName.charAt(0).toUpperCase()}</span>
-            )}
-          </div>
-          <div className="space-y-1 text-center sm:text-left min-w-0 flex-1">
-            <h4 className="text-sm font-bold text-white">{creatorName} (@{handleClean})</h4>
-            <div className="flex items-center justify-center sm:justify-start gap-3 text-slate-400 text-xs font-mono">
-              {creatorData?.followers && <span>{creatorData.followers} subscribers</span>}
-              {creatorData?.videoCount && <span>{creatorData.videoCount} videos</span>}
-              {creatorData?.totalViews && <span>{creatorData.totalViews} views</span>}
+              {resolvedAvatar ? (
+                <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+              ) : (
+                <span>{creatorName.charAt(0).toUpperCase()}</span>
+              )}
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed pt-1">
-              {creatorData?.description 
-                ? (creatorData.description.length > 200 ? creatorData.description.slice(0, 200) + '...' : creatorData.description)
-                : `Dedicated to helping our community grow with high-utility, structured video releases and frameworks.`}
-            </p>
+            <div className="space-y-1 text-center sm:text-left min-w-0 flex-1">
+              <h4 className="text-sm font-bold text-white">{creatorName} (@{handleClean})</h4>
+              <div className="flex items-center justify-center sm:justify-start gap-3 text-slate-400 text-xs font-mono">
+                {creatorData?.followers && <span>{creatorData.followers} subscribers</span>}
+                {creatorData?.videoCount && <span>{creatorData.videoCount} videos</span>}
+                {creatorData?.totalViews && <span>{creatorData.totalViews} views</span>}
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed pt-1">
+                {creatorData?.description
+                  ? (creatorData.description.length > 200 ? creatorData.description.slice(0, 200) + '...' : creatorData.description)
+                  : `Dedicated to helping our community grow with high-utility, structured video releases and frameworks.`}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 8. Minimal Footer */}
-      <footer className="p-8 pb-32 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2 rounded-b-2xl">
-        <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
-        <p className="text-[11px] text-slate-600">
-          Official platform powered by CoLaunch Autonomous Creator Operations.
-        </p>
-      </footer>
+        {/* 8. Minimal Footer */}
+        <footer className="p-8 pb-32 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2 rounded-b-2xl">
+          <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
+          <p className="text-[11px] text-slate-600">
+            Official platform powered by CoLaunch Autonomous Creator Operations.
+          </p>
+        </footer>
 
       </div>
     </div>
@@ -1332,7 +1331,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
   const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
   const isLight = isLightColor(dynamicAccent)
 
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@','') || 'Creator'
+  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
 
   const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
@@ -1372,7 +1371,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           return
         }
       }
-    } catch {}
+    } catch { }
 
     fetchCreatorComments(h, creatorData?.platform || 'youtube', 12)
       .then(res => {
@@ -1380,7 +1379,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           setInternalComments(res)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [creatorData?.handle, creatorData?.url, effectiveComments.length])
 
   const [postLikes, setPostLikes] = useState({})
@@ -1504,9 +1503,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           <div className="p-8 text-center text-slate-400 space-y-2">
             <p className="text-xs">No video archive loaded for this creator.</p>
             {creatorUrl && (
-              <a 
+              <a
                 href={creatorUrl}
-                target="_blank" 
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs hover:underline"
                 style={{ color: styles.accent }}
@@ -1527,9 +1526,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               <p className="text-[11px] text-slate-400">{recentVideoList.length} videos from official channel</p>
             </div>
             {creatorUrl && (
-              <a 
-                href={creatorUrl} 
-                target="_blank" 
+              <a
+                href={creatorUrl}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs hover:underline flex items-center gap-1 font-mono"
                 style={{ color: styles.accent }}
@@ -1546,19 +1545,19 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               const thumbUrl = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
 
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="rounded-2xl border bg-[#12141c] border-[#222634] hover:border-slate-700 transition overflow-hidden shadow-sm flex flex-col justify-between group"
                 >
                   <div>
                     {/* Thumbnail */}
                     <div className="relative aspect-video w-full bg-[#161922] overflow-hidden flex items-center justify-center">
                       {thumbUrl ? (
-                        <img 
-                          src={thumbUrl} 
-                          alt="" 
+                        <img
+                          src={thumbUrl}
+                          alt=""
                           referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <Play className="w-8 h-8 text-slate-500" />
@@ -1610,9 +1609,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                       <Play className="w-3 h-3 fill-current" />
                       <span>Play in Preview</span>
                     </button>
-                    <a 
-                      href={videoLink} 
-                      target="_blank" 
+                    <a
+                      href={videoLink}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
                       style={{ borderRadius: '0px' }}
@@ -1638,7 +1637,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           {/* Apify Real Channel Stats Banner */}
           <div className="p-3 bg-[#12141c] border border-[#222634] shadow-sm flex items-center justify-between gap-2.5 rounded-none">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div 
+              <div
                 className="w-9 h-9 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs flex-shrink-0"
                 style={{ background: styles.accentBg, color: styles.accent }}
               >
@@ -1668,14 +1667,14 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             </div>
 
             {creatorUrl && (
-              <a 
+              <a
                 href={creatorUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider border flex items-center gap-1 transition shrink-0 whitespace-nowrap cursor-pointer rounded-none text-white shadow-sm"
-                style={{ 
-                  color: '#ffffff', 
-                  background: styles.accent, 
+                style={{
+                  color: '#ffffff',
+                  background: styles.accent,
                   borderColor: styles.accent,
                   borderRadius: '0px'
                 }}
@@ -1690,7 +1689,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           {/* Posts list */}
           {posts.length === 0 ? (
             <div className="p-8 text-center text-slate-400 space-y-3 rounded-none bg-[#12141c] border border-[#222634]">
-              <div 
+              <div
                 className="w-10 h-10 rounded-none flex items-center justify-center mx-auto"
                 style={{ background: styles.accentBg, color: styles.accent }}
               >
@@ -1698,9 +1697,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               </div>
               <p className="text-xs text-slate-300 font-medium">No comments synced yet.</p>
               {creatorUrl && (
-                <a 
-                  href={creatorUrl} 
-                  target="_blank" 
+                <a
+                  href={creatorUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs hover:underline font-mono"
                   style={{ color: styles.accent }}
@@ -1714,79 +1713,78 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             <div className="space-y-3">
               {posts.map((p) => {
                 return (
-                  <div 
-                    key={p.id} 
-                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-none shadow-sm ${
-                      isMobile ? "p-3.5" : "p-4 sm:p-5"
-                    }`}
+                  <div
+                    key={p.id}
+                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-none shadow-sm ${isMobile ? "p-3.5" : "p-4 sm:p-5"
+                      }`}
                   >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                      <div 
-                        className="w-8 h-8 rounded-none font-bold flex items-center justify-center flex-shrink-0 text-xs"
-                        style={{ 
-                          background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)', 
-                          color: p.isCreator ? styles.accent : '#fff'
-                        }}
-                      >
-                        {p.user.replace('@', '').charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-semibold text-xs sm:text-sm text-white truncate">{p.user}</span>
-                          {p.isCreator && (
-                            <span 
-                              className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-none border uppercase tracking-wider"
-                              style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder, borderRadius: '0px' }}
-                            >
-                              CREATOR
-                            </span>
-                          )}
-                          <span className="text-[10px] text-slate-500">·</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{p.time}</span>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <div
+                          className="w-8 h-8 rounded-none font-bold flex items-center justify-center flex-shrink-0 text-xs"
+                          style={{
+                            background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)',
+                            color: p.isCreator ? styles.accent : '#fff'
+                          }}
+                        >
+                          {p.user.replace('@', '').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-xs sm:text-sm text-white truncate">{p.user}</span>
+                            {p.isCreator && (
+                              <span
+                                className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-none border uppercase tracking-wider"
+                                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder, borderRadius: '0px' }}
+                              >
+                                CREATOR
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-500">·</span>
+                            <span className="text-[10px] text-slate-400 font-mono">{p.time}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    <p className="text-slate-300 leading-relaxed text-xs sm:text-sm mt-1">
+                      {p.text}
+                    </p>
+
+                    {/* Direct Link to the Video on YouTube */}
+                    {p.videoUrl && (
+                      <div className="mt-3 pt-2.5 border-t border-[#222634]/60 flex items-center justify-between gap-2 flex-wrap">
+                        <a
+                          href={p.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-none border transition hover:opacity-90 group/vlink truncate max-w-full"
+                          style={{
+                            color: styles.accent,
+                            background: styles.accentBg,
+                            borderColor: styles.accentBorder,
+                            borderRadius: '0px'
+                          }}
+                          title={`Watch "${p.videoTitle || 'YouTube Video'}" on YouTube`}
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current shrink-0" />
+                          <span className="truncate group-hover/vlink:underline font-mono text-[11px]">
+                            {p.videoTitle || 'Watch on YouTube'}
+                          </span>
+                          <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover/vlink:opacity-100" />
+                        </a>
+
+                        {p.source && (
+                          <span className="text-[10px] text-slate-500 font-mono shrink-0 hidden sm:inline ml-auto">
+                            {p.source}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  <p className="text-slate-300 leading-relaxed text-xs sm:text-sm mt-1">
-                    {p.text}
-                  </p>
-
-                  {/* Direct Link to the Video on YouTube */}
-                  {p.videoUrl && (
-                    <div className="mt-3 pt-2.5 border-t border-[#222634]/60 flex items-center justify-between gap-2 flex-wrap">
-                      <a 
-                        href={p.videoUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-none border transition hover:opacity-90 group/vlink truncate max-w-full"
-                        style={{ 
-                          color: styles.accent, 
-                          background: styles.accentBg, 
-                          borderColor: styles.accentBorder,
-                          borderRadius: '0px'
-                        }}
-                        title={`Watch "${p.videoTitle || 'YouTube Video'}" on YouTube`}
-                      >
-                        <Play className="w-2.5 h-2.5 fill-current shrink-0" />
-                        <span className="truncate group-hover/vlink:underline font-mono text-[11px]">
-                          {p.videoTitle || 'Watch on YouTube'}
-                        </span>
-                        <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover/vlink:opacity-100" />
-                      </a>
-
-                      {p.source && (
-                        <span className="text-[10px] text-slate-500 font-mono shrink-0 hidden sm:inline ml-auto">
-                          {p.source}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
           )}
         </div>
       )
@@ -1798,7 +1796,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
         <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
           <div className="rounded-none border p-4 sm:p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
             <div className="flex items-center gap-2">
-              <div 
+              <div
                 className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs"
                 style={{ background: styles.accentBg, color: styles.accent }}
               >
@@ -1832,9 +1830,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
 
             {creatorUrl && (
               <div className="pt-2 border-t border-[#222634]">
-                <a 
-                  href={creatorUrl} 
-                  target="_blank" 
+                <a
+                  href={creatorUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs hover:underline"
                   style={{ color: styles.accent }}
@@ -1854,8 +1852,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
       return (
         <div className={isMobile ? "p-3 space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-6"}>
           {recentVideoList.slice(0, 6).map((v, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="rounded-2xl border bg-[#12141c] border-[#222634] p-4 flex flex-col justify-between shadow-sm"
             >
               <div>
@@ -1869,9 +1867,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{v.title}</h5>
                 <span className="text-[10px] text-slate-400 font-mono mt-1 block">{v.views || 'Tutorial Video'}</span>
               </div>
-              <a 
+              <a
                 href={v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)}
-                target="_blank" 
+                target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] border-[#222634]"
               >
@@ -1912,9 +1910,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                     <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{ep.views || ''} {ep.published ? `· ${ep.published}` : ''}</span>
                   </div>
                 </div>
-                <a 
+                <a
                   href={ep.url || (ep.videoId ? `https://www.youtube.com/watch?v=${ep.videoId}` : creatorUrl)}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 text-slate-300 hover:text-white bg-[#161922] border-[#222634] flex-shrink-0"
                 >
@@ -1944,9 +1942,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               Join the live stream on YouTube and connect with fellow viewers in real time.
             </p>
             {creatorUrl && (
-              <a 
+              <a
                 href={creatorUrl}
-                target="_blank" 
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition text-white bg-red-600 hover:bg-red-500"
               >
@@ -1965,9 +1963,9 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
         <p className="text-xs font-medium text-white">{activeTab}</p>
         <p className="text-xs text-slate-400">Content directly connected to {creatorName}'s channel.</p>
         {creatorUrl && (
-          <a 
+          <a
             href={creatorUrl}
-            target="_blank" 
+            target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs hover:underline mt-2"
             style={{ color: styles.accent }}
@@ -1989,17 +1987,17 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           <span className="text-xs font-bold uppercase tracking-wider truncate mr-2 text-white">
             {blueprint.name.split("'")[0]}
           </span>
-          <div 
+          <div
             className="w-7 h-7 rounded-none overflow-hidden flex items-center justify-center font-bold text-[10px] flex-shrink-0 relative shadow-sm"
             style={{ background: styles.accentBg, color: styles.accent }}
           >
             <span>{creatorName.charAt(0).toUpperCase()}</span>
             {resolvedAvatar ? (
-              <img 
-                src={resolvedAvatar} 
-                alt="" 
+              <img
+                src={resolvedAvatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={e => {
                   if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
@@ -2007,7 +2005,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   } else {
                     e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             ) : null}
           </div>
@@ -2021,7 +2019,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               {blueprint.name}
             </h3>
             <p className="text-[11px] text-slate-400 line-clamp-2">
-              {creatorData?.description 
+              {creatorData?.description
                 ? (creatorData.description.length > 100 ? creatorData.description.slice(0, 100) + '...' : creatorData.description)
                 : 'Official community space and latest video releases.'}
             </p>
@@ -2034,8 +2032,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
           {allTabs.slice(0, 4).map(t => {
             const isTabActive = activeTab === t
             return (
-              <button 
-                key={t} 
+              <button
+                key={t}
                 onClick={() => setActiveTab(t)}
                 className="flex flex-col items-center justify-center py-1 flex-1 text-[11px] font-semibold transition-colors cursor-pointer"
                 style={{ color: isTabActive ? styles.accent : '#94a3b8' }}
@@ -2055,22 +2053,22 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
       {/* App Inner Header */}
       <div className="p-6 border-b border-[#222634] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-shrink-0 bg-[#0f1117]">
         <div className="flex items-center space-x-3.5">
-          <div 
+          <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-lg shadow-md overflow-hidden relative flex-shrink-0 border"
-            style={{ 
-              background: styles.accentBg, 
-              color: styles.accent, 
+            style={{
+              background: styles.accentBg,
+              color: styles.accent,
               borderColor: styles.accentBorder,
               boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.2)`
             }}
           >
             <span>{(creatorName || blueprint.name || 'C').charAt(0).toUpperCase()}</span>
             {resolvedAvatar ? (
-              <img 
-                src={resolvedAvatar} 
-                alt="" 
+              <img
+                src={resolvedAvatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={e => {
                   if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
@@ -2078,7 +2076,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   } else {
                     e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             ) : null}
           </div>
@@ -2092,7 +2090,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
 
         <div className="flex items-center gap-2.5">
           {onSwitchView && (
-            <button 
+            <button
               type="button"
               onClick={() => onSwitchView('landing')}
               className="font-semibold px-3.5 py-2 text-xs transition border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1a2030] flex items-center gap-1.5 cursor-pointer rounded-none"
@@ -2101,10 +2099,10 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               <span>Public Landing Page</span>
             </button>
           )}
-          <button 
+          <button
             className="font-bold px-5 py-2 rounded-none text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95 text-white"
-            style={{ 
-              background: styles.accent, 
+            style={{
+              background: styles.accent,
               color: '#ffffff',
               boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.25)`,
               borderRadius: '0px'
@@ -2121,11 +2119,11 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
         {allTabs.map(t => {
           const isTabActive = activeTab === t
           return (
-            <button 
-              key={t} 
+            <button
+              key={t}
               onClick={() => setActiveTab(t)}
               className="pb-3 pt-3 border-b-2 font-semibold whitespace-nowrap transition cursor-pointer"
-              style={{ 
+              style={{
                 color: isTabActive ? styles.accent : '#94a3b8',
                 borderColor: isTabActive ? styles.accent : 'transparent'
               }}
@@ -2139,15 +2137,15 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
       {/* Welcome Card */}
       <div className="px-6 pt-6 flex-shrink-0">
         <div className="bg-gradient-to-r from-[#161922] to-[#12141c] border border-[#222634] p-6 rounded-2xl relative overflow-hidden shadow-sm">
-          <div 
-            className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-40" 
-            style={{ background: dynamicAccentBg }} 
+          <div
+            className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-40"
+            style={{ background: dynamicAccentBg }}
           />
           <h3 className="text-xl font-bold text-white mb-2 relative z-10">
             Welcome to {blueprint.name}
           </h3>
           <p className="text-sm text-slate-400 leading-relaxed max-w-2xl relative z-10">
-            {creatorData?.description 
+            {creatorData?.description
               ? (creatorData.description.length > 220 ? creatorData.description.slice(0, 220) + '...' : creatorData.description)
               : `Connect with fellow members, explore official releases, and participate in community discussions with ${creatorName}.`}
           </p>
@@ -2193,7 +2191,7 @@ export default function Preview() {
           return
         }
       }
-    } catch {}
+    } catch { }
 
     fetchCreatorComments(handle, creatorData?.platform || 'youtube', 12)
       .then(res => {
@@ -2294,7 +2292,7 @@ export default function Preview() {
       setIsFullscreen(true)
       showToast("Entered fullscreen mode")
     } else {
-      document.exitFullscreen().catch(() => {})
+      document.exitFullscreen().catch(() => { })
       setIsFullscreen(false)
       showToast("Exited fullscreen mode")
     }
@@ -2302,7 +2300,7 @@ export default function Preview() {
 
   const processPrompt = (text) => {
     const p = text.toLowerCase()
-    
+
     if (p.includes('regenerat')) {
       const variations = getVariationsForCreator(creatorData, extraTabs)
       const nextIdx = (variationIndex + 1) % variations.length
@@ -2324,7 +2322,7 @@ export default function Preview() {
       updateCreator(updated)
       try {
         localStorage.setItem('forge_creator_data', JSON.stringify(updated))
-      } catch {}
+      } catch { }
       showToast("Generated new blueprint variation!")
       return
     }
@@ -2407,15 +2405,15 @@ export default function Preview() {
     updateCreator(updatedData)
     try {
       localStorage.setItem('forge_creator_data', JSON.stringify(updatedData))
-    } catch {}
+    } catch { }
   }
 
   const handleToggleFeature = (label) => {
     let updatedFeatures;
     let updatedTabs = [...extraTabs];
-    
-    const matchedPreset = CAPABILITY_PRESETS.find(p => 
-      p.label === label || 
+
+    const matchedPreset = CAPABILITY_PRESETS.find(p =>
+      p.label === label ||
       label.toLowerCase().includes(p.label.toLowerCase()) ||
       (p.tab && label.toLowerCase().includes(p.tab.toLowerCase()))
     );
@@ -2453,7 +2451,7 @@ export default function Preview() {
     updateCreator(updatedData);
     try {
       localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
-    } catch {}
+    } catch { }
   };
 
   const handlePromptSend = () => {
@@ -2463,7 +2461,7 @@ export default function Preview() {
     setAppliedPrompts(prev => [...prev, prompt])
     const currentPrompt = prompt
     setPrompt('')
-    
+
     setTimeout(() => {
       processPrompt(currentPrompt)
       setIsRegenerating(false)
@@ -2477,7 +2475,7 @@ export default function Preview() {
       setAppliedPrompts(prev => [...prev, p])
     }
     showToast(`Refining: "${p}"...`)
-    
+
     setTimeout(() => {
       processPrompt(p)
       setIsRegenerating(false)
@@ -2503,13 +2501,13 @@ export default function Preview() {
     setTimeout(() => {
       setAppliedPrompts(prev => prev.filter(x => x !== promptText))
       const p = promptText.toLowerCase()
-      
+
       let updatedFeatures = [...localFeatures]
       let updatedTabs = [...extraTabs]
 
-      if (p.includes('premium') || p.includes('minimalist') || p.includes('minimal') || 
-          p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25') ||
-          p.includes('light') || p.includes('paper') || p.includes('dark') || p.includes('graphite')) {
+      if (p.includes('premium') || p.includes('minimalist') || p.includes('minimal') ||
+        p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25') ||
+        p.includes('light') || p.includes('paper') || p.includes('dark') || p.includes('graphite')) {
         setTheme('dark')
       }
 
@@ -2553,7 +2551,7 @@ export default function Preview() {
       updateCreator(updatedData)
       try {
         localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
-      } catch {}
+      } catch { }
 
       setIsRegenerating(false)
       showToast("Refinement removed")
@@ -2588,7 +2586,7 @@ export default function Preview() {
     updateCreator(finalPayload);
     try {
       localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }));
-    } catch {}
+    } catch { }
     showToast("Launching application build...")
     setTimeout(() => {
       next();
@@ -2597,22 +2595,22 @@ export default function Preview() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#08090d] text-slate-100 selection:bg-white/20">
-      
+
       {/* Top Navigation Bar */}
       <header className="h-16 border-b border-[#1f2430] bg-[#0b0c10]/80 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={prev} 
+          <button
+            onClick={prev}
             className="flex items-center space-x-2 text-sm font-medium text-slate-400 hover:text-white bg-[#161922] hover:bg-[#1f2430] px-3.5 py-2 rounded-xl transition border border-[#222634] cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </button>
-          
+
           <div className="h-5 w-[1px] bg-slate-800 hidden sm:block" />
-          
+
           <a href="https://co-launch.app" className="flex items-center space-x-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
-            <div 
+            <div
               className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm bg-[#12141c] border border-[#222634] shadow-sm"
             >
               <WingLogo size={18} />
@@ -2625,7 +2623,7 @@ export default function Preview() {
 
         {/* Center View Mode Selector */}
         <div className="hidden md:flex items-center bg-[#12141c] p-1 border border-[#222634] shadow-inner">
-          <button 
+          <button
             onClick={() => handleSwitchView('landing')}
             className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
@@ -2637,7 +2635,7 @@ export default function Preview() {
             <Globe className="w-3.5 h-3.5" />
             <span>Public Landing Page</span>
           </button>
-          <button 
+          <button
             onClick={() => handleSwitchView('product')}
             className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
@@ -2649,7 +2647,7 @@ export default function Preview() {
             <Layers className="w-3.5 h-3.5" />
             <span>Member Product App</span>
           </button>
-          <button 
+          <button
             onClick={() => handleSwitchView('mobile')}
             className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
             style={{
@@ -2670,8 +2668,8 @@ export default function Preview() {
             <span>Generated v2.4</span>
           </div>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={requestWipeCreator}
             className="flex items-center space-x-2 text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3.5 py-2 rounded-none transition cursor-pointer"
             title="Wipe creator state"
@@ -2680,12 +2678,12 @@ export default function Preview() {
             <span className="hidden sm:inline">Reset Creator</span>
           </button>
 
-          <button 
+          <button
             type="button"
             onClick={handleBuild}
             disabled={isRegenerating}
             className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 font-bold text-xs uppercase tracking-wider text-white shadow-md transition cursor-pointer rounded-none active:scale-95"
-            style={{ 
+            style={{
               background: dynamicAccent,
               borderRadius: '0px'
             }}
@@ -2695,9 +2693,9 @@ export default function Preview() {
           </button>
 
           <div className="flex items-center space-x-1 pl-2">
-            {[1,2,3,4,5,6,7,8].map(i => (
-              <div 
-                key={i} 
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div
+                key={i}
                 className="rounded-full transition-all duration-300"
                 style={{
                   width: i === 5 ? '16px' : '6px',
@@ -2714,11 +2712,11 @@ export default function Preview() {
       <main className="flex-1 flex flex-col p-4 sm:p-6 pb-44 max-w-[1440px] mx-auto w-full">
 
         <div className="w-full flex-1 flex flex-col space-y-4">
-          
+
           {/* Breadcrumb / Header Info & Fullscreen Toggle */}
           <div className="flex items-center justify-between px-2">
             <div>
-              <span 
+              <span
                 className="text-xs uppercase tracking-wider font-semibold"
                 style={{ color: dynamicAccent }}
               >
@@ -2732,14 +2730,14 @@ export default function Preview() {
             {/* Mobile View Toggle (Shown when on small screens) */}
             <div className="flex items-center space-x-2">
               <div className="flex md:hidden items-center bg-[#12141c] p-1 rounded-xl border border-[#222634]">
-                <button 
+                <button
                   onClick={() => handleSwitchView('desktop')}
                   className="p-1.5 rounded-lg text-xs"
                   style={{ background: viewMode === 'desktop' ? dynamicAccent : 'transparent', color: viewMode === 'desktop' ? '#000' : '#888' }}
                 >
                   <Globe className="w-3.5 h-3.5" />
                 </button>
-                <button 
+                <button
                   onClick={() => handleSwitchView('mobile')}
                   className="p-1.5 rounded-lg text-xs"
                   style={{ background: viewMode === 'mobile' ? dynamicAccent : 'transparent', color: viewMode === 'mobile' ? '#000' : '#888' }}
@@ -2748,7 +2746,7 @@ export default function Preview() {
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={toggleFullscreenPreview}
                 className="p-2.5 rounded-xl bg-[#12141c] hover:bg-[#1a1d26] border border-[#222634] text-slate-300 hover:text-white transition cursor-pointer"
                 title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
@@ -2759,14 +2757,13 @@ export default function Preview() {
           </div>
 
           {/* Browser Mockup Canvas Container */}
-          <div 
+          <div
             ref={previewContainerRef}
-            id="preview-container" 
-            className={`w-full flex-1 bg-[#12141c] border border-[#222634] rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ${
-              isFullscreen 
-                ? 'fixed inset-0 z-50 overflow-y-auto rounded-none border-0' 
+            id="preview-container"
+            className={`w-full flex-1 bg-[#12141c] border border-[#222634] rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ${isFullscreen
+                ? 'fixed inset-0 z-50 overflow-y-auto rounded-none border-0'
                 : (viewMode === 'landing' ? 'min-h-[600px]' : 'min-h-[580px] h-[680px] overflow-hidden')
-            }`}
+              }`}
             style={{
               boxShadow: `0 0 35px -5px rgba(${accent.rgb}, 0.12)`,
               height: isFullscreen ? '100vh' : (viewMode === 'landing' ? 'auto' : '680px'),
@@ -2774,9 +2771,8 @@ export default function Preview() {
             }}
           >
             {/* Browser Top Chrome Bar */}
-            <div className={`bg-[#161922] px-4 py-3 border-b border-[#222634] flex items-center justify-between select-none flex-shrink-0 ${
-              isFullscreen ? '' : 'rounded-t-2xl'
-            }`}>
+            <div className={`bg-[#161922] px-4 py-3 border-b border-[#222634] flex items-center justify-between select-none flex-shrink-0 ${isFullscreen ? '' : 'rounded-t-2xl'
+              }`}>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-rose-500/80" />
                 <div className="w-3 h-3 rounded-full bg-amber-500/80" />
@@ -2784,15 +2780,15 @@ export default function Preview() {
               </div>
 
               <div className="flex-1 max-w-md mx-4">
-                <div 
+                <div
                   className="bg-[#0b0c10] border border-[#222634] rounded-none px-4 py-1.5 text-xs text-slate-300 text-center truncate flex items-center justify-between shadow-inner"
                 >
                   <div className="flex items-center space-x-2 truncate min-w-0">
                     <Lock className="w-3 h-3 flex-shrink-0" style={{ color: dynamicAccent }} />
                     <span id="browser-url" className="truncate font-mono font-semibold" style={{ color: dynamicAccent }}>
-                      {viewMode === 'landing' 
-                        ? `${(creatorData?.handle || 'creator').replace('@','')}.colaunch.app` 
-                        : `${(creatorData?.handle || 'creator').replace('@','')}.colaunch.app/app`}
+                      {viewMode === 'landing'
+                        ? `${(creatorData?.handle || 'creator').replace('@', '')}.colaunch.app`
+                        : `${(creatorData?.handle || 'creator').replace('@', '')}.colaunch.app/app`}
                     </span>
                   </div>
                   <span className="text-[9.5px] uppercase font-mono px-2 py-0.5 border border-[#222634] bg-[#141824] text-slate-400 shrink-0 ml-2">
@@ -2802,8 +2798,8 @@ export default function Preview() {
               </div>
 
               <div className="flex items-center space-x-3 text-slate-400 text-xs">
-                <RotateCcw 
-                  className="w-3.5 h-3.5 hover:text-white cursor-pointer transition-transform duration-300 active:rotate-180" 
+                <RotateCcw
+                  className="w-3.5 h-3.5 hover:text-white cursor-pointer transition-transform duration-300 active:rotate-180"
                   onClick={() => {
                     handleQuickPrompt('Regenerate')
                     showToast("Reloading live preview...")
@@ -2814,21 +2810,20 @@ export default function Preview() {
             </div>
 
             {/* Inner Viewport Area */}
-            <div className={`flex-1 relative flex bg-[#0f1117] ${
-              viewMode === 'mobile' 
-                ? 'items-center justify-center min-h-[600px] overflow-hidden' 
+            <div className={`flex-1 relative flex bg-[#0f1117] ${viewMode === 'mobile'
+                ? 'items-center justify-center min-h-[600px] overflow-hidden'
                 : (viewMode === 'landing' ? 'items-stretch min-h-0' : 'items-stretch min-h-0 overflow-hidden')
-            }`}>
+              }`}>
               {/* Regenerating overlay */}
               {isRegenerating && (
-                <div 
+                <div
                   className="absolute inset-0 flex items-center justify-center z-30 animate-fade-in"
                   style={{ background: 'rgba(8,9,13,0.85)', backdropFilter: 'blur(4px)' }}
                 >
                   <div className="text-center p-6 rounded-2xl bg-[#12141c] border border-[#222634] shadow-2xl">
-                    <div 
+                    <div
                       className="w-10 h-10 border-2 border-white/20 rounded-full animate-spin mx-auto mb-3"
-                      style={{ borderTopColor: dynamicAccent }} 
+                      style={{ borderTopColor: dynamicAccent }}
                     />
                     <p className="text-sm font-semibold text-white">Refining Interface...</p>
                     <p className="text-xs text-slate-400 mt-1">Applying aesthetic parameters</p>
@@ -2838,7 +2833,7 @@ export default function Preview() {
 
               {viewMode === 'mobile' ? (
                 /* Mobile Phone Shell */
-                <div 
+                <div
                   className="relative rounded-[40px] p-[8px] bg-[#222634] shadow-2xl transition-all duration-300 my-4 ring-1 ring-white/10"
                   style={{
                     width: '320px',
@@ -2850,10 +2845,10 @@ export default function Preview() {
                   <div className="w-full h-full rounded-[32px] overflow-hidden bg-[#0f1117] flex flex-col relative [isolation:isolate]">
                     {/* Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-[#141414] rounded-b-xl z-20 pointer-events-none" />
-                    
+
                     <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                      <AppMockup 
-                        theme={theme} 
+                      <AppMockup
+                        theme={theme}
                         activeTab={activeTab}
                         setActiveTab={setActiveTab}
                         blueprint={currentBlueprint}
@@ -2870,11 +2865,10 @@ export default function Preview() {
                 </div>
               ) : (
                 /* Desktop / Dashboard Viewport */
-                <div className={`w-full flex flex-col ${
-                  viewMode === 'landing' ? 'min-h-0' : 'h-full min-h-0 overflow-hidden'
-                }`}>
-                  <AppMockup 
-                    theme={theme} 
+                <div className={`w-full flex flex-col ${viewMode === 'landing' ? 'min-h-0' : 'h-full min-h-0 overflow-hidden'
+                  }`}>
+                  <AppMockup
+                    theme={theme}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     blueprint={currentBlueprint}
@@ -2933,7 +2927,7 @@ export default function Preview() {
               <span className="px-2.5 py-1 bg-[#12141c] border border-[#222634] text-slate-300">
                 Build: <strong className="text-white">{currentBlueprint?.name}</strong>
               </span>
-              <span 
+              <span
                 className="px-2.5 py-1 border font-bold"
                 style={{ background: dynamicAccentBg, color: dynamicAccent, borderColor: dynamicAccentBorder }}
               >
@@ -2943,10 +2937,10 @@ export default function Preview() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* LEFT COLUMN: What's Included & Add More Modules (Span 7) */}
             <div className="lg:col-span-7 flex flex-col space-y-4">
-              
+
               {/* 1. What's Included Card */}
               <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col space-y-4">
                 <div className="flex items-center justify-between">
@@ -2961,10 +2955,10 @@ export default function Preview() {
                       Active capabilities configured for your build
                     </p>
                   </div>
-                  <span 
+                  <span
                     className="text-[10px] px-2.5 py-1 font-mono font-bold border"
-                    style={{ 
-                      background: dynamicAccentBg, 
+                    style={{
+                      background: dynamicAccentBg,
                       color: dynamicAccent,
                       borderColor: dynamicAccentBorder
                     }}
@@ -2977,19 +2971,19 @@ export default function Preview() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {localFeatures.map(label => {
                     const matched = FEATURES.find(f => f.label.toLowerCase() === label.toLowerCase()) ||
-                                    CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
+                      CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
                     const Icon = matched ? matched.icon : Layout
                     return (
-                      <div 
-                        key={label} 
+                      <div
+                        key={label}
                         className="flex items-center justify-between p-3 bg-[#141824] border border-[#222a3d] hover:border-slate-600 transition group"
                         style={{ borderRadius: '0px' }}
                       >
                         <div className="flex items-center space-x-3 min-w-0 pr-2">
-                          <div 
+                          <div
                             className="w-7 h-7 flex items-center justify-center text-xs shadow-sm border flex-shrink-0"
-                            style={{ 
-                              background: dynamicAccentBg, 
+                            style={{
+                              background: dynamicAccentBg,
                               color: dynamicAccent,
                               borderColor: dynamicAccentBorder,
                               borderRadius: '0px'
@@ -3021,7 +3015,7 @@ export default function Preview() {
 
               {/* 2. Add More Modules Card */}
               {(() => {
-                const unadded = CAPABILITY_PRESETS.filter(p => 
+                const unadded = CAPABILITY_PRESETS.filter(p =>
                   !localFeatures.some(f => f.toLowerCase() === p.label.toLowerCase() || f.toLowerCase().includes(p.label.toLowerCase()))
                 )
                 if (unadded.length === 0) return null
@@ -3068,8 +3062,8 @@ export default function Preview() {
                               type="button"
                               onClick={() => handleToggleFeature(preset.label)}
                               className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition border flex items-center gap-1 shrink-0 cursor-pointer text-white active:scale-95"
-                              style={{ 
-                                background: dynamicAccent, 
+                              style={{
+                                background: dynamicAccent,
                                 borderColor: dynamicAccentBorder,
                                 borderRadius: '0px'
                               }}
@@ -3099,10 +3093,10 @@ export default function Preview() {
                         Refine with Forge
                       </h3>
                     </div>
-                    <span 
+                    <span
                       className="text-[10px] px-2 py-0.5 font-mono font-bold border"
-                      style={{ 
-                        background: dynamicAccentBg, 
+                      style={{
+                        background: dynamicAccentBg,
                         color: dynamicAccent,
                         borderColor: dynamicAccentBorder
                       }}
@@ -3113,7 +3107,7 @@ export default function Preview() {
                   <p className="text-xs text-slate-400 mb-4 leading-relaxed">
                     Click any refinement chip or type custom commands to instantly tailor your application build.
                   </p>
-                  
+
                   {/* Interactive Dynamic Prompt Chips (ZERO EMOJIS, CLEAN ICONS) */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {QUICK_PROMPTS.map(chip => {
@@ -3138,7 +3132,7 @@ export default function Preview() {
                       else if (chip.toLowerCase().includes('store')) ChipIcon = ShoppingBag
 
                       return (
-                        <button 
+                        <button
                           key={chip}
                           type="button"
                           onClick={() => {
@@ -3174,9 +3168,9 @@ export default function Preview() {
 
                   {/* Input Area */}
                   <div className="relative mb-3">
-                    <textarea 
-                      rows={3} 
-                      placeholder="Describe a change (e.g. Add podcast section, switch to mobile, customize layout...)" 
+                    <textarea
+                      rows={3}
+                      placeholder="Describe a change (e.g. Add podcast section, switch to mobile, customize layout...)"
                       value={prompt}
                       onChange={e => setPrompt(e.target.value)}
                       onKeyDown={e => {
@@ -3188,7 +3182,7 @@ export default function Preview() {
                       className="w-full bg-[#141824] border border-[#222a3d] focus:border-slate-500 p-3 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none resize-none shadow-inner transition"
                       style={{ borderRadius: '0px' }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={handlePromptSend}
                       disabled={!prompt.trim()}
@@ -3201,7 +3195,7 @@ export default function Preview() {
                   </div>
 
                   {/* Regenerate Button */}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleQuickPrompt('Regenerate')}
                     disabled={isRegenerating}
@@ -3241,9 +3235,9 @@ export default function Preview() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-            <span>Ready to ship <strong>{currentBlueprint?.name}</strong> for @{(creatorData?.handle || 'creator').replace('@','')}</span>
+            <span>Ready to ship <strong>{currentBlueprint?.name}</strong> for @{(creatorData?.handle || 'creator').replace('@', '')}</span>
           </div>
-          <button 
+          <button
             type="button"
             onClick={handleBuild}
             disabled={isRegenerating}
@@ -3261,11 +3255,11 @@ export default function Preview() {
 
       {/* Floating Notification Toast */}
       {toastMessage && (
-        <div 
+        <div
           className="fixed bottom-24 right-6 z-50 bg-[#161922] border px-4 py-3 rounded-none shadow-2xl flex items-center space-x-3 animate-fade-in"
           style={{ borderColor: dynamicAccentBorder, borderRadius: '0px' }}
         >
-          <div 
+          <div
             className="w-7 h-7 rounded-none flex items-center justify-center text-xs shadow-sm"
             style={{ background: dynamicAccent, color: '#ffffff' }}
           >
