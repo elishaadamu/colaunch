@@ -119,6 +119,33 @@ export function getStoredYouTubeConnection() {
 }
 
 /**
+ * Checks remote backend for active YouTube connection and syncs to localStorage
+ */
+export async function checkRemoteYouTubeStatus(identifier = 'default') {
+  if (typeof window === 'undefined') return null
+  const candidateUrls = [
+    '',
+    BACKEND_URL,
+    'https://creator-forge-backend-jj1y.onrender.com',
+    'https://creator-forge-backend.onrender.com'
+  ].filter((v, i, a) => a.indexOf(v) === i)
+
+  for (const baseUrl of candidateUrls) {
+    try {
+      const res = await fetch(`${baseUrl}/api/youtube/status?identifier=${encodeURIComponent(identifier)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.connected && data.channel) {
+          saveLocalYouTubeConnection(data.channel, data.tokens)
+          return data
+        }
+      }
+    } catch (_) {}
+  }
+  return null
+}
+
+/**
  * Saves connected YouTube channel data locally with optional OAuth tokens
  */
 export function saveLocalYouTubeConnection(channelData, tokens = null) {

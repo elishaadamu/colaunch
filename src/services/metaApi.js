@@ -16,6 +16,36 @@ export function getStoredMetaConnection() {
   return null
 }
 
+/**
+ * Checks remote backend for saved Meta / Facebook connection and syncs to localStorage
+ */
+export async function checkRemoteMetaStatus(handle = 'default', username = '') {
+  if (typeof window === 'undefined') return null
+  const candidateUrls = [
+    '',
+    BACKEND_URL,
+    'https://creator-forge-backend-jj1y.onrender.com',
+    'https://creator-forge-backend.onrender.com'
+  ].filter((v, i, a) => a.indexOf(v) === i)
+
+  for (const baseUrl of candidateUrls) {
+    try {
+      const q = new URLSearchParams()
+      if (handle) q.set('handle', handle)
+      if (username) q.set('username', username)
+      const res = await fetch(`${baseUrl}/api/meta/connection?${q.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.success && data.connection) {
+          saveStoredMetaConnection(data.connection)
+          return data.connection
+        }
+      }
+    } catch (_) {}
+  }
+  return null
+}
+
 export function saveStoredMetaConnection(data) {
   if (typeof window === 'undefined') return
   try {

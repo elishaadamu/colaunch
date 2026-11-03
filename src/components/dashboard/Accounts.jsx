@@ -30,12 +30,14 @@ import {
 } from 'lucide-react'
 import {
   getStoredYouTubeConnection,
+  checkRemoteYouTubeStatus,
   startYouTubeOAuth,
   exchangeYouTubeAuthCode,
   disconnectYouTubeChannel
 } from '../../services/youtubeApi'
 import {
   getStoredMetaConnection,
+  checkRemoteMetaStatus,
   saveStoredMetaConnection,
   saveMetaSelection,
   verifyMetaToken,
@@ -52,7 +54,7 @@ const STATUS_STYLES = {
 const BRAND_RED = '#c81e3c'
 
 export default function Accounts() {
-  const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast } = useForge()
+  const { creatorData, updateCreator, setActiveTab, setPreloadStudioType, triggerToast, syncSessionToDb, userProfile } = useForge()
 
   // Real YouTube Connection from OAuth 2.0
   const [youtubeConn, setYoutubeConn] = useState(() => getStoredYouTubeConnection())
@@ -168,6 +170,28 @@ export default function Accounts() {
     }
   }, [refreshYouTubeConnection])
 
+  // Check remote backend status if local storage was cleared or fresh session started
+  useEffect(() => {
+    if (!youtubeConn?.connected) {
+      checkRemoteYouTubeStatus(userProfile?.username || creatorData?.handle || 'default')
+        .then(res => {
+          if (res?.connected && res?.channel) {
+            setYoutubeConn({ connected: true, channel: res.channel })
+          }
+        })
+        .catch(() => {})
+    }
+    if (!metaConn?.facebook?.connected) {
+      checkRemoteMetaStatus(creatorData?.handle || 'default', userProfile?.username || '')
+        .then(conn => {
+          if (conn?.facebook?.connected) {
+            setMetaConn(conn)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [userProfile?.username, creatorData?.handle])
+
   // Handle incoming OAuth callback query parameter (?code=...) on the accounts page
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -197,6 +221,9 @@ export default function Accounts() {
               youtube_connected: true
             })
           }
+          if (syncSessionToDb) {
+            setTimeout(() => syncSessionToDb(), 300)
+          }
           if (triggerToast) {
             triggerToast(`Connected to YouTube: ${channel.title || '@creator'}!`, 'success')
           }
@@ -224,14 +251,17 @@ export default function Accounts() {
       const cleanUrl = window.location.pathname
       window.history.replaceState({}, document.title, cleanUrl)
     }
-  }, [triggerToast])
+  }, [triggerToast, syncSessionToDb])
 
-  // Save other account configurations locally
+  // Save other account configurations locally and sync to database
   useEffect(() => {
     try {
       localStorage.setItem('forge_accounts_platforms', JSON.stringify(otherAccounts))
+      if (syncSessionToDb && (otherAccounts.facebook?.connected || otherAccounts.instagram?.connected)) {
+        syncSessionToDb()
+      }
     } catch (_) {}
-  }, [otherAccounts])
+  }, [otherAccounts, syncSessionToDb])
 
   // Connect YouTube using Real Google OAuth 2.0
   const handleConnectYouTube = () => {
@@ -1632,7 +1662,8 @@ export default function Accounts() {
                     user_access_token: facebookTokenInput,
                     category: targetPage.category,
                     tasks: targetPage.tasks,
-                    handle: creatorData?.handle || 'default'
+                    handle: creatorData?.handle || 'default',
+                    username: userProfile?.username || ''
                   }
 
                   await saveMetaSelection(payload)
@@ -1655,6 +1686,10 @@ export default function Accounts() {
                       facebook_page_name: targetPage.name,
                       facebook_access_token: targetPage.access_token || facebookTokenInput
                     })
+                  }
+
+                  if (syncSessionToDb) {
+                    setTimeout(() => syncSessionToDb(), 300)
                   }
 
                   setIsFacebookModalOpen(false)

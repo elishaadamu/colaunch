@@ -106,7 +106,11 @@ export default function Login() {
 
   // Finalizes the login session and restores workspace data
   const finalizeLoginSession = (data, usedPassword = '') => {
-    localStorage.clear()
+    // Clear previous ephemeral session keys without destroying saved integrations
+    localStorage.removeItem('forge_active_session')
+    localStorage.removeItem('forge_user_profile')
+    localStorage.removeItem('forge_logged_in_via_code')
+    localStorage.removeItem('forge_login_timestamp')
 
     const isRealEmail = data.email && 
       data.email !== 'creatorforgeweb@gmail.com' && 
@@ -157,6 +161,68 @@ export default function Login() {
       Object.entries(data.chat_data).forEach(([key, val]) => {
         if (key && val) localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val))
       })
+    }
+
+    // Restore YouTube connection across logins
+    if (data.youtube_connection) {
+      localStorage.setItem('forge_youtube_connection', JSON.stringify(data.youtube_connection))
+      window.dispatchEvent(new CustomEvent('forge_youtube_connected', { detail: data.youtube_connection }))
+    } else if (data.creator_data?.youtube_connected) {
+      const ytPayload = {
+        connected: true,
+        channel: {
+          id: data.creator_data.youtube_channel_id,
+          title: data.creator_data.channel_title || data.creator_data.name,
+          customUrl: data.creator_data.youtube_handle || data.creator_data.handle,
+          thumbnail: data.creator_data.avatar || data.creator_data.avatarUrl,
+          subscriberCount: data.creator_data.subscribers,
+          videoCount: data.creator_data.video_count
+        }
+      }
+      localStorage.setItem('forge_youtube_connection', JSON.stringify(ytPayload))
+      window.dispatchEvent(new CustomEvent('forge_youtube_connected', { detail: ytPayload }))
+    }
+
+    // Restore Meta / Facebook connection across logins
+    if (data.meta_connection) {
+      localStorage.setItem('forge_meta_connection', JSON.stringify(data.meta_connection))
+      window.dispatchEvent(new CustomEvent('forge_meta_connected', { detail: data.meta_connection }))
+    } else if (data.creator_data?.facebook_connected) {
+      const metaPayload = {
+        facebook: {
+          connected: true,
+          pageId: data.creator_data.facebook_page_id,
+          pageName: data.creator_data.facebook_page_name,
+          accessToken: data.creator_data.facebook_access_token
+        },
+        ...(data.creator_data.instagram_connected ? {
+          instagram: {
+            connected: true,
+            businessId: data.creator_data.instagram_business_id,
+            username: data.creator_data.instagram_username || '@instagram',
+            accessToken: data.creator_data.instagram_access_token
+          }
+        } : {})
+      }
+      localStorage.setItem('forge_meta_connection', JSON.stringify(metaPayload))
+      window.dispatchEvent(new CustomEvent('forge_meta_connected', { detail: metaPayload }))
+    }
+
+    // Restore platform configurations across logins
+    if (data.accounts_platforms) {
+      localStorage.setItem('forge_accounts_platforms', JSON.stringify(data.accounts_platforms))
+    } else if (data.meta_connection?.facebook?.connected || data.creator_data?.facebook_connected) {
+      try {
+        const existing = JSON.parse(localStorage.getItem('forge_accounts_platforms') || '{}')
+        existing.facebook = {
+          ...existing.facebook,
+          connected: true,
+          pageId: data.meta_connection?.facebook?.pageId || data.creator_data?.facebook_page_id,
+          pageName: data.meta_connection?.facebook?.pageName || data.creator_data?.facebook_page_name,
+          handle: data.meta_connection?.facebook?.pageName || data.creator_data?.facebook_page_name
+        }
+        localStorage.setItem('forge_accounts_platforms', JSON.stringify(existing))
+      } catch (_) {}
     }
 
     // Restore AI keys from DB if user previously consented
