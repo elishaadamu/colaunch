@@ -29,7 +29,7 @@ export default function EmailConfigModal({
     ? ''
     : currentEmail
 
-  const [step, setStep] = useState('input') // 'input' | 'verify'
+  const [step, setStep] = useState('input') // 'input' | 'verify' | 'success'
   const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -65,6 +65,16 @@ export default function EmailConfigModal({
       codeInputRef.current.focus()
     }
   }, [step])
+
+  // Auto-close modal after successful verification
+  useEffect(() => {
+    if (step === 'success') {
+      const timer = setTimeout(() => {
+        onClose()
+      }, 2400)
+      return () => clearTimeout(timer)
+    }
+  }, [step, onClose])
 
   if (!isOpen) return null
 
@@ -234,7 +244,7 @@ export default function EmailConfigModal({
         triggerToast(`Email verified and account registered: ${cleanEmail}`, 'success')
       }
 
-      onClose()
+      setStep('success')
     } catch (err) {
       setError(err.message || 'Failed to verify code. Please check and try again.')
     } finally {
@@ -253,16 +263,16 @@ export default function EmailConfigModal({
           <div className="flex items-center gap-2.5">
             <div 
               className="w-9 h-9 rounded-none flex items-center justify-center"
-              style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+              style={{ background: step === 'success' ? '#10b981' : brandRed, color: '#ffffff', borderRadius: '0px' }}
             >
-              {step === 'input' ? <Mail size={18} className="text-white" /> : <KeyRound size={18} className="text-white" />}
+              {step === 'input' ? <Mail size={18} className="text-white" /> : step === 'verify' ? <KeyRound size={18} className="text-white" /> : <CheckCircle2 size={18} className="text-white" />}
             </div>
             <div>
               <h3 className="font-extrabold text-white text-base">
-                {step === 'input' ? 'Configure & Verify Email' : 'Verify Email Authentication Code'}
+                {step === 'input' ? 'Configure & Verify Email' : step === 'verify' ? 'Verify Email Authentication Code' : 'Email Verified Successfully'}
               </h3>
               <p className="text-xs text-slate-400">
-                {step === 'input' ? 'Required for campaign outreach & member access' : 'Enter the 6-digit code sent to your email'}
+                {step === 'input' ? 'Required for campaign outreach & member access' : step === 'verify' ? 'Enter the 6-digit code sent to your email' : 'Your account credentials have been synchronized'}
               </p>
             </div>
           </div>
@@ -462,6 +472,64 @@ export default function EmailConfigModal({
               </button>
             </div>
           </form>
+        )}
+
+        {/* Modal Body: STEP 3 - SUCCESS CONFIRMATION */}
+        {step === 'success' && (
+          <div className="py-5 space-y-5 text-center">
+            <div 
+              className="w-14 h-14 mx-auto flex items-center justify-center shadow-lg"
+              style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '0px'
+              }}
+            >
+              <CheckCircle2 size={32} className="text-emerald-400" />
+            </div>
+
+            <div className="space-y-1">
+              <span 
+                className="inline-block px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-400"
+                style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '0px' }}
+              >
+                OTP VERIFIED &amp; PROFILE SECURED
+              </span>
+              <h4 className="text-base font-bold text-white tracking-tight">
+                Account Credentials Linked
+              </h4>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                Your email <strong className="text-white">{email}</strong> is now verified on MongoDB Atlas. You have full access to campaign scheduling and automated publishing engines.
+              </p>
+            </div>
+
+            <div 
+              className="p-3 border text-left text-xs font-mono space-y-2"
+              style={{ background: '#111624', borderColor: '#1f2a3f', borderRadius: '0px' }}
+            >
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Account Status:</span>
+                <span className="text-emerald-400 font-bold">✓ Verified Operator</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Database:</span>
+                <span className="text-white">MongoDB Atlas Cloud</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Workspace:</span>
+                <span className="text-[#38bdf8]">app.co-launch.app</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 font-bold text-xs uppercase tracking-wider text-white transition-all hover:brightness-110 cursor-pointer border-0"
+              style={{ background: brandRed, borderRadius: '0px' }}
+            >
+              Done &amp; Return to Workspace
+            </button>
+          </div>
         )}
       </div>
     </div>
