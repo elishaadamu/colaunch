@@ -1924,14 +1924,181 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               <span>Month Grid</span>
             </button>
           </div>
+
+          {/* Quick Action Buttons: Quest Objectives & Notifications */}
+          <div className="flex items-center gap-1.5 ml-1">
+            <button
+              type="button"
+              onClick={() => setQuestModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 rounded-none transition cursor-pointer border-0"
+              title="Open Quest Objectives"
+            >
+              <Gamepad2 size={13} className="text-amber-400" />
+              <span className="hidden sm:inline">Quest Objectives</span>
+              <span className="flex h-2 w-2 relative ml-0.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-none bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-none h-2 w-2 bg-amber-500" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (triggerToast) triggerToast('Notifications: Campaign quests active today', 'info')
+              }}
+              className="p-1.5 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+              title="Notifications"
+            >
+              <Bell size={13} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── SPLIT MAIN WORKSPACE (Fullscreen height, direct sidebar neighbor) ── */}
       <div className="flex-1 flex overflow-hidden h-full">
         
-        {/* LEFT WORKSPACE: Sprint Grid or Month Grid */}
+        {/* LEFT WORKSPACE: Content Calendar Area (Stats, Progress & Calendar Grid scroll together seamlessly) */}
         <section className="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 custom-scrollbar h-full">
+
+          {/* ── YOUTUBE DIRECT PUBLISHING ENGINE STATUS BAR ── */}
+          <div className="bg-[#080b11] px-3.5 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-mono border border-[#161b2b] mb-3 flex-shrink-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#c81e3c]'}`} />
+                <span className="text-white font-bold tracking-wider">
+                  PUBLISHING ENGINE:
+                </span>
+                <span className={youtubeConnection?.connected ? 'text-emerald-400 font-extrabold uppercase' : 'text-slate-300 font-extrabold uppercase'}>
+                  {youtubeConnection?.connected ? 'YOUTUBE OAUTH 2.0 (LIVE)' : 'YOUTUBE DIRECT (AUTH READY)'}
+                </span>
+              </div>
+              <span className="text-slate-600">|</span>
+              <div className="text-slate-400 text-[11px]">
+                <span className="text-slate-500">CHANNEL: </span>
+                <span className="text-slate-200 font-bold">
+                  {youtubeConnection?.channel?.title || creatorData?.name || 'Connected Channel'}
+                </span>
+              </div>
+              <span className="text-slate-600 hidden md:inline">|</span>
+              <div className="text-slate-400 text-[11px] hidden md:inline">
+                <span className="text-slate-500">EMAIL: </span>
+                <span className="text-slate-200 font-bold">{userProfile?.email || creatorData?.email || 'Not configured'}</span>
+              </div>
+              <span className="text-slate-600 hidden lg:inline">|</span>
+              <div className="text-[11px] hidden lg:flex items-center gap-1.5">
+                <span className="text-slate-500">STATUS: </span>
+                <span className={youtubeConnection?.connected ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                  {youtubeConnection?.connected
+                    ? `Connected (${youtubeConnection?.channel?.subscriberCount ? String(youtubeConnection.channel.subscriberCount) : (creatorData?.subscribers || '0')} subs)`
+                    : 'Ready to Authenticate'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {youtubeConnection?.connected ? (
+                <button
+                  type="button"
+                  onClick={navigateToAccounts}
+                  className="px-2.5 py-1 bg-[#111522] hover:bg-[#161b2b] text-slate-200 hover:text-white rounded-none flex items-center gap-1.5 transition cursor-pointer border border-[#202738] text-[11px] font-bold"
+                  style={{ borderRadius: '0px' }}
+                  title="Manage connected channels in Accounts"
+                >
+                  <Sliders size={11} />
+                  <span>Manage in Accounts →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={navigateToAccounts}
+                  className="px-3 py-1 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
+                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  title="Connect social channels in Accounts"
+                >
+                  <span>Configure in Accounts →</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── METRICS & STRATEGY STRIP (Stats & Progress) ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 items-center mb-3 flex-shrink-0">
+            {/* Metric 1: Gamified Level & XP */}
+            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
+              <div className="w-8 h-8 rounded-none bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                <Trophy size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs font-extrabold text-white">
+                  <span className="text-amber-400">Level {currentLevel} Creator</span>
+                  <span className="text-[10px] font-mono text-slate-400">{xp} / {targetXp} XP</span>
+                </div>
+                <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
+                  <div className="bg-amber-400 h-full rounded-none transition-all duration-500" style={{ width: `${xpPercent}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                  <span className="flex items-center gap-1">
+                    <Flame size={11} className="text-rose-400" />
+                    <span>Streak: <b className="text-white">{streak} Days</b></span>
+                  </span>
+                  <span className="text-amber-400/90 font-mono text-[10px]">{Math.max(0, targetXp - xp)} XP to Lvl {currentLevel + 1}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 2: Readiness / Pipeline Progress */}
+            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
+              <div className="w-8 h-8 rounded-none bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <Gauge size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs font-extrabold text-white">
+                  <span>{readyPostsCount} of {totalPostsCount} Scheduled</span>
+                  <span className="text-[11px] text-emerald-400">{readinessPercent}%</span>
+                </div>
+                <div className="w-full bg-[#161b2b] h-1.5 rounded-none overflow-hidden mt-1.5">
+                  <div className="bg-emerald-500 h-full rounded-none transition-all duration-300" style={{ width: `${readinessPercent}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                  {draftPostsCount} unscheduled in draft queue
+                </p>
+              </div>
+            </div>
+
+            {/* Metric 3: Channel Breakdown */}
+            <div className="flex items-center gap-3 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
+              <div className="w-8 h-8 rounded-none bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0">
+                <Share2 size={16} />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-red-500/15 text-red-400">YT {ytCount}</span>
+                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-pink-500/15 text-pink-400">IG {igCount}</span>
+                  <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-sky-500/15 text-sky-400">X {xCount}</span>
+                  {ttCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-none text-[10px] font-extrabold bg-slate-500/15 text-slate-300">TT {ttCount}</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium mt-1">Omnichannel distribution active</p>
+              </div>
+            </div>
+
+            {/* Metric 4: Campaign Product & Formula */}
+            <div className="flex items-center gap-2.5 p-2.5 rounded-none bg-[#111522] border border-[#161b2b]">
+              <div className="w-8 h-8 rounded-none bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+                <Zap size={16} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider truncate">
+                  Target: {productName}
+                </span>
+                <span className="text-xs font-bold text-white truncate block">
+                  Launch + Proof + Value
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* VIEW A: 7-DAY SPRINT BOARD (GAMIFIED DAY CARDS) */}
           {viewMode === 'sprint' && (
@@ -2204,7 +2371,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         </section>
 
         {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine) ── */}
-        <aside className="w-[380px] lg:w-[450px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-0 p-4 sm:p-5 space-y-4">
+        <aside className="w-[380px] lg:w-[440px] xl:w-[480px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-l border-[#161b2b] p-4 sm:p-5 space-y-4 h-full">
           
           {/* Header: Title, Date, Real Dynamic Status Badge */}
           <div className="flex items-start justify-between gap-2 pb-2 border-b border-[#1b2336]">
