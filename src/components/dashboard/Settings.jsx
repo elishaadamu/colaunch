@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForge } from '../../App'
 import { Check, Radio, RefreshCw, Calendar, Upload, Mail, ChevronRight, AlertCircle, Zap, ShieldCheck, Trash2, Sparkles, Eye, EyeOff, ChevronDown, Loader2, Download, Database, ExternalLink } from 'lucide-react'
 import { loadAiKeys, saveAiKeys, getAiKeysConsent, setAiKeysConsent, saveAiKeysToDb, deleteAiKeysFromDb } from '../../services/ai'
+import EmailConfigModal from '../ui/EmailConfigModal'
 
 // ─── Toggle ──────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ export default function Settings() {
   const [metaClientId, setMetaClientId] = useState(creatorData.meta_client_id || '')
   const [metaClientSecret, setMetaClientSecret] = useState(creatorData.meta_client_secret || '')
   const [showMetaSecret, setShowMetaSecret] = useState(false)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
 
   useEffect(() => {
     setProfileName(creatorData.name || '')
@@ -402,34 +404,13 @@ export default function Settings() {
 
     // 2. If registered, save changes to DB
     if (userProfile?.username) {
-      // Update email on DB if changed
+      // If email changed, require 6-digit OTP verification before saving!
       if (emailChanged) {
-        try {
-          const res = await fetch('/api/auth/update-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: userProfile.username,
-              email: profileEmail.trim()
-            })
-          })
-          if (!res.ok) {
-            const err = await res.json()
-            alert('Failed to update email: ' + (err.detail || 'Email already registered.'))
-            return
-          }
-          const data = await res.json()
-          if (data.status === 'success') {
-            // Update local state
-            const updatedProfile = { ...userProfile, email: data.email }
-            localStorage.setItem('forge_user_profile', JSON.stringify(updatedProfile))
-            setUserProfile(updatedProfile)
-          }
-        } catch (e) {
-          console.error('Failed to update email in DB:', e)
-          alert('Failed to update email address.')
-          return
+        setEmailModalOpen(true)
+        if (triggerToast) {
+          triggerToast('Email verification required. Please enter the 6-digit verification code.', 'info')
         }
+        return
       }
 
       // Sync updated creatorData to DB
@@ -980,6 +961,16 @@ export default function Settings() {
         )}
 
       </div>
+
+      <EmailConfigModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        userProfile={userProfile}
+        creatorData={creatorData}
+        setUserProfile={setUserProfile}
+        updateCreator={updateCreator}
+        triggerToast={triggerToast}
+      />
     </div>
   )
 }

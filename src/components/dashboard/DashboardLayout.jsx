@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import Sidebar from './Sidebar'
 import Marketing from './Marketing'
 import ContentCalendar from './ContentCalendar'
+import PerformanceIntelligence from './PerformanceIntelligence'
 import Studio from './Studio'
 import Community from './Community'
 import Products from './Products'
@@ -267,6 +268,7 @@ const TAB_COMPONENTS = {
   preview: DashboardAppPreview,
   marketing: Marketing,
   calendar: ContentCalendar,
+  performance: PerformanceIntelligence,
   studio: Studio,
   community: Community,
   products: Products,
@@ -280,6 +282,7 @@ const TAB_LABELS = {
   preview: 'App Preview',
   marketing: 'Marketing',
   calendar: 'Content Calendar',
+  performance: 'Performance & AI',
   studio: 'Studio',
   community: 'Community',
   products: 'Products',

@@ -64,7 +64,8 @@ import {
   Settings,
   AlertCircle,
   UploadCloud,
-  Menu
+  Menu,
+  Hash
 } from 'lucide-react'
 
 // Lightweight particle burst celebration for gamified publishing
@@ -577,7 +578,7 @@ function getDefaultCampaignPosts(productName = 'Creator Launch Suite', creatorDa
   ]
 }
 
-// Checks if a given social channel is actively connected and authorized
+// Checks if a given social channel is actively connected and authorized (each platform is distinct)
 export function isChannelConnected(channel, ytConn = null, creatorData = null) {
   const norm = (channel || '').toLowerCase().trim()
   const effectiveYt = ytConn || getStoredYouTubeConnection()
@@ -585,7 +586,7 @@ export function isChannelConnected(channel, ytConn = null, creatorData = null) {
     return Boolean(
       effectiveYt?.connected || 
       creatorData?.youtube_connected || 
-      creatorData?.channel_title
+      (creatorData?.channel_id && creatorData?.youtube_oauth_token)
     )
   }
   try {
@@ -593,15 +594,95 @@ export function isChannelConnected(channel, ytConn = null, creatorData = null) {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (norm === 'instagram' && parsed.instagram?.connected) return true
-      if ((norm === 'x' || norm === 'twitter') && parsed.twitter?.connected) return true
+      if ((norm === 'x' || norm === 'twitter') && (parsed.twitter?.connected || parsed.x?.connected)) return true
       if (norm === 'tiktok' && parsed.tiktok?.connected) return true
+      if (norm === 'linkedin' && parsed.linkedin?.connected) return true
       if (norm === 'email' && (parsed.email?.connected || creatorData?.email)) return true
     }
   } catch (_) {}
+  if (norm === 'instagram') {
+    return Boolean(creatorData?.instagram_connected)
+  }
+  if (norm === 'x' || norm === 'twitter') {
+    return Boolean(creatorData?.twitter_connected || creatorData?.x_connected)
+  }
+  if (norm === 'tiktok') {
+    return Boolean(creatorData?.tiktok_connected)
+  }
+  if (norm === 'linkedin') {
+    return Boolean(creatorData?.linkedin_connected)
+  }
   if (norm === 'email') {
     return Boolean(creatorData?.email && creatorData.email.includes('@'))
   }
   return false
+}
+
+// AI Creative Brief & Generative Tool Prompt Formulation for each post/day
+export function getAiDailyBrief(post, productName = 'CoLaunch Platform', creatorData = null) {
+  const dayName = post?.fullDayName || post?.dayName || 'This Day'
+  const channel = post?.channel || 'Instagram'
+  const niche = creatorData?.niche || 'Software & Community'
+  const creatorName = (creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')).trim()
+  const prod = productName || 'our platform'
+
+  // Determine format choice based on day / channel best-practice
+  const dayLower = dayName.toLowerCase()
+  const isWeekend = dayLower.includes('sat') || dayLower.includes('sun') || channel === 'LinkedIn'
+  const isInfographicDay = isWeekend || dayLower.includes('wed')
+  const defaultFormat = isInfographicDay ? 'image' : 'video'
+  const formatChoice = (post?.mediaFormat || defaultFormat).toLowerCase()
+
+  let formatReason = ''
+  let ideaTitle = ''
+  let ideaDescription = ''
+  let promptForTools = ''
+  let suggestedTools = []
+
+  if (formatChoice === 'video') {
+    formatReason = `${dayName} algorithmic distribution favors fast-paced 15-30s vertical reels and shorts. Visual hook retention is 3.8x higher on vertical video today.`
+    
+    if (dayLower.includes('tue') || dayLower.includes('thu')) {
+      ideaTitle = `The "Stop Doing X Wrong" 20s Breakdown`
+      ideaDescription = `Open with a bold claim refuting the old painful way of solving problems in ${niche}. Cut directly into a smooth screen recording or high-end mockup of ${prod} solving it in 3 clicks. Call-to-action: "Comment LAUNCH to get early founder access."`
+      promptForTools = `9:16 vertical video ratio, cinematic dramatic lighting, 4K quality. Scene opens on a stylish creator workstation in a modern dark-themed studio. Holographic translucent UI floating in air displaying "${prod}" interactive dashboard with real-time metrics surging upward. Dynamic smooth camera push-in, shallow depth of field, Unreal Engine 5 render aesthetic.`
+    } else if (dayLower.includes('fri') || dayLower.includes('sat')) {
+      ideaTitle = `Behind the Scenes & Secret Founder Walkthrough`
+      ideaDescription = `Show raw authenticity. Talk to camera while demoing the private beta of ${prod}. Highlight one mind-blowing feature that saves 10 hours a week.`
+      promptForTools = `Cinematic 9:16 portrait video, natural golden hour lighting, handheld documentary style with premium stabilization. Charismatic creator presenting a sleek glowing laptop screen with the "${prod}" application interface active. Hyper-detailed textures, film grain, 35mm lens look, 4k ultra-HD.`
+    } else {
+      ideaTitle = `The 3-Second Hook: "Why 99% Fail at ${niche}"`
+      ideaDescription = `Catch immediate attention by highlighting a widespread industry bottleneck. Reveal how ${prod} automates the hardest 80% so founders can scale effortlessly.`
+      promptForTools = `9:16 vertical social video, fast-paced cinematic motion, neon crimson (#c81e3c) rim lighting on dark aesthetic backdrop. High-tech 3D exploded view of digital software modules assembling into the "${prod}" platform. Particle effects, smooth 60fps motion blur, 8k octane render.`
+    }
+
+    suggestedTools = [
+      { name: 'Runway Gen-3', role: 'AI Video Gen' },
+      { name: 'OpenAI Sora', role: 'Cinematic AI' },
+      { name: 'CapCut', role: 'Vertical Video Editing' },
+      { name: 'Midjourney v6', role: 'Cover Thumbnail' }
+    ]
+  } else {
+    formatReason = `${dayName} feeds favor bookmarkable multi-slide carousel guides and high-contrast infographics with 4.1x higher save and share rates.`
+    ideaTitle = `The "${prod} 3-Pillar Master Blueprint"`
+    ideaDescription = `A clean visual infographic breakdown illustrating: (1) The Old Broken Way vs (2) The Modern Automated Way with ${prod}. Audiences save and share structured frameworks far more than standard static posts.`
+    promptForTools = `Clean modern infographic mockup, Apple keynote presentation aesthetic, dark mode background (#0c0f17) with glowing crimson accents (#c81e3c). Title: "${prod} Master Blueprint". Clean typography, 3 structured cards showing step-by-step roadmap, crisp UI widgets, 8k resolution, Behance featured award design.`
+    suggestedTools = [
+      { name: 'Midjourney v6', role: 'Infographic Art' },
+      { name: 'Flux.1', role: 'Image AI' },
+      { name: 'Canva Pro', role: 'Carousel Layout' },
+      { name: 'Figma', role: 'Vector & UI Mockup' }
+    ]
+  }
+
+  return {
+    formatChoice,
+    formatReason,
+    ideaTitle,
+    ideaDescription,
+    promptForTools,
+    suggestedTools
+  }
 }
 
 // Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
@@ -777,6 +858,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   // Active View Mode: 'sprint' (7-day board) vs 'calendar' (monthly grid)
   const [viewMode, setViewMode] = useState('calendar')
   const [platformFilter, setPlatformFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'scheduled'
+  const [newTagInput, setNewTagInput] = useState('')
+  const [promptCopied, setPromptCopied] = useState(false)
 
   // Gamification State (XP, Streak, Level, Completed Quests)
   const [bonusXp, setBonusXp] = useState(() => {
@@ -963,16 +1047,20 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     return todayPost?.id || posts[0]?.id || 'post-1'
   })
   
-  // Filtered dataset based on platform and active week
+  // Filtered dataset based on platform, active week, and pipeline status
   const filteredPosts = useMemo(() => {
     return posts.filter(p => {
       // Platform filter
       const matchPlatform = platformFilter === 'all' || p.channel.toLowerCase() === platformFilter.toLowerCase()
       // Week filter (posts belonging to the current weekOffset)
       const matchWeek = (p.weekOffset ?? 0) === weekOffset
-      return matchPlatform && matchWeek
+      // Status filter
+      const matchStatus = statusFilter === 'all'
+        ? true
+        : (p.status === 'Scheduled' || p.status === 'Posted')
+      return matchPlatform && matchWeek && matchStatus
     })
-  }, [posts, platformFilter, weekOffset])
+  }, [posts, platformFilter, weekOffset, statusFilter])
 
   // Month Calendar Navigation Handlers
   const handlePrevMonth = () => {
@@ -1260,22 +1348,38 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     }
     setIsPublishingDirect(true)
     try {
+      // Calculate targetPublishDate strictly from user's selected dateKey and time (NO random fallback)
+      let targetPublishDate = new Date()
+      if (activePost.dateKey) {
+        const parts = String(activePost.dateKey).split('-').map(Number)
+        if (parts.length === 3) {
+          const [y, m, d] = parts
+          let hours = 9
+          let minutes = 0
+          if (activePost.rawTime) {
+            const [h, min] = String(activePost.rawTime).split(':').map(Number)
+            hours = isNaN(h) ? 9 : h
+            minutes = isNaN(min) ? 0 : min
+          } else if (activePost.time) {
+            const match = String(activePost.time).match(/(\d+):(\d+)\s*(AM|PM)?/i)
+            if (match) {
+              let h = parseInt(match[1], 10)
+              const min = parseInt(match[2], 10)
+              const meridiem = (match[3] || '').toUpperCase()
+              if (meridiem === 'PM' && h < 12) h += 12
+              if (meridiem === 'AM' && h === 12) h = 0
+              hours = h
+              minutes = min
+            }
+          }
+          targetPublishDate = new Date(y, m - 1, d, hours, minutes, 0, 0)
+        }
+      }
+      const rfc3339Time = targetPublishDate.toISOString()
+
       // If YouTube and has a video file/URL attached, perform real Google API scheduled upload
       if (activePost.channel === 'YouTube' && (activePost.videoUrl || activePost.videoBase64) && youtubeConnection?.channel) {
         if (triggerToast) triggerToast('Queuing scheduled video directly with YouTube Data API v3...', 'info')
-
-        // Convert post target date + time into RFC 3339 datetime
-        let targetPublishDate = new Date()
-        try {
-          if (activePost.fullDateStr) {
-            const parsed = new Date(activePost.fullDateStr)
-            if (!isNaN(parsed.getTime())) targetPublishDate = parsed
-          }
-          if (targetPublishDate.getTime() < Date.now() + 3600000) {
-            targetPublishDate = new Date(Date.now() + 86400000) // default 24h ahead
-          }
-        } catch (_) {}
-        const rfc3339Time = targetPublishDate.toISOString()
 
         const result = await publishToYouTube({
           title: activePost.title || 'CoLaunch Video Update',
@@ -1303,11 +1407,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
           triggerToast(`Scheduled in YouTube Studio! Video ID: ${ytVideoId} (Releases: ${rfc3339Time.slice(0, 10)})`, 'success')
         }
       } else {
-        // Campaign calendar scheduling
+        // Campaign calendar scheduling — strictly user-defined timestamp
         setPosts(prev => prev.map(p => p.id === activePost.id ? {
           ...p,
           status: 'Scheduled',
-          scheduledAt: new Date().toISOString()
+          scheduledAt: rfc3339Time
         } : p))
         addXP(50, `Scheduled "${activePost?.title?.slice(0, 20)}..." in campaign calendar`, e)
         if (triggerToast) {
@@ -1435,6 +1539,157 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const updateActivePostCaption = (caption) => {
     if (!activePost) return
     setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, caption } : p))
+  }
+
+  // Schedule Date and Time update handlers (strictly user-defined)
+  const handleUpdateScheduleDate = (newDateKey) => {
+    if (!activePost || !newDateKey) return
+    const parts = newDateKey.split('-').map(Number)
+    if (parts.length !== 3) return
+    const [year, month, day] = parts
+    const dateObj = new Date(year, month - 1, day)
+    if (isNaN(dateObj.getTime())) return
+
+    const fullDateStr = `${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const fullDayName = dayNames[dateObj.getDay()]
+    const dayName = shortDayNames[dateObj.getDay()]
+    const dayIndex = (dateObj.getDay() + 6) % 7
+
+    setPosts(prev => prev.map(p => p.id === activePost.id ? {
+      ...p,
+      dateKey: newDateKey,
+      fullDateStr,
+      fullDayName,
+      dayName,
+      dayIndex
+    } : p))
+
+    setSelectedCalendarDateKey(newDateKey)
+    if (calendarDate.getFullYear() !== year || calendarDate.getMonth() !== (month - 1)) {
+      setCalendarDate(new Date(year, month - 1, 1))
+    }
+  }
+
+  const handleUpdateScheduleTime = (rawTime) => {
+    if (!activePost || !rawTime) return
+    const [hStr, mStr] = rawTime.split(':')
+    let hours = parseInt(hStr, 10)
+    const minutes = parseInt(mStr, 10)
+    if (isNaN(hours) || isNaN(minutes)) return
+
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const displayHours = hours % 12 || 12
+    const displayMinutes = String(minutes).padStart(2, '0')
+    const formattedTime = `${displayHours}:${displayMinutes} ${ampm}`
+
+    setPosts(prev => prev.map(p => p.id === activePost.id ? {
+      ...p,
+      rawTime,
+      time: formattedTime
+    } : p))
+  }
+
+  const getTimeInputValue = (post) => {
+    if (post?.rawTime) return post.rawTime
+    if (!post?.time) return '09:00'
+    const match = String(post.time).match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    if (!match) return '09:00'
+    let h = parseInt(match[1], 10)
+    const m = String(parseInt(match[2], 10)).padStart(2, '0')
+    const meridiem = (match[3] || '').toUpperCase()
+    if (meridiem === 'PM' && h < 12) h += 12
+    if (meridiem === 'AM' && h === 12) h = 0
+    return `${String(h).padStart(2, '0')}:${m}`
+  }
+
+  const getActiveTags = () => {
+    if (!activePost) return []
+    if (Array.isArray(activePost.tags)) return activePost.tags
+    if (typeof activePost.tags === 'string' && activePost.tags.trim()) {
+      return activePost.tags.split(/[,\s]+/).filter(t => t.length > 0).map(t => t.startsWith('#') ? t : `#${t}`)
+    }
+    const matches = (activePost.caption || '').match(/#[a-zA-Z0-9_]+/g)
+    if (matches && matches.length > 0) return Array.from(new Set(matches))
+    const baseTag = (productName || 'Launch').replace(/[^a-zA-Z0-9]/g, '')
+    return [`#${baseTag}`, '#Launch', '#Exclusive']
+  }
+
+  const handleAddTag = (tag) => {
+    if (!activePost || !tag) return
+    const clean = tag.trim().startsWith('#') ? tag.trim() : `#${tag.trim()}`
+    const current = getActiveTags()
+    if (!current.includes(clean)) {
+      const updated = [...current, clean]
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, tags: updated } : p))
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove) => {
+    if (!activePost) return
+    const current = getActiveTags()
+    const updated = current.filter(t => t !== tagToRemove)
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, tags: updated } : p))
+  }
+
+  const handleToggleMediaFormat = (format) => {
+    if (!activePost) return
+    setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, mediaFormat: format } : p))
+  }
+
+  const handleThumbnailUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setPosts(prev => prev.map(p => p.id === activePost.id ? {
+        ...p,
+        thumbnailUrl: reader.result,
+        imageUrl: p.imageUrl || reader.result
+      } : p))
+      if (triggerToast) triggerToast('Thumbnail cover attached successfully!', 'success')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setPosts(prev => prev.map(p => p.id === activePost.id ? {
+        ...p,
+        imageUrl: reader.result
+      } : p))
+      if (triggerToast) triggerToast('Image asset attached successfully!', 'success')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleCopyPrompt = (promptText) => {
+    if (!promptText) return
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(promptText)
+    }
+    setPromptCopied(true)
+    setTimeout(() => setPromptCopied(false), 2000)
+    if (triggerToast) triggerToast('AI Prompt copied to clipboard! Ready to paste into Runway, Midjourney, or Sora.', 'success')
+  }
+
+  const handleJumpToScheduled = () => {
+    const scheduledPost = posts.find(p => p.status === 'Scheduled') || posts.find(p => p.status === 'Posted')
+    if (scheduledPost && scheduledPost.dateKey) {
+      const parts = scheduledPost.dateKey.split('-').map(Number)
+      if (parts.length === 3) {
+        setCalendarDate(new Date(parts[0], parts[1] - 1, 1))
+        setSelectedCalendarDateKey(scheduledPost.dateKey)
+        setSelectedPostId(scheduledPost.id)
+        if (triggerToast) triggerToast(`Jumped to scheduled date: ${scheduledPost.fullDateStr}`, 'info')
+        return
+      }
+    }
+    if (triggerToast) triggerToast('No scheduled broadcasts yet. Select a draft and click Schedule.', 'info')
   }
 
   const handleApproveAndSchedule = (e) => {
@@ -1898,6 +2153,46 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </button>
           </div>
 
+          {/* Pipeline Status Filter: All vs Scheduled Dates */}
+          <div className="flex items-center bg-[#111522] p-0.5 rounded-none text-xs font-bold border-0">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-2 py-1 rounded-none transition cursor-pointer border-0 ${
+                statusFilter === 'all'
+                  ? 'bg-[#1c2236] text-white shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              All Posts
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('scheduled')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-none transition cursor-pointer border-0 ${
+                statusFilter === 'scheduled'
+                  ? 'bg-[#1c2236] text-sky-300 shadow-sm font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Show scheduled and published broadcasts only"
+            >
+              <Clock size={11} className={statusFilter === 'scheduled' ? 'text-sky-300' : 'text-slate-400'} />
+              <span>Scheduled Pipeline</span>
+            </button>
+          </div>
+
+          {/* Jump to Next Scheduled Date */}
+          <button
+            type="button"
+            onClick={handleJumpToScheduled}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition cursor-pointer border-0 rounded-none"
+            style={{ borderRadius: '0px' }}
+            title="Jump to the nearest scheduled post in calendar"
+          >
+            <Calendar size={12} className="text-sky-400" />
+            <span className="hidden sm:inline">Jump to Scheduled</span>
+          </button>
+
           <div className="flex items-center bg-[#111522] p-0.5 rounded-none text-xs font-bold border-0">
             <button
               type="button"
@@ -2284,10 +2579,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               <div className="grid grid-cols-7 flex-1 rounded-none overflow-hidden bg-[#090d16] gap-1 p-1 border-0">
                 {monthGrid.map((cell, idx) => {
                   const isSelected = selectedCalendarDateKey === cell.dateKey
-                  // Find posts matching this dateKey and applying platform filter
+                  // Find posts matching this dateKey and applying platform & status filters
                   const cellPosts = posts.filter(p => {
                     const matchPlatform = platformFilter === 'all' || p.channel.toLowerCase() === platformFilter.toLowerCase()
-                    if (!matchPlatform) return false
+                    const matchStatus = statusFilter === 'all' ? true : (p.status === 'Scheduled' || p.status === 'Posted')
+                    if (!matchPlatform || !matchStatus) return false
                     return p.dateKey === cell.dateKey
                   })
 
@@ -2325,37 +2621,58 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                         )}
                       </div>
 
-                      {/* Scheduled Post Cards on this date: Solid Red Cards matching Image 4 */}
+                      {/* Scheduled & Published Post Cards on this date */}
                       <div className="space-y-1.5 mt-1.5">
-                        {cellPosts.map(p => (
-                          <div
-                            key={p.id}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedCalendarDateKey(cell.dateKey)
-                              setSelectedPostId(p.id)
-                            }}
-                            className={`p-1.5 rounded-none text-white text-[11px] font-bold shadow-xs border-0 truncate leading-tight cursor-pointer transition-all hover:brightness-110 ${
-                              selectedPostId === p.id && isSelected ? 'ring-2 ring-white shadow-md' : ''
-                            }`}
-                            style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                            title={`${p.title} (${p.time})`}
-                          >
-                            <div className="truncate flex items-center gap-1">
-                              <span className="opacity-75 text-[9px] uppercase font-mono">{p.channel}:</span>
-                              <span className="truncate">{p.title}</span>
+                        {cellPosts.map(p => {
+                          const isPosted = p.status === 'Posted'
+                          const isScheduled = p.status === 'Scheduled'
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedCalendarDateKey(cell.dateKey)
+                                setSelectedPostId(p.id)
+                              }}
+                              className={`p-1.5 rounded-none text-white text-[11px] font-bold shadow-xs truncate leading-tight cursor-pointer transition-all hover:brightness-110 border ${
+                                selectedPostId === p.id && isSelected ? 'ring-2 ring-white shadow-md' : 'border-transparent'
+                              } ${
+                                isPosted
+                                  ? 'bg-emerald-950/90 text-emerald-100 border-emerald-500/60'
+                                  : isScheduled
+                                  ? 'bg-sky-950/80 text-sky-100 border-sky-500/50'
+                                  : ''
+                              }`}
+                              style={(!isPosted && !isScheduled) ? { background: brandRed, color: '#ffffff', borderRadius: '0px' } : { borderRadius: '0px' }}
+                              title={`${p.title} (${p.time}) - ${p.status}`}
+                            >
+                              <div className="truncate flex items-center justify-between gap-1">
+                                <div className="truncate flex items-center gap-1">
+                                  <span className="opacity-75 text-[9px] uppercase font-mono">{p.channel}:</span>
+                                  <span className="truncate">{p.title}</span>
+                                </div>
+                                {isPosted ? (
+                                  <span className="bg-emerald-500 text-black text-[8px] font-black px-1 shrink-0 uppercase tracking-wider">
+                                    ✓ LIVE
+                                  </span>
+                                ) : isScheduled ? (
+                                  <span className="bg-sky-400 text-black text-[8px] font-black px-1 shrink-0 uppercase tracking-wider">
+                                    SCHED
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="text-[9px] opacity-90 font-medium flex items-center justify-between mt-0.5">
+                                <span className="flex items-center gap-1">
+                                  <span>{p.format || 'POST'}</span>
+                                  {p.youtubeVideoId && (
+                                    <span className="bg-black/60 text-[8px] font-mono px-1 py-0.2 border border-white/20">YT ✓</span>
+                                  )}
+                                </span>
+                                <span className="font-mono">{p.time}</span>
+                              </div>
                             </div>
-                            <div className="text-[9px] opacity-90 font-medium flex items-center justify-between mt-0.5">
-                              <span className="flex items-center gap-1">
-                                <span>{p.format || 'POST'}</span>
-                                {p.youtubeVideoId && (
-                                  <span className="bg-black/60 text-[8px] font-mono px-1 py-0.2 border border-white/20">YT ✓</span>
-                                )}
-                              </span>
-                              <span>{p.time}</span>
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )
@@ -2367,30 +2684,30 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
         </section>
 
-        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine) ── */}
-        <aside className="w-[380px] lg:w-[440px] xl:w-[480px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-l border-[#161b2b] p-4 sm:p-5 space-y-4 h-full">
+        {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine - 15% Tighter Width) ── */}
+        <aside className="w-[320px] lg:w-[375px] xl:w-[410px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-l border-[#161b2b] p-3.5 sm:p-4 space-y-3.5 h-full">
           
           {/* Header: Title, Date, Real Dynamic Status Badge */}
-          <div className="flex items-start justify-between gap-2 pb-2 border-b border-[#1b2336]">
-            <div>
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-0.5">
+          <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#1b2336]">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 mb-0.5 truncate">
                 {activePost?.status === 'Scheduled' ? 'SCHEDULED BROADCAST' : activePost?.status === 'Posted' ? 'PUBLISHED CONTENT' : 'CAMPAIGN DRAFT'}
               </p>
-              <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+              <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight truncate">
                 {activePost?.status === 'Scheduled' ? `Scheduled for ${getFullDayName(activePost)}` : `Your draft for ${getFullDayName(activePost)}`}
               </h3>
-              <p className="text-xs font-bold text-rose-400 mt-0.5">
+              <p className="text-[11px] font-bold text-rose-400 mt-0.5 truncate">
                 {activePost?.fullDateStr || 'Selected Date'} • <span className="font-mono text-slate-400">{activePost?.time || '9:00 AM'}</span>
               </p>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {activePost?.status === 'Posted' ? (
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                  <CheckCircle2 size={11} /> Posted
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 uppercase tracking-wide">
+                  <CheckCircle2 size={11} className="text-emerald-400" /> Posted
                 </span>
               ) : activePost?.status === 'Scheduled' ? (
-                <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
-                  <Clock size={11} /> Scheduled
+                <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 flex items-center gap-1 uppercase tracking-wide">
+                  <Clock size={11} className="text-sky-400" /> Scheduled
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-[#161b2b] text-slate-300 border border-[#242d42]">
@@ -2448,11 +2765,24 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             )
           })()}
 
-          {/* Postiz Omnichannel Platform Selector */}
+          {/* Target Channel Selector with Distinct Link Guard */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-              Target Channel
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Target Channel
+              </label>
+              {isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? (
+                <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none animate-pulse" />
+                  Account Linked
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                  <AlertCircle size={10} />
+                  Not Linked
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-5 gap-1">
               {[
                 { name: 'YouTube', icon: Youtube, color: 'text-red-500', activeBg: 'bg-red-500/20 text-white ring-1 ring-red-500' },
@@ -2475,7 +2805,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                     }`}
                     title={`Target ${plat.name}`}
                   >
-                    <IconComponent size={14} className={plat.color} />
+                    <IconComponent size={13} className={plat.color} />
                     <span className="truncate text-[10px]">{plat.name}</span>
                   </button>
                 )
@@ -2483,7 +2813,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </div>
           </div>
 
-          {/* Inspector View Mode Switcher: Composer vs Platform Preview (Postiz) */}
+          {/* Inspector View Mode Switcher: Composer vs Platform Preview */}
           <div className="flex items-center bg-[#111522] p-1 rounded-none text-xs font-bold border-0">
             <button
               type="button"
@@ -2495,13 +2825,12 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               }`}
             >
               <Pencil size={12} />
-              <span>Script Editor</span>
+              <span>Draft Studio</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setInspectorTab('preview')
-                // Align preview platform
                 const map = {
                   'YouTube': 'youtube',
                   'Instagram': 'instagram',
@@ -2525,234 +2854,505 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             </button>
           </div>
 
-          {/* TAB 1: SCRIPT & COMPOSER WORKSPACE */}
-          {inspectorTab === 'composer' && (
-            <div className="space-y-4">
-              
-              {/* Caption Section with Platform Limit Meter */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-300">
-                    Caption / Script
-                  </label>
-                  <span className={`text-[11px] font-mono ${
-                    (activePost?.channel === 'X' || activePost?.channel === 'Twitter') && (activePost?.caption?.length || 0) > 280
-                      ? 'text-rose-400 font-bold'
-                      : 'text-slate-400'
-                  }`}>
-                    {activePost?.caption?.length || 0} / {
-                      activePost?.channel === 'X' || activePost?.channel === 'Twitter' ? '280 (X Limit)'
-                      : activePost?.channel === 'Instagram' ? '2,200 (IG Limit)'
-                      : activePost?.channel === 'LinkedIn' ? '3,000 (LI Limit)'
-                      : '5,000 (YT Limit)'
-                    }
-                  </span>
+          {/* TAB 1: STRUCTURED DRAFT STUDIO WORKSPACE */}
+          {inspectorTab === 'composer' && (() => {
+            const aiBrief = getAiDailyBrief(activePost, productName, creatorData)
+            const currentMediaFormat = (activePost?.mediaFormat || aiBrief.formatChoice).toLowerCase()
+            const activeTags = getActiveTags()
+            const channelConnected = isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
+
+            return (
+              <div className="space-y-3.5">
+                
+                {/* 1. Explicit Schedule Date & Time Picker */}
+                <div className="p-2.5 bg-[#111522] border border-[#202738] rounded-none space-y-1.5" style={{ borderRadius: '0px' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <Calendar size={11} className="text-rose-400" />
+                      <span>Schedule Date &amp; Time</span>
+                    </span>
+                    <span className="text-[9px] font-mono text-emerald-400">Strictly Preserved</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[9px] font-mono text-slate-400 mb-0.5">DATE</label>
+                      <input
+                        type="date"
+                        value={activePost?.dateKey || ''}
+                        onChange={(e) => handleUpdateScheduleDate(e.target.value)}
+                        className="w-full py-1 px-2 bg-[#0c0f17] border border-[#263148] text-white text-xs font-mono rounded-none focus:outline-none focus:border-rose-500"
+                        style={{ borderRadius: '0px' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-mono text-slate-400 mb-0.5">TIME</label>
+                      <input
+                        type="time"
+                        value={getTimeInputValue(activePost)}
+                        onChange={(e) => handleUpdateScheduleTime(e.target.value)}
+                        className="w-full py-1 px-2 bg-[#0c0f17] border border-[#263148] text-white text-xs font-mono rounded-none focus:outline-none focus:border-rose-500"
+                        style={{ borderRadius: '0px' }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-2">
-                  <textarea
-                    ref={captionRef}
-                    rows={7}
-                    value={activePost?.caption || ''}
-                    onChange={(e) => updateActivePostCaption(e.target.value)}
-                    className="w-full text-xs text-slate-100 bg-transparent rounded-none focus:outline-none leading-relaxed resize-none border-0 font-normal"
-                    placeholder="Write your campaign draft caption..."
+                {/* 2. Title Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-300">
+                      Title / Headline
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-500">{(activePost?.title || '').length} chars</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={activePost?.title || ''}
+                    onChange={(e) => updateActivePostTitle(e.target.value)}
+                    placeholder="Write your campaign draft headline or title..."
+                    className="w-full py-2 px-3 bg-[#111522] border border-[#202738] text-white text-xs font-bold focus:outline-none focus:border-rose-500 rounded-none placeholder:text-slate-600"
+                    style={{ borderRadius: '0px' }}
                   />
                 </div>
-              </div>
 
-              {/* Quick AI & Script Tools */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleRepurposeFromYouTube}
-                  disabled={isRepurposingAi}
-                  className="py-2 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
-                  title="Repurpose scraped YouTube video into omnichannel formats"
-                >
-                  <Sparkles size={13} className={`text-amber-400 ${isRepurposingAi ? 'animate-spin' : ''}`} />
-                  <span>{isRepurposingAi ? 'Repurposing...' : 'Repurpose YT with AI'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleTweakWithAi}
-                  disabled={isTweakingAi}
-                  className="py-2 px-3 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-[#202738]"
-                >
-                  <Wand2 size={13} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
-                  <span>{isTweakingAi ? 'Tweaking...' : 'Tweak Copy'}</span>
-                </button>
-              </div>
-
-              {/* ── YOUTUBE DIRECT PUBLISHING PIPELINE SECTION ── */}
-              <div className="p-3.5 bg-[#111522] border border-[#202738] rounded-none space-y-3" style={{ borderRadius: '0px' }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-none ${youtubeConnection?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                    <span className="text-xs font-bold text-white tracking-tight">
-                      YouTube Direct Publishing Pipeline
+                {/* 3. Description / Caption Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-300">
+                      Description / Caption
+                    </label>
+                    <span className={`text-[10px] font-mono ${
+                      (activePost?.channel === 'X' || activePost?.channel === 'Twitter') && (activePost?.caption?.length || 0) > 280
+                        ? 'text-rose-400 font-bold'
+                        : 'text-slate-400'
+                    }`}>
+                      {activePost?.caption?.length || 0} / {
+                        activePost?.channel === 'X' || activePost?.channel === 'Twitter' ? '280 (X)'
+                        : activePost?.channel === 'Instagram' ? '2,200 (IG)'
+                        : activePost?.channel === 'LinkedIn' ? '3,000 (LI)'
+                        : '5,000 (YT)'
+                      }
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    OAuth 2.0 Direct
-                  </span>
+                  <div className="p-2.5 bg-[#111522] border border-[#202738] rounded-none space-y-2">
+                    <textarea
+                      ref={captionRef}
+                      rows={5}
+                      value={activePost?.caption || ''}
+                      onChange={(e) => updateActivePostCaption(e.target.value)}
+                      className="w-full text-xs text-slate-100 bg-transparent rounded-none focus:outline-none leading-relaxed resize-none border-0 font-normal placeholder:text-slate-600"
+                      placeholder="Write your campaign draft caption, hooks, or script..."
+                    />
+                  </div>
                 </div>
 
-                {youtubeConnection?.connected ? (
-                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-none bg-red-600 flex items-center justify-center text-white font-bold text-xs" style={{ borderRadius: '0px' }}>
-                        YT
-                      </div>
-                      <div>
-                        <div className="text-white font-bold text-xs">
-                          {youtubeConnection.channel?.title || 'Connected Channel'}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          {youtubeConnection.channel?.customUrl || '@creator'} • {youtubeConnection.channel?.subscriberCount || creatorData?.subscribers || '0'} subscribers
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/20" style={{ borderRadius: '0px' }}>
-                      LIVE
-                    </span>
-                  </div>
-                ) : (
-                  <div className="p-2.5 bg-[#0c0f17] rounded-none border border-[#202738] text-[11px] text-slate-300 flex items-start gap-2" style={{ borderRadius: '0px' }}>
-                    <Youtube size={16} className="text-red-500 shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="text-white font-bold">{activePost?.channel || 'Social Channel'} Not Connected</div>
-                      <p className="text-slate-400 text-[10px] mt-0.5">Link your {activePost?.channel || 'YouTube'} account in the Accounts page to schedule or broadcast directly.</p>
-                      <div className="mt-2">
-                        <button
-                          type="button"
-                          onClick={navigateToAccounts}
-                          className="px-3 py-1.5 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
-                          style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                        >
-                          <Sliders size={12} className="text-white" />
-                          <span className="text-white font-bold">Configure in Accounts Page →</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Quick AI Copy Polish Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRepurposeFromYouTube}
+                    disabled={isRepurposingAi}
+                    className="py-1.5 px-2.5 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
+                  >
+                    <Sparkles size={12} className={`text-amber-400 ${isRepurposingAi ? 'animate-spin' : ''}`} />
+                    <span>{isRepurposingAi ? 'Repurposing...' : 'Repurpose YT with AI'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTweakWithAi}
+                    disabled={isTweakingAi}
+                    className="py-1.5 px-2.5 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border border-[#202738]"
+                  >
+                    <Wand2 size={12} className={`text-rose-400 ${isTweakingAi ? 'animate-spin' : ''}`} />
+                    <span>{isTweakingAi ? 'Polishing...' : 'Polish Copy with AI'}</span>
+                  </button>
+                </div>
 
-                {/* Real YouTube Video Asset Attachment & API Info (YouTube Data API v3) */}
-                {activePost?.channel === 'YouTube' && (
-                  <div className="p-3.5 bg-[#0c0f17] border border-[#202738] rounded-none space-y-2.5" style={{ borderRadius: '0px' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                        <Video size={14} className="text-red-500" />
-                        <span>Video Binary File (.mp4 / .mov)</span>
-                      </span>
-                      {(activePost?.videoBase64 || activePost?.videoUrl) && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveVideo}
-                          className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                {/* 4. Tags & Hashtags */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-300 flex items-center gap-1">
+                      <Hash size={12} className="text-rose-400" />
+                      <span>Tags &amp; Hashtags</span>
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-500">{activeTags.length} active</span>
+                  </div>
+                  
+                  <div className="p-2.5 bg-[#111522] border border-[#202738] rounded-none space-y-2" style={{ borderRadius: '0px' }}>
+                    <div className="flex flex-wrap gap-1 min-h-[24px]">
+                      {activeTags.map((t, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-mono bg-[#182033] text-rose-300 border border-rose-500/30 rounded-none"
                         >
-                          <Trash2 size={11} /> Remove
-                        </button>
+                          <span>{t}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(t)}
+                            className="text-slate-400 hover:text-white cursor-pointer ml-0.5 border-0 bg-transparent p-0 leading-none"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                      {activeTags.length === 0 && (
+                        <span className="text-[10px] text-slate-500 italic">No tags added yet.</span>
                       )}
                     </div>
 
-                    {(activePost?.videoBase64 || activePost?.videoUrl) ? (
-                      <div className="space-y-2">
-                        {activePost.videoBase64 ? (
-                          <video
-                            src={activePost.videoBase64}
-                            controls
-                            className="w-full max-h-44 bg-black border border-[#202738] rounded-none"
-                          />
-                        ) : (
-                          <div className="p-2.5 bg-[#121624] border border-[#202738] text-xs font-mono text-slate-300 break-all">
-                            {activePost.videoUrl}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="truncate max-w-[220px] font-mono text-slate-200">{activePost.videoFileName || 'Video File Ready'}</span>
-                          {activePost.videoSize && <span className="font-mono text-emerald-400">{activePost.videoSize}</span>}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <label className="w-full py-2.5 px-3 bg-[#161d2d] hover:bg-[#1e273d] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border border-[#26334f] transition">
-                          <UploadCloud size={15} className="text-red-400" />
-                          <span>Attach MP4 Video File</span>
-                          <input
-                            type="file"
-                            accept="video/mp4,video/quicktime,video/webm"
-                            onChange={handleVideoFileUpload}
-                            className="hidden"
-                          />
+                    <div className="flex items-center gap-1 pt-0.5">
+                      <input
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            if (newTagInput.trim()) {
+                              handleAddTag(newTagInput)
+                              setNewTagInput('')
+                            }
+                          }
+                        }}
+                        placeholder="Add tag (e.g. #Launch, #SaaS)..."
+                        className="flex-1 py-1 px-2 bg-[#0c0f17] border border-[#263148] text-white text-xs font-mono focus:outline-none focus:border-rose-500 rounded-none placeholder:text-slate-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newTagInput.trim()) {
+                            handleAddTag(newTagInput)
+                            setNewTagInput('')
+                          }
+                        }}
+                        className="px-2.5 py-1 text-xs font-bold text-white bg-[#1c2438] hover:bg-[#25304a] cursor-pointer border border-[#2a3754] rounded-none"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                      <span className="text-[9px] font-mono text-slate-500">Quick:</span>
+                      {['#Launch', '#Founder', '#Beta', '#Exclusive', '#Tutorial'].map(sTag => (
+                        <button
+                          key={sTag}
+                          type="button"
+                          onClick={() => handleAddTag(sTag)}
+                          className="text-[10px] font-mono px-1.5 py-0.2 bg-[#0c0f17] hover:bg-[#182033] text-slate-300 hover:text-rose-300 border border-[#202738] cursor-pointer"
+                        >
+                          +{sTag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. AI Format Choice for That Day (Video vs Image) & Media Asset Studio */}
+                <div className="p-3 bg-[#111522] border border-[#202738] rounded-none space-y-2.5" style={{ borderRadius: '0px' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-amber-400" />
+                      <span>AI Format Choice</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      {aiBrief.formatChoice === 'video' ? '🎬 AI PICK: VIDEO' : '🖼️ AI PICK: IMAGE'}
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 leading-snug">
+                    {aiBrief.formatReason}
+                  </p>
+
+                  {/* Format Selector: Video vs Image Toggle */}
+                  <div className="grid grid-cols-2 gap-1 bg-[#0c0f17] p-1 border border-[#202738]">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMediaFormat('video')}
+                      className={`py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border-0 transition ${
+                        currentMediaFormat === 'video'
+                          ? 'bg-[#c81e3c] text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <Video size={13} />
+                      <span>Video Format</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMediaFormat('image')}
+                      className={`py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border-0 transition ${
+                        currentMediaFormat === 'image'
+                          ? 'bg-[#c81e3c] text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <ImageIcon size={13} />
+                      <span>Image Format</span>
+                    </button>
+                  </div>
+
+                  {/* Media Assets Depending on Format */}
+                  {currentMediaFormat === 'video' ? (
+                    <div className="space-y-2 pt-1 border-t border-[#1b2336]">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-slate-300 uppercase">
+                          Video File (.mp4 / .mov)
                         </label>
-                        <div className="flex items-center gap-1.5">
+                        {(activePost?.videoBase64 || activePost?.videoUrl) && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveVideo}
+                            className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 size={10} /> Remove
+                          </button>
+                        )}
+                      </div>
+
+                      {(activePost?.videoBase64 || activePost?.videoUrl) ? (
+                        <div className="space-y-1.5">
+                          {activePost.videoBase64 ? (
+                            <video
+                              src={activePost.videoBase64}
+                              controls
+                              className="w-full max-h-36 bg-black border border-[#202738]"
+                            />
+                          ) : (
+                            <div className="p-2 bg-[#0c0f17] border border-[#202738] text-[10px] font-mono text-slate-300 truncate">
+                              {activePost.videoUrl}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                            <span className="truncate">{activePost.videoFileName || 'Attached MP4 Video'}</span>
+                            {activePost.videoSize && <span className="text-emerald-400">{activePost.videoSize}</span>}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <label className="w-full py-2 px-3 bg-[#151b2a] hover:bg-[#1c2438] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border border-[#25304a] transition">
+                            <UploadCloud size={14} className="text-rose-400" />
+                            <span>Upload MP4 Video</span>
+                            <input
+                              type="file"
+                              accept="video/mp4,video/quicktime,video/webm"
+                              onChange={handleVideoFileUpload}
+                              className="hidden"
+                            />
+                          </label>
                           <input
                             type="url"
                             value={activePost?.videoUrl || ''}
                             onChange={(e) => handleSetVideoUrl(e.target.value)}
-                            placeholder="Or paste public video URL (.mp4)..."
-                            className="w-full py-1.5 px-2 bg-[#121624] border border-[#202738] text-white text-[11px] font-mono focus:outline-none focus:border-red-500/50"
+                            placeholder="Or paste video URL (.mp4)..."
+                            className="w-full py-1 px-2 bg-[#0c0f17] border border-[#202738] text-white text-[11px] font-mono focus:outline-none focus:border-rose-500 rounded-none placeholder:text-slate-600"
                           />
                         </div>
-                        <p className="text-[10px] text-slate-400 leading-tight">
-                          ℹ️ Google's YouTube Data API requires a video file. Pure text posts cannot be published via the YouTube API.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
 
-                {/* Published / Live YouTube Video Link Box */}
-                {activePost?.youtubeVideoId && (
-                  <div className="p-3 bg-red-950/30 border border-red-500/40 rounded-none flex items-center justify-between gap-3" style={{ borderRadius: '0px' }}>
-                    <div className="flex items-center gap-2">
-                      <Youtube size={18} className="text-red-500 shrink-0" />
-                      <div>
-                        <p className="text-xs font-bold text-white">
-                          {activePost.status === 'Scheduled' ? 'Queued in YouTube Studio' : 'Live on YouTube'}
-                        </p>
-                        <p className="text-[10px] text-red-300 font-mono">ID: {activePost.youtubeVideoId}</p>
+                      {/* Video Thumbnail Upload / Preview */}
+                      <div className="pt-2 border-t border-[#1b2336] space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-300 uppercase">
+                            Thumbnail Cover
+                          </label>
+                          {activePost?.thumbnailUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, thumbnailUrl: null } : p))}
+                              className="text-[10px] text-rose-400 hover:text-rose-300 cursor-pointer border-0 bg-transparent"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        {activePost?.thumbnailUrl ? (
+                          <div className="w-full h-24 bg-black border border-[#202738] overflow-hidden">
+                            <img src={activePost.thumbnailUrl} alt="Thumbnail cover" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <label className="w-full py-1.5 px-2 bg-[#0c0f17] hover:bg-[#161d2d] text-slate-300 text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-[#202738] transition">
+                            <ImageIcon size={12} className="text-sky-400" />
+                            <span>Attach Thumbnail Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleThumbnailUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
                       </div>
                     </div>
-                    <a
-                      href={activePost.youtubeUrl || `https://www.youtube.com/watch?v=${activePost.youtubeVideoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition no-underline"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <span>{activePost.status === 'Scheduled' ? 'Open Studio' : 'Watch Video'}</span>
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
-                )}
+                  ) : (
+                    <div className="space-y-2 pt-1 border-t border-[#1b2336]">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-slate-300 uppercase">
+                          Image Asset (.png / .jpg)
+                        </label>
+                        {activePost?.imageUrl && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
+                          >
+                            <Trash2 size={10} /> Remove
+                          </button>
+                        )}
+                      </div>
 
-                {/* Dispatch Action Buttons */}
-                <div className="space-y-2 pt-1">
-                  
-                  {/* Primary Action Button */}
-                  {!isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? (
-                    <button
-                      type="button"
-                      onClick={navigateToAccounts}
-                      className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0"
-                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                    >
-                      <Sliders size={14} className="text-white" />
-                      <span className="text-white font-bold">
-                        Connect {activePost?.channel || 'Channel'} to Schedule
-                      </span>
-                    </button>
+                      {activePost?.imageUrl ? (
+                        <div className="w-full h-36 bg-black border border-[#202738] overflow-hidden relative group">
+                          <img src={activePost.imageUrl} alt="Draft visual" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleGenerateImage}
+                              disabled={isGeneratingImage}
+                              className="px-2.5 py-1 bg-[#c81e3c] text-white text-[11px] font-bold cursor-pointer border-0"
+                            >
+                              {isGeneratingImage ? 'Generating...' : 'Regenerate AI'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <label className="w-full py-2 px-3 bg-[#151b2a] hover:bg-[#1c2438] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border border-[#25304a] transition">
+                            <UploadCloud size={14} className="text-sky-400" />
+                            <span>Upload Image File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageFileUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleGenerateImage}
+                            disabled={isGeneratingImage}
+                            className="w-full py-1.5 bg-sky-600/25 hover:bg-sky-600/40 text-sky-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer border border-sky-500/40"
+                          >
+                            <Wand2 size={12} className={isGeneratingImage ? 'animate-spin' : ''} />
+                            <span>{isGeneratingImage ? 'Generating...' : 'Generate with OpenAI (+60 XP)'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. AI Creative Concept & Ready-to-Use Prompt for External AI Tools */}
+                <div className="p-3 bg-[#111522] border border-[#202738] rounded-none space-y-2.5" style={{ borderRadius: '0px' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <Lightbulb size={13} className="text-amber-400" />
+                      <span>AI Creative Concept for Today</span>
+                    </span>
+                    <span className="text-[9px] font-mono uppercase text-slate-500">External Tools</span>
+                  </div>
+
+                  <div className="p-2.5 bg-[#0c0f17] border border-[#1e2538] space-y-1">
+                    <p className="text-[11px] font-bold text-white">{aiBrief.ideaTitle}</p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">{aiBrief.ideaDescription}</p>
+                  </div>
+
+                  {/* Copyable Generative Prompt */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase">
+                        Prompt to Give External AI Tools:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPrompt(aiBrief.promptForTools)}
+                        className="px-2 py-0.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] flex items-center gap-1 transition cursor-pointer border border-rose-500/40"
+                      >
+                        {promptCopied ? (
+                          <>
+                            <Check size={10} className="text-emerald-400" />
+                            <span className="text-emerald-400">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={10} />
+                            <span>Copy Tool Prompt</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="p-2 bg-[#080b12] border border-[#1b2336] text-[10px] font-mono text-slate-300 leading-relaxed select-all">
+                      {aiBrief.promptForTools}
+                    </div>
+                  </div>
+
+                  {/* Suggested External Creation Tools */}
+                  <div className="space-y-1 pt-1">
+                    <p className="text-[9px] font-mono uppercase text-slate-500">Suggested External Tools to Run Prompt:</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {aiBrief.suggestedTools.map(tool => (
+                        <div
+                          key={tool.name}
+                          className="p-1.5 bg-[#0c0f17] border border-[#1e2538] text-[10px] flex flex-col"
+                        >
+                          <span className="font-bold text-white truncate">{tool.name}</span>
+                          <span className="text-[9px] text-slate-400 truncate">{tool.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 7. Dispatch Action Buttons — Strictly Guarded by Platform Connection */}
+                <div className="space-y-2 pt-1 border-t border-[#1b2336]">
+                  {!channelConnected ? (
+                    <div className="space-y-2">
+                      <div className="p-2.5 bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                          <span>{activePost?.channel || 'Platform'} Account Not Linked</span>
+                        </div>
+                        <p className="text-[10px] text-amber-300/80 leading-snug">
+                          Link your {activePost?.channel || 'social'} account in the Accounts page to enable scheduling or broadcasting live.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={navigateToAccounts}
+                          className="mt-1 py-1.5 px-3 text-xs font-bold text-white bg-[#c81e3c] hover:bg-[#b01732] flex items-center justify-center gap-1.5 cursor-pointer border-0"
+                          style={{ borderRadius: '0px' }}
+                        >
+                          <Sliders size={12} />
+                          <span>Configure in Accounts Page →</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 opacity-50 cursor-not-allowed">
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full py-2.5 px-3 text-xs font-bold text-slate-400 bg-[#161d2b] border border-[#222d42] cursor-not-allowed"
+                          title={`Cannot schedule: ${activePost?.channel} not connected`}
+                        >
+                          Schedule (Locked)
+                        </button>
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full py-2.5 px-3 text-xs font-bold text-slate-400 bg-[#161d2b] border border-[#222d42] cursor-not-allowed"
+                          title={`Cannot publish: ${activePost?.channel} not connected`}
+                        >
+                          Publish (Locked)
+                        </button>
+                      </div>
+                    </div>
                   ) : activePost?.status === 'Posted' ? (
-                    <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+                    <div className="p-3 bg-emerald-950/40 border border-emerald-500/50 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-emerald-200">
-                            {activePost?.channel === 'YouTube' ? 'Published to YouTube Channel' : 'Published Live'}
+                          <p className="text-xs font-black text-emerald-300 uppercase tracking-wide">
+                            ✓ PUBLISHED LIVE ON {activePost?.channel}
                           </p>
                           <p className="text-[10px] text-emerald-400/80 font-mono">
                             {activePost?.youtubeVideoId ? `Video ID: ${activePost.youtubeVideoId}` : 'Broadcast Complete'}
@@ -2762,172 +3362,83 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                       <button
                         type="button"
                         onClick={handleRevertToDraft}
-                        className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        className="px-2.5 py-1 text-[10px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
                         style={{ borderRadius: '0px' }}
                       >
-                        Revert to Draft
+                        Revert
                       </button>
                     </div>
                   ) : activePost?.status === 'Scheduled' ? (
-                    <div className="p-2.5 bg-sky-950/40 border border-sky-500/40 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+                    <div className="p-3 bg-sky-950/40 border border-sky-500/50 flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
                       <div className="flex items-center gap-2">
-                        <Clock size={15} className="text-sky-400 shrink-0" />
+                        <Clock size={16} className="text-sky-400 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-sky-200">
-                            {activePost?.youtubeVideoId ? 'Scheduled on YouTube Studio' : 'Scheduled in Campaign'}
+                          <p className="text-xs font-black text-sky-300 uppercase tracking-wide">
+                            ⏱ SCHEDULED FOR {activePost?.fullDateStr}
                           </p>
                           <p className="text-[10px] text-sky-400/80 font-mono">
-                            {activePost?.fullDateStr} at {activePost?.time || '9:00 AM'}
+                            Time: {activePost?.time || '9:00 AM'}
                           </p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={handleRevertToDraft}
-                        className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
+                        className="px-2.5 py-1 text-[10px] font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1a2234] border border-[#242d42] cursor-pointer transition"
                         style={{ borderRadius: '0px' }}
                       >
-                        Revert to Draft
+                        Revert
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={handleSchedulePost}
-                      disabled={isPublishingDirect}
-                      className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
-                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                    >
-                      <Clock size={14} className="text-white" />
-                      <span className="text-white font-bold">
-                        {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign (+50 XP)'}
-                      </span>
-                    </button>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Secondary: Save Draft */}
-                    <button
-                      type="button"
-                      onClick={handleSaveToDraft}
-                      disabled={isPublishingDirect}
-                      className="w-full py-2.5 px-3 rounded-none bg-[#0c0f17] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <CheckCircle2 size={13} className="text-slate-400" />
-                      <span>Save as Draft</span>
-                    </button>
-
-                    {/* Secondary: Publish Live */}
-                    <button
-                      type="button"
-                      onClick={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? handlePublishNow : navigateToAccounts}
-                      disabled={isPublishingDirect}
-                      className={`w-full py-2.5 px-3 rounded-none font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white disabled:opacity-50 ${
-                        isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-[#182030] text-slate-400 hover:text-white'
-                      }`}
-                      style={{ borderRadius: '0px' }}
-                      title={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? 'Publish live' : 'Connect channel first'}
-                    >
-                      <Send size={13} className="text-white" />
-                      <span className="font-bold">
-                        {isPublishingDirect
-                          ? 'Publishing...'
-                          : isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
-                            ? (activePost?.channel === 'YouTube' && !activePost?.videoBase64 && !activePost?.videoUrl ? 'Attach Video to Publish' : 'Publish Live (+100 XP)')
-                            : 'Connect to Publish'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Manual OpenAI Visual Studio */}
-              <div className="bg-[#111522] rounded-none p-3.5 space-y-2.5 border border-[#202738]">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-                    <ImageIcon size={14} className="text-sky-400" />
-                    <span>OpenAI Visual Generator</span>
-                  </span>
-                  {activePost?.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer border-0 bg-transparent"
-                    >
-                      <Trash2 size={11} /> Remove
-                    </button>
-                  )}
-                </div>
-
-                {activePost?.imageUrl ? (
-                  <div className="w-full h-40 bg-black overflow-hidden relative group rounded-none border border-white/10">
-                    <img src={activePost.imageUrl} alt="Generated visual" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <div className="space-y-2">
+                      {/* Primary: Schedule in Campaign */}
                       <button
                         type="button"
-                        onClick={handleGenerateImage}
-                        disabled={isGeneratingImage}
-                        className="px-3 py-1.5 bg-[#c81e3c] text-white text-xs font-bold rounded-none cursor-pointer border-0"
+                        onClick={handleSchedulePost}
+                        disabled={isPublishingDirect}
+                        className="w-full py-2.5 px-4 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
+                        style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
                       >
-                        {isGeneratingImage ? 'Regenerating...' : 'Regenerate'}
+                        <Clock size={13} className="text-white" />
+                        <span className="text-white font-bold">
+                          {isPublishingDirect ? 'Scheduling...' : `Schedule for ${activePost?.fullDateStr || 'Selected Date'} (+50 XP)`}
+                        </span>
                       </button>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Secondary: Save Draft */}
+                        <button
+                          type="button"
+                          onClick={handleSaveToDraft}
+                          disabled={isPublishingDirect}
+                          className="w-full py-2 px-3 bg-[#0c0f17] hover:bg-[#161b2b] text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#202738] disabled:opacity-50"
+                          style={{ borderRadius: '0px' }}
+                        >
+                          <CheckCircle2 size={12} className="text-slate-400" />
+                          <span>Save Draft</span>
+                        </button>
+
+                        {/* Secondary: Publish Live Now */}
+                        <button
+                          type="button"
+                          onClick={handlePublishNow}
+                          disabled={isPublishingDirect || (activePost?.channel === 'YouTube' && !activePost?.videoBase64 && !activePost?.videoUrl)}
+                          className="w-full py-2 px-3 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer border-0 text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:bg-[#1a2333]"
+                          style={{ borderRadius: '0px' }}
+                          title={activePost?.channel === 'YouTube' && !activePost?.videoBase64 && !activePost?.videoUrl ? 'Attach video file to publish' : 'Publish live now'}
+                        >
+                          <Send size={12} className="text-white" />
+                          <span>{isPublishingDirect ? 'Publishing...' : 'Publish Live (+100 XP)'}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-slate-400 leading-snug">
-                      Generate an AI visual with OpenAI for this draft. Triggered manually.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleGenerateImage}
-                      disabled={isGeneratingImage}
-                      className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-none flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 border-0"
-                    >
-                      <Wand2 size={13} className={isGeneratingImage ? 'animate-spin' : ''} />
-                      <span>{isGeneratingImage ? 'Generating with OpenAI...' : 'Generate Visual with OpenAI (+60 XP)'}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Viral Hooks */}
-              <div className="rounded-none p-3.5 bg-[#111522] border border-[#202738] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                    <Lightbulb size={13} className="text-amber-400" />
-                    <span>Quick Viral Hooks</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleGenerateHookIdeas}
-                    disabled={isGeneratingHooks}
-                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer disabled:opacity-50 border-0 bg-transparent"
-                  >
-                    <RefreshCw size={10} className={isGeneratingHooks ? 'animate-spin' : ''} />
-                    <span>Refresh</span>
-                  </button>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  {suggestedHooks.map((hook, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleApplyHook(hook)}
-                      className="w-full text-left p-2 rounded-none bg-[#161b2b] hover:bg-[#1c2236] transition cursor-pointer text-[11px] text-slate-300 flex items-start gap-1.5 border-0"
-                    >
-                      <span className="text-rose-400 font-bold">•</span>
-                      <span>"{hook}"</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-            </div>
-          )}
+              </div>
+            )
+          })()}
 
           {/* TAB 2: POSTIZ-STYLE WYSIWYG PLATFORM PREVIEWS */}
           {inspectorTab === 'preview' && (
@@ -3247,13 +3758,18 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={handleSchedulePost}
-                  disabled={isPublishingDirect}
-                  className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-50"
-                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  disabled={isPublishingDirect || !isChannelConnected(activePost?.channel, youtubeConnection, creatorData)}
+                  className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? brandRed : '#242b3d', color: '#ffffff', borderRadius: '0px' }}
+                  title={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? 'Schedule in campaign' : `Connect ${activePost?.channel || 'channel'} to schedule`}
                 >
                   <Clock size={14} className="text-white" />
                   <span className="text-white font-bold">
-                    {isPublishingDirect ? 'Scheduling...' : 'Schedule in Campaign Pipeline (+50 XP)'}
+                    {isPublishingDirect
+                      ? 'Scheduling...'
+                      : isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
+                        ? `Schedule for ${activePost?.fullDateStr || 'Selected Date'} (+50 XP)`
+                        : `Connect ${activePost?.channel || 'Channel'} to Schedule`}
                   </span>
                 </button>
 

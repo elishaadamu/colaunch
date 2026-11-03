@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp } from 'lucide-react'
+import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp, TrendingUp } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { useForge } from '../../App'
 
@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { id: 'preview',    icon: Laptop,     label: 'App Preview',       badge: 'Live' },
   { id: 'marketing',  icon: Megaphone,  label: 'Marketing',         badge: null },
   { id: 'calendar',   icon: Calendar,   label: 'Content Calendar',  badge: null },
+  { id: 'performance',icon: TrendingUp, label: 'Performance & AI', badge: 'Loop' },
   { id: 'community',  icon: Users,      label: 'Community',         badge: null },
   { id: 'studio',     icon: Layers,     label: 'Studio',            badge: null },
   { id: 'products',   icon: Package,    label: 'Products',          badge: null },
