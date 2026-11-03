@@ -44,7 +44,7 @@ export default function SupportChatPage() {
   const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'Growing'
 
   const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app'
   const creatorDashboardUrl = `${baseUrl}/dashboard/${creatorId}`
 
   // Non-destructive message merging: prevents poller from deleting optimistic or recent responses

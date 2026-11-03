@@ -329,16 +329,16 @@ export default function Login() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-              window.history.pushState(null, '', '/')
+            if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
+              window.history.pushState(null, '', '/portal')
             }
-            goTo('welcome')
+            goTo('creator-link')
           }}
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 bg-[#0e1320] hover:bg-[#151c2e] border border-[#1e293b] cursor-pointer"
           style={{ borderRadius: '0px' }}
         >
-          <ArrowLeft size={13} />
-          <span>Home</span>
+          <Sparkles size={13} className="text-[#c81e3c]" />
+          <span>Start Onboarding</span>
         </button>
 
         <div className="flex items-center gap-2">

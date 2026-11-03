@@ -166,7 +166,7 @@ export default function Celebration() {
   const creatorId = creatorData?.id || creatorData?.channelId || creatorData?._id || (
     'cr_' + cleanHandle + '_' + Math.abs(cleanHandle.split('').reduce((acc, ch) => ((acc << 5) - acc) + ch.charCodeAt(0), 0)).toString(36)
   )
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app'
   const dashboardUrl = `${baseUrl}/dashboard/${creatorId}`
   
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''

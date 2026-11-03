@@ -224,7 +224,7 @@ export default function SupportWidget({ currentStage }) {
   })
 
   const hasEscalation = displayedMessages.some(m => m.escalated || m.status === 'escalated_to_admin')
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://colaunch-web.vercel.app'
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app'
   const creatorDashboardUrl = `${baseUrl}/dashboard/${creatorId}`
 
   return (

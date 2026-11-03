@@ -263,7 +263,10 @@ export default function App() {
         return 'dashboard'
       }
 
-      if (path === '/' || path === '') return 'welcome'
+      if (path === '/' || path === '') {
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+        return hasSession ? 'dashboard' : 'login'
+      }
       if (path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
@@ -306,9 +309,10 @@ export default function App() {
         return 'dashboard'
       }
 
-      return 'welcome'
+      const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+      return hasSession ? 'dashboard' : 'login'
     } catch { }
-    return 'welcome'
+    return 'login'
   })
 
   const [userProfile, setUserProfile] = useState(() => {
@@ -616,7 +620,9 @@ export default function App() {
     } catch {}
     let path = '/'
     if (newStep === 'welcome') {
-      path = '/'
+      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      path = hasSession ? '/dashboard' : '/login'
+      newStep = hasSession ? 'dashboard' : 'login'
     } else if (newStep === 'creator-link' || ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(newStep)) {
       path = '/portal'
     } else if (newStep === 'login') {
@@ -923,7 +929,8 @@ export default function App() {
       }
 
       if (path === '/' || path === '') {
-        setStep('welcome')
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+        setStep(hasSession ? 'dashboard' : 'login')
       } else if (path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
@@ -1371,8 +1378,8 @@ export default function App() {
 
   return (
     <ForgeContext.Provider value={ctx}>
-      <div className={`min-h-screen ${step === 'welcome' ? 'bg-white text-slate-900' : 'bg-forge-bg text-white'} overflow-x-clip`}>
-        {screens[step] || <Welcome />}
+      <div className="min-h-screen bg-forge-bg text-white overflow-x-clip">
+        {screens[step] || <Login />}
       </div>
       <SupportWidget currentStage={step} />
       <WipeCreatorModal 
