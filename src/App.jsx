@@ -286,6 +286,16 @@ export default function App() {
         try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
         return 'dashboard'
       }
+      if (path.startsWith('/ops')) return 'ops'
+      if (path.startsWith('/launch') || path.startsWith('/creator-launch')) return 'launch'
+      if (path.startsWith('/portal/') || path.startsWith('/co-launch/')) return 'portal'
+      if (path.startsWith('/preorder/')) return 'preorder'
+      if (path.startsWith('/beta/')) return 'beta'
+      if (path.startsWith('/survey/')) return 'survey'
+      if (path.startsWith('/follow-up-crm') || path.startsWith('/crm')) return 'crm'
+      if (path.startsWith('/project-os') || path.startsWith('/projects') || path.startsWith('/project/')) return 'project-os'
+      if (path.startsWith('/participation-manager') || path.startsWith('/cobuilder-admin') || path.startsWith('/co-builders')) return 'participation'
+      if (path.startsWith('/join/')) return 'join'
       if (path === '/login') return 'login'
       if (path === '/signup') return 'signup'
 
@@ -956,8 +966,9 @@ export default function App() {
         const params = new URLSearchParams(search)
         const code = params.get('code')
         if (code) {
-          exchangeYouTubeAuthCode(code)
-            .then(channel => {
+          const authEmail = userProfile?.email || userProfile?.username || ''
+          exchangeYouTubeAuthCode(code, null, authEmail)
+            .then(async (channel) => {
               console.log('[YouTube OAuth] Channel connected:', channel?.title)
               if (channel) {
                 setCreatorData(prev => {
@@ -979,6 +990,20 @@ export default function App() {
                   try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
                   return updated
                 })
+
+                try {
+                  const { studyConnectedChannelAndBuildAssets } = await import('./services/channelStudyService')
+                  await studyConnectedChannelAndBuildAssets({
+                    channel,
+                    platform: 'youtube',
+                    creatorData,
+                    userProfile,
+                    updateCreator: (up) => setCreatorData(prev => ({ ...(prev || {}), ...up })),
+                    saveDashboardData: (section, data) => setDashboardData(prev => ({ ...prev, [section]: data }))
+                  })
+                } catch (e) {
+                  console.warn('[YouTube Study Notice]', e)
+                }
               }
             })
             .catch(err => {
@@ -1024,6 +1049,32 @@ export default function App() {
           })
         }
       } else {
+        // Dedicated standalone routes (ops, launch, portal, crm, etc.) must NEVER be redirected to /portal
+        if (
+          path.startsWith('/ops') ||
+          path.startsWith('/launch') ||
+          path.startsWith('/creator-launch') ||
+          path.startsWith('/portal/') ||
+          path.startsWith('/co-launch/') ||
+          path.startsWith('/preorder/') ||
+          path.startsWith('/beta/') ||
+          path.startsWith('/survey/') ||
+          path.startsWith('/crm') ||
+          path.startsWith('/follow-up-crm') ||
+          path.startsWith('/project-os') ||
+          path.startsWith('/projects') ||
+          path.startsWith('/project/') ||
+          path.startsWith('/participation-manager') ||
+          path.startsWith('/cobuilder-admin') ||
+          path.startsWith('/co-builders') ||
+          path.startsWith('/admin-error-log') ||
+          path.startsWith('/error-log') ||
+          path.startsWith('/errors') ||
+          path.startsWith('/join/')
+        ) {
+          return
+        }
+
         const rawParts = path.split('/').filter(Boolean)
         const reservedRoutes = [
           'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
@@ -1151,9 +1202,26 @@ export default function App() {
           console.log('[Forge] Restored user profile session from database:', data)
           if (data.status === 'success') {
             // Restore creatorData, calendar, launch pack, and studio copies from DB to localStorage
-            if (data.creator_data) {
+            if (data.creator_data && (data.creator_data.handle || data.creator_data.url)) {
               localStorage.setItem('forge_creator_data', JSON.stringify(data.creator_data))
               setCreatorData(prev => ({ ...prev, ...data.creator_data }))
+            } else {
+              localStorage.removeItem('forge_creator_data')
+              setCreatorData({
+                url: '',
+                platform: null,
+                handle: '',
+                name: '',
+                followers: 0,
+                avatar: null,
+                niche: '',
+                recentPosts: [],
+                engagementRate: 0,
+                brandColor: null,
+                blueprint: null,
+                productName: '',
+                buildItems: [],
+              })
             }
             if (data.calendar_data) {
               Object.entries(data.calendar_data).forEach(([key, val]) => {
@@ -1293,7 +1361,13 @@ export default function App() {
       const keysToRemove = []
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i)
-        if (k && (k.startsWith('forge_youtube_connection_') || k.startsWith('forge_meta_connection_') || k.startsWith('forge_accounts_platforms_'))) {
+        if (k && (
+          k.startsWith('forge_youtube_connection_') ||
+          k.startsWith('forge_meta_connection_') ||
+          k.startsWith('forge_accounts_platforms_') ||
+          k.startsWith('forge_creator_videos_') ||
+          k.startsWith('forge_audience_intel_')
+        )) {
           keysToRemove.push(k)
         }
       }

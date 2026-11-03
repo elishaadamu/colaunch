@@ -72,6 +72,7 @@ export default function Accounts() {
   const [facebookTokenInput, setFacebookTokenInput] = useState('')
   const [discoveredPages, setDiscoveredPages] = useState([])
   const [selectedPageId, setSelectedPageId] = useState('')
+  const [metaUserName, setMetaUserName] = useState(() => metaConn?.facebook?.pageName || '')
   const [isVerifyingMeta, setIsVerifyingMeta] = useState(false)
 
   // Instagram Manual / Custom Modal
@@ -1549,7 +1550,9 @@ export default function Accounts() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Meta Access Token
                   </label>
-                  <span className="text-[10px] font-mono text-emerald-400">Authenticated: Elisha Adamu</span>
+                  {metaUserName && (
+                    <span className="text-[10px] font-mono text-emerald-400">Authenticated: {metaUserName}</span>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -1571,6 +1574,9 @@ export default function Accounts() {
                       setIsVerifyingMeta(true)
                       try {
                         const res = await verifyMetaToken(facebookTokenInput)
+                        if (res.user?.name) {
+                          setMetaUserName(res.user.name)
+                        }
                         if (res.pages && res.pages.length > 0) {
                           setDiscoveredPages(res.pages)
                           setSelectedPageId(res.pages[0].id)
@@ -1587,7 +1593,7 @@ export default function Accounts() {
                     className="px-3 py-2 text-xs font-bold text-slate-200 hover:text-white bg-[#182030] hover:bg-[#202a40] border border-[#2b354d] cursor-pointer transition shrink-0"
                     style={{ borderRadius: '0px' }}
                   >
-                    {isVerifyingMeta ? 'Verifying...' : 'Re-verify'}
+                    {isVerifyingMeta ? 'Verifying...' : 'Verify Token'}
                   </button>
                 </div>
               </div>

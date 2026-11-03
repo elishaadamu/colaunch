@@ -69,8 +69,9 @@ export async function studyConnectedChannelAndBuildAssets({
 
   // 1. Fetch real uploaded videos from the connected channel
   let realVideos = []
+  const studyTarget = userProfile?.email || cleanHandle
   try {
-    realVideos = await fetchCreatorYouTubeVideos(cleanHandle, 8)
+    realVideos = await fetchCreatorYouTubeVideos(studyTarget, 8, true)
   } catch (err) {
     console.warn('[Channel Study] Failed fetching videos via scraper, checking channel cache:', err)
   }

@@ -106,7 +106,7 @@ export default function PerformanceIntelligence() {
 
   // Real channel video dataset
   const [videos, setVideos] = useState(() => {
-    const raw = creatorData?.recentPosts || ytConn?.recent_videos || []
+    const raw = ytConn?.recent_videos || (ytConn?.connected ? [] : (creatorData?.recentPosts || []))
     if (Array.isArray(raw) && raw.length > 0) {
       return mapRawVideosToPerformance(raw, productName, creatorName)
     }
@@ -116,15 +116,32 @@ export default function PerformanceIntelligence() {
   // Hydrate real videos from connected YouTube / Facebook channel
   useEffect(() => {
     if (!isConnected) return
-    const target = creatorData?.youtube_handle || creatorData?.handle || ytConn?.channel?.customUrl || ytConn?.channel?.id
+    const target = userProfile?.email || ytConn?.channel?.customUrl || ytConn?.channel?.id || creatorData?.youtube_handle || creatorData?.handle
     if (target && target !== 'default' && target !== '@creator') {
-      fetchCreatorYouTubeVideos(target, 8).then(res => {
+      fetchCreatorYouTubeVideos(target, 8, true).then(res => {
         if (Array.isArray(res) && res.length > 0) {
           setVideos(mapRawVideosToPerformance(res, productName, creatorName))
         }
       }).catch(() => {})
     }
-  }, [isConnected, creatorData?.handle, creatorData?.youtube_handle, creatorData?.name, productName])
+  }, [isConnected, userProfile?.email, ytConn?.channel?.customUrl, ytConn?.channel?.id, creatorData?.handle, creatorData?.youtube_handle, creatorData?.name, productName])
+
+  // Listen to live YouTube connection events
+  useEffect(() => {
+    const onYtConnect = (e) => {
+      const conn = e.detail
+      const target = userProfile?.email || conn?.channel?.customUrl || conn?.channel?.id
+      if (target) {
+        fetchCreatorYouTubeVideos(target, 8, true).then(res => {
+          if (Array.isArray(res) && res.length > 0) {
+            setVideos(mapRawVideosToPerformance(res, productName, creatorName))
+          }
+        }).catch(() => {})
+      }
+    }
+    window.addEventListener('forge_youtube_connected', onYtConnect)
+    return () => window.removeEventListener('forge_youtube_connected', onYtConnect)
+  }, [userProfile?.email, productName, creatorName])
 
   // Filtered video list
   const filteredVideos = videos.filter(v => {
@@ -135,9 +152,9 @@ export default function PerformanceIntelligence() {
   // Synchronize stats with live social APIs
   const handleSyncLiveStats = async () => {
     setIsSyncing(true)
-    const target = creatorData?.youtube_handle || creatorData?.handle || ytConn?.channel?.customUrl || ytConn?.channel?.id || 'default'
+    const target = userProfile?.email || ytConn?.channel?.customUrl || ytConn?.channel?.id || creatorData?.youtube_handle || creatorData?.handle || 'default'
     try {
-      const res = await fetchCreatorYouTubeVideos(target, 10)
+      const res = await fetchCreatorYouTubeVideos(target, 10, true)
       if (Array.isArray(res) && res.length > 0) {
         setVideos(mapRawVideosToPerformance(res, productName, creatorName))
         if (triggerToast) triggerToast('Video performance data synchronized with YouTube & live social APIs', 'success')

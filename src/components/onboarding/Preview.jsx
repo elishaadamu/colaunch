@@ -304,7 +304,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
   const mrrVal = Math.round(parseFollowerCount(creatorData?.followers || 0) * 0.015 * 19)
   const cleanMrr = `$${mrrVal > 0 ? mrrVal.toLocaleString() : '8,420'}`
 
-  const audienceStream = (Array.isArray(channelComments) && channelComments.length >= 2)
+  const audienceStream = (Array.isArray(channelComments) && channelComments.length >= 1)
     ? channelComments.slice(0, 5).map((c, i) => {
         const cleanUser = (c.author || '@member').replace(/^@/, '')
         const actions = [
@@ -321,12 +321,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
           time: c.published || c.time || `${(i + 1) * 7}m ago`
         }
       })
-    : [
-        { user: 'Sarah K.', action: 'Enrolled in Core Masterclass', amount: '+$149.00', time: '4m ago' },
-        { user: 'David M.', action: 'Joined Monthly VIP Circle', amount: '+$35.00/mo', time: '18m ago' },
-        { user: 'Elena R.', action: 'Downloaded Strategy Pack', amount: 'Free', time: '34m ago' },
-        { user: 'PC Master', action: 'Purchased Toolkit Bundle', amount: '+$79.00', time: '1h ago' },
-      ]
+    : []
 
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto" style={{ background: '#0f1117' }}>
@@ -720,28 +715,12 @@ function ProductLandingPage({
   const topVideoThumb = topVideo?.thumbnail || (topVideo?.videoId ? `https://i.ytimg.com/vi/${topVideo.videoId}/hqdefault.jpg` : '')
   const topVideoUrl = topVideo?.url || (topVideo?.videoId ? `https://www.youtube.com/watch?v=${topVideo.videoId}` : creatorUrl)
 
-  // Real Scraped Comments from Channel
+  // Real Scraped Comments from Channel (Strictly Genuine — Zero Fake Comments)
   const communityComments = (Array.isArray(channelComments) && channelComments.length > 0)
     ? channelComments.slice(0, 6)
     : (Array.isArray(creatorData?.comments) && creatorData.comments.length > 0)
       ? creatorData.comments.slice(0, 6)
-      : [
-          {
-            author: '@AlexDev88',
-            text: `This solved the exact problem I have been wrestling with for weeks. Having a single organized platform with full breakdowns is incredible.`,
-            published: '2 days ago'
-          },
-          {
-            author: '@JordanWorship',
-            text: `The clarity and depth brought here is unmatched. It completely transformed our weekly workflow.`,
-            published: '1 week ago'
-          },
-          {
-            author: '@SarahTech',
-            text: `Finally, a dedicated space with real community interaction and organized files instead of random YouTube search results.`,
-            published: '3 days ago'
-          }
-        ]
+      : []
 
   // Headline & Subtitle
   const heroHeadline = blueprint?.tagline || `The Ultimate Resource Hub for ${creatorName}'s Community`
@@ -1172,70 +1151,72 @@ function ProductLandingPage({
         </section>
       )}
 
-      {/* 5. Real Audience Community Discussions (Show Their Comments!) */}
-      <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-            <div>
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                Community Feed
-              </span>
-              <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
-                What the Community Is Saying
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Direct reactions, discussions, and questions from viewers across recent uploads.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onSwitchToProduct}
-              className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
-              style={{ color: dynamicAccent }}
-            >
-              <span>Join Discussion Room →</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {communityComments.map((c, idx) => (
-              <div 
-                key={idx}
-                className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
-                      style={{ background: dynamicAccentBg }}
-                    >
-                      {(c.author || c.user || 'V').replace('@','').charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-white truncate block">
-                        {c.author || c.user || '@viewer'}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-mono block">
-                        {c.published || c.time || 'Community Member'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
-                    "{c.text || c.quote}"
-                  </p>
-                </div>
-
-                {c.videoTitle && (
-                  <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
-                    on: {c.videoTitle}
-                  </div>
-                )}
+      {/* 5. Real Audience Community Discussions (Rendered only when real channel comments exist — zero fake comments) */}
+      {communityComments.length > 0 && (
+        <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+              <div>
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Community Feed
+                </span>
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                  What the Community Is Saying
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Direct reactions, discussions, and questions from viewers across recent uploads.
+                </p>
               </div>
-            ))}
+              <button
+                type="button"
+                onClick={onSwitchToProduct}
+                className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
+                style={{ color: dynamicAccent }}
+              >
+                <span>Join Discussion Room →</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {communityComments.map((c, idx) => (
+                <div 
+                  key={idx}
+                  className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
+                        style={{ background: dynamicAccentBg }}
+                      >
+                        {(c.author || c.user || 'V').replace('@','').charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-bold text-white truncate block">
+                          {c.author || c.user || '@viewer'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono block">
+                          {c.published || c.time || 'Community Member'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
+                      "{c.text || c.quote}"
+                    </p>
+                  </div>
+
+                  {c.videoTitle && (
+                    <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
+                      on: {c.videoTitle}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
       <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>

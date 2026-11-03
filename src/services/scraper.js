@@ -857,30 +857,43 @@ function inferNicheFromDescription(text) {
  * Automatically tries backend video endpoint, proxy feed, and Apify fallback.
  * Caches in sessionStorage and localStorage for fast repeat access.
  */
-export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
+export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8, bypassCache = false) {
   if (!handleOrUrl) return []
   let clean = String(handleOrUrl).trim()
   if (clean.includes('youtube.com/')) {
     clean = clean.split('youtube.com/').pop().split('?')[0].replace(/^\/?@?/, '')
-  } else {
+  } else if (!clean.includes('@') || clean.startsWith('@')) {
     clean = clean.replace(/^@/, '')
   }
   if (!clean || /^[0-9a-f-]{15,}$/i.test(clean)) return []
 
-  const cacheKey = `forge_creator_videos_${clean.toLowerCase()}`
+  // Check active authenticated user email
+  let activeEmail = ''
   try {
-    const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
-    if (cached) {
-      const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    const raw = localStorage.getItem('forge_user_profile')
+    if (raw) {
+      const p = JSON.parse(raw)
+      activeEmail = p.email || p.username || ''
     }
-  } catch (e) {}
+  } catch (_) {}
+
+  const cacheKey = `forge_creator_videos_${clean.toLowerCase()}`
+  if (!bypassCache) {
+    try {
+      const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch (e) {}
+  }
 
   let videos = []
 
-  // 0. Try authenticated YouTube Data API v3 endpoint first
+  // 0. Try authenticated YouTube Data API v3 endpoint first with user's email/identifier
   try {
-    const res = await fetch(`/api/youtube/videos?identifier=${encodeURIComponent(clean)}&limit=${limit}`)
+    const targetId = activeEmail || clean
+    const res = await fetch(`/api/youtube/videos?identifier=${encodeURIComponent(targetId)}&email=${encodeURIComponent(targetId)}&limit=${limit}`)
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.videos) && data.videos.length > 0) {
@@ -888,6 +901,19 @@ export async function fetchCreatorYouTubeVideos(handleOrUrl, limit = 8) {
       }
     }
   } catch (e) {}
+
+  // 0b. If no videos and clean is different from activeEmail, try with clean identifier
+  if ((!videos || videos.length === 0) && clean && clean !== activeEmail) {
+    try {
+      const res = await fetch(`/api/youtube/videos?identifier=${encodeURIComponent(clean)}&limit=${limit}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.videos) && data.videos.length > 0) {
+          videos = data.videos
+        }
+      }
+    } catch (e) {}
+  }
 
   // 1. Try backend YouTube video scraper endpoint
   if (!videos || videos.length === 0) {

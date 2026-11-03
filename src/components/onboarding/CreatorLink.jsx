@@ -33,9 +33,9 @@ export function TikTokIcon({ className = 'w-4 h-4' }) {
 }
 
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',   icon: Youtube,    color: 'text-red-500',   patterns: ['youtube.com', 'youtu.be'] },
-  { id: 'instagram', label: 'Instagram', icon: Instagram,  color: 'text-pink-500',  patterns: ['instagram.com'] },
-  { id: 'tiktok',    label: 'TikTok',    icon: TikTokIcon, color: 'text-teal-400',  patterns: ['tiktok.com'] },
+  { id: 'youtube', label: 'YouTube', icon: Youtube, color: 'text-red-500', patterns: ['youtube.com', 'youtu.be'] },
+  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-500', patterns: ['instagram.com'] },
+  { id: 'tiktok', label: 'TikTok', icon: TikTokIcon, color: 'text-teal-400', patterns: ['tiktok.com'] },
 ]
 
 function detectPlatform(url) {
@@ -55,7 +55,7 @@ function extractHandle(url) {
     }
     const u = new URL(parseUrl)
     const parts = u.pathname.split('/').filter(Boolean)
-    
+
     if (parts.length) {
       if (parts[0] === 'user' || parts[0] === 'c' || parts[0] === 'channel') {
         const h = parts[1]
@@ -67,7 +67,7 @@ function extractHandle(url) {
         : last
       return h.startsWith('@') ? h : `@${h}`
     }
-  } catch {}
+  } catch { }
   return url.replace(/^@/, '') ? `@${url.replace(/^@/, '')}` : ''
 }
 
@@ -81,19 +81,19 @@ function formatFollowers(count) {
 
 function getTopFormat(platformId) {
   switch (platformId) {
-    case 'youtube':   return 'Long-form Video'
+    case 'youtube': return 'Long-form Video'
     case 'instagram': return 'Visual & Reels'
-    case 'twitter':   return 'Short-form & Threads'
-    case 'tiktok':    return 'Vertical Video'
-    case 'linkedin':  return 'Professional Thought-Leadership'
-    default:          return 'Digital Content'
+    case 'twitter': return 'Short-form & Threads'
+    case 'tiktok': return 'Vertical Video'
+    case 'linkedin': return 'Professional Thought-Leadership'
+    default: return 'Digital Content'
   }
 }
 
 function getTargetArchetype(creator) {
   const niche = (creator?.niche?.[0] || creator?.niche || '').toLowerCase()
   const text = `${creator?.name || ''} ${creator?.handle || ''} ${creator?.description || ''}`.toLowerCase()
-  
+
   if (niche.includes('tech') || text.includes('software') || text.includes('engineer') || text.includes('ai')) {
     return 'Tech Founders & Engineers'
   }
@@ -116,9 +116,9 @@ export default function CreatorLink() {
   const { next, prev, goTo, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator, userProfile } = useForge()
 
   // Retain creator data from session storage across reloads unless explicitly wiped
-  const [url, setUrl]                 = useState(() => creatorData?.url || '')
-  const [platform, setPlatform]       = useState(() => (creatorData?.url ? detectPlatform(creatorData.url) : (creatorData?.platform ? PLATFORMS.find(p => p.id === creatorData.platform) : null)))
-  const [handle, setHandle]           = useState(() => creatorData?.handle || '')
+  const [url, setUrl] = useState(() => creatorData?.url || '')
+  const [platform, setPlatform] = useState(() => (creatorData?.url ? detectPlatform(creatorData.url) : (creatorData?.platform ? PLATFORMS.find(p => p.id === creatorData.platform) : null)))
+  const [handle, setHandle] = useState(() => creatorData?.handle || '')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showPreview, setShowPreview] = useState(() => Boolean(creatorData?.handle && creatorData?.followers > 0))
   const [scrapedPreview, setScrapedPreview] = useState(() => (creatorData?.handle && creatorData?.followers > 0 ? creatorData : null))
@@ -193,9 +193,17 @@ export default function CreatorLink() {
     setUrl(val)
     const detected = detectPlatform(val)
     setPlatform(detected)
-    setHandle(detected ? extractHandle(val) : extractHandle(val))
-    if (!val.trim()) {
+    const parsedH = extractHandle(val)
+    setHandle(parsedH)
+    
+    // Hide preview whenever the input no longer matches the currently displayed creator
+    const cleanVal = (val || '').trim().toLowerCase()
+    const activeUrl = (scrapedPreview?.url || creatorData?.url || '').trim().toLowerCase()
+    const activeH = (scrapedPreview?.handle || creatorData?.handle || '').trim().toLowerCase().replace(/^@/, '')
+    const inputH = (parsedH || '').trim().toLowerCase().replace(/^@/, '')
+    if (!cleanVal || (cleanVal !== activeUrl && inputH !== activeH)) {
       setShowPreview(false)
+      setScrapedPreview(null)
     }
   }
 
@@ -302,7 +310,7 @@ export default function CreatorLink() {
           setScrapedPreview(finalPayload)
           setShowPreview(true)
           logTelemetry(`✓ Creator verified — moving to Step 2...`)
-          
+
           // Automatically advance to Step 2 so user doesn't have to click
           autoAdvanceTimerRef.current = setTimeout(() => {
             next()
@@ -341,9 +349,9 @@ export default function CreatorLink() {
     <div className="min-h-screen flex flex-col justify-between bg-[#090a0c] text-neutral-200 font-sans relative overflow-x-hidden selection:bg-[#c81e3c]/30 selection:text-white">
 
       {/* Ambient subtle top gradient aura */}
-      <div 
-        className="pointer-events-none fixed inset-0 z-0" 
-        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(200, 30, 60, 0.12) 0%, rgba(9, 10, 12, 0) 70%)' }} 
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(200, 30, 60, 0.12) 0%, rgba(9, 10, 12, 0) 70%)' }}
       />
       <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-[#c81e3c]/10 blur-[130px] rounded-full z-0" />
 
@@ -417,7 +425,7 @@ export default function CreatorLink() {
       {/* MAIN ONBOARDING HERO CONTAINER */}
       <main className="relative z-10 w-full max-w-3xl mx-auto px-5 sm:px-8 py-8 md:py-12 my-auto">
         <div className="flex flex-col items-center sm:items-start text-left">
-          
+
           {/* Stage Pill Tag */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-[#c81e3c] border border-[#c81e3c] text-white text-[11px] font-semibold tracking-wider uppercase mb-5">
             <span className="w-1.5 h-1.5 rounded-none bg-white"></span>
@@ -439,7 +447,7 @@ export default function CreatorLink() {
 
           {/* Feature Checklist (Glass badge cards) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mb-8">
-            
+
             {/* Feature 1 */}
             <div className="flex items-start gap-3 p-3.5 rounded-none bg-[#111317]/40 border border-[#1f242c]/80 hover:border-[#1f242c] transition-colors">
               <div className="flex-shrink-0 w-6 h-6 rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white text-xs mt-0.5">
@@ -477,23 +485,23 @@ export default function CreatorLink() {
           {/* Quick Platform Filter Pills */}
           <div className="flex flex-wrap items-center gap-2 mb-3 w-full">
             <span className="text-xs text-neutral-500 font-medium mr-1">Suggested formats:</span>
-            <button 
-              type="button" 
-              onClick={() => setPreset('https://youtube.com/@Akvofoundation')} 
+            <button
+              type="button"
+              onClick={() => setPreset('https://youtube.com/@Akvofoundation')}
               className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Youtube className="w-3 h-3 text-red-400" /> youtube.com/@handle
             </button>
-            <button 
-              type="button" 
-              onClick={() => setPreset('https://tiktok.com/@khaby.lame')} 
+            <button
+              type="button"
+              onClick={() => setPreset('https://tiktok.com/@khaby.lame')}
               className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <TikTokIcon className="w-3 h-3 text-teal-400" /> tiktok.com/@creator
             </button>
-            <button 
-              type="button" 
-              onClick={() => setPreset('https://instagram.com/hubermanlab')} 
+            <button
+              type="button"
+              onClick={() => setPreset('https://instagram.com/hubermanlab')}
               className="text-xs px-2.5 py-1 rounded-none bg-[#15181e] border border-[#1f242c] text-neutral-300 hover:text-white hover:border-[#c81e3c]/40 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Instagram className="w-3 h-3 text-pink-400" /> instagram.com/name
@@ -502,11 +510,11 @@ export default function CreatorLink() {
 
           {/* FORM INTERFACE */}
           <form onSubmit={handleAnalyze} className="w-full space-y-4">
-            
+
             {/* Input field wrapper with glowing active outline */}
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[#c81e3c]/20 via-[#c81e3c]/40 to-[#c81e3c]/20 rounded-none blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-              
+
               <div className="relative flex items-center w-full bg-[#111317] border border-[#1f242c] group-focus-within:border-[#c81e3c] rounded-none overflow-hidden transition-all duration-200 shadow-inner">
                 {/* Dynamic Icon on left */}
                 <div className={`pl-4 pr-3 ${platformColorClass} group-focus-within:text-[#c81e3c] transition-colors duration-200`}>
@@ -602,7 +610,7 @@ export default function CreatorLink() {
 
                 {/* Progress bar track */}
                 <div className="w-full h-1 bg-[#121622] relative overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-[#941128] via-[#c81e3c] to-[#ff4d6d] transition-all duration-100 ease-out shadow-[0_0_10px_#c81e3c]"
                     style={{ width: `${Math.min(Math.round(((scrapeElapsedMs || 0) / 2300) * 98), 98)}%` }}
                   />
@@ -672,14 +680,14 @@ export default function CreatorLink() {
               <div className="flex items-center justify-between pb-4 border-b border-[#1f242c]">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <img 
-                      src={displayAvatar} 
-                      alt={displayName} 
+                    <img
+                      src={displayAvatar}
+                      alt={displayName}
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face'
                       }}
-                      className="w-11 h-11 rounded-none border border-[#1f242c] object-cover" 
+                      className="w-11 h-11 rounded-none border border-[#1f242c] object-cover"
                     />
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#c81e3c] rounded-none flex items-center justify-center text-[9px] text-white font-black shadow">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -720,17 +728,17 @@ export default function CreatorLink() {
                   Target archetype: <strong className="text-neutral-200">{displayArchetype}</strong>
                 </span>
                 <div className="flex items-center gap-4">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={handleClear}
                     className="text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3 text-neutral-400" />
                     <span>Search different creator</span>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={handleProceedToStep2} 
+                  <button
+                    type="button"
+                    onClick={handleProceedToStep2}
                     className="px-3 py-1.5 bg-[#c81e3c] hover:bg-[#b01732] text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm rounded-none transition-colors"
                   >
                     <span className="text-white">Moving to Step 2</span>
