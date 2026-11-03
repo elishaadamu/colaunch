@@ -203,46 +203,75 @@ function getPlatformColor(platform) {
   return { text: 'text-slate-300', bg: 'bg-slate-500/10', border: 'border-slate-500/30' }
 }
 
-function isMockupCalendar(result) {
+function isMockupCalendar(result, creatorData) {
   if (!result || !Array.isArray(result) || result.length === 0) return true
   const str = JSON.stringify(result)
-  return str.includes('init-mon-1') ||
-         str.includes('Launch teaser reel') ||
-         str.includes('Early access email') ||
-         str.includes('5 things I wish I knew') ||
-         str.includes('YouTube live — product intro') ||
-         str.includes('Launch day announcement')
+  const legacyPhrases = [
+    'init-mon-1',
+    'Launch teaser reel',
+    'Early access email',
+    '5 things I wish I knew',
+    'YouTube live — product intro',
+    'Launch day announcement',
+    'Fund Real Good Deeds',
+    'See the JOY!',
+    'Impact Tee',
+    'From Pranks to Purpose',
+    'Good Deeds Gear',
+    'Foundation to Help EVERYONE',
+    'Outfit Check: Doing Good',
+    'Foundation Gear',
+    'SURPRISE!! We Built a Foundation'
+  ]
+  for (const phrase of legacyPhrases) {
+    if (str.includes(phrase)) return true
+  }
+
+  if (creatorData) {
+    const curName = (creatorData.name || (creatorData.handle || '').replace(/^@+/, '')).trim().toLowerCase()
+    const otherCreators = ['adamu elisha inuwa', 'ali abdaal', 'mrbeast', 'mkbhd', 'basic brain']
+    for (const other of otherCreators) {
+      if (curName && !curName.includes(other) && !other.includes(curName)) {
+        if (str.toLowerCase().includes(other)) return true
+      }
+    }
+  }
+
+  return false
 }
 
 function buildFallbackWeek(creatorData) {
   const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@/, '')
-  const niche = creatorData?.niche || 'Fitness'
-  const prod = creatorData?.productName || `${name} Academy`
+  const niche = creatorData?.niche || 'Digital Content'
+  const prod = creatorData?.productName || `${name} Launchpad`
   return [
     { day: 'Mon', posts: [
-      { id: 1, type: 'Video', title: `Welcome to the VIP ${name} ${niche} Masterclass Launch!`, platform: 'YouTube', theme: 'launch', status: 'draft' },
-      { id: 2, type: 'Reel', title: `3 ${niche} Myths Busted by our Academic Experts`, platform: 'Instagram', theme: 'value', status: 'draft' }
+      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 2, type: 'Reel', title: `The Biggest Announcement of the Year: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Tue', posts: [
-      { id: 3, type: 'Email', title: `How Our Masterclass Will Transform Your ${niche} Journey`, platform: 'Email', theme: 'story', status: 'draft' }
+      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 4, type: 'Post', title: `Behind The Scenes: Why We Built ${prod} For Our Community`, platform: 'Instagram', theme: 'value', status: 'draft' }
     ]},
     { day: 'Wed', posts: [
-      { id: 4, type: 'Shorts', title: `Building the Masterclass: Behind-the-Scenes Sneak Peek`, platform: 'YouTube', theme: 'bts', status: 'draft' },
-      { id: 5, type: 'Story', title: `Meet the Trainers: Get to Know Our Masterclass Stars`, platform: 'Instagram', theme: 'community', status: 'draft' }
+      { id: 5, type: 'Story', title: `Platform Architecture & Feature Walkthrough`, platform: 'Instagram', theme: 'bts', status: 'draft' },
+      { id: 6, type: 'Thread', title: `My Journey Building ${prod} for ${name}'s Audience`, platform: 'Twitter', theme: 'story', status: 'draft' }
     ]},
     { day: 'Thu', posts: [
-      { id: 6, type: 'Community', title: `Join our Live Q&A Session with Masterclass Alumni`, platform: 'YouTube', theme: 'launch', status: 'draft' }
+      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
+      { id: 8, type: 'Email', title: `IT'S LIVE! The ${prod} VIP Early Access`, platform: 'Email', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Fri', posts: [
-      { id: 7, type: 'Post', title: `Why Our ${niche} Toolkit Is Essential for Your Success`, platform: 'Instagram', theme: 'proof', status: 'draft' },
-      { id: 8, type: 'Post', title: `Achieving Personal Bests: Success Stories from Our Masterclass`, platform: 'LinkedIn', theme: 'proof', status: 'draft' }
+      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'draft' },
+      { id: 10, type: 'Shorts', title: `Quick Tour: Everything You Get With ${prod}!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
     ]},
     { day: 'Sat', posts: [
-      { id: 9, type: 'Video', title: `Your Weekend ${niche} Challenge: From the Masterclass Workbook`, platform: 'YouTube', theme: 'value', status: 'draft' }
+      { id: 11, type: 'Video', title: `Top 3 Frameworks for Success in ${niche}`, platform: 'TikTok', theme: 'value', status: 'draft' },
+      { id: 12, type: 'Community', title: `Weekend AMA: Drop your questions about ${prod}`, platform: 'YouTube', theme: 'community', status: 'draft' }
     ]},
     { day: 'Sun', posts: [
-      { id: 10, type: 'Email', title: `Last Chance to Join: Enroll in the Masterclass Today`, platform: 'Email', theme: 'cta', status: 'draft' },
-      { id: 11, type: 'Thread', title: `Top 5 Reasons You Need Our ${niche} Masterclass This Year`, platform: 'Twitter', theme: 'cta', status: 'draft' }
+      { id: 13, type: 'Post', title: `Week 1 Recap: What We Learned Launching ${prod}`, platform: 'Instagram', theme: 'proof', status: 'draft' },
+      { id: 14, type: 'Email', title: `Your Week Ahead With ${prod}: Roadmap & Updates`, platform: 'Email', theme: 'retention', status: 'draft' }
     ]}
   ]
 }
@@ -1493,8 +1522,11 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
       const cached = localStorage.getItem(cacheKey) || localStorage.getItem(cacheKeyLower)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (!isMockupCalendar(parsed)) {
+        if (!isMockupCalendar(parsed, creatorData)) {
           return mapCalendarResult(parsed)
+        } else {
+          localStorage.removeItem(cacheKey)
+          localStorage.removeItem(cacheKeyLower)
         }
       }
     } catch (e) {
@@ -1587,9 +1619,12 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        if (!isMockupCalendar(parsed)) {
+        if (!isMockupCalendar(parsed, creatorData)) {
           console.log('[Forge Marketing] Loaded cached launch week calendar:', parsed)
           setWeek(mapCalendarResult(parsed))
+        } else {
+          localStorage.removeItem(cacheKey)
+          localStorage.removeItem(cacheKeyLower)
         }
       } catch (e) {
         console.error('Failed to parse cached calendar:', e)
@@ -1656,9 +1691,11 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
           const cached = localStorage.getItem(k)
           if (cached) {
             const parsed = JSON.parse(cached)
-            if (!isMockupCalendar(parsed)) {
+            if (!isMockupCalendar(parsed, creatorData)) {
               setWeek(mapCalendarResult(parsed))
               break
+            } else {
+              localStorage.removeItem(k)
             }
           }
         } catch (_) {}
@@ -1684,9 +1721,12 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
       if (cached) {
         try {
           const parsed = JSON.parse(cached)
-          if (!isMockupCalendar(parsed)) {
+          if (!isMockupCalendar(parsed, creatorData)) {
             setWeek(mapCalendarResult(parsed))
             return
+          } else {
+            localStorage.removeItem(cacheKey)
+            localStorage.removeItem(cacheKeyLower)
           }
         } catch (e) {
           console.error('Failed to parse cached calendar:', e)
@@ -1724,10 +1764,13 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
       if (cached) {
         try {
           const parsed = JSON.parse(cached)
-          if (!isMockupCalendar(parsed)) {
+          if (!isMockupCalendar(parsed, creatorData)) {
             setWeek(mapCalendarResult(parsed))
             clearBgJob(AUTOFILL_JOB)
             return
+          } else {
+            localStorage.removeItem(cacheKey)
+            localStorage.removeItem(cacheKeyLower)
           }
         } catch (e) {}
       }

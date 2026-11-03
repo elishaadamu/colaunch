@@ -219,6 +219,28 @@ export async function studyConnectedChannelAndBuildAssets({
   try {
     localStorage.setItem('forge_creator_data', JSON.stringify(updatedCreatorData))
     localStorage.setItem(`forge_campaign_posts_${cleanHandle}`, JSON.stringify(campaignPosts))
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const rawCalendar = dayNames.map((dName, dIdx) => {
+      const p = campaignPosts[dIdx]
+      return {
+        day: dName,
+        posts: p ? [{
+          id: dIdx + 1,
+          platform: p.channel,
+          type: p.format || 'Post',
+          title: p.title,
+          body: p.caption,
+          theme: (p.strategy || 'launch').toLowerCase(),
+          status: 'draft',
+          time: p.time
+        }] : []
+      }
+    })
+    localStorage.setItem(`forge_calendar_${cleanHandle}_launch_w0`, JSON.stringify(rawCalendar))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'channelStudyService' } }))
+    }
   } catch (_) {}
 
   // 6. Persist permanently to MongoDB Atlas

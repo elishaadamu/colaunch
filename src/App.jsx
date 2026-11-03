@@ -909,6 +909,23 @@ export default function App() {
         (prevUrl && newUrl && prevUrl !== newUrl)
       )
 
+      if (isDifferentCreator) {
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i)
+            if (k && (
+              k.startsWith('forge_calendar_') ||
+              k.startsWith('forge_campaign_posts_') ||
+              k.includes('_launch_pack') ||
+              k.includes('_launch_image') ||
+              k.includes('_studio_')
+            )) {
+              localStorage.removeItem(k)
+            }
+          }
+        } catch (_) {}
+      }
+
       const base = isDifferentCreator ? {
         url: '',
         platform: null,

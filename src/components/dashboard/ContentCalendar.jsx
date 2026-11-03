@@ -702,16 +702,57 @@ export function getAiDailyBrief(post, productName = 'CoLaunch Platform', creator
   }
 }
 
+export function isStaleOrClashingCalendar(calendar, creatorData) {
+  if (!calendar || !Array.isArray(calendar) || calendar.length === 0) return true
+  const str = JSON.stringify(calendar)
+
+  // 1. Reject legacy boilerplate and mock phrases
+  const legacyPhrases = [
+    'Fund Real Good Deeds',
+    'See the JOY!',
+    'Impact Tee',
+    'From Pranks to Purpose',
+    'Good Deeds Gear',
+    'Foundation to Help EVERYONE',
+    'Outfit Check: Doing Good',
+    'Foundation Gear',
+    'SURPRISE!! We Built a Foundation',
+    'init-mon-1',
+    'Launch teaser reel',
+    'Early access email',
+    '5 things I wish I knew',
+    'YouTube live — product intro',
+    'Launch day announcement'
+  ]
+  for (const phrase of legacyPhrases) {
+    if (str.includes(phrase)) return true
+  }
+
+  // 2. Reject if calendar clearly names another creator or mismatched brand
+  if (creatorData) {
+    const curName = (creatorData.name || (creatorData.handle || '').replace(/^@+/, '')).trim().toLowerCase()
+    const otherCreators = ['adamu elisha inuwa', 'ali abdaal', 'mrbeast', 'mkbhd', 'basic brain']
+    for (const other of otherCreators) {
+      if (curName && !curName.includes(other) && !other.includes(curName)) {
+        if (str.toLowerCase().includes(other)) {
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
+
 // Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
 export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
-  const handle = creatorData?.handle || 'default'
-  const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase()
-  const rawH = handle.replace(/^@+/, '')
+  const creatorName = creatorData?.name || (creatorData?.handle || '').replace(/^@+/, '') || 'Creator'
+  const handle = creatorData?.handle || creatorName || 'creator'
+  const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  const rawH = handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_]/g, '_')
   const cacheKeys = [
-    `forge_calendar_${handle}_launch_w0`,
-    `forge_calendar_${handle.toLowerCase()}_launch_w0`,
-    `forge_calendar_${rawH}_launch_w0`,
-    `forge_calendar_${hClean}_launch_w0`
+    `forge_calendar_${hClean}_launch_w0`,
+    `forge_calendar_${rawH}_launch_w0`
   ]
 
   let rawCalendar = null
@@ -720,15 +761,17 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       const saved = localStorage.getItem(k)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0 && !isStaleOrClashingCalendar(parsed, creatorData)) {
           rawCalendar = parsed
           break
+        } else if (parsed && isStaleOrClashingCalendar(parsed, creatorData)) {
+          localStorage.removeItem(k)
         }
       }
     } catch (_) {}
   }
 
-  // If no calendar in localStorage yet, build tailored week and persist to localStorage
+  // If no calendar in localStorage yet or it was stale/clashing, build tailored week and persist to localStorage
   if (!rawCalendar) {
     rawCalendar = buildTailoredFallbackWeek(creatorData)
     cacheKeys.forEach(k => {
@@ -1030,20 +1073,17 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         }
       })
 
-      const handle = creatorData?.handle || 'default'
-      const hClean = handle.replace(/^@+/, '')
+      const handle = creatorData?.handle || creatorName || 'creator'
+      const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
       const keys = [
-        `forge_calendar_${handle}_launch_w0`,
-        `forge_calendar_${handle.toLowerCase()}_launch_w0`,
-        `forge_calendar_${hClean}_launch_w0`,
-        `forge_calendar_${hClean.toLowerCase()}_launch_w0`
+        `forge_calendar_${hClean}_launch_w0`
       ]
       keys.forEach(k => {
         try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}
       })
       window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'ContentCalendar' } }))
     }
-  }, [posts, handleClean, creatorData?.handle])
+  }, [posts, handleClean, creatorData?.handle, creatorName])
 
   // Cross-component listener: reload when Marketing updates
   useEffect(() => {
@@ -1058,12 +1098,38 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     return () => window.removeEventListener('forge_calendar_updated', handleCalendarSync)
   }, [creatorData, productName, handleClean])
 
+  // Re-synchronize calendar immediately whenever active creator changes
+  const activeCreatorKey = `${handleClean}_${productName}_${creatorData?.name || ''}`
+  const lastActiveCreatorKeyRef = useRef(activeCreatorKey)
+
+  useEffect(() => {
+    if (lastActiveCreatorKeyRef.current !== activeCreatorKey) {
+      lastActiveCreatorKeyRef.current = activeCreatorKey
+      const fresh = loadSyncedCampaignPosts(creatorData, productName, handleClean)
+      const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+      const sanitized = fresh.map(p => {
+        const isConn = isChannelConnected(p.channel, ytConn, creatorData)
+        if (!isConn && p.status !== 'Draft') {
+          return { ...p, status: 'Draft', scheduledAt: null }
+        }
+        return p
+      })
+      setPosts(sanitized)
+    }
+  }, [activeCreatorKey, creatorData, productName, handleClean, userProfile?.email])
+
   // Hydrate calendar from MongoDB Atlas user_profiles
   useEffect(() => {
     if (dashboardData?.calendar_data) {
       const cal = dashboardData.calendar_data
       if (Array.isArray(cal.campaign_posts) && cal.campaign_posts.length > 0) {
-        setPosts(cal.campaign_posts)
+        if (!isStaleOrClashingCalendar(cal.campaign_posts, creatorData)) {
+          setPosts(cal.campaign_posts)
+        } else {
+          // Reject stale clashing posts and refresh tailored schedule
+          const fresh = loadSyncedCampaignPosts(creatorData, productName, handleClean)
+          setPosts(fresh)
+        }
       }
       if (typeof cal.bonus_xp === 'number') {
         setBonusXp(cal.bonus_xp)
@@ -1072,11 +1138,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         setClaimedQuests(cal.claimed_quests)
       }
     }
-  }, [dashboardData?.calendar_data])
+  }, [dashboardData?.calendar_data, creatorData, productName, handleClean])
 
   // Automatically persist calendar state directly to MongoDB Atlas
   useEffect(() => {
-    if (saveDashboardData && posts && posts.length > 0) {
+    if (saveDashboardData && posts && posts.length > 0 && !isStaleOrClashingCalendar(posts, creatorData)) {
       saveDashboardData('calendar', {
         campaign_posts: posts,
         bonus_xp: bonusXp,
@@ -1084,7 +1150,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         synced_at: new Date().toISOString()
       })
     }
-  }, [posts, bonusXp, claimedQuests, saveDashboardData])
+  }, [posts, bonusXp, claimedQuests, saveDashboardData, creatorData])
 
   // Active Post for Right Inspector Studio
   const [selectedPostId, setSelectedPostId] = useState(() => {
