@@ -263,15 +263,10 @@ export default function App() {
         return 'dashboard'
       }
 
-      if (path === '/' || path === '') {
-        const savedStep = localStorage.getItem('forge_onboarding_step')
-        const savedCreator = localStorage.getItem('forge_creator_data')
-        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          return savedStep
+      if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
+          window.history.replaceState(null, '', '/portal')
         }
-        return 'creator-link'
-      }
-      if (path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
         if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
@@ -626,12 +621,12 @@ export default function App() {
         localStorage.removeItem('forge_onboarding_step')
       }
     } catch {}
-    let path = '/'
+    let path = '/portal'
     if (newStep === 'welcome') {
       const savedStep = localStorage.getItem('forge_onboarding_step')
       const savedCreator = localStorage.getItem('forge_creator_data')
       newStep = (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) ? savedStep : 'creator-link'
-      path = '/'
+      path = '/portal'
     } else if (newStep === 'creator-link' || ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(newStep)) {
       path = '/portal'
     } else if (newStep === 'login') {
@@ -939,15 +934,16 @@ export default function App() {
         return
       }
 
-      if (path === '/' || path === '') {
-        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
-        setStep(hasSession ? 'dashboard' : 'login')
-      } else if (path === '/portal' || path === '/portal/') {
+      if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
+        // Base URL app.co-launch.app always routes to onboarding page /portal (no login page)
         const savedStep = localStorage.getItem('forge_onboarding_step')
         if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
           setStep(savedStep)
         } else {
           setStep('creator-link')
+        }
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
+          window.history.replaceState(null, '', '/portal')
         }
       } else if (path === '/login') {
         setStep('login')
@@ -1005,6 +1001,9 @@ export default function App() {
           setStep(savedStep)
         } else {
           setStep('creator-link')
+        }
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
+          window.history.replaceState(null, '', '/portal')
         }
       }
     }
