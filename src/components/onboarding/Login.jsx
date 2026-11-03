@@ -365,9 +365,6 @@ export default function Login() {
           className="bg-[#0b0f19] border border-[#1e293b] p-6 sm:p-8 shadow-2xl relative"
           style={{ borderRadius: '0px' }}
         >
-          {/* Subtle Top Red Accent Line */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c81e3c] to-transparent" />
-
           {/* Heading */}
           <div className="mb-6">
             <h1 className="text-2xl font-black text-white tracking-tight">Sign In</h1>
