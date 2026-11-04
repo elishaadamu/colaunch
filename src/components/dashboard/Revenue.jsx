@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useForge, getAccent } from '../../App'
 import { TrendingUp, ChevronRight, Sparkles, BarChart2, AlertCircle, ArrowUpRight, Zap, Rocket, ShieldCheck, Check, DollarSign } from 'lucide-react'
 
