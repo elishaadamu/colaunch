@@ -152,6 +152,155 @@ function mapRawVideosToPerformance(rawList, productName, creatorName, creatorDat
   })
 }
 
+// ── SKELETON LOADER FOR PERFORMANCE & AI STUDIO ───────────────────────────────
+export function PerformanceSkeletonLoader() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-label="Loading video performance telemetry">
+      {/* ── 4 KEY PERFORMANCE METRICS SKELETON ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Video Views', icon: Eye },
+          { label: 'Avg Watch Time', icon: Clock },
+          { label: '3s Hook Retention', icon: Flame },
+          { label: 'AI Evolution Cycle', icon: Activity }
+        ].map((m, idx) => {
+          const Icon = m.icon
+          return (
+            <div key={idx} className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider">{m.label}</span>
+                <Icon size={14} className="text-slate-500 opacity-60" />
+              </div>
+              <div className="h-8 w-28 bg-white/10 rounded-none mb-2" />
+              <div className="h-3 w-36 bg-white/5 rounded-none" />
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── REAL-TIME ADAPTIVE LEARNING LOOP SKELETON ── */}
+      <div className="p-4 sm:p-5 bg-[#0c1017] border border-white/[0.08] rounded-none relative">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 pb-3 border-b border-white/[0.06]">
+          <div className="hidden sm:block sm:w-32" />
+          <div className="h-5 w-72 sm:w-96 bg-white/10 rounded-none mx-auto" />
+          <div className="sm:w-32 flex justify-end">
+            <div className="h-5 w-28 bg-white/5 rounded-none" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 relative">
+          {[
+            { step: '01 / AUDIT', icon: Eye },
+            { step: '02 / DIAGNOSE', icon: AlertTriangle },
+            { step: '03 / ADAPT', icon: Wand2 },
+            { step: '04 / DEPLOY', icon: CheckCircle2 }
+          ].map((st, i) => {
+            const Icon = st.icon
+            return (
+              <div key={i} className="p-3.5 bg-[#10141f] border border-white/[0.06] rounded-none space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono font-bold text-slate-400">{st.step}</span>
+                  <Icon size={13} className="text-slate-500 opacity-60" />
+                </div>
+                <div className="h-4 w-3/4 bg-white/10 rounded-none" />
+                <div className="space-y-1 pt-1">
+                  <div className="h-2.5 w-full bg-white/5 rounded-none" />
+                  <div className="h-2.5 w-4/5 bg-white/5 rounded-none" />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── PLATFORM FILTER TABS SKELETON ── */}
+      <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          {['All Platforms', 'YouTube', 'TikTok', 'Instagram'].map((p, idx) => (
+            <div
+              key={idx}
+              className={`px-3 py-1.5 text-xs font-bold rounded-none ${
+                idx === 0 ? 'bg-[#c81e3c]/40 text-white/50' : 'bg-[#121622] text-slate-500'
+              }`}
+            >
+              {p}
+            </div>
+          ))}
+        </div>
+        <div className="h-3 w-40 bg-white/5 rounded-none" />
+      </div>
+
+      {/* ── VIDEO CARDS SKELETON (3 ITEMS) ── */}
+      <div className="space-y-4">
+        {[1, 2, 3].map((n) => (
+          <div
+            key={n}
+            className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 flex flex-col lg:flex-row gap-5"
+          >
+            {/* Left Thumbnail & Mini Stats */}
+            <div className="w-full lg:w-72 shrink-0 space-y-3">
+              <div className="w-full aspect-video rounded-none bg-white/[0.06] relative overflow-hidden flex items-center justify-center border border-white/[0.08]">
+                <Video size={28} className="text-white/10" />
+                <div className="absolute top-2 left-2 h-4 w-24 bg-black/60 border border-white/10 rounded-none" />
+                <div className="absolute bottom-2 right-2 h-4 w-16 bg-black/60 border border-white/10 rounded-none" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[1, 2, 3].map((statIdx) => (
+                  <div key={statIdx} className="p-2 bg-[#10141f] rounded-none border border-white/[0.06] space-y-1.5">
+                    <div className="h-2 w-10 bg-white/5 mx-auto rounded-none" />
+                    <div className="h-3.5 w-12 bg-white/10 mx-auto rounded-none" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Video Details & Lackings */}
+            <div className="flex-1 space-y-3.5">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-3 w-36 bg-white/5 rounded-none" />
+                  <div className="h-5 w-4/5 bg-white/10 rounded-none" />
+                </div>
+                <div className="h-3.5 w-24 bg-white/5 rounded-none" />
+              </div>
+
+              {/* Lackings Diagnosed Box */}
+              <div className="p-3 bg-[#10141f] border border-white/[0.06] rounded-none space-y-2">
+                <div className="h-3 w-48 bg-white/10 rounded-none mb-2" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[1, 2].map((lackIdx) => (
+                    <div key={lackIdx} className="p-2.5 bg-[#0c1017] border border-white/[0.04] rounded-none space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-16 bg-[#c81e3c]/20 rounded-none" />
+                        <div className="h-3 w-28 bg-white/10 rounded-none" />
+                      </div>
+                      <div className="h-2.5 w-full bg-white/5 rounded-none" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Generative AI Rule Box */}
+              <div className="p-3 bg-black/40 border border-[#c81e3c]/20 rounded-none space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#c81e3c]/50" />
+                  <div className="h-3 w-48 bg-[#c81e3c]/30 rounded-none" />
+                </div>
+                <div className="h-2.5 w-full bg-white/5 rounded-none" />
+                <div className="h-2.5 w-3/4 bg-white/5 rounded-none" />
+                <div className="pt-1">
+                  <div className="h-7 w-44 bg-white/[0.06] rounded-none border border-white/10" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function PerformanceIntelligence() {
   const { creatorData, userProfile, triggerToast, addXP, setActiveTab } = useForge()
   const [selectedPlatform, setSelectedPlatform] = useState('all')
@@ -176,16 +325,31 @@ export default function PerformanceIntelligence() {
     return []
   })
 
+  // Initial loading state while hydrating real videos
+  const [isLoading, setIsLoading] = useState(() => {
+    const raw = ytConn?.recent_videos || (ytConn?.connected ? [] : (creatorData?.recentPosts || []))
+    return !(Array.isArray(raw) && raw.length > 0)
+  })
+
   // Hydrate real videos from connected YouTube / Facebook channel
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected) {
+      setIsLoading(false)
+      return
+    }
     const target = userProfile?.email || ytConn?.channel?.customUrl || ytConn?.channel?.id || creatorData?.youtube_handle || creatorData?.handle
     if (target && target !== 'default' && target !== '@creator') {
+      setIsLoading(true)
       fetchCreatorYouTubeVideos(target, 8, true).then(res => {
         if (Array.isArray(res) && res.length > 0) {
           setVideos(mapRawVideosToPerformance(res, productName, creatorName, creatorData))
         }
       }).catch(() => {})
+      .finally(() => {
+        setIsLoading(false)
+      })
+    } else {
+      setIsLoading(false)
     }
   }, [isConnected, userProfile?.email, ytConn?.channel?.customUrl, ytConn?.channel?.id, creatorData?.handle, creatorData?.youtube_handle, creatorData?.name, productName, creatorData?.niche])
 
@@ -406,7 +570,24 @@ export default function PerformanceIntelligence() {
         </div>
       </div>
 
-      {/* ── 4 KEY PERFORMANCE METRICS ── */}
+      {isLoading ? (
+        <PerformanceSkeletonLoader />
+      ) : isSyncing ? (
+        <div className="space-y-6">
+          <div className="p-3 bg-[#c81e3c]/10 border border-[#c81e3c]/30 text-white text-xs font-mono flex items-center justify-between flex-wrap gap-2"
+            style={{ borderRadius: '0px' }}>
+            <div className="flex items-center gap-2">
+              <RefreshCw size={13} className="animate-spin text-[#c81e3c]" />
+              <span className="font-bold">Syncing Live Telemetry:</span>
+              <span className="text-white/80">Connecting to channel APIs and updating retention lackings...</span>
+            </div>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-[#c81e3c] text-white">LIVE SYNC</span>
+          </div>
+          <PerformanceSkeletonLoader />
+        </div>
+      ) : (
+        <>
+          {/* ── 4 KEY PERFORMANCE METRICS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
           <div className="flex items-center justify-between text-slate-400 mb-1">
@@ -763,6 +944,8 @@ export default function PerformanceIntelligence() {
           })
         )}
       </div>
+      </>
+      )}
 
     </div>
   )
