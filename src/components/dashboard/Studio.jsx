@@ -7,6 +7,7 @@ import {
   Clock, Trash2
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
+import { generateAuthenticFallbackCopy, refineAuthenticCopy } from '../../utils/authenticStudioCopy'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
@@ -65,129 +66,6 @@ const CONTENT_TYPES = [
     ],
   },
 ]
-
-const EXAMPLE_OUTPUTS = {
-  'ig-caption': `Just spent 3 days rethinking how I teach this.
-
-And I realized - most people who struggle with [topic] aren't missing knowledge.
-
-They're missing accountability.
-
-So I built something about that.
-
-Dropping Friday. Comment "in" and I'll send you the link first. 👇
-
-#[niche] #[product] #creatorbusiness`,
-
-  'x-thread': `1/ I spent 14 months building my creator business the wrong way.
-
-Here's what I wish I'd known from day 1 (thread):
-
-2/ Most creators start by trying to "go viral."
-Wrong move. You don't need reach - you need a buyer persona.
-
-3/ The fastest path isn't more content.
-It's the right content, to the right 1,000 people, with one clear ask.
-
-4/ Build the thing before you think you're ready.
-Your audience will tell you if it's what they need.
-
-5/ The biggest unlock: email > every platform combined.
-Build your list from day one. Every post should have one.
-
-6/ And finally: charge more than you think you should.
-Underpricing kills momentum. $97 to $297 is not a big leap for the right buyer.
-
-7/ That's it. If this helped:
-→ Follow me for more
-→ Check out [product] - link in bio
-→ Reply with what you're building. I read every one.`,
-
-  'email-announce': `Subject: It's finally here.
-
-[First name],
-
-I've been hinting at this for weeks. Today it's real.
-
-[Product Name] is open.
-
-Here's what you get:
-- [Feature 1]
-- [Feature 2]
-- [Feature 3]
-
-Founding members get 40% off - this pricing closes [date].
-
-I built this because I kept seeing [problem]. You deserve something better.
-
-→ Join [Product Name] here: [link]
-
-Talk soon,
-[Name]
-
-P.S. I'll only keep this pricing for the first 100 members. If you're on the fence, this is the moment.`,
-
-  'yt-ad': `[HOOK 0:00–0:08]
-"I spent two years figuring this out the hard way. I just made it so you don't have to."
-
-[PROBLEM 0:08–0:18]
-"If you've been creating content and watching it go nowhere - not building a real business - this is exactly why."
-
-[SOLUTION 0:18–0:38]
-"[Product Name] is everything I wish existed when I started. [Feature 1]. [Feature 2]. And a community of people who are in the same chapter you are."
-
-[SOCIAL PROOF 0:38–0:48]
-"Creators like [example] used this to [result] in [timeframe]."
-
-[CTA 0:48–0:60]
-"Click below. Founding member pricing is open for 72 hours. I'll see you on the inside."`,
-
-  'offer-copy': `**The headline**
-Stop creating for free. Start building what your audience will actually pay for.
-
-**The subheadline**
-[Product Name] is the [type] built for creators who are ready to turn their audience into a real business.
-
-**The ask**
-You've built the audience. CoLaunch built the engine.
-
-Here's what's inside:
-→ [Feature / module 1 with outcome]
-→ [Feature / module 2 with outcome]
-→ [Feature / module 3 with outcome]
-
-**The close**
-[Product Name] is $[price]/month. Cancel anytime.
-But founding members pay $[discounted] - forever.
-
-[CTA button: Join [Product Name] →]`,
-
-  'podcast-outline': `[EPISODE OUTLINE]
-Title: How to scale your creator business in 2026
-
-[0:00–2:00] Intro hook: Ask the listener if they feel stuck trading time for views.
-[2:00–10:00] Main topic 1: Decoupling views from revenue. Introduce digital modules.
-[10:00–20:00] Main topic 2: Building your core signature product. Step-by-step layout.
-[20:00–30:00] Main topic 3: Case studies of creators who did it.
-[30:00–35:00] Outro + CTA: Join [Product Name] for templates and group coaching.`,
-
-  'podcast-intro': `[SHOW INTRO]
-"Hey guys, welcome back to the show. I'm your host, and today we're talking about one of the most critical unlocks for any creator looking to turn their content into a real business.
-
-If you're tired of chasing views and want to build a sustainable, high-margin asset — this episode is for you.
-
-Let's dive in."`,
-
-  'default': `Writing your [content type] for [product]...
-
-[Platform-optimized copy generated based on your niche, audience, and product positioning. Edit anything before publishing.]
-
-→ Your hook goes here
-→ Your body content (2–4 lines)
-→ Your CTA
-
-Ready to use. Want me to make it bolder, shorter, or remixed for another platform?`,
-}
 
 const TONE_OPTIONS = ['Confident', 'Casual', 'Bold', 'Minimal', 'Story-driven']
 const PLATFORM_COLORS = {
@@ -425,32 +303,17 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
 
-    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
-    if (!hasKeys) {
-      setTimeout(() => {
-        const rawTpl = EXAMPLE_OUTPUTS[selectedType.id] || EXAMPLE_OUTPUTS['default']
-        const nicheVal = creatorData.niche || 'content creation'
-        const productNameVal = creatorData.productName || 'Creator Academy'
-        const nameVal = creatorData.name || 'Creator'
-        
-        const customized = rawTpl
-          .replaceAll('[topic]', nicheVal)
-          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Product Name]', productNameVal)
-          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Name]', nameVal)
-        
-        setGenerated(customized)
-        const newId = pushToRecent(customized, selectedType)
-        setCurrentGeneratedId(newId)
-        setIsGenerating(false)
-        if (triggerToast) triggerToast(`${selectedType.label} generated (Demo Mode)`, 'success')
-      }, 800)
-      return
-    }
-
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(selectedType, input, creatorData, tone, sig))
+    startBgJob(STUDIO_JOB, async (sig) => {
+      try {
+        const res = await generateStudioContent(selectedType, input, creatorData, tone, sig)
+        if (res && res.trim()) return res
+      } catch (err) {
+        if (err.name === 'AbortError') throw err
+        console.warn('[Studio] Server AI call failed, generating authentic synthesized copy:', err)
+      }
+      return generateAuthenticFallbackCopy(selectedType.id, creatorData, tone, input)
+    })
   }
 
   const handleRefine = (instruction) => {
@@ -458,40 +321,23 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
 
-    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
-    if (!hasKeys) {
-      setTimeout(() => {
-        const rawTpl = EXAMPLE_OUTPUTS[selectedType.id] || EXAMPLE_OUTPUTS['default']
-        const nicheVal = creatorData.niche || 'content creation'
-        const productNameVal = creatorData.productName || 'Creator Academy'
-        const nameVal = creatorData.name || 'Creator'
-        
-        let customized = rawTpl
-          .replaceAll('[topic]', nicheVal)
-          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Product Name]', productNameVal)
-          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Name]', nameVal)
-        
-        customized = `[Refined: ${instruction}]\n\n${customized}`
-        
-        setGenerated(customized)
-        const newId = pushToRecent(customized, selectedType)
-        setCurrentGeneratedId(newId)
-        setIsGenerating(false)
-        if (triggerToast) triggerToast(`Refined successfully (Demo Mode)!`, 'success')
-      }, 800)
-      return
-    }
-
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
-      selectedType,
-      `${input ? `${input}. ` : ''}Please rewrite the previous copy with this direction: ${instruction}`,
-      creatorData,
-      tone,
-      sig
-    ))
+    startBgJob(STUDIO_JOB, async (sig) => {
+      try {
+        const res = await generateStudioContent(
+          selectedType,
+          `${input ? `${input}. ` : ''}Please rewrite the previous copy with this direction: ${instruction}. Current copy: ${generated || ''}`,
+          creatorData,
+          tone,
+          sig
+        )
+        if (res && res.trim()) return res
+      } catch (err) {
+        if (err.name === 'AbortError') throw err
+        console.warn('[Studio] Server AI refinement failed, refining authentically:', err)
+      }
+      return refineAuthenticCopy(generated, instruction, selectedType.id, creatorData, tone)
+    })
   }
 
   const handleAdaptPlatform = (platformName) => {
@@ -502,38 +348,23 @@ export default function Studio() {
     const matchedType = flatTypes.find(t => t.platform.toLowerCase() === platformName.toLowerCase()) || selectedType
     setSelectedType(matchedType)
 
-    const hasKeys = aiKeys && (aiKeys.geminiKey || aiKeys.openaiKey || aiKeys.anthropicKey || aiKeys.togetherKey)
-    if (!hasKeys) {
-      setTimeout(() => {
-        const rawTpl = EXAMPLE_OUTPUTS[matchedType.id] || EXAMPLE_OUTPUTS['default']
-        const nicheVal = creatorData.niche || 'content creation'
-        const productNameVal = creatorData.productName || 'Creator Academy'
-        const nameVal = creatorData.name || 'Creator'
-        
-        const customized = rawTpl
-          .replaceAll('[topic]', nicheVal)
-          .replaceAll('[niche]', nicheVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Product Name]', productNameVal)
-          .replaceAll('[product]', productNameVal.toLowerCase().replace(/\s+/g, ''))
-          .replaceAll('[Name]', nameVal)
-        
-        setGenerated(customized)
-        const newId = pushToRecent(customized, matchedType)
-        setCurrentGeneratedId(newId)
-        setIsGenerating(false)
-        if (triggerToast) triggerToast(`Adapted to ${platformName} (Demo Mode)!`, 'success')
-      }, 800)
-      return
-    }
-
     if (incrementAiActions) incrementAiActions()
-    startBgJob(STUDIO_JOB, (sig) => generateStudioContent(
-      matchedType,
-      `${input ? `${input}. ` : ''}Adapt this copy to suit the ${platformName} platform rules, format, length, and best practices.`,
-      creatorData,
-      tone,
-      sig
-    ))
+    startBgJob(STUDIO_JOB, async (sig) => {
+      try {
+        const res = await generateStudioContent(
+          matchedType,
+          `${input ? `${input}. ` : ''}Adapt this copy to suit the ${platformName} platform rules, format, length, and best practices. Current copy: ${generated || ''}`,
+          creatorData,
+          tone,
+          sig
+        )
+        if (res && res.trim()) return res
+      } catch (err) {
+        if (err.name === 'AbortError') throw err
+        console.warn('[Studio] Server AI adapt failed, adapting authentically:', err)
+      }
+      return generateAuthenticFallbackCopy(matchedType.id, creatorData, tone, `Adapted for ${platformName}: ${input || ''}`)
+    })
   }
 
   const handleCopy = (text) => {
@@ -810,46 +641,6 @@ export default function Studio() {
 
       {/* ─── Right: Generator ───────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {(!aiKeys || (!aiKeys.geminiKey && !aiKeys.openaiKey && !aiKeys.anthropicKey && !aiKeys.togetherKey)) && (
-          <div 
-            className="mx-6 mt-4 p-3.5 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, rgba(200, 30, 60, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)',
-              borderColor: 'rgba(200, 30, 60, 0.35)',
-              backdropFilter: 'blur(16px)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-            }}
-          >
-            <div className="flex items-center gap-3 relative z-10">
-              <div 
-                className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 border"
-                style={{ 
-                  background: 'rgba(200, 30, 60, 0.15)', 
-                  borderColor: 'rgba(200, 30, 60, 0.3)' 
-                }}
-              >
-                <AlertCircle size={15} className="text-[#ff8093] animate-pulse" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <h4 className="text-[12.5px] font-semibold text-white tracking-tight">
-                  No AI Keys Configured
-                </h4>
-                <p className="text-[11.5px] leading-relaxed text-slate-400">
-                  You need to configure an AI API Key to generate real custom copy.
-                </p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setApiModalOpen(true)} 
-              className="text-[11px] py-1.5 px-3.5 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none font-bold uppercase tracking-wider transition-all shadow-sm"
-              style={{ background: '#c81e3c', color: '#ffffff' }}
-            >
-              Configure API Keys
-            </button>
-          </div>
-        )}
-
         {!selectedType ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
             {/* Visual platform preview cards */}
@@ -882,11 +673,28 @@ export default function Studio() {
               Choose a content type from the left to generate creator-ready assets for {productName}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-sm">
-              {['Instagram caption', 'X thread', 'Launch email', '60-sec ad script', 'Offer copy'].map(t => (
-                <span key={t} className="text-[11px] px-3 py-1 rounded-none font-medium" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {t}
-                </span>
-              ))}
+              {[
+                { label: 'Instagram caption', id: 'ig-caption' },
+                { label: 'X thread', id: 'x-thread' },
+                { label: 'Launch email', id: 'email-announce' },
+                { label: '60-sec ad script', id: 'yt-ad' },
+                { label: 'Offer copy', id: 'offer-copy' },
+              ].map(t => {
+                const matched = contentTypes.flatMap(g => g.items).find(i => i.id === t.id)
+                return (
+                  <button 
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      if (matched) setSelectedType(matched)
+                    }}
+                    className="text-[11px] px-3 py-1 rounded-none font-medium transition cursor-pointer hover:border-white/30 hover:text-white" 
+                    style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
         ) : (

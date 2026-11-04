@@ -42,20 +42,57 @@ export default function Revenue() {
   const brandTextColor = '#ffffff'
   const [activeRange, setActiveRange] = useState('all')
 
-  const [membersCount] = useState(() => {
+  const cleanHandle = (creatorData?.handle || 'creator').replace(/^@+/, '')
+
+  const [pricing] = useState(() => {
     try {
-      const stored = localStorage.getItem('forge_products_members')
-      if (stored !== null) return parseInt(stored, 10)
-    } catch {}
-    const name = (creatorData?.name || '').toLowerCase()
-    const handle = (creatorData?.handle || '').toLowerCase()
-    if (name.includes('bbc') || handle.includes('bbc') || (creatorData?.followers && creatorData.followers > 2000000)) {
-      return 7740
-    }
-    return creatorData?.followers ? Math.round(creatorData.followers * 0.002) || 12 : 12
+      const cached = localStorage.getItem(`forge_${cleanHandle}_product_pricing`)
+      if (cached) return JSON.parse(cached)
+    } catch (_) {}
+    return { monthly: 29, currency: '$' }
   })
 
-  const baseRevenue = membersCount * 29
+  const [membersCount, setMembersCount] = useState(() => {
+    try {
+      const cachedMem = localStorage.getItem(`forge_${cleanHandle}_community_members`)
+      if (cachedMem) {
+        const parsed = JSON.parse(cachedMem)
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(m => m.name !== 'Alex Rivera' && m.name !== 'Sarah Lin')
+          return valid.length
+        }
+      }
+      const stored = localStorage.getItem('forge_products_members')
+      if (stored !== null) return parseInt(stored, 10)
+    } catch (_) {}
+    return 0
+  })
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const cachedMem = localStorage.getItem(`forge_${cleanHandle}_community_members`)
+        if (cachedMem) {
+          const parsed = JSON.parse(cachedMem)
+          if (Array.isArray(parsed)) {
+            const valid = parsed.filter(m => m.name !== 'Alex Rivera' && m.name !== 'Sarah Lin')
+            setMembersCount(valid.length)
+            return
+          }
+        }
+        const stored = localStorage.getItem('forge_products_members')
+        if (stored !== null) setMembersCount(parseInt(stored, 10))
+      } catch (_) {}
+    }
+    window.addEventListener('forge_member_joined', handleSync)
+    window.addEventListener('storage', handleSync)
+    return () => {
+      window.removeEventListener('forge_member_joined', handleSync)
+      window.removeEventListener('storage', handleSync)
+    }
+  }, [cleanHandle])
+
+  const baseRevenue = membersCount * (pricing.monthly || 29)
   const revenueHistory = [
     Math.round(baseRevenue * 0.15),
     Math.round(baseRevenue * 0.3),
