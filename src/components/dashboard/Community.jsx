@@ -71,7 +71,7 @@ function getCommunityContentTypes(productName, creatorName, handle, niche) {
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function MiniCalendar({ onSelect, scheduledPosts = [], brandRed = '#c81e3c' }) {
+function MiniCalendar({ onSelectDate, selectedDate, scheduledPosts = [], brandRed = '#c81e3c' }) {
   const [viewDate, setViewDate] = useState(new Date())
 
   const year = viewDate.getFullYear()
@@ -87,6 +87,8 @@ function MiniCalendar({ onSelect, scheduledPosts = [], brandRed = '#c81e3c' }) {
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1))
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
+
+  const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
     <div className="w-full text-white">
@@ -124,14 +126,25 @@ function MiniCalendar({ onSelect, scheduledPosts = [], brandRed = '#c81e3c' }) {
           if (!day) return <div key={`empty-${i}`} />
           const dateObj = new Date(year, month, day)
           dateObj.setHours(0, 0, 0, 0)
-          const isPast = dateObj < today
           const isToday = dateObj.getTime() === today.getTime()
+          const dayShort = dayNamesShort[dateObj.getDay()]
+
+          const isSelected = selectedDate && (
+            selectedDate.getFullYear() === dateObj.getFullYear() &&
+            selectedDate.getMonth() === dateObj.getMonth() &&
+            selectedDate.getDate() === dateObj.getDate()
+          )
 
           const postsForDay = scheduledPosts.filter(p => {
-            if (!p.date) return false
-            const d = new Date(p.date)
-            d.setHours(0, 0, 0, 0)
-            return d.getTime() === dateObj.getTime()
+            if (p.date) {
+              const d = new Date(p.date)
+              d.setHours(0, 0, 0, 0)
+              if (d.getTime() === dateObj.getTime()) return true
+            }
+            if (p.dateLabel && p.dateLabel.includes(dayShort)) {
+              return true
+            }
+            return false
           })
           const hasPost = postsForDay.length > 0
 
@@ -139,23 +152,33 @@ function MiniCalendar({ onSelect, scheduledPosts = [], brandRed = '#c81e3c' }) {
             <button
               key={day}
               type="button"
-              disabled={isPast}
-              onClick={() => onSelect(dateObj)}
-              className="relative w-full aspect-square rounded-none flex flex-col items-center justify-center text-[11px] font-mono font-bold transition cursor-pointer"
+              onClick={() => onSelectDate && onSelectDate(dateObj)}
+              title={`${dayShort}, ${MONTHS[month]} ${day}${hasPost ? ` · ${postsForDay.length} post(s) in community pipeline` : ' · Click to filter'}`}
+              className="relative w-full aspect-square rounded-none flex flex-col items-center justify-center text-[11px] font-mono font-bold transition cursor-pointer hover:border-white/40"
               style={{
                 borderRadius: '0px',
-                color: isPast ? '#475569' : isToday ? '#ffffff' : '#cbd5e1',
-                background: isToday ? 'rgba(200,30,60,0.18)' : 'transparent',
-                border: isToday ? `1px solid ${brandRed}` : '1px solid transparent',
-                cursor: isPast ? 'not-allowed' : 'pointer',
+                color: isSelected ? '#ffffff' : isToday ? '#ffffff' : hasPost ? '#ffffff' : '#94a3b8',
+                background: isSelected 
+                  ? brandRed 
+                  : isToday 
+                    ? 'rgba(200,30,60,0.18)' 
+                    : hasPost 
+                      ? 'rgba(255,255,255,0.05)' 
+                      : 'transparent',
+                border: isSelected 
+                  ? `1px solid ${brandRed}` 
+                  : isToday 
+                    ? `1px solid ${brandRed}` 
+                    : hasPost 
+                      ? '1px solid rgba(255,255,255,0.16)' 
+                      : '1px solid transparent',
               }}
             >
               <span>{day}</span>
               {hasPost && (
                 <span 
-                  className="absolute bottom-1 w-1.5 h-1.5 rounded-none"
-                  style={{ background: brandRed, borderRadius: '0px' }}
-                  title={`${postsForDay.length} post(s) scheduled on calendar`}
+                  className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-none ${isSelected ? 'bg-white' : 'bg-[#c81e3c]'}`}
+                  style={{ borderRadius: '0px' }}
                 />
               )}
             </button>
@@ -287,12 +310,74 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
 
 // ─── Broadcast Email & Member Messaging Modal ─────────────────────────────────
 
-function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, brandRed = '#c81e3c', onScheduleToCalendar }) {
-  const [subject, setSubject] = useState('')
-  const [message, setMessage] = useState('')
+function BroadcastModal({ 
+  members = [], 
+  onClose, 
+  triggerToast, 
+  creatorData, 
+  userProfile,
+  productName, 
+  brandRed = '#c81e3c', 
+  onScheduleToCalendar,
+  initialSubject = '',
+  initialMessage = '',
+  targetPostId = null,
+  onBroadcastSent
+}) {
+  const [subject, setSubject] = useState(initialSubject || '')
+  const [message, setMessage] = useState(initialMessage || '')
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const [isRefiningTitle, setIsRefiningTitle] = useState(false)
   const [isRefiningBody, setIsRefiningBody] = useState(false)
+
+  // Identify the creator / logged in user's email
+  const creatorEmail = (userProfile?.email || creatorData?.email || creatorData?.contactEmail || '').trim()
+
+  // Build the live recipient list
+  const [recipients, setRecipients] = useState(() => {
+    const list = []
+    const seen = new Set()
+
+    // 1. Add valid member emails
+    (members || []).forEach(m => {
+      const email = (m.email || '').trim().toLowerCase()
+      if (email && email.includes('@') && !email.endsWith('@example.com') && !seen.has(email)) {
+        seen.add(email)
+        list.push({ email, name: m.name || '' })
+      }
+    })
+
+    // 2. Automatically include creator's email so they can receive and verify test broadcasts
+    if (creatorEmail && creatorEmail.includes('@') && !seen.has(creatorEmail.toLowerCase())) {
+      seen.add(creatorEmail.toLowerCase())
+      list.push({ email: creatorEmail.toLowerCase(), name: creatorData?.name || 'Creator (You)' })
+    }
+
+    return list
+  })
+
+  const [newEmailInput, setNewEmailInput] = useState('')
+
+  const handleAddRecipient = (e) => {
+    if (e) e.preventDefault()
+    const clean = newEmailInput.trim().toLowerCase()
+    if (!clean || !clean.includes('@') || !clean.includes('.')) {
+      if (triggerToast) triggerToast('Please enter a valid email address', 'error')
+      return
+    }
+    if (recipients.some(r => r.email === clean)) {
+      if (triggerToast) triggerToast('Email is already in recipient list', 'info')
+      return
+    }
+    setRecipients(prev => [...prev, { email: clean, name: '' }])
+    setNewEmailInput('')
+    if (triggerToast) triggerToast(`Added ${clean} to broadcast recipients`, 'success')
+  }
+
+  const handleRemoveRecipient = (emailToRemove) => {
+    setRecipients(prev => prev.filter(r => r.email !== emailToRemove))
+  }
 
   // 1. AI Title Refinement
   const handleRefineTitle = async () => {
@@ -340,14 +425,90 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
     }
   }
 
-  const handleSend = () => {
-    if (!subject.trim() || !message.trim()) return
+  // Real Backend Dispatch
+  const handleSend = async () => {
+    if (!subject.trim() || !message.trim()) {
+      if (triggerToast) triggerToast('Subject line and message body are required', 'error')
+      return
+    }
+    if (recipients.length === 0) {
+      if (triggerToast) triggerToast('Please add at least one recipient email address', 'error')
+      return
+    }
+
     setIsSending(true)
-    setTimeout(() => {
-      setIsSending(false)
-      if (triggerToast) triggerToast(`Broadcast sent to ${members.length} member(s)!`, 'success')
+    setSendError('')
+
+    const payload = {
+      handle: (creatorData?.handle || 'creator').replace(/^@/, ''),
+      creator_name: creatorData?.name || 'Creator',
+      product_name: productName || 'Community',
+      subject: subject.trim(),
+      message: message.trim(),
+      recipients: recipients,
+      reply_to: creatorEmail || undefined,
+      from_name: `${creatorData?.name || 'Creator'} · ${productName || 'CoLaunch'}`
+    }
+
+    const candidateUrls = [
+      '',
+      'https://creator-forge-backend-jj1y.onrender.com',
+      'https://creator-forge-backend.onrender.com'
+    ]
+
+    let delivered = false
+    let resultData = null
+    let errorDetail = ''
+
+    for (const baseUrl of candidateUrls) {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 12000)
+        const res = await fetch(`${baseUrl}/api/community/broadcast`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data && (data.status === 'success' || data.sent_count > 0)) {
+            delivered = true
+            resultData = data
+            break
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          errorDetail = errData.detail || `Server responded with ${res.status}`
+        }
+      } catch (err) {
+        errorDetail = err.message || 'Connection timeout'
+      }
+    }
+
+    setIsSending(false)
+
+    if (delivered) {
+      const count = resultData?.sent_count || recipients.length
+      if (triggerToast) {
+        triggerToast(`Broadcast email delivered to ${count} recipient inbox(es)!`, 'success')
+      }
+      if (onBroadcastSent) {
+        onBroadcastSent({ subject, message, targetPostId, recipients })
+      }
       onClose()
-    }, 1000)
+    } else {
+      const finalMsg = errorDetail || 'Could not connect to email delivery service.'
+      setSendError(finalMsg)
+      if (triggerToast) {
+        triggerToast(`Email delivery notice: ${finalMsg}`, 'error')
+      }
+    }
   }
 
   const handleCalendarDrop = () => {
@@ -361,7 +522,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
     onClose()
   }
 
-  const mailtoLink = `mailto:?bcc=${members.map(m => m.email).filter(Boolean).join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`
+  const mailtoLink = `mailto:?bcc=${recipients.map(r => r.email).filter(Boolean).join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
@@ -390,10 +551,83 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Broadcast Email &amp; Member Message</h3>
             <p className="text-[11px] text-slate-400">
-              Direct communication to all <strong className="text-white">{members.length} registered member(s)</strong>
+              Live email delivery across <strong className="text-white">{recipients.length} recipient inbox(es)</strong>
             </p>
           </div>
         </div>
+
+        {/* Recipients Bar */}
+        <div className="bg-[#10141f] border border-white/10 p-2.5 rounded-none space-y-2" style={{ borderRadius: '0px' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+              Recipients ({recipients.length})
+            </span>
+            {creatorEmail && !recipients.some(r => r.email === creatorEmail.toLowerCase()) && (
+              <button
+                type="button"
+                onClick={() => setRecipients(prev => [...prev, { email: creatorEmail.toLowerCase(), name: 'You' }])}
+                className="text-[10px] font-mono font-bold text-rose-300 hover:text-white underline cursor-pointer"
+              >
+                + Add my email ({creatorEmail})
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap max-h-20 overflow-y-auto custom-scrollbar">
+            {recipients.map(r => (
+              <span
+                key={r.email}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[10px] font-mono bg-white/[0.06] text-slate-200 border border-white/10"
+                style={{ borderRadius: '0px' }}
+              >
+                <span>{r.email}</span>
+                {r.name && <span className="text-slate-400">({r.name})</span>}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveRecipient(r.email)}
+                  className="text-slate-500 hover:text-rose-400 ml-0.5 cursor-pointer"
+                  title="Remove recipient"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+
+          {/* Add custom email input */}
+          <form onSubmit={handleAddRecipient} className="flex items-center gap-2 pt-1">
+            <input
+              type="email"
+              value={newEmailInput}
+              onChange={e => setNewEmailInput(e.target.value)}
+              placeholder="Add another recipient email (e.g. test recipient)..."
+              className="flex-1 px-2.5 py-1 text-xs bg-[#090c14] border border-white/10 text-white rounded-none outline-none focus:border-[#c81e3c]"
+              style={{ borderRadius: '0px' }}
+            />
+            <button
+              type="submit"
+              className="px-2.5 py-1 text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-none cursor-pointer"
+              style={{ borderRadius: '0px' }}
+            >
+              + Add
+            </button>
+          </form>
+        </div>
+
+        {/* Error Notification if any */}
+        {sendError && (
+          <div className="p-2.5 bg-rose-950/40 border border-rose-500/30 text-rose-200 text-xs rounded-none flex items-center justify-between gap-2" style={{ borderRadius: '0px' }}>
+            <span>{sendError}</span>
+            <a
+              href={mailtoLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold underline text-white whitespace-nowrap"
+            >
+              Send via Gmail ↗
+            </a>
+          </div>
+        )}
 
         {/* Form Inputs */}
         <div className="space-y-3.5 flex-1 overflow-y-auto pr-1 py-1 custom-scrollbar">
@@ -442,7 +676,7 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
             </div>
             <textarea
               required
-              rows={7}
+              rows={6}
               placeholder="Write your message or update for your community members..."
               value={message}
               onChange={e => setMessage(e.target.value)}
@@ -481,11 +715,12 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
             <button 
               type="button"
               onClick={handleSend}
-              disabled={isSending || !subject.trim() || !message.trim() || members.length === 0}
-              className="px-4 py-2 rounded-none text-xs font-bold text-white transition cursor-pointer border-0 shadow-md disabled:opacity-40"
+              disabled={isSending || !subject.trim() || !message.trim() || recipients.length === 0}
+              className="px-4 py-2 rounded-none text-xs font-bold text-white transition cursor-pointer border-0 shadow-md disabled:opacity-40 flex items-center gap-1.5"
               style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
             >
-              {isSending ? 'Sending...' : `Send to ${members.length} Member(s)`}
+              {isSending && <RefreshCw size={12} className="animate-spin text-white" />}
+              <span>{isSending ? `Sending to ${recipients.length} inboxes...` : `Send to ${recipients.length} Recipient(s)`}</span>
             </button>
           </div>
         </div>
@@ -670,7 +905,8 @@ export default function Community() {
     triggerToast, 
     dashboardData, 
     saveDashboardData, 
-    setActiveTab 
+    setActiveTab,
+    userProfile
   } = useForge()
 
   const brandRed = '#c81e3c'
@@ -698,6 +934,9 @@ export default function Community() {
   const [editingPostId, setEditingPostId] = useState(null)
   const [editingText, setEditingText] = useState('')
   const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [broadcastDraft, setBroadcastDraft] = useState({ subject: '', message: '', targetPostId: null })
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null)
+  const [pipelineChannelFilter, setPipelineChannelFilter] = useState('all') // 'all' | 'email' | 'youtube'
   const [addMemberOpen, setAddMemberOpen] = useState(false)
   const [welcomeSetupOpen, setWelcomeSetupOpen] = useState(false)
   const [memberFilter, setMemberFilter] = useState('all')
@@ -818,6 +1057,7 @@ export default function Community() {
                 allCommunityPosts.push({
                   id: `cal-${dayData.day}-${p.id}`,
                   calendarId: p.id,
+                  day: dayData.day,
                   type: p.type || 'Community Post',
                   title: p.title || p.label || 'Community Update',
                   content: p.body || p.title || 'Scheduled campaign update',
@@ -854,6 +1094,147 @@ export default function Community() {
     window.addEventListener('forge_calendar_updated', handleCalendarSync)
     return () => window.removeEventListener('forge_calendar_updated', handleCalendarSync)
   }, [cleanHandle])
+
+  // Quick Action: Open Broadcast Modal pre-populated with any post
+  const handleOpenBroadcastForPost = (post) => {
+    setBroadcastDraft({
+      subject: post.title || `Community Update: ${productName}`,
+      message: post.fullContent || post.content || '',
+      targetPostId: post.id
+    })
+    setBroadcastOpen(true)
+  }
+
+  // Quick Action: Load post into Composer for refinement
+  const handleLoadToComposer = (post) => {
+    setPostTitle(post.title || '')
+    setGenerated(post.fullContent || post.content || '')
+    const matchingType = communityContentTypes.find(t => t.label.toLowerCase() === (post.type || '').toLowerCase())
+    if (matchingType) setSelectedType(matchingType)
+    if (triggerToast) triggerToast('Loaded post into composer for editing', 'info')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Quick Action: Toggle Sent / Published Status
+  const handleTogglePostStatus = (post) => {
+    const isCurrentlySent = (post.status || '').toLowerCase() === 'sent' || (post.status || '').toLowerCase() === 'published'
+    const newStatus = isCurrentlySent ? 'Scheduled' : 'Sent'
+
+    // Update in memory
+    setScheduledPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: newStatus } : p))
+
+    // Update local community store
+    try {
+      const cached = localStorage.getItem(getCommunityPostsKey())
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed)) {
+          const updated = parsed.map(p => p.id === post.id ? { ...p, status: newStatus } : p)
+          localStorage.setItem(getCommunityPostsKey(), JSON.stringify(updated))
+        }
+      }
+    } catch (_) {}
+
+    // Update central calendar store if originated from calendar
+    try {
+      const calKey = getCalendarKey()
+      const calRaw = localStorage.getItem(calKey)
+      if (calRaw) {
+        let parsedCal = JSON.parse(calRaw)
+        if (Array.isArray(parsedCal)) {
+          let updatedAny = false
+          parsedCal = parsedCal.map(dayData => {
+            const posts = (dayData.posts || []).map(p => {
+              if (p.id === post.calendarId || `cal-${dayData.day}-${p.id}` === post.id || p.title === post.title) {
+                updatedAny = true
+                return { ...p, status: newStatus.toLowerCase() }
+              }
+              return p
+            })
+            return { ...dayData, posts }
+          })
+          if (updatedAny) {
+            localStorage.setItem(calKey, JSON.stringify(parsedCal))
+            window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Community' } }))
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (triggerToast) {
+      triggerToast(newStatus === 'Sent' ? 'Post marked as Sent & Delivered!' : 'Post status reset to Scheduled', 'success')
+    }
+  }
+
+  // Callback when broadcast email sends successfully
+  const handleBroadcastSent = ({ targetPostId }) => {
+    if (targetPostId) {
+      const matchingPost = scheduledPosts.find(p => p.id === targetPostId)
+      if (matchingPost) {
+        handleTogglePostStatus({ ...matchingPost, status: 'Draft' })
+      }
+    }
+  }
+
+  // Helper: Match post with selected calendar date
+  const postMatchesDate = (post, targetDate) => {
+    if (!targetDate) return true
+    const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const dayShort = dayNamesShort[targetDate.getDay()]
+
+    if (post.date) {
+      const d = new Date(post.date)
+      if (!isNaN(d.getTime())) {
+        if (d.getFullYear() === targetDate.getFullYear() &&
+            d.getMonth() === targetDate.getMonth() &&
+            d.getDate() === targetDate.getDate()) {
+          return true
+        }
+      }
+    }
+
+    if (post.day && post.day.toLowerCase() === dayShort.toLowerCase()) {
+      return true
+    }
+
+    const label = (post.dateLabel || '').toLowerCase()
+    if (label.includes(dayShort.toLowerCase())) {
+      return true
+    }
+
+    return false
+  }
+
+  // Filtered posts based on active channel and date filters
+  const filteredPipelinePosts = useMemo(() => {
+    return scheduledPosts.filter(post => {
+      // 1. Channel filter
+      if (pipelineChannelFilter === 'email') {
+        const isEmail = (post.platform || '').toLowerCase().includes('email') || (post.type || '').toLowerCase().includes('email')
+        if (!isEmail) return false
+      } else if (pipelineChannelFilter === 'youtube') {
+        const isYt = (post.platform || '').toLowerCase().includes('youtube') || (post.type || '').toLowerCase().includes('communit')
+        if (!isYt) return false
+      }
+
+      // 2. Date filter
+      if (selectedCalendarDate) {
+        if (!postMatchesDate(post, selectedCalendarDate)) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [scheduledPosts, pipelineChannelFilter, selectedCalendarDate])
+
+  const emailPostsCount = useMemo(() => {
+    return scheduledPosts.filter(p => (p.platform || '').toLowerCase().includes('email') || (p.type || '').toLowerCase().includes('email')).length
+  }, [scheduledPosts])
+
+  const ytPostsCount = useMemo(() => {
+    return scheduledPosts.filter(p => (p.platform || '').toLowerCase().includes('youtube') || (p.type || '').toLowerCase().includes('communit')).length
+  }, [scheduledPosts])
 
   // Save new scheduled community post to BOTH Community & central Content Calendar
   const scheduleCommunityPostToCalendar = (postData, targetDate = new Date()) => {
@@ -1285,14 +1666,48 @@ export default function Community() {
                   Post Calendar Sync
                 </span>
                 <span className="text-[9px] font-mono text-slate-300 bg-white/[0.04] px-2 py-0.5 border border-white/[0.08]" style={{ borderRadius: '0px' }}>
-                  Click date to schedule
+                  Click date to filter &amp; schedule
                 </span>
               </div>
               <MiniCalendar
-                onSelect={(dateObj) => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, dateObj)}
+                onSelectDate={(dateObj) => {
+                  if (selectedCalendarDate && selectedCalendarDate.getTime() === dateObj.getTime()) {
+                    setSelectedCalendarDate(null)
+                  } else {
+                    setSelectedCalendarDate(dateObj)
+                  }
+                }}
+                selectedDate={selectedCalendarDate}
                 scheduledPosts={scheduledPosts}
                 brandRed={brandRed}
               />
+
+              {/* Direct date action prompt if date is selected */}
+              {selectedCalendarDate && (
+                <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-mono">
+                      Selected: <strong className="text-white">{selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCalendarDate(null)}
+                      className="text-[10px] font-mono text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, selectedCalendarDate)}
+                    className="w-full py-1.5 px-2 text-xs font-bold text-white transition cursor-pointer border-0 flex items-center justify-center gap-1.5"
+                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Calendar size={12} className="text-white" />
+                    <span>Queue Draft for {selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1386,103 +1801,294 @@ export default function Community() {
 
             {/* Scheduled Posts Queue Directly Reflecting Calendar */}
             <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-3" style={{ borderRadius: '0px' }}>
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-white/[0.06] gap-2">
+                <div className="flex items-center gap-2">
                   <Clock size={13} className="text-[#c81e3c]" />
-                  <span>Content Calendar Community Pipeline ({scheduledPosts.length})</span>
-                </h3>
-                <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" style={{ borderRadius: '0px' }} />
-                  <span>Calendar Reflected</span>
-                </span>
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                    Content Calendar Community Pipeline ({filteredPipelinePosts.length}{selectedCalendarDate || pipelineChannelFilter !== 'all' ? ` of ${scheduledPosts.length}` : ''})
+                  </h3>
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" style={{ borderRadius: '0px' }} />
+                    <span>Calendar Synced</span>
+                  </span>
+                </div>
+
+                {/* Channel Filter Chips */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPipelineChannelFilter('all')}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
+                      pipelineChannelFilter === 'all'
+                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    All ({scheduledPosts.length})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPipelineChannelFilter('email')}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
+                      pipelineChannelFilter === 'email'
+                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Email ({emailPostsCount})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPipelineChannelFilter('youtube')}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
+                      pipelineChannelFilter === 'youtube'
+                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    YouTube ({ytPostsCount})
+                  </button>
+                </div>
               </div>
 
-              {scheduledPosts.length === 0 ? (
-                <div className="p-8 text-center bg-[#10141f] border border-white/[0.06] rounded-none text-xs text-slate-400 space-y-2" style={{ borderRadius: '0px' }}>
-                  <p>No community posts currently scheduled in your campaign calendar.</p>
-                  <p className="text-[11px] text-slate-500">
-                    Use the composer above or click any date on the mini calendar to queue your next update.
+              {/* Active Date Filter Banner */}
+              {selectedCalendarDate && (
+                <div className="p-2.5 bg-[#141b2a] border border-[#c81e3c]/40 rounded-none flex items-center justify-between text-xs" style={{ borderRadius: '0px' }}>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={13} className="text-[#c81e3c]" />
+                    <span className="text-slate-300">
+                      Showing posts scheduled for <strong className="text-white">{selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</strong> ({filteredPipelinePosts.length})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCalendarDate(null)}
+                    className="text-[11px] font-mono font-bold text-rose-300 hover:text-white underline cursor-pointer"
+                  >
+                    Clear Filter ✕
+                  </button>
+                </div>
+              )}
+
+              {filteredPipelinePosts.length === 0 ? (
+                <div className="p-8 text-center bg-[#10141f] border border-white/[0.06] rounded-none text-xs text-slate-400 space-y-2.5" style={{ borderRadius: '0px' }}>
+                  <p>
+                    {selectedCalendarDate
+                      ? `No campaign posts scheduled for ${selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.`
+                      : 'No community posts currently match this filter.'}
                   </p>
+                  {selectedCalendarDate && (
+                    <button
+                      type="button"
+                      onClick={() => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, selectedCalendarDate)}
+                      className="px-3 py-1.5 text-xs font-bold text-white transition cursor-pointer border-0 shadow-sm"
+                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                    >
+                      + Schedule Current Composer Draft for This Day
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {scheduledPosts.map(post => (
-                    <div
-                      key={post.id}
-                      onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
-                      className="p-3 bg-[#10141f] border border-white/[0.06] hover:border-white/20 transition rounded-none cursor-pointer space-y-2"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className="w-6 h-6 rounded-none bg-white/[0.05] border border-white/10 flex items-center justify-center shrink-0" style={{ borderRadius: '0px' }}>
-                            <Clock size={12} className="text-[#c81e3c]" />
-                          </div>
-                          <span className="text-xs font-bold text-white truncate">{post.title || post.type}</span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-[#c81e3c]/20 text-white border border-[#c81e3c]/40 shrink-0" style={{ borderRadius: '0px' }}>
-                            {post.dateLabel}
-                          </span>
-                          {post.platform && (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-white/[0.05] text-slate-300 border border-white/10 shrink-0" style={{ borderRadius: '0px' }}>
-                              {post.platform}
+                  {filteredPipelinePosts.map(post => {
+                    const isEmail = (post.platform || '').toLowerCase().includes('email') || (post.type || '').toLowerCase().includes('email')
+                    const isSent = (post.status || '').toLowerCase() === 'sent' || (post.status || '').toLowerCase() === 'published'
+
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
+                        className="p-3 bg-[#10141f] border border-white/[0.06] hover:border-white/20 transition rounded-none cursor-pointer space-y-2"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div 
+                              className={`w-6 h-6 rounded-none flex items-center justify-center shrink-0 border ${
+                                isEmail ? 'bg-[#c81e3c]/20 border-[#c81e3c]/40 text-white' : 'bg-white/[0.05] border-white/10 text-slate-400'
+                              }`} 
+                              style={{ borderRadius: '0px' }}
+                            >
+                              {isEmail ? <Mail size={12} className="text-white" /> : <Clock size={12} className="text-[#c81e3c]" />}
+                            </div>
+
+                            <span className="text-xs font-bold text-white truncate max-w-sm sm:max-w-md">
+                              {post.title || post.type}
                             </span>
-                          )}
-                        </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeletePost(post.id)
-                            }}
-                            className="text-slate-500 hover:text-rose-400 p-1 transition cursor-pointer bg-transparent border-0"
-                            title="Delete"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                          <ChevronDown size={14} className={`text-slate-400 transition-transform ${expandedPostId === post.id ? 'rotate-180' : ''}`} />
-                        </div>
-                      </div>
-
-                      {expandedPostId !== post.id ? (
-                        <p className="text-[11px] text-slate-400 truncate pl-8">{post.content}</p>
-                      ) : (
-                        <div className="pt-2 border-t border-white/[0.06] space-y-2" onClick={e => e.stopPropagation()}>
-                          <pre className="text-xs leading-relaxed text-slate-300 font-sans whitespace-pre-wrap bg-[#090c14] p-3 rounded-none border border-white/[0.06]" style={{ borderRadius: '0px' }}>
-                            {post.fullContent || post.content}
-                          </pre>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-[10px] font-mono text-slate-500">
-                              Status: <strong className="text-white">{post.status || 'Draft'}</strong> · Visible in Content Calendar
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-[#c81e3c]/20 text-white border border-[#c81e3c]/40 shrink-0" style={{ borderRadius: '0px' }}>
+                              {post.dateLabel}
                             </span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(`${post.title}\n\n${post.fullContent || post.content}`)
-                                  if (triggerToast) triggerToast('Copied content to clipboard', 'success')
-                                }}
-                                className="px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-none cursor-pointer border border-white/10"
+
+                            {post.platform && (
+                              <span 
+                                className={`text-[9px] font-mono px-1.5 py-0.5 rounded-none shrink-0 border ${
+                                  isEmail ? 'bg-[#c81e3c]/15 text-rose-200 border-[#c81e3c]/35' : 'bg-white/[0.05] text-slate-300 border-white/10'
+                                }`} 
                                 style={{ borderRadius: '0px' }}
                               >
-                                Copy Text
-                              </button>
+                                {post.platform}
+                              </span>
+                            )}
+
+                            {isSent ? (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold shrink-0" style={{ borderRadius: '0px' }}>
+                                DELIVERED ✓
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold shrink-0" style={{ borderRadius: '0px' }}>
+                                SCHEDULED
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Primary Action Button directly on the card */}
+                            {isEmail && !isSent && (
                               <button
                                 type="button"
-                                onClick={() => setActiveTab && setActiveTab('calendar')}
-                                className="px-2.5 py-1 text-xs font-bold text-white transition cursor-pointer border-0"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenBroadcastForPost(post)
+                                }}
+                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white transition cursor-pointer border-0 shadow-sm"
                                 style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                                title="Broadcast this email to community members now"
                               >
-                                View on Calendar →
+                                <Send size={11} className="text-white" />
+                                <span>Send Broadcast</span>
                               </button>
-                            </div>
+                            )}
+
+                            {isSent && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleTogglePostStatus(post)
+                                }}
+                                className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-none cursor-pointer"
+                                title="Click to reset status to Scheduled"
+                              >
+                                <CheckCircle2 size={11} />
+                                <span>Sent</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleLoadToComposer(post)
+                              }}
+                              className="text-slate-400 hover:text-white p-1 transition cursor-pointer bg-transparent border-0"
+                              title="Edit in Composer"
+                            >
+                              <Edit size={13} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleTogglePostStatus(post)
+                              }}
+                              className="text-slate-400 hover:text-emerald-400 p-1 transition cursor-pointer bg-transparent border-0"
+                              title={isSent ? 'Reset status to Scheduled' : 'Mark as Sent / Published'}
+                            >
+                              <Check size={13} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeletePost(post.id)
+                              }}
+                              className="text-slate-500 hover:text-rose-400 p-1 transition cursor-pointer bg-transparent border-0"
+                              title="Delete"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+
+                            <ChevronDown size={14} className={`text-slate-400 transition-transform ${expandedPostId === post.id ? 'rotate-180' : ''}`} />
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {expandedPostId !== post.id ? (
+                          <p className="text-[11px] text-slate-400 truncate pl-8">{post.content}</p>
+                        ) : (
+                          <div className="pt-2 border-t border-white/[0.06] space-y-2.5" onClick={e => e.stopPropagation()}>
+                            <pre className="text-xs leading-relaxed text-slate-300 font-sans whitespace-pre-wrap bg-[#090c14] p-3 rounded-none border border-white/[0.06]" style={{ borderRadius: '0px' }}>
+                              {post.fullContent || post.content}
+                            </pre>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
+                              <span className="text-[10px] font-mono text-slate-400">
+                                Channel: <strong className="text-white">{post.platform || 'Social'}</strong> · Status: <strong className={isSent ? 'text-emerald-400' : 'text-amber-300'}>{isSent ? 'Sent / Delivered' : 'Scheduled'}</strong>
+                              </span>
+
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenBroadcastForPost(post)}
+                                  className="px-2.5 py-1 text-xs font-bold text-white transition cursor-pointer border-0 flex items-center gap-1 shadow-sm"
+                                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                                >
+                                  <Send size={11} className="text-white" />
+                                  <span>Send as Broadcast Email</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleLoadToComposer(post)}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white bg-[#151c2d] hover:bg-[#1a2338] rounded-none cursor-pointer border border-white/10"
+                                  style={{ borderRadius: '0px' }}
+                                >
+                                  Edit in Composer
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePostStatus(post)}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white bg-[#151c2d] hover:bg-[#1a2338] rounded-none cursor-pointer border border-white/10"
+                                  style={{ borderRadius: '0px' }}
+                                >
+                                  {isSent ? 'Mark as Scheduled' : 'Mark as Sent ✓'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${post.title}\n\n${post.fullContent || post.content}`)
+                                    if (triggerToast) triggerToast('Copied post content to clipboard', 'success')
+                                  }}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-none cursor-pointer border border-white/10"
+                                  style={{ borderRadius: '0px' }}
+                                >
+                                  Copy Text
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveTab && setActiveTab('calendar')}
+                                  className="px-2.5 py-1 text-xs font-bold text-slate-200 hover:text-white bg-[#182132] transition cursor-pointer border border-white/15"
+                                  style={{ borderRadius: '0px' }}
+                                >
+                                  Open in Calendar →
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -1643,12 +2249,20 @@ export default function Community() {
       {broadcastOpen && (
         <BroadcastModal
           members={members}
-          onClose={() => setBroadcastOpen(false)}
+          onClose={() => {
+            setBroadcastOpen(false)
+            setBroadcastDraft({ subject: '', message: '', targetPostId: null })
+          }}
           triggerToast={triggerToast}
           creatorData={creatorData}
+          userProfile={userProfile}
           productName={productName}
           brandRed={brandRed}
           onScheduleToCalendar={(emailPost) => scheduleCommunityPostToCalendar(emailPost)}
+          initialSubject={broadcastDraft.subject}
+          initialMessage={broadcastDraft.message}
+          targetPostId={broadcastDraft.targetPostId}
+          onBroadcastSent={handleBroadcastSent}
         />
       )}
 
