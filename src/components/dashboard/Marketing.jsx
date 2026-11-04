@@ -89,7 +89,7 @@ function PixelCoach({ message, onChat }) {
     return (
       <button
         onClick={handleExpand}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all text-left"
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none border transition-all text-left"
         style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.11)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}
@@ -139,13 +139,13 @@ function PixelCoach({ message, onChat }) {
       {/* Speech bubble */}
       <div className="flex-1 relative">
         <div
-          className="rounded-2xl rounded-bl-sm px-4 py-3 relative"
-          style={{ background: 'var(--theme-card-bg)', border: '1px solid var(--theme-border-color)' }}
+          className="rounded-none px-4 py-3 relative border"
+          style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
         >
           {/* Collapse button */}
           <button
             onClick={() => setExpanded(false)}
-            className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+            className="absolute top-2 right-2 w-5 h-5 rounded-none flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' }}
           >
             <X size={10} />
@@ -657,21 +657,21 @@ function OutputPanel({ content, onClose, onSchedule, onCopy, accent, onRefine, i
   }
 
   return (
-    <div className="rounded-2xl border overflow-hidden animate-fade-up"
+    <div className="rounded-none border overflow-hidden animate-fade-up"
       style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b"
         style={{ borderColor: 'var(--theme-border-color)' }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+          <div className="w-6 h-6 rounded-none flex items-center justify-center"
             style={{ background: 'var(--theme-accent)', color: 'var(--theme-btn-primary-text)' }}>
             <Sparkles size={11} className="text-current" />
           </div>
           <span className="text-[14px] font-semibold text-white">{content.title}</span>
           <div className="flex gap-1 ml-1">
             {content.platforms.map(p => (
-              <span key={p} className="text-[10px] px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
+              <span key={p} className="text-[10px] px-2 py-0.5 rounded-none"
+                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}>
                 {p}
               </span>
             ))}
@@ -682,17 +682,17 @@ function OutputPanel({ content, onClose, onSchedule, onCopy, accent, onRefine, i
             {['confident', 'casual', 'bold'].map(t => (
               <button key={t} onClick={() => { setTone(t); onRefine?.(`Rewrite this using a ${t} tone.`, t); }}
                 disabled={isGenerating}
-                className="text-[10px] px-2 py-0.5 rounded-full capitalize transition-all disabled:opacity-50"
+                className="text-[10px] px-2 py-0.5 rounded-none capitalize transition-all disabled:opacity-50 font-semibold"
                 style={{
-                  background: tone === t ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
-                  color: tone === t ? 'white' : 'rgba(255,255,255,0.3)',
+                  background: tone === t ? '#c81e3c' : 'rgba(255,255,255,0.05)',
+                  color: tone === t ? 'white' : 'rgba(255,255,255,0.5)',
                 }}>
                 {t}
               </button>
             ))}
           </div>
           <button onClick={onClose}
-            className="w-6 h-6 rounded-full flex items-center justify-center"
+            className="w-6 h-6 rounded-none flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
             <X size={12} />
           </button>
@@ -885,12 +885,12 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
   }, [messages, typing])
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 w-96 rounded-2xl border overflow-hidden shadow-2xl transition-all duration-300 ${minimized ? 'h-[52px] cursor-pointer' : ''}`}
-      style={{ background: '#0e0e0e', borderColor: 'rgba(255,255,255,0.12)' }}
+    <div className={`fixed bottom-6 right-6 z-50 w-96 rounded-none border overflow-hidden shadow-2xl transition-all duration-300 ${minimized ? 'h-[52px] cursor-pointer' : ''}`}
+      style={{ background: '#0c1017', borderColor: 'rgba(255,255,255,0.12)' }}
       onClick={() => minimized && setMinimized(false)}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b"
-        style={{ borderColor: minimized ? 'transparent' : 'rgba(255,255,255,0.07)', background: '#111' }}>
+        style={{ borderColor: minimized ? 'transparent' : 'rgba(255,255,255,0.07)', background: '#10141f' }}>
         <div style={{ width: 28, height: 28, flexShrink: 0 }}>
           <svg viewBox="0 0 16 16" width="28" height="28" style={{ imageRendering: 'pixelated' }}>
             <rect x="4" y="1" width="8" height="2" fill="#f0d0a0"/>
@@ -908,7 +908,7 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
         <div className="flex-1">
           <p className="text-[13px] font-semibold text-white">Forge Coach</p>
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
             <span className="text-[10px] text-white/40">Synced & Persistent</span>
           </div>
         </div>
@@ -939,11 +939,11 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
                 </div>
               )}
               <div
-                className="rounded-2xl px-3 py-2.5 max-w-[80%]"
+                className="rounded-none px-3 py-2.5 max-w-[80%]"
                 style={{
-                  background: m.role === 'coach' ? '#1a1a1a' : 'white',
-                  borderRadius: m.role === 'coach' ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
-                  border: m.role === 'coach' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)'
+                  background: m.role === 'coach' ? '#10141f' : 'white',
+                  borderRadius: '0px',
+                  border: m.role === 'coach' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.1)'
                 }}
               >
                 <pre className="text-[12px] whitespace-pre-wrap leading-relaxed"
@@ -967,10 +967,10 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
                 <rect x="5" y="9" width="6" height="4" fill="white"/>
               </svg>
             </div>
-            <div className="rounded-2xl px-3 py-2.5 flex gap-1 items-center"
-              style={{ background: '#1a1a1a', borderRadius: '4px 16px 16px 16px' }}>
+            <div className="rounded-none px-3 py-2.5 flex gap-1 items-center"
+              style={{ background: '#10141f', borderRadius: '0px' }}>
               {[0,1,2].map(i => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse"
+                <div key={i} className="w-1.5 h-1.5 rounded-none animate-pulse"
                   style={{ background: 'rgba(255,255,255,0.4)', animationDelay: `${i*0.15}s` }} />
               ))}
             </div>
@@ -983,10 +983,10 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
       <div className="px-4 pb-2 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {QUICK.map(q => (
           <button key={q} onClick={() => send(q)}
-            className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap transition-all cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-none whitespace-nowrap transition-all cursor-pointer font-medium"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)', e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
           >
             {q}
           </button>
@@ -995,8 +995,8 @@ function CoachChat({ accent, handle, onClose, creatorData }) {
 
       {/* Input */}
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-2 rounded-xl border px-3 py-2.5"
-          style={{ background: '#111', borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div className="flex items-center gap-2 rounded-none border px-3 py-2.5"
+          style={{ background: '#10141f', borderColor: 'rgba(255,255,255,0.1)' }}>
           <input
             className="flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/20"
             placeholder="Ask your coach anything..."
@@ -1361,7 +1361,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
   // If user signed up directly and hasn't connected a channel yet, show empty state with link to Accounts
   if (!isConnected) {
     return (
-      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none p-4 sm:p-8 items-center justify-center">
+      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
           <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
             <Sparkles size={28} className="text-white" />
@@ -2278,7 +2278,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                     href={postUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative rounded-xl overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-600"
+                    className="group relative rounded-none overflow-hidden cursor-pointer block border transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-600"
                     style={{
                       aspectRatio: '16/10',
                       background: 'rgba(255,255,255,0.03)',
@@ -2322,11 +2322,11 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                     )}
                     {/* View count at bottom */}
                     <div className="absolute bottom-1.5 left-2 right-2 flex justify-between items-center">
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white bg-black/60 backdrop-blur-sm border border-white/10">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-none text-white bg-black/60 backdrop-blur-sm border border-white/10">
                         {post.views || 'Verified'}
                       </span>
                       <div
-                        className="w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="w-4 h-4 rounded-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ background: accent.color }}
                       >
                         <Play size={8} fill="white" color="white" className="ml-0.5" />
@@ -2337,7 +2337,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
               })}
             </div>
           ) : (
-            <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 bg-white/[0.01] text-center">
+            <div className="py-6 px-4 rounded-none border border-dashed border-white/10 bg-white/[0.01] text-center">
               <Video size={20} className="mx-auto text-slate-500 mb-1.5" />
               <p className="text-xs font-semibold text-slate-300">No Video Uploads Detected</p>
               <p className="text-[11px] text-slate-500 mt-0.5 max-w-sm mx-auto">
@@ -2353,7 +2353,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <p className="forge-label">Today · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-            <div className="w-1.5 h-1.5 rounded-full" style={{ background: accent.color, opacity: 0.8 }} />
+            <div className="w-1.5 h-1.5 rounded-none" style={{ background: accent.color, opacity: 0.8 }} />
           </div>
           <h2 className="forge-heading mb-1" style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', letterSpacing: '-0.03em' }}>
             What's next for {displayName}?
@@ -2366,7 +2366,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
         {/* Coach in top right — click to open chat */}
         <button
           onClick={() => setChatOpen ? setChatOpen(v => !v) : setShowCoachChat(v => !v)}
-          className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border transition-all duration-150 flex-shrink-0 cursor-pointer"
+          className="flex items-center gap-2.5 px-4 py-2.5 rounded-none border transition-all duration-150 flex-shrink-0 cursor-pointer"
           style={{
             background: isChatOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
             borderColor: isChatOpen ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
@@ -2679,7 +2679,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
           })}
 
           {sortedActions.length === 0 && (
-            <div className="text-center py-8 rounded-2xl bg-[#0d1424] border border-slate-800 text-slate-400">
+            <div className="text-center py-8 rounded-none bg-[#0d1424] border border-slate-800 text-slate-400">
               <Check size={20} className="mx-auto mb-2 text-emerald-400" />
               <p className="text-[13px] font-medium text-slate-300">All priorities cleared!</p>
               <p className="text-xs text-slate-500 mt-0.5">Forge will surface new actions tomorrow.</p>
@@ -2723,7 +2723,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div 
-            className="w-full max-w-md rounded-2xl border p-6 space-y-6 shadow-2xl relative"
+            className="w-full max-w-md rounded-none border p-6 space-y-6 shadow-2xl relative"
             style={{ 
               background: 'var(--theme-card-bg)', 
               borderColor: 'var(--theme-border-color)',
@@ -2741,10 +2741,10 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
               {/* Title Input */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>Post Title / Hook</label>
-                <div className="forge-input-wrap">
+                <div className="forge-input-wrap rounded-none">
                   <input
                     type="text"
-                    className="forge-input text-[13px]"
+                    className="forge-input text-[13px] rounded-none"
                     placeholder="e.g. 5 secrets to scaling your agency"
                     value={newPostData.title}
                     onChange={e => setNewPostData(prev => ({ ...prev, title: e.target.value }))}
@@ -2757,7 +2757,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>Day of Week</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'var(--theme-border-color)' }}
                     value={newPostData.day}
                     onChange={e => setNewPostData(prev => ({ ...prev, day: e.target.value }))}
@@ -2770,7 +2770,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>Platform</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'var(--theme-border-color)' }}
                     value={newPostData.platform}
                     onChange={e => {
@@ -2795,7 +2795,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>Format Type</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'var(--theme-border-color)' }}
                     value={newPostData.type}
                     onChange={e => setNewPostData(prev => ({ ...prev, type: e.target.value }))}
@@ -2808,7 +2808,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--theme-text-muted)' }}>Campaign Theme</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'var(--theme-border-color)' }}
                     value={newPostData.theme}
                     onChange={e => setNewPostData(prev => ({ ...prev, theme: e.target.value }))}
@@ -2843,16 +2843,17 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
             <div className="flex items-center justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--theme-border-color)' }}>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="forge-btn-secondary py-2 px-4 text-[13px]"
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-none border border-white/10 hover:border-white/20 text-white/70 hover:text-white bg-transparent transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveNewPost}
                 disabled={!newPostData.title.trim()}
-                className="forge-btn-primary py-2 px-5 text-[13px] disabled:opacity-50"
+                className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-none shadow-md hover:opacity-95 disabled:opacity-50 transition cursor-pointer"
+                style={{ background: '#c81e3c', color: '#ffffff' }}
               >
-                Add to Calendar
+                <span className="text-white">Add to Calendar</span>
               </button>
             </div>
           </div>
@@ -2920,10 +2921,10 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border shadow-2xl relative overflow-hidden"
+        className="w-full sm:max-w-lg rounded-none border shadow-2xl relative overflow-hidden"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(135deg, #111 0%, #0d0d0d 100%)',
+          background: 'linear-gradient(135deg, #10141f 0%, #0c1017 100%)',
           borderColor: `rgba(${accentRgb},0.2)`,
           maxHeight: '90vh',
           display: 'flex',
@@ -2938,7 +2939,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
           <div className="flex items-center gap-3">
             {/* Colour swatch */}
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0"
               style={{ background: edited.color || 'rgba(255,255,255,0.12)' }}
             >
               <Pencil size={14} style={{ color: 'rgba(255,255,255,0.7)' }} />
@@ -2951,7 +2952,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                 <span className="text-[10px] capitalize" style={{ color: 'rgba(255,255,255,0.35)' }}>{edited.type}</span>
                 <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10 }}>·</span>
                 <span
-                  className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full capitalize"
+                  className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-none capitalize"
                   style={STATUS_COLORS[edited.status] || STATUS_COLORS.draft}
                 >{edited.status}</span>
               </div>
@@ -2959,7 +2960,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+            className="w-7 h-7 rounded-none flex items-center justify-center transition-colors flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
@@ -2980,7 +2981,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
               {label}
               {activeTab === id && (
                 <span
-                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-none"
                   style={{ background: `rgba(${accentRgb},0.8)` }}
                 />
               )}
@@ -2997,10 +2998,10 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
               {/* Title */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Post Title / Hook</label>
-                <div className="forge-input-wrap">
+                <div className="forge-input-wrap rounded-none">
                   <input
                     type="text"
-                    className="forge-input text-[13px]"
+                    className="forge-input text-[13px] rounded-none"
                     value={edited.title || ''}
                     onChange={e => setEdited(p => ({ ...p, title: e.target.value }))}
                     placeholder="Your hook..."
@@ -3013,7 +3014,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Platform</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'rgba(255,255,255,0.1)' }}
                     value={reverseMapPlatform(edited.platform)}
                     onChange={e => {
@@ -3029,7 +3030,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Format</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'rgba(255,255,255,0.1)' }}
                     value={edited.type || 'Post'}
                     onChange={e => setEdited(p => ({ ...p, type: e.target.value }))}
@@ -3046,7 +3047,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>Theme</label>
                   <select
-                    className="w-full rounded-xl border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
+                    className="w-full rounded-none border p-2.5 text-[13px] bg-[#141414] text-white outline-none"
                     style={{ borderColor: 'rgba(255,255,255,0.1)' }}
                     value={edited.theme || 'launch'}
                     onChange={e => {
@@ -3066,7 +3067,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                       <button
                         key={s}
                         onClick={() => setEdited(p => ({ ...p, status: s }))}
-                        className="flex-1 py-2 rounded-xl text-[11px] font-semibold capitalize transition-all border"
+                        className="flex-1 py-2 rounded-none text-[11px] font-semibold capitalize transition-all border"
                         style={edited.status === s
                           ? { ...(STATUS_COLORS[s]), borderColor: 'transparent' }
                           : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.08)' }
@@ -3079,7 +3080,7 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
 
               {/* Day indicator */}
               {day && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-none" style={{ background: 'rgba(255,255,255,0.04)' }}>
                   <Calendar size={12} style={{ color: accentColor }} />
                   <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Scheduled for <span className="text-white font-semibold">{day}</span> this week</span>
                 </div>
@@ -3096,20 +3097,20 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
                 <button
                   onClick={handleWriteWithAi}
                   disabled={isGeneratingBody}
-                  className="forge-btn-secondary py-1 px-3 text-[11px] gap-1.5 flex items-center"
-                  style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}
+                  className="py-1 px-3 text-[11px] gap-1.5 flex items-center rounded-none border transition cursor-pointer"
+                  style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)', color: '#ffffff' }}
                 >
                   {isGeneratingBody ? (
                     <RefreshCw size={11} className="animate-spin text-white" />
                   ) : (
-                    <Sparkles size={11} className="text-[var(--theme-accent)]" />
+                    <Sparkles size={11} className="text-[#c81e3c]" />
                   )}
                   {isGeneratingBody ? 'Generating...' : 'Generate with AI'}
                 </button>
               </div>
-              <div className="forge-input-wrap">
+              <div className="forge-input-wrap rounded-none">
                 <textarea
-                  className="forge-input text-[13px] resize-y min-h-[200px] py-3 leading-relaxed"
+                  className="forge-input text-[13px] resize-y min-h-[200px] py-3 leading-relaxed rounded-none"
                   placeholder="Write the full caption, email body, or script here..."
                   value={edited.body || ''}
                   onChange={e => setEdited(p => ({ ...p, body: e.target.value }))}
@@ -3128,15 +3129,16 @@ function PostDetailsModal({ post, day, onClose, onSave, accent }) {
         >
           <button
             onClick={onClose}
-            className="forge-btn-secondary py-2 px-4 text-[13px]"
+            className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-none border border-white/10 hover:border-white/20 text-white/70 hover:text-white bg-transparent transition cursor-pointer"
           >Discard</button>
           <button
             onClick={() => onSave(edited)}
             disabled={!(edited.title || '').trim()}
-            className="forge-btn-primary py-2 px-5 text-[13px] disabled:opacity-50 gap-1.5"
+            className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-none shadow-md hover:opacity-95 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+            style={{ background: '#c81e3c', color: '#ffffff' }}
           >
-            <Check size={12} />
-            Save Changes
+            <Check size={12} className="text-white" />
+            <span className="text-white">Save Changes</span>
           </button>
         </div>
       </div>

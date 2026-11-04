@@ -78,7 +78,7 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
 
   if (!isConnected) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center bg-[#090d16] p-4 sm:p-8 text-center select-none overflow-y-auto">
+      <div className="h-full w-full flex flex-col items-center justify-center bg-[#090d16] p-4 sm:p-8 text-center overflow-y-auto">
         <div className="max-w-lg w-full p-8 bg-[#0c0f17] border border-[#1b2336] rounded-none shadow-2xl space-y-4 my-auto">
           <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
             <Layers size={28} className="text-white" />
@@ -117,7 +117,7 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
         {device === 'desktop' && (
           <div className="w-full max-w-6xl h-[90vh] min-h-[600px] flex flex-col rounded-none border border-[#22293d] bg-[#0a0c12] shadow-2xl overflow-hidden transition-all duration-300">
             {/* Sleek Browser Window Chrome */}
-            <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0 select-none">
+            <div className="px-4 py-2.5 bg-[#0d1019] border-b border-[#1f2638] flex items-center justify-between flex-shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />

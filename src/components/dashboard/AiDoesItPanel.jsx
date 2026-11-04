@@ -487,7 +487,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
   return (
     <div
       ref={containerRef}
-      className={`rounded-2xl border transition-all duration-300 flex flex-col ${
+      className={`rounded-none border transition-all duration-300 flex flex-col ${
         fullscreen ? 'fixed inset-0 z-50 p-6 md:p-12 overflow-y-auto bg-[#070709]' : 'relative'
       }`}
       style={{
@@ -499,13 +499,13 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
       {/* Deck Toolbar - Tight, sleek */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0c0c10' }}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center font-bold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
+          <div className="w-6 h-6 rounded-none flex items-center justify-center font-bold" style={{ background: `rgba(${accent.rgb},0.15)`, color: accent.color }}>
             <BarChart2 size={13} />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-[12px] font-bold text-white tracking-wide">Executive Pitch Deck</span>
-              <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-none bg-amber-500/15 text-amber-300 border border-amber-500/20">
                 {totalSlides} SLIDES
               </span>
             </div>
@@ -794,7 +794,7 @@ function PitchDeckPresenter({ pack, creatorData, accent, onRegen, regenning, onU
                 <div className="space-y-0.5 my-1">
                   {(s.bullets || []).slice(0, 2).map((b, bIdx) => (
                     <div key={bIdx} className="flex items-start gap-1 text-[8.5px] text-white/55 leading-tight">
-                      <span className="text-white/25 select-none leading-none mt-0.5">•</span>
+                      <span className="text-white/25 leading-none mt-0.5">•</span>
                       <span className="line-clamp-1">{b}</span>
                     </div>
                   ))}
@@ -885,7 +885,7 @@ function SectionCard({ id, title, icon: Icon, iconColor, children, onRegen, rege
   return (
     <div className="rounded-none border overflow-hidden transition-all duration-300"
       style={{ background: '#0e0e12', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
-      <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+      <div className="flex items-center justify-between px-4 py-3 cursor-pointer"
         onClick={() => setOpen(v => !v)}
         style={{ borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
         <div className="flex items-center gap-2.5">
@@ -1221,7 +1221,7 @@ export default function AiDoesItPanel({ onClose }) {
 
   return (
     <div
-      className="rounded-2xl border overflow-hidden transition-all duration-300"
+      className="rounded-none border overflow-hidden transition-all duration-300"
       style={{
         background: '#09090c',
         borderColor: `rgba(${accent.rgb}, 0.25)`,
@@ -1410,7 +1410,7 @@ export default function AiDoesItPanel({ onClose }) {
         {phase === 'running' && (
           <div className="py-3">
             <div
-              className="rounded-2xl border p-5 mb-4 shadow-xl"
+              className="rounded-none border p-5 mb-4 shadow-xl"
               style={{ background: '#0d0d11', borderColor: `rgba(${accent.rgb},0.2)` }}
             >
               <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
@@ -1427,7 +1427,7 @@ export default function AiDoesItPanel({ onClose }) {
                     cancelBgJob(IMAGE_JOB)
                     setPhase('idle')
                   }}
-                  className="text-[11px] font-semibold text-white/40 hover:text-white border border-white/10 hover:border-white/25 px-3 py-1.5 rounded-lg transition-all"
+                  className="text-[11px] font-semibold text-white/40 hover:text-white border border-white/10 hover:border-white/25 px-3 py-1.5 rounded-none transition-all"
                 >
                   Cancel
                 </button>
@@ -1441,15 +1441,15 @@ export default function AiDoesItPanel({ onClose }) {
             </div>
 
             {/* Shimmer progress line */}
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <div className="h-full rounded-full shimmer-line" style={{ background: accent.color, width: '100%' }} />
+            <div className="h-1 rounded-none overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-full rounded-none shimmer-line" style={{ background: accent.color, width: '100%' }} />
             </div>
           </div>
         )}
 
         {/* ── 3. ERROR STATE ──────────────────────────────────── */}
         {phase === 'error' && (
-          <div className="rounded-2xl p-6 text-center border" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+          <div className="rounded-none p-6 text-center border" style={{ background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
             <AlertCircle size={28} className="mx-auto mb-3 text-red-400" />
             <h4 className="text-[15px] font-bold text-white mb-1">AI Synthesis Interrupted</h4>
             <p className="text-[12px] text-white/50 max-w-sm mx-auto mb-5 leading-relaxed">
@@ -1458,13 +1458,13 @@ export default function AiDoesItPanel({ onClose }) {
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={loadInstantStudio}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold bg-white/10 text-white hover:bg-white/15 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-none text-[12px] font-bold bg-white/10 text-white hover:bg-white/15 transition-all"
               >
                 <Eye size={12} /> Use Instant Studio
               </button>
               <button
                 onClick={() => setPhase('idle')}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold border border-white/10 text-white/60 hover:text-white transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-none text-[12px] font-bold border border-white/10 text-white/60 hover:text-white transition-all"
               >
                 <RefreshCw size={12} /> Try Again
               </button>
@@ -1491,7 +1491,7 @@ export default function AiDoesItPanel({ onClose }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold transition-all whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-[10.5px] font-bold transition-all whitespace-nowrap"
                     style={{
                       background: activeTab === tab.id ? `rgba(${accent.rgb}, 0.18)` : 'transparent',
                       color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.45)',
@@ -1692,7 +1692,7 @@ export default function AiDoesItPanel({ onClose }) {
               <SectionCard id="email" title="VIP Founding Member Launch Email" icon={Mail} iconColor="#34d399" accent={accent}
                 onRegen={() => regen('email')} regenning={!!regenning.email}>
                 <div className="space-y-4">
-                  <div className="rounded-xl p-3 border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }}>
                     <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 mb-1">Subject Line</p>
                     <Editable value={emailSubj()} onChange={v => set('email.subject', v)} multiline={false}
                       className="text-[14px] font-bold text-white" />
@@ -1700,7 +1700,7 @@ export default function AiDoesItPanel({ onClose }) {
                   <div>
                     <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-white/30 mb-2">Email Body (Click to edit)</p>
                     <Editable value={emailBody()} onChange={v => set('email.body', v)} multiline
-                      className="text-[13px] min-h-[160px] p-3 rounded-xl border"
+                      className="text-[13px] min-h-[160px] p-3 rounded-none border"
                       style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.75', background: 'rgba(0,0,0,0.2)', borderColor: 'rgba(255,255,255,0.05)' }} />
                   </div>
                   <div className="flex justify-end pt-1">
@@ -1718,7 +1718,7 @@ export default function AiDoesItPanel({ onClose }) {
                   onRegen={() => regen('instagram')} regenning={!!regenning.instagram}>
                   <div className="space-y-3">
                     <Editable value={igCaption()} onChange={v => set('ig.caption', v)} multiline
-                      className="text-[13px] min-h-[80px] p-3 rounded-xl border"
+                      className="text-[13px] min-h-[80px] p-3 rounded-none border"
                       style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.65', background: 'rgba(0,0,0,0.2)', borderColor: 'rgba(255,255,255,0.05)' }} />
                     <Editable value={igTags()} onChange={v => set('ig.hashtags', v)} multiline={false}
                       className="text-[12px] font-mono text-pink-400" />
@@ -1733,8 +1733,8 @@ export default function AiDoesItPanel({ onClose }) {
                   onRegen={() => regen('twitter')} regenning={!!regenning.twitter}>
                   <div className="space-y-3">
                     {(pack.twitter?.thread || []).map((_, i) => (
-                      <div key={i} className="flex gap-3 items-start p-3 rounded-xl border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                        <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold bg-blue-500/20 text-blue-400">
+                      <div key={i} className="flex gap-3 items-start p-3 rounded-none border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                        <span className="w-6 h-6 rounded-none flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold bg-blue-500/20 text-blue-400">
                           {i + 1}
                         </span>
                         <Editable value={tweet(i)} onChange={v => set(`tw.${i}`, v)} multiline
@@ -1752,7 +1752,7 @@ export default function AiDoesItPanel({ onClose }) {
                 <SectionCard id="tiktok" title="TikTok Video Script & Hook" icon={Smartphone} iconColor="#69c9d0" accent={accent}
                   onRegen={() => regen('tiktok')} regenning={!!regenning.tiktok}>
                   <div className="space-y-3">
-                    <div className="rounded-xl p-3 border" style={{ background: 'rgba(105,201,208,0.06)', borderColor: 'rgba(105,201,208,0.2)' }}>
+                    <div className="rounded-none p-3 border" style={{ background: 'rgba(105,201,208,0.06)', borderColor: 'rgba(105,201,208,0.2)' }}>
                       <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 mb-1">
                         First 3 Seconds Hook (Critical Retention)
                       </p>
@@ -1760,7 +1760,7 @@ export default function AiDoesItPanel({ onClose }) {
                         className="text-[14px] font-bold text-white" />
                     </div>
                     <Editable value={tiktokScript()} onChange={v => set('tt.script', v)} multiline
-                      className="text-[12px] min-h-[90px] p-3 rounded-xl border"
+                      className="text-[12px] min-h-[90px] p-3 rounded-none border"
                       style={{ color: 'rgba(255,255,255,0.75)', lineHeight: '1.7', background: 'rgba(0,0,0,0.2)', borderColor: 'rgba(255,255,255,0.05)' }} />
                     <div className="flex justify-end">
                       <CopyBtn text={`HOOK: ${tiktokHook()}\n\n${tiktokScript()}`} label="Copy TikTok Script" />

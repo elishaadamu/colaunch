@@ -10,21 +10,21 @@ function Toggle({ value, onChange }) {
   return (
     <button
       onClick={() => onChange(!value)}
-      className="relative flex-shrink-0 transition-all duration-200"
+      className="relative flex-shrink-0 transition-all duration-200 rounded-none cursor-pointer border border-white/20"
       style={{
         width: '36px',
         height: '20px',
-        borderRadius: '100px',
-        background: value ? 'white' : 'rgba(255,255,255,0.12)',
+        borderRadius: '0px',
+        background: value ? '#c81e3c' : 'rgba(255,255,255,0.08)',
       }}
     >
       <div
-        className="absolute top-1 rounded-full transition-all duration-200"
+        className="absolute top-0.5 rounded-none transition-all duration-200"
         style={{
           width: '14px',
           height: '14px',
-          left: value ? '19px' : '3px',
-          background: value ? 'black' : 'rgba(255,255,255,0.3)',
+          left: value ? '17px' : '2px',
+          background: value ? '#ffffff' : 'rgba(255,255,255,0.3)',
         }}
       />
     </button>
@@ -36,19 +36,19 @@ function Toggle({ value, onChange }) {
 function AutomationCard({ automation, onToggle, onEdit }) {
   return (
     <div
-      className="rounded-xl border p-4 transition-all duration-150"
+      className="rounded-none border p-4 transition-all duration-150"
       style={{
-        background: automation.active ? 'rgba(255,255,255,0.04)' : '#111',
-        borderColor: automation.active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
+        background: automation.active ? '#10141f' : '#0c1017',
+        borderColor: automation.active ? 'rgba(200,30,60,0.35)' : 'rgba(255,255,255,0.08)',
       }}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.07)' }}
+          className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0"
+          style={{ background: automation.active ? 'rgba(200,30,60,0.15)' : 'rgba(255,255,255,0.05)' }}
         >
-          <automation.icon size={15} className="text-white/50" />
+          <automation.icon size={15} className={automation.active ? 'text-[#ff8093]' : 'text-white/50'} />
         </div>
 
         {/* Content */}
@@ -57,14 +57,13 @@ function AutomationCard({ automation, onToggle, onEdit }) {
             <p className="text-[13px] font-semibold text-white">{automation.label}</p>
             {automation.active && (
               <span
-                className="text-[9px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide"
-                style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-none uppercase tracking-wide bg-[#c81e3c] text-white"
               >
                 Active
               </span>
             )}
           </div>
-          <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.38)' }}>
+          <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
             {automation.description}
           </p>
 
@@ -72,23 +71,20 @@ function AutomationCard({ automation, onToggle, onEdit }) {
           {automation.active && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               <span
-                className="text-[11px] px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+                className="text-[11px] px-2.5 py-1 rounded-none border border-white/10"
+                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)' }}
               >
                 {automation.cadence}
               </span>
               <span
-                className="text-[11px] px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' }}
+                className="text-[11px] px-2.5 py-1 rounded-none border border-white/10"
+                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)' }}
               >
                 {automation.mode === 'draft' ? 'Creates drafts' : 'Auto-posts'}
               </span>
               <button
                 onClick={onEdit}
-                className="text-[11px] px-2.5 py-1 rounded-full transition-all duration-150"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => { e.target.style.color = 'rgba(255,255,255,0.6)' }}
-                onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.3)' }}
+                className="text-[11px] px-2.5 py-1 rounded-none transition-all duration-150 border border-white/10 hover:border-white/30 text-white/60 hover:text-white"
               >
                 Edit →
               </button>
@@ -463,17 +459,16 @@ export default function Settings() {
               <button
                 key={s}
                 onClick={() => setActiveSection(s)}
-                className={`px-3.5 py-2 rounded-lg md:rounded-xl text-[13px] font-medium capitalize transition-all duration-150 whitespace-nowrap text-center md:text-left flex-shrink-0 flex items-center justify-center md:justify-start border-b-2 md:border-b-0 md:border-l-2 ${
+                className={`px-3.5 py-2.5 rounded-none text-[13px] font-semibold capitalize transition-all duration-150 whitespace-nowrap text-center md:text-left flex-shrink-0 flex items-center justify-between border-b-2 md:border-b-0 md:border-l-2 ${
                   isActive 
-                    ? 'border-white bg-white/[0.08] text-white' 
-                    : 'border-transparent text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
+                    ? 'border-[#c81e3c] bg-white/[0.08] text-white' 
+                    : 'border-transparent text-white/50 hover:text-white hover:bg-white/[0.03]'
                 }`}
               >
-                {s}
+                <span>{s}</span>
                 {s === 'automations' && activeAutomationCount > 0 && (
                   <span
-                    className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                    style={{ background: 'white', color: 'black' }}
+                    className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-none bg-[#c81e3c] text-white"
                   >
                     {activeAutomationCount}
                   </span>
@@ -492,7 +487,7 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>Profile</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>Your creator identity inside CoLaunch.</p>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>Your creator identity inside CoLaunch.</p>
             </div>
 
             <div className="space-y-3">
@@ -512,12 +507,12 @@ export default function Settings() {
                 { label: 'Niche / topic', value: profileNiche, onChange: setProfileNiche, type: 'text' },
               ].map(field => (
                 <div key={field.label}>
-                  <label className="block text-[12px] mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <label className="block text-[12px] mb-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
                     {field.label}
                   </label>
-                  <div className="forge-input-wrap rounded-xl">
+                  <div className="rounded-none border border-white/10 bg-[#10141f] px-3 py-1.5">
                     <input
-                      className="forge-input text-[14px]"
+                      className="w-full bg-transparent text-[14px] text-white outline-none"
                       value={field.value}
                       onChange={e => field.onChange(e.target.value)}
                       type={field.type}
@@ -527,8 +522,12 @@ export default function Settings() {
               ))}
             </div>
 
-            <button onClick={handleSave} className="forge-btn-primary text-[14px] py-3 px-7 gap-2">
-              {saved ? <><Check size={14} /> Saved</> : 'Save changes'}
+            <button
+              onClick={handleSave}
+              className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-none transition cursor-pointer flex items-center gap-2 shadow-md hover:opacity-95"
+              style={{ background: '#c81e3c', color: '#ffffff' }}
+            >
+              {saved ? <><Check size={14} className="text-white" /> <span className="text-white">Saved</span></> : <span className="text-white">Save changes</span>}
             </button>
           </div>
         )}
@@ -538,7 +537,7 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>API Keys</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>Manage your AI and Generation integrations.</p>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>Manage your AI and Generation integrations.</p>
             </div>
 
             <div className="space-y-5">
@@ -547,7 +546,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">Google Gemini API Key</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gemini-2.5-flash</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gemini-2.5-flash</span>
                   </div>
                   {gemKey.trim() && (
                     <div className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(100,220,100,0.8)' }}>
@@ -555,8 +554,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: gemKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: gemKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showGem ? 'text' : 'password'}
                     autoComplete="new-password"
@@ -585,7 +584,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">OpenAI API Key</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gpt-5.5</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>gpt-5.5</span>
                     <span className="text-[11px] text-white/40 font-normal">(optional)</span>
                   </div>
                   {openaiKey.trim() && (
@@ -594,8 +593,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: openaiKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: openaiKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showOpenai ? 'text' : 'password'}
                     autoComplete="new-password"
@@ -624,7 +623,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">Anthropic API Key</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>claude-opus-4-6</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>claude-opus-4-6</span>
                     <span className="text-[11px] text-white/40 font-normal">(optional)</span>
                   </div>
                   {anthropicKey.trim() && (
@@ -633,8 +632,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: anthropicKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: anthropicKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showAnthropic ? 'text' : 'password'}
                     autoComplete="new-password"
@@ -663,7 +662,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">Together.ai Key</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>FLUX.1-schnell</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>FLUX.1-schnell</span>
                     <span className="text-[11px] text-white/40 font-normal">(optional)</span>
                   </div>
                   {togetherKey.trim() && (
@@ -672,8 +671,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: togetherKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: togetherKey.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showTogether ? 'text' : 'password'}
                     autoComplete="new-password"
@@ -702,7 +701,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">Meta App ID (Client ID)</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
                     <span className="text-[11px] text-white/40 font-normal">(optional)</span>
                   </div>
                   {metaClientId.trim() && (
@@ -711,8 +710,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: metaClientId.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: metaClientId.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type="text"
                     autoComplete="off"
@@ -738,7 +737,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] font-semibold text-white">Meta App Secret (Client Secret)</p>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-none" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>OAuth</span>
                     <span className="text-[11px] text-white/40 font-normal">(optional)</span>
                   </div>
                   {metaClientSecret.trim() && (
@@ -747,8 +746,8 @@ export default function Settings() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border px-4 py-3"
-                  style={{ background: '#111', borderColor: metaClientSecret.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-2 rounded-none border px-4 py-3"
+                  style={{ background: '#10141f', borderColor: metaClientSecret.trim() ? 'rgba(100,220,100,0.3)' : 'rgba(255,255,255,0.1)' }}>
                   <input
                     type={showMetaSecret ? 'text' : 'password'}
                     autoComplete="new-password"
@@ -776,16 +775,16 @@ export default function Settings() {
 
               {/* Consent checkbox */}
               {!!userProfile?.username && (gemKey.trim() || togetherKey.trim() || openaiKey.trim()) && (
-                <label className="flex items-center gap-3 cursor-pointer select-none py-1.5 mt-2">
+                <label className="flex items-center gap-3 cursor-pointer py-1.5 mt-2">
                   <div
-                    className="w-4 h-4 rounded border flex items-center justify-center transition-all duration-150"
+                    className="w-4 h-4 rounded-none border flex items-center justify-center transition-all duration-150"
                     style={{
-                      background: consentSave ? 'white' : 'transparent',
-                      borderColor: consentSave ? 'white' : 'rgba(255,255,255,0.25)',
+                      background: consentSave ? '#c81e3c' : 'transparent',
+                      borderColor: consentSave ? '#c81e3c' : 'rgba(255,255,255,0.25)',
                     }}
                     onClick={() => setConsentSave(v => !v)}
                   >
-                    {consentSave && <Check size={10} className="text-black" strokeWidth={3} />}
+                    {consentSave && <Check size={10} className="text-white" strokeWidth={3} />}
                   </div>
                   <span className="text-[13px] text-white/75" onClick={() => setConsentSave(v => !v)}>
                     Save keys to my account for cloud sync
@@ -799,20 +798,21 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleSaveApiKeys}
-                  className="forge-btn-primary flex-1 text-[14px] py-3 gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-none transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:opacity-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: '#c81e3c', color: '#ffffff' }}
                 >
-                  {keysSaved ? <><Check size={14} /> Saved!</> : 'Save API Keys'}
+                  {keysSaved ? <><Check size={14} className="text-white" /> <span className="text-white">Saved!</span></> : <span className="text-white">Save API Keys</span>}
                 </button>
               </div>
 
               {(gemKey.trim() || togetherKey.trim() || openaiKey.trim()) && (
                 <button
                   onClick={handleDownloadPdf}
-                  className="forge-btn-secondary w-full text-[12px] py-2.5 flex items-center justify-center gap-2"
-                  style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+                  className="w-full text-[12px] py-2.5 flex items-center justify-center gap-2 rounded-none border border-white/10 text-white/60 hover:text-white transition cursor-pointer"
+                  style={{ background: '#10141f' }}
                 >
-                  <Download size={13} className="text-white/40" />
-                  Download API Keys PDF Backup
+                  <Download size={13} className="text-white/60" />
+                  <span>Download API Keys PDF Backup</span>
                 </button>
               )}
             </div>
@@ -824,7 +824,7 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>Automations</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)', lineHeight: '1.5' }}>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: '1.5' }}>
                 Let CoLaunch handle recurring work automatically. All automations create drafts by default - you approve before anything posts.
               </p>
             </div>
@@ -832,11 +832,11 @@ export default function Settings() {
             {/* Active count banner */}
             {activeAutomationCount > 0 && (
               <div
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+                className="flex items-center gap-3 px-4 py-3 rounded-none border border-white/10"
+                style={{ background: '#10141f' }}
               >
-                <Radio size={14} className="text-white/50" />
-                <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <Radio size={14} className="text-[#c81e3c]" />
+                <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   <strong className="text-white">{activeAutomationCount} automation{activeAutomationCount > 1 ? 's' : ''} active.</strong>{' '}
                   CoLaunch will create drafts automatically - you'll be notified before anything posts.
                 </p>
@@ -857,13 +857,13 @@ export default function Settings() {
 
             {/* Global approval setting */}
             <div
-              className="rounded-xl border p-4"
-              style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}
+              className="rounded-none border border-white/10 p-4"
+              style={{ background: '#10141f' }}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-semibold text-white mb-0.5">Always require approval</p>
-                  <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
                     CoLaunch will never auto-post without your review. Automations create drafts only.
                   </p>
                 </div>
@@ -878,21 +878,21 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>Notifications</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Choose what CoLaunch notifies you about.
               </p>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               {NOTIFICATION_SETTINGS.map(({ key, label, sub }) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between p-4 rounded-xl transition-all duration-150"
-                  style={{ background: '#111' }}
+                  className="flex items-center justify-between p-4 rounded-none border border-white/10 transition-all duration-150"
+                  style={{ background: '#10141f' }}
                 >
                   <div>
                     <p className="text-[13px] font-medium text-white">{label}</p>
-                    <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{sub}</p>
+                    <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>{sub}</p>
                   </div>
                   <Toggle
                     value={notifications[key]}
@@ -902,8 +902,12 @@ export default function Settings() {
               ))}
             </div>
 
-            <button onClick={handleSave} className="forge-btn-primary text-[14px] py-3 px-7 gap-2">
-              {saved ? <><Check size={14} /> Saved</> : 'Save changes'}
+            <button
+              onClick={handleSave}
+              className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-none transition cursor-pointer flex items-center gap-2 shadow-md hover:opacity-95"
+              style={{ background: '#c81e3c', color: '#ffffff' }}
+            >
+              {saved ? <><Check size={14} className="text-white" /> <span className="text-white">Saved</span></> : <span className="text-white">Save changes</span>}
             </button>
           </div>
         )}
@@ -913,25 +917,24 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h2 className="forge-heading mb-1" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>Billing</h2>
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.38)' }}>
+              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Manage your CoLaunch subscription.
               </p>
             </div>
 
             {/* Plan card */}
             <div
-              className="rounded-2xl border p-5"
-              style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.12)' }}
+              className="rounded-none border p-5"
+              style={{ background: '#10141f', borderColor: 'rgba(200,30,60,0.35)' }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-[12px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>Current plan</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-widest mb-1 text-slate-400">Current plan</p>
                   <p className="text-[22px] font-semibold tracking-tight text-white">Founding Member</p>
-                  <p className="text-[13px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Full access · Locked in at founder pricing</p>
+                  <p className="text-[13px] mt-0.5 text-slate-400">Full access · Locked in at founder pricing</p>
                 </div>
                 <span
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                  style={{ background: 'white', color: 'black' }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider bg-[#c81e3c] text-white"
                 >
                   Active
                 </span>
@@ -940,8 +943,8 @@ export default function Settings() {
               <div className="space-y-2">
                 {['Unlimited content generation', 'All dashboard features', 'Community management', 'Automation layer', 'Priority support'].map(f => (
                   <div key={f} className="flex items-center gap-2">
-                    <Check size={13} className="text-white/50" />
-                    <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.6)' }}>{f}</span>
+                    <Check size={13} className="text-[#c81e3c]" />
+                    <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.8)' }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -949,10 +952,10 @@ export default function Settings() {
 
             <div className="pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
               <button
-                className="text-[13px] transition-colors"
-                style={{ color: 'rgba(255,255,255,0.2)' }}
-                onMouseEnter={e => { e.target.style.color = 'rgba(255,255,255,0.5)' }}
-                onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.2)' }}
+                className="text-[13px] transition-colors rounded-none"
+                style={{ color: 'rgba(255,255,255,0.3)' }}
+                onMouseEnter={e => { e.target.style.color = 'rgba(255,255,255,0.7)' }}
+                onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.3)' }}
               >
                 Cancel subscription
               </button>

@@ -2104,7 +2104,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   return (
     <div 
       ref={calendarContainerRef}
-      className="h-full flex flex-col bg-[#090d16] text-slate-200 select-none overflow-hidden relative"
+      className="h-full flex flex-col bg-[#090d16] text-slate-200 overflow-hidden relative"
     >
       {!isConnected ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
@@ -2777,7 +2777,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                     <div
                       key={idx}
                       onClick={() => handleSelectCalendarDay(cell)}
-                      className={`min-h-[92px] p-2 flex flex-col justify-between transition cursor-pointer rounded-none select-none ${
+                      className={`min-h-[92px] p-2 flex flex-col justify-between transition cursor-pointer rounded-none ${
                         isSelected
                           ? 'border-2 border-[#c81e3c] bg-[#111522] shadow-xl'
                           : 'border border-white/[0.04] hover:bg-[#161b2b]'
@@ -3888,7 +3888,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
               {/* WYSIWYG 5: TIKTOK PREVIEW */}
               {previewPlatform === 'tiktok' && (
-                <div className="w-full max-w-[280px] mx-auto bg-black border border-slate-800 rounded-none h-[420px] relative overflow-hidden text-white flex flex-col justify-between p-3 select-none">
+                <div className="w-full max-w-[280px] mx-auto bg-black border border-slate-800 rounded-none h-[420px] relative overflow-hidden text-white flex flex-col justify-between p-3">
                   {/* Top bar */}
                   <div className="flex items-center justify-center gap-3 text-xs font-bold text-slate-400">
                     <span className="hover:text-white cursor-pointer">Following</span>

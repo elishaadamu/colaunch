@@ -133,17 +133,17 @@ function Message({ msg, onActionClick }) {
   return (
     <div className={`flex gap-3 ${isForge ? '' : 'flex-row-reverse'}`}>
       {isForge && (
-        <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+        <div className="w-6 h-6 rounded-none bg-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
           <Sparkles size={11} className="text-black" />
         </div>
       )}
       <div className={`flex-1 max-w-[85%] ${isForge ? '' : 'flex flex-col items-end'}`}>
         <div
-          className="rounded-2xl px-4 py-3 group relative shadow-md transition-all"
+          className="rounded-none px-4 py-3 group relative shadow-md transition-all"
           style={{
-            background: isForge ? '#1a1a1a' : 'white',
-            borderRadius: isForge ? '4px 18px 18px 18px' : '18px 4px 18px 18px',
-            border: isForge ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.1)'
+            background: isForge ? '#10141f' : 'white',
+            borderRadius: '0px',
+            border: isForge ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.1)'
           }}
         >
           <div>{renderContent(msg.content || msg.text)}</div>
@@ -160,7 +160,7 @@ function Message({ msg, onActionClick }) {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-white/50 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-none text-[11px] font-medium text-white/50 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors cursor-pointer"
               >
                 {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -204,15 +204,15 @@ function Message({ msg, onActionClick }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-3">
-      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+      <div className="w-6 h-6 rounded-none bg-white flex items-center justify-center flex-shrink-0">
         <Sparkles size={11} className="text-black" />
       </div>
-      <div className="rounded-2xl px-4 py-3 flex items-center gap-1.5" style={{ background: '#1a1a1a', borderRadius: '4px 18px 18px 18px' }}>
+      <div className="rounded-none px-4 py-3 flex items-center gap-1.5" style={{ background: '#10141f', borderRadius: '0px' }}>
         {[0, 1, 2].map(i => (
           <div
             key={i}
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: 'rgba(255,255,255,0.4)', animationDelay: `${i * 0.15}s` }}
+            className="w-1.5 h-1.5 rounded-none animate-pulse"
+            style={{ background: '#c81e3c', animationDelay: `${i * 0.15}s` }}
           />
         ))}
       </div>
@@ -486,14 +486,14 @@ export default function ForgeChat({ isOpen, onClose }) {
           style={{ borderColor: 'rgba(255,255,255,0.07)' }}
         >
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center">
+          <div className="w-6 h-6 rounded-none bg-white flex items-center justify-center">
             <Sparkles size={11} className="text-black" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[14px] font-semibold text-white">Forge</span>
               <span
-                className="text-[10px] px-2 py-0.2 rounded-full font-medium"
+                className="text-[10px] px-2 py-0.2 rounded-none font-medium"
                 style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8' }}
               >
                 Synced to Cloud
@@ -506,13 +506,13 @@ export default function ForgeChat({ isOpen, onClose }) {
           <button
             onClick={handleClearChat}
             title="Clear conversation history"
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 text-white/30 hover:text-red-400 hover:bg-white/5 cursor-pointer"
+            className="w-7 h-7 rounded-none flex items-center justify-center transition-all duration-150 text-white/30 hover:text-red-400 hover:bg-white/5 cursor-pointer"
           >
             <Trash2 size={13} />
           </button>
           <button
             onClick={() => setIsMinimized(true)}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer"
+            className="w-7 h-7 rounded-none flex items-center justify-center transition-all duration-150 cursor-pointer"
             style={{ color: 'rgba(255,255,255,0.3)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}
@@ -521,7 +521,7 @@ export default function ForgeChat({ isOpen, onClose }) {
           </button>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer"
+            className="w-7 h-7 rounded-none flex items-center justify-center transition-all duration-150 cursor-pointer"
             style={{ color: 'rgba(255,255,255,0.3)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}
@@ -550,14 +550,14 @@ export default function ForgeChat({ isOpen, onClose }) {
             <button
               key={p}
               onClick={() => sendMessage(p)}
-              className="flex-shrink-0 text-[11px] px-3 py-1.5 rounded-full transition-all duration-150 whitespace-nowrap cursor-pointer"
+              className="flex-shrink-0 text-[11px] px-3 py-1.5 rounded-none transition-all duration-150 whitespace-nowrap cursor-pointer font-medium"
               style={{
                 background: 'rgba(255,255,255,0.06)',
-                color: 'rgba(255,255,255,0.55)',
+                color: 'rgba(255,255,255,0.7)',
                 border: '1px solid rgba(255,255,255,0.08)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
             >
               {p}
             </button>
@@ -571,11 +571,11 @@ export default function ForgeChat({ isOpen, onClose }) {
         style={{ paddingTop: '8px' }}
       >
         <div
-          className="flex items-end gap-2 rounded-2xl border px-4 py-3 transition-all duration-200 focus-within:border-white/20"
-          style={{ background: '#151515', borderColor: 'rgba(255,255,255,0.08)' }}
+          className="flex items-end gap-2 rounded-none border px-4 py-3 transition-all duration-200 focus-within:border-white/20"
+          style={{ background: '#10141f', borderColor: 'rgba(255,255,255,0.1)' }}
         >
           <textarea
-            className="forge-input flex-1 text-[13px] resize-none"
+            className="forge-input flex-1 text-[13px] resize-none rounded-none"
             style={{ minHeight: '20px', maxHeight: '100px', lineHeight: '1.5', background: 'transparent', color: 'white' }}
             placeholder="Ask Forge anything..."
             value={input}
@@ -595,10 +595,10 @@ export default function ForgeChat({ isOpen, onClose }) {
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || isTyping}
-            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-150 disabled:opacity-30 cursor-pointer"
-            style={{ background: input.trim() ? 'white' : 'rgba(255,255,255,0.1)' }}
+            className="w-7 h-7 rounded-none flex items-center justify-center flex-shrink-0 transition-all duration-150 disabled:opacity-30 cursor-pointer"
+            style={{ background: input.trim() ? '#c81e3c' : 'rgba(255,255,255,0.1)' }}
           >
-            <Send size={12} className={input.trim() ? 'text-black' : 'text-white/40'} />
+            <Send size={12} className={input.trim() ? 'text-white' : 'text-white/40'} />
           </button>
         </div>
       </div>

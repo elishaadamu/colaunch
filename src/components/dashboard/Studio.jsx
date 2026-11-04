@@ -759,7 +759,7 @@ export default function Studio() {
         </div>
         <button
           onClick={() => setShowTypeSelectorMobile(true)}
-          className="text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-all"
+          className="text-[12px] font-semibold px-3 py-1.5 rounded-none border transition-all"
           style={{
             color: 'var(--theme-accent)',
             background: 'var(--theme-accent-bg)',
@@ -796,7 +796,7 @@ export default function Studio() {
                 to { transform: translateY(0); }
               }
             `}</style>
-            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4" />
+            <div className="w-12 h-1 bg-white/10 rounded-none mx-auto mb-4" />
             <div className="flex items-center justify-between mb-4">
               <span className="text-[14px] font-bold text-white">Choose Content Type</span>
               <button onClick={() => setShowTypeSelectorMobile(false)} className="text-[12px] text-white/40 hover:text-white">Close</button>
@@ -812,29 +812,29 @@ export default function Studio() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {(!aiKeys || (!aiKeys.geminiKey && !aiKeys.openaiKey && !aiKeys.anthropicKey && !aiKeys.togetherKey)) && (
           <div 
-            className="mx-6 mt-4 p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
+            className="mx-6 mt-4 p-3.5 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
-              borderColor: 'rgba(239, 68, 68, 0.25)',
+              background: 'linear-gradient(135deg, rgba(200, 30, 60, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)',
+              borderColor: 'rgba(200, 30, 60, 0.35)',
               backdropFilter: 'blur(16px)',
               boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
             }}
           >
             <div className="flex items-center gap-3 relative z-10">
               <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 border"
                 style={{ 
-                  background: 'rgba(239, 68, 68, 0.1)', 
-                  borderColor: 'rgba(239, 68, 68, 0.2)' 
+                  background: 'rgba(200, 30, 60, 0.15)', 
+                  borderColor: 'rgba(200, 30, 60, 0.3)' 
                 }}
               >
-                <AlertCircle size={15} className="text-red-400 animate-pulse" />
+                <AlertCircle size={15} className="text-[#ff8093] animate-pulse" />
               </div>
               <div className="space-y-0.5 text-left">
                 <h4 className="text-[12.5px] font-semibold text-white tracking-tight">
                   No AI Keys Configured
                 </h4>
-                <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--theme-text-muted)' }}>
+                <p className="text-[11.5px] leading-relaxed text-slate-400">
                   You need to configure an AI API Key to generate real custom copy.
                 </p>
               </div>
@@ -842,7 +842,8 @@ export default function Studio() {
             
             <button 
               onClick={() => setApiModalOpen(true)} 
-              className="text-[11px] py-1.5 px-3.5 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-all font-medium"
+              className="text-[11px] py-1.5 px-3.5 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none font-bold uppercase tracking-wider transition-all shadow-sm"
+              style={{ background: '#c81e3c', color: '#ffffff' }}
             >
               Configure API Keys
             </button>
@@ -858,22 +859,22 @@ export default function Studio() {
                 { color: 'rgba(29,161,242,0.12)', border: 'rgba(29,161,242,0.2)', label: 'X', lines: [85, 60, 70, 45] },
                 { color: 'rgba(255,0,0,0.1)', border: 'rgba(255,0,0,0.18)', label: 'YT', lines: [65, 80] },
               ].map((card, i) => (
-                <div key={i} className="w-28 rounded-xl border p-3 text-left" style={{ background: card.color, borderColor: card.border }}>
+                <div key={i} className="w-28 rounded-none border p-3 text-left" style={{ background: card.color, borderColor: card.border }}>
                   <div className="text-[9px] font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>{card.label}</div>
                   <div className="space-y-1.5">
                     {card.lines.map((w, j) => (
-                      <div key={j} className="h-1.5 rounded-full" style={{ width: `${w}%`, background: 'rgba(255,255,255,0.15)' }} />
+                      <div key={j} className="h-1.5 rounded-none" style={{ width: `${w}%`, background: 'rgba(255,255,255,0.15)' }} />
                     ))}
                   </div>
                   <div className="mt-3 flex items-center gap-1">
                     <Sparkles size={9} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                    <div className="h-1 flex-1 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                    <div className="h-1 flex-1 rounded-none" style={{ background: 'rgba(255,255,255,0.1)' }} />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center mb-4">
+            <div className="w-10 h-10 rounded-none bg-white flex items-center justify-center mb-4">
               <Sparkles size={16} className="text-black" />
             </div>
             <h3 className="forge-heading mb-2" style={{ fontSize: '20px', letterSpacing: '-0.03em' }}>AI Content Studio</h3>
@@ -882,7 +883,7 @@ export default function Studio() {
             </p>
             <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-sm">
               {['Instagram caption', 'X thread', 'Launch email', '60-sec ad script', 'Offer copy'].map(t => (
-                <span key={t} className="text-[11px] px-3 py-1 rounded-full" style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-text-muted)', border: '1px solid var(--theme-accent-border)' }}>
+                <span key={t} className="text-[11px] px-3 py-1 rounded-none font-medium" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   {t}
                 </span>
               ))}
@@ -893,7 +894,7 @@ export default function Studio() {
             {/* Top bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0 gap-3" style={{ borderColor: 'var(--theme-border-color)' }}>
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: PLATFORM_COLORS[selectedType.platform] || 'rgba(255,255,255,0.08)' }}>
+                <div className="w-7 h-7 rounded-none flex items-center justify-center" style={{ background: PLATFORM_COLORS[selectedType.platform] || 'rgba(255,255,255,0.08)' }}>
                   <selectedType.icon size={13} className="text-white/70" />
                 </div>
                 <div>
@@ -908,10 +909,10 @@ export default function Studio() {
                 <div className="flex gap-1 flex-wrap">
                   {TONE_OPTIONS.map(t => (
                     <button key={t} onClick={() => setTone(t)}
-                      className="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-full transition-all duration-150"
+                      className="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-none transition-all duration-150 font-semibold"
                       style={{
-                        background: tone === t ? 'var(--theme-accent-bg)' : 'rgba(255,255,255,0.05)',
-                        color: tone === t ? 'var(--theme-text)' : 'var(--theme-text-muted)',
+                        background: tone === t ? '#c81e3c' : 'rgba(255,255,255,0.05)',
+                        color: tone === t ? '#ffffff' : 'rgba(255,255,255,0.6)',
                       }}
                     >
                       {t}
@@ -926,11 +927,11 @@ export default function Studio() {
               <p className="text-[11px] sm:text-[12px] mb-2" style={{ color: 'var(--theme-text-muted)' }}>Context (optional)</p>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div
-                  className="flex-1 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 focus-within:border-white/20"
+                  className="flex-1 rounded-none border px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 focus-within:border-white/20"
                   style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
                 >
                   <input
-                    className="forge-input text-[12px] sm:text-[13px] w-full"
+                    className="forge-input text-[12px] sm:text-[13px] w-full bg-transparent outline-none rounded-none"
                     placeholder={`e.g. "focus on the community angle" or paste your idea here...`}
                     value={input}
                     onChange={e => setInput(e.target.value)}
@@ -940,10 +941,11 @@ export default function Studio() {
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="forge-btn-primary text-[12.5px] sm:text-[13px] py-2 sm:py-2.5 px-4 sm:px-5 gap-2 flex-shrink-0 justify-center animate-pulse-once"
+                  className="px-5 py-2 sm:py-2.5 text-xs font-bold uppercase tracking-wider rounded-none transition cursor-pointer flex items-center justify-center gap-2 shadow-md hover:opacity-95 disabled:opacity-50"
+                  style={{ background: '#c81e3c', color: '#ffffff' }}
                 >
-                  {isGenerating ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                  Generate
+                  {isGenerating ? <RefreshCw size={13} className="animate-spin text-white" /> : <Sparkles size={13} className="text-white" />}
+                  <span className="text-white">Generate</span>
                 </button>
               </div>
             </div>
@@ -954,21 +956,21 @@ export default function Studio() {
 
               {isGenerating ? (
                 <div className="flex items-center gap-3 py-8">
-                  <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-none bg-white flex items-center justify-center">
                     <Sparkles size={11} className="text-black" />
                   </div>
                   <div className="flex gap-1">
                     {[0, 1, 2].map(i => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.4)', animationDelay: `${i * 0.15}s` }} />
+                      <div key={i} className="w-1.5 h-1.5 rounded-none animate-pulse" style={{ background: '#c81e3c', animationDelay: `${i * 0.15}s` }} />
                     ))}
                   </div>
-                  <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Writing your {selectedType.label}...</span>
+                  <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Writing your {selectedType.label}...</span>
                   <button
                     onClick={() => {
                       cancelBgJob(STUDIO_JOB)
                       setIsGenerating(false)
                     }}
-                    className="ml-4 text-[11px] font-semibold text-white/40 hover:text-white/85 border border-white/10 hover:border-white/25 px-2.5 py-1 rounded-lg transition-all"
+                    className="ml-4 text-[11px] font-semibold text-white/50 hover:text-white border border-white/10 hover:border-white/25 px-2.5 py-1 rounded-none transition-all"
                   >
                     Cancel
                   </button>
@@ -977,7 +979,7 @@ export default function Studio() {
                 <div>
                   {/* Output card */}
                   <div
-                    className="rounded-2xl border p-5 mb-4 relative group flex flex-col"
+                    className="rounded-none border p-5 mb-4 relative group flex flex-col"
                     style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
                   >
                     <pre className="text-[13px] whitespace-pre-wrap leading-relaxed flex-1" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
@@ -992,23 +994,27 @@ export default function Studio() {
 
                   {/* Action bar */}
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={handleCopy} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5">
+                    <button onClick={handleCopy} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5 rounded-none">
                       {copied ? <Check size={12} /> : <Copy size={12} />}
                       {copied ? 'Copied' : 'Copy'}
                     </button>
-                    <button onClick={handleGenerate} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5">
+                    <button onClick={handleGenerate} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5 rounded-none">
                       <RefreshCw size={12} />
                       Regenerate
                     </button>
-                    <button onClick={() => handleRefine('make it bolder, more high-energy, and direct')} className="forge-btn-secondary text-[12px] py-2 px-4">Make bolder</button>
-                    <button onClick={() => handleRefine('shorten it significantly, making it concise and punchy')} className="forge-btn-secondary text-[12px] py-2 px-4">Shorten</button>
-                    <button onClick={() => handleRefine('simplify the language to be extremely clear and easy to read')} className="forge-btn-secondary text-[12px] py-2 px-4">Simplify</button>
+                    <button onClick={() => handleRefine('make it bolder, more high-energy, and direct')} className="forge-btn-secondary text-[12px] py-2 px-4 rounded-none">Make bolder</button>
+                    <button onClick={() => handleRefine('shorten it significantly, making it concise and punchy')} className="forge-btn-secondary text-[12px] py-2 px-4 rounded-none">Shorten</button>
+                    <button onClick={() => handleRefine('simplify the language to be extremely clear and easy to read')} className="forge-btn-secondary text-[12px] py-2 px-4 rounded-none">Simplify</button>
 
                     {/* Repurpose */}
                     <div className="ml-auto flex gap-2">
-                      <button onClick={handleSchedulePost} className="forge-btn-primary text-[12px] py-2 px-4 gap-1.5">
-                        <Calendar size={12} />
-                        {scheduled ? 'Scheduled ✓' : 'Schedule post'}
+                      <button
+                        onClick={handleSchedulePost}
+                        className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-none transition cursor-pointer flex items-center gap-1.5 shadow-md hover:opacity-95"
+                        style={{ background: '#c81e3c', color: '#ffffff' }}
+                      >
+                        <Calendar size={12} className="text-white" />
+                        <span className="text-white">{scheduled ? 'Scheduled ✓' : 'Schedule post'}</span>
                       </button>
                     </div>
                   </div>
@@ -1019,10 +1025,7 @@ export default function Studio() {
                     <div className="flex flex-wrap gap-2">
                       {['Instagram', 'X / Twitter', 'LinkedIn', 'TikTok', 'Email', 'YouTube'].map(p => (
                         <button key={p}
-                          className="text-[11px] px-3 py-1.5 rounded-full transition-all duration-150"
-                          style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-text-muted)', border: '1px solid var(--theme-accent-border)' }}
-                          onMouseEnter={e => { e.target.style.background = 'var(--theme-accent)'; e.target.style.color = 'var(--theme-btn-primary-text)' }}
-                          onMouseLeave={e => { e.target.style.background = 'var(--theme-accent-bg)'; e.target.style.color = 'var(--theme-text-muted)' }}
+                          className="text-[11px] px-3 py-1.5 rounded-none transition-all duration-150 border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30"
                           onClick={() => handleAdaptPlatform(p)}
                         >
                           → {p}
@@ -1038,7 +1041,7 @@ export default function Studio() {
                       <Clock size={13} style={{ color: 'var(--theme-text-muted)' }} />
                       <p className="text-[13px] font-medium" style={{ color: 'var(--theme-text-muted)' }}>Recent outputs</p>
                       {recentOutputs.length > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--theme-accent-bg)', color: 'var(--theme-accent)' }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-none font-bold bg-[#c81e3c] text-white">
                           {recentOutputs.length}
                         </span>
                       )}
@@ -1046,7 +1049,7 @@ export default function Studio() {
                     {recentOutputs.length > 0 && (
                       <button
                         onClick={() => { saveRecentOutputs([]); if (triggerToast) triggerToast('History cleared', 'info') }}
-                        className="text-[10px] px-2 py-1 rounded-lg transition-all"
+                        className="text-[10px] px-2 py-1 rounded-none transition-all"
                         style={{ color: 'var(--theme-text-muted)', border: '1px solid var(--theme-border-color)' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; e.currentTarget.style.color = 'rgba(239,68,68,0.8)' }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--theme-border-color)'; e.currentTarget.style.color = 'var(--theme-text-muted)' }}
@@ -1058,7 +1061,7 @@ export default function Studio() {
 
                   {recentOutputs.length === 0 ? (
                     <div className="text-center py-12">
-                      <div className="w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'var(--theme-accent-bg)', border: '1px solid var(--theme-accent-border)' }}>
+                      <div className="w-10 h-10 rounded-none mx-auto mb-3 flex items-center justify-center bg-white/[0.04] border border-white/10">
                         <Sparkles size={15} style={{ color: 'var(--theme-text-muted)' }} />
                       </div>
                       <p className="text-[12px] mb-1" style={{ color: 'var(--theme-text-muted)' }}>No outputs yet</p>
@@ -1082,17 +1085,17 @@ export default function Studio() {
                         return (
                           <div
                             key={entry.id}
-                            className="rounded-xl border transition-all duration-200"
+                            className="rounded-none border transition-all duration-200"
                             style={{
                               background: isOpen ? 'var(--theme-card-bg)' : 'transparent',
-                              borderColor: isOpen ? 'var(--theme-accent-border)' : 'var(--theme-border-color)',
+                              borderColor: isOpen ? 'rgba(200,30,60,0.4)' : 'var(--theme-border-color)',
                             }}
                           >
                             {/* Collapsed header */}
                             <button
                               onClick={() => setExpandedOutputId(isOpen ? null : entry.id)}
                               className="w-full flex items-center gap-3 p-3.5 text-left transition-colors"
-                              onMouseEnter={e => { if (!isOpen) e.currentTarget.parentElement.style.borderColor = 'var(--theme-accent-border)' }}
+                              onMouseEnter={e => { if (!isOpen) e.currentTarget.parentElement.style.borderColor = 'rgba(200,30,60,0.3)' }}
                               onMouseLeave={e => { if (!isOpen) e.currentTarget.parentElement.style.borderColor = 'var(--theme-border-color)' }}
                             >
                               <ChevronRight
@@ -1105,15 +1108,15 @@ export default function Studio() {
                                 }}
                               />
                               <span
-                                className="text-[10px] font-semibold px-2 py-0.5 rounded flex-shrink-0"
-                                style={{ background: PLATFORM_COLORS[entry.platform] || 'var(--theme-accent-bg)', color: 'var(--theme-text-muted)' }}
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-none flex-shrink-0"
+                                style={{ background: PLATFORM_COLORS[entry.platform] || 'rgba(255,255,255,0.08)', color: '#ffffff' }}
                               >
                                 {entry.typeLabel}
                               </span>
                               <p className="text-[12px] flex-1 truncate" style={{ color: isOpen ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
                                 {preview}
                               </p>
-                              <span className="text-[10px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                              <span className="text-[10px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }}>
                                 {timeAgo}
                               </span>
                             </button>
@@ -1122,8 +1125,8 @@ export default function Studio() {
                             {isOpen && (
                               <div className="px-4 pb-4 animate-fade-in-down">
                                 <div
-                                  className="rounded-lg p-4 mb-3 max-h-64 overflow-y-auto"
-                                  style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.04)' }}
+                                  className="rounded-none p-4 mb-3 max-h-64 overflow-y-auto"
+                                  style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}
                                 >
                                   <pre className="text-[12px] whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
                                     {entry.content}
@@ -1132,29 +1135,27 @@ export default function Studio() {
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleCopy(entry.content) }}
-                                    className="forge-btn-secondary text-[11px] py-1.5 px-3 gap-1"
+                                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-none border border-white/10 hover:border-white/25 text-white flex items-center gap-1"
                                   >
                                     <Copy size={11} /> Copy
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleScheduleEntry(entry) }}
-                                    className="forge-btn-primary text-[11px] py-1.5 px-3 gap-1"
+                                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-none flex items-center gap-1 shadow-sm"
+                                    style={{ background: '#c81e3c', color: '#ffffff' }}
                                   >
-                                    <Calendar size={11} /> Add to Calendar
+                                    <Calendar size={11} className="text-white" /> <span className="text-white">Add to Calendar</span>
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setSelectedType({ id: entry.typeId, label: entry.typeLabel, platform: entry.platform, icon: FileText }); setGenerated(entry.content) }}
-                                    className="forge-btn-secondary text-[11px] py-1.5 px-3 gap-1"
+                                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-none border border-white/10 hover:border-white/25 text-white/70 hover:text-white flex items-center gap-1"
                                   >
                                     <RefreshCw size={11} /> Reopen
                                   </button>
                                   <div className="ml-auto">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); removeFromRecent(entry.id) }}
-                                      className="text-[11px] p-1.5 rounded-lg transition-all"
-                                      style={{ color: 'var(--theme-text-muted)' }}
-                                      onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.8)'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
-                                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)'; e.currentTarget.style.background = 'transparent' }}
+                                      className="text-[11px] p-1.5 rounded-none transition-all hover:bg-red-500/20 text-white/40 hover:text-red-400"
                                     >
                                       <Trash2 size={12} />
                                     </button>
