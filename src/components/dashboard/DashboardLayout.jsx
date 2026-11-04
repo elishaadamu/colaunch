@@ -15,7 +15,7 @@ import { useForge, getAccent } from '../../App'
 import { 
   Sparkles, Laptop, Smartphone, Tablet, Menu, LogOut, Zap,
   Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor,
-  Mail, AlertTriangle, Headphones
+  Mail, AlertTriangle, Headphones, Bell, X, CheckCircle2
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { AppMockup, VideoPlayerModal } from '../onboarding/Preview'
@@ -422,6 +422,52 @@ export default function DashboardLayout() {
     }
   })
 
+  // System Notifications modal state
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false)
+
+  // Listen for open notifications event (e.g. from ContentCalendar)
+  useEffect(() => {
+    const handleOpenNotifications = () => setNotificationsModalOpen(true)
+    window.addEventListener('forge_open_notifications', handleOpenNotifications)
+    return () => window.removeEventListener('forge_open_notifications', handleOpenNotifications)
+  }, [])
+
+  // Dynamic system notifications list for unread badge count
+  const notificationsList = useMemo(() => {
+    const list = []
+    if (!isEmailConfigured) {
+      list.push({
+        id: 'email_not_configured',
+        title: 'Email Address Not Configured',
+        subtitle: 'Action Required',
+        description: 'Your creator email is not configured. Please add your email address to enable campaign outreach, lead notifications, customer receipts, and member invites.',
+        actionLabel: 'Configure Email →',
+        icon: Mail,
+        onAction: () => {
+          setNotificationsModalOpen(false)
+          setEmailModalOpen(true)
+        }
+      })
+    }
+    if (showCodeLoginBanner) {
+      list.push({
+        id: 'code_login_notice',
+        title: 'Single-Use Email Code Login',
+        subtitle: 'Account Credentials',
+        description: 'You signed in via email code (no password set in dashboard). Need help setting up a password or changing your email?',
+        actionLabel: 'Contact Customer Care →',
+        icon: Headphones,
+        onAction: () => {
+          setNotificationsModalOpen(false)
+          setActiveTab('support')
+        }
+      })
+    }
+    return list
+  }, [isEmailConfigured, showCodeLoginBanner, setActiveTab])
+
+  const notificationCount = notificationsList.length
+
   // Listen for cross-component tab change events (e.g. ContentCalendar -> Accounts)
   useEffect(() => {
     const handleTabChange = (e) => {
@@ -485,49 +531,6 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0, background: '#090d16' }}>
-        {/* Customer Care Opportunity Banner (when logged in via single-use email code) */}
-        {activeTab !== 'calendar' && showCodeLoginBanner && (
-          <div
-            className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0 text-xs"
-            style={{
-              background: '#0d1322',
-              borderColor: 'rgba(200, 30, 60, 0.35)',
-              color: '#ffffff'
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <Headphones size={15} className="text-[#c81e3c] shrink-0" />
-              <span className="text-slate-200">
-                You signed in via email code (no password set in dashboard). Need help setting up a password or changing your email?
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('support')
-                  setShowCodeLoginBanner(false)
-                }}
-                className="px-2.5 py-1 text-xs font-bold text-white bg-[#c81e3c] hover:bg-[#b01a35] transition cursor-pointer border-0"
-                style={{ borderRadius: '0px' }}
-              >
-                Contact Customer Care →
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCodeLoginBanner(false)
-                  try { sessionStorage.setItem('forge_dismiss_code_banner', 'true') } catch (_) {}
-                }}
-                className="text-slate-400 hover:text-white p-1 cursor-pointer bg-transparent border-0"
-                title="Dismiss"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Top bar (Hidden on calendar tab so calendar is fullscreen height with only sidebar) */}
         {activeTab !== 'calendar' && (
           <div
@@ -584,6 +587,29 @@ export default function DashboardLayout() {
               <span className="text-[12px] font-medium hidden sm:block text-slate-200">Ask Forge</span>
             </button>
 
+            {/* Notification Bell Button with Badge Count */}
+            <button
+              type="button"
+              onClick={() => setNotificationsModalOpen(true)}
+              className="relative p-2 rounded-none transition-all duration-150 border flex items-center justify-center cursor-pointer"
+              style={{
+                background: notificationsModalOpen ? 'rgba(200, 30, 60, 0.18)' : 'rgba(255,255,255,0.05)',
+                borderColor: notificationCount > 0 ? 'rgba(200, 30, 60, 0.45)' : 'rgba(255,255,255,0.08)',
+                color: notificationCount > 0 ? '#ffffff' : 'var(--theme-text-muted)',
+              }}
+              title={notificationCount > 0 ? `${notificationCount} unread alert${notificationCount > 1 ? 's' : ''}` : 'Notifications & System Alerts'}
+            >
+              <Bell size={15} className={notificationCount > 0 ? 'text-white' : 'text-slate-400'} />
+              {notificationCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-lg border border-black/40"
+                  style={{ background: '#c81e3c' }}
+                >
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+
             {/* Creator name + avatar */}
             <div className="flex items-center gap-2">
               <span className="text-[12px] hidden sm:block text-slate-300 font-medium">
@@ -633,66 +659,6 @@ export default function DashboardLayout() {
                 : 'overflow-y-auto overflow-x-hidden custom-scrollbar scroll-smooth'
             }`}
           >
-            {/* Email Not Configured Notification Banner (First view of dashboard prompt - hidden on calendar) */}
-            {activeTab !== 'calendar' && !isEmailConfigured && (
-              <div 
-                className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3.5 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
-                style={{
-                  background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.14) 0%, rgba(11, 15, 25, 0.98) 100%)`,
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.5)`,
-                  borderRadius: '0px'
-                }}
-              >
-                <div className="flex items-center gap-3.5 relative z-10">
-                  <div 
-                    className="w-10 h-10 rounded-none flex items-center justify-center flex-shrink-0 border"
-                    style={{ 
-                      background: creatorBrandColor, 
-                      borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.6)`,
-                      borderRadius: '0px'
-                    }}
-                  >
-                    <Mail size={18} className="text-white" />
-                  </div>
-                  <div className="space-y-0.5 text-left">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-[13px] font-extrabold text-white tracking-tight">
-                        Email Address Not Configured
-                      </h4>
-                      <span 
-                        className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
-                        style={{
-                          background: creatorBrandColor,
-                          color: '#ffffff',
-                          borderRadius: '0px'
-                        }}
-                      >
-                        Action Required
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-slate-300 leading-relaxed">
-                      Your creator email is not configured. Please add your email address to enable campaign outreach, lead notifications, customer receipts, and member invites.
-                    </p>
-                  </div>
-                </div>
-
-                <button 
-                  type="button"
-                  onClick={() => setEmailModalOpen(true)}
-                  className="text-[12px] py-2.5 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 font-extrabold transition-all duration-150 cursor-pointer shadow-md hover:opacity-95"
-                  style={{
-                    background: creatorBrandColor,
-                    color: '#ffffff',
-                    borderRadius: '0px',
-                    border: 'none'
-                  }}
-                >
-                  <Mail size={14} className="text-white" />
-                  <span className="text-white font-bold">Configure Email</span>
-                </button>
-              </div>
-            )}
-
             {/* Guest Action Suggestion Banner */}
             {!isRegistered && aiActionsCount >= 3 && (
               <div 
@@ -807,6 +773,106 @@ export default function DashboardLayout() {
         updateCreator={updateCreator}
         triggerToast={triggerToast}
       />
+
+      {/* System Notifications & Alerts Modal */}
+      {notificationsModalOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg bg-[#0c1017] border border-white/10 rounded-none p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-none bg-[#c81e3c]/15 border border-[#c81e3c]/30 flex items-center justify-center text-[#ff6b81]">
+                  <Bell size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-2">
+                    <span>Notifications &amp; System Alerts</span>
+                    {notificationCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-none text-[10px] font-bold uppercase bg-[#c81e3c] text-white">
+                        {notificationCount} Active
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Account security, channel connections, and system updates</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNotificationsModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 cursor-pointer bg-transparent border-0"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Notification items list */}
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+              {notificationsList.length === 0 ? (
+                <div className="p-8 text-center bg-[#10141f] border border-white/[0.06] rounded-none space-y-2">
+                  <CheckCircle2 size={24} className="text-slate-400 mx-auto" />
+                  <div className="text-xs font-bold text-white">All caught up!</div>
+                  <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                    No pending alerts or configuration warnings. Your creator dashboard is fully synchronized.
+                  </p>
+                </div>
+              ) : (
+                notificationsList.map(item => {
+                  const ItemIcon = item.icon || AlertTriangle
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-4 bg-[#10141f] border border-white/[0.08] hover:border-white/20 transition rounded-none space-y-3 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-none bg-[#c81e3c]/20 border border-[#c81e3c]/30 flex items-center justify-center text-[#ff6b81] shrink-0 mt-0.5">
+                            <ItemIcon size={16} />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-white">{item.title}</h4>
+                              <span className="px-1.5 py-0.2 rounded-none text-[9px] font-bold uppercase bg-[#c81e3c]/15 text-[#ff8093] border border-[#c81e3c]/25">
+                                {item.subtitle}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-300 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={item.onAction}
+                          className="px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition cursor-pointer border-0 shadow-sm hover:opacity-90 flex items-center gap-1.5"
+                          style={{ background: '#c81e3c', color: '#ffffff' }}
+                        >
+                          <span>{item.actionLabel}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-2 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-slate-400">
+              <span className="font-mono text-[10px]">CoLaunch Creator Suite</span>
+              <button
+                type="button"
+                onClick={() => setNotificationsModalOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer bg-transparent border-0 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

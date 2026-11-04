@@ -852,6 +852,15 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab, dashboardData, saveDashboardData } = useForge()
   const setActiveTab = propSetActiveTab || contextSetActiveTab
 
+  const currentCreatorEmail = (userProfile?.email || creatorData?.email || '').trim().toLowerCase()
+  const isEmailConfigured = Boolean(
+    currentCreatorEmail &&
+    currentCreatorEmail !== 'creatorforgeweb@gmail.com' &&
+    !currentCreatorEmail.endsWith('@example.com') &&
+    !currentCreatorEmail.endsWith('@test.com') &&
+    currentCreatorEmail.includes('@')
+  )
+
   // Dedicated calendar container ref & smooth scroll-to-top controllers
   const calendarContainerRef = useRef(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -2399,12 +2408,20 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             <button
               type="button"
               onClick={() => {
-                if (triggerToast) triggerToast('Notifications: Campaign quests active today', 'info')
+                window.dispatchEvent(new CustomEvent('forge_open_notifications'))
               }}
-              className="p-1.5 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
-              title="Notifications"
+              className="relative p-1.5 rounded-none bg-[#111522] hover:bg-[#161b2b] text-slate-400 hover:text-white transition cursor-pointer border-0"
+              title="Notifications & System Alerts"
             >
               <Bell size={13} />
+              {!isEmailConfigured && (
+                <span
+                  className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white flex items-center justify-center border border-black/40"
+                  style={{ background: '#c81e3c' }}
+                >
+                  1
+                </span>
+              )}
             </button>
           </div>
         </div>
