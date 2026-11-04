@@ -1415,7 +1415,7 @@ export default function Blueprint() {
             </div>
 
             {/* Recommendation Section Header */}
-            <div className="pt-4 space-y-1.5" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
+            <div className="pt-0 space-y-1.5" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
               <div 
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
                 style={{

@@ -304,7 +304,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const intel = intelligence || getDynamicAudienceIntelligence(creatorData)
 
   return (
-    <div className="mt-4 sm:mt-5 rounded-none bg-[#090c13] border border-white/[0.08] text-slate-200 overflow-hidden shadow-2xl" style={{ borderRadius: '0px' }}>
+    <div className="rounded-none bg-[#090c13] border border-white/[0.08] text-slate-200 overflow-hidden shadow-2xl" style={{ borderRadius: '0px' }}>
       
       {/* ── HEADER STRIP (Tight, High-Density, Precision Angular) ── */}
       <div className="px-4 py-2.5 bg-[#0e131f] flex flex-col md:flex-row md:items-center justify-between gap-2.5 border-b border-white/[0.06]">
@@ -398,7 +398,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       </div>
 
       {/* ── TAB CONTENT BODY (Dynamically Bound to Synthesized Telemetry) ── */}
-      <div className="p-4 sm:p-5 bg-[#090c13] min-h-[360px]">
+      <div className="p-3.5 sm:p-4 bg-[#090c13]">
         
         {/* ═══ MODULE 1: CHANNEL TELEMETRY & GROWTH ═══ */}
         {activeTab === 'telemetry' && (
