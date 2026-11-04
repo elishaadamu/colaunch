@@ -8,7 +8,6 @@ import Community from './Community'
 import Products from './Products'
 import Revenue from './Revenue'
 import Accounts from './Accounts'
-import Settings from './Settings'
 import ForgeChat from './ForgeChat'
 import SupportChatPage from './SupportChatPage'
 import { useForge, getAccent } from '../../App'
@@ -316,7 +315,6 @@ const TAB_COMPONENTS = {
   revenue: Revenue,
   support: SupportChatPage,
   accounts: Accounts,
-  settings: Settings,
 }
 
 const TAB_LABELS = {
@@ -330,7 +328,6 @@ const TAB_LABELS = {
   revenue: 'Revenue',
   support: 'Customer Support',
   accounts: 'Accounts',
-  settings: 'Settings',
 }
 
 export default function DashboardLayout() {

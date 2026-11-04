@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Megaphone, Calendar, Layers, Package, DollarSign, Link, Settings, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp, TrendingUp } from 'lucide-react'
+import { Megaphone, Calendar, Layers, Package, DollarSign, Link, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp, TrendingUp } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { useForge } from '../../App'
 
@@ -14,7 +14,6 @@ const NAV_ITEMS = [
   { id: 'revenue',    icon: DollarSign, label: 'Revenue',           badge: null },
   { id: 'support',    icon: Headphones, label: 'Customer Support',  badge: 'AI' },
   { id: 'accounts',   icon: Link,       label: 'Accounts',          badge: null },
-  { id: 'settings',   icon: Settings,   label: 'Settings',          badge: null },
 ]
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {

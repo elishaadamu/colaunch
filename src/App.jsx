@@ -453,7 +453,8 @@ export default function App() {
 
   const [activeTab, setActiveTabState] = useState(() => {
     try {
-      return localStorage.getItem('forge_dashboard_active_tab') || 'preview'
+      const stored = localStorage.getItem('forge_dashboard_active_tab')
+      return (stored && stored !== 'settings') ? stored : 'preview'
     } catch {
       return 'preview'
     }
