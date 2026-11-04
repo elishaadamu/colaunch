@@ -840,50 +840,90 @@ const STEPS = [
   { id: 'image',     label: 'Rendering channel 4K visual',   icon: Image,      color: '#a78bfa' },
 ]
 
-function StepRow({ step, status }) {
+function StepRow({ step, status, index }) {
   const Icon = step.icon
+  const stepNum = String((index ?? 0) + 1).padStart(2, '0')
+  const isActive = status === 'active'
+  const isDone = status === 'done'
+  const isSkipped = status === 'skipped'
+
   return (
-    <div className="flex items-center gap-3 py-2.5 transition-all duration-300"
-      style={{ opacity: status === 'pending' ? 0.3 : 1 }}>
-      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500"
+    <div
+      className={`flex items-center gap-3.5 px-4 py-3 transition-all duration-300 border-l-2 ${
+        isActive
+          ? 'bg-white/[0.04] border-[#c81e3c]'
+          : isDone
+            ? 'bg-transparent border-emerald-500/50'
+            : 'bg-transparent border-transparent opacity-40'
+      }`}
+      style={{ borderRadius: '0px' }}
+    >
+      {/* Icon / Status Indicator */}
+      <div
+        className="w-7 h-7 rounded-none flex items-center justify-center flex-shrink-0 transition-all border"
         style={{
-          background: status === 'done' ? 'white'
-            : status === 'active' ? `rgba(255,255,255,0.1)`
-            : 'rgba(255,255,255,0.05)',
-          border: status === 'active' ? '1px solid rgba(255,255,255,0.2)' : 'none',
-        }}>
-        {status === 'done'
-          ? <Check size={12} className="text-black" strokeWidth={3} />
-          : status === 'active'
-            ? <span className="w-2 h-2 rounded-full" style={{ background: step.color }} />
-            : status === 'skipped'
-              ? <X size={10} style={{ color: 'rgba(255,255,255,0.3)' }} />
-              : <Icon size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />
-        }
+          background: isDone
+            ? '#c81e3c'
+            : isActive
+              ? 'rgba(200, 30, 60, 0.2)'
+              : 'rgba(255, 255, 255, 0.04)',
+          borderColor: isDone
+            ? '#c81e3c'
+            : isActive
+              ? '#c81e3c'
+              : 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '0px'
+        }}
+      >
+        {isDone ? (
+          <Check size={13} className="text-white" strokeWidth={3} />
+        ) : isActive ? (
+          <Sparkles size={13} className="text-[#c81e3c] animate-spin" />
+        ) : isSkipped ? (
+          <X size={12} className="text-white/30" />
+        ) : (
+          <span className="text-[10px] font-mono text-white/40 font-bold">{stepNum}</span>
+        )}
       </div>
-      <span className="text-[13px] font-medium flex-1" style={{
-        color: status === 'done' ? 'rgba(255,255,255,0.7)'
-          : status === 'active' ? 'white'
-          : status === 'skipped' ? 'rgba(255,255,255,0.25)'
-          : 'rgba(255,255,255,0.3)',
-      }}>
-        {step.label}
-        {status === 'active' && <span className="ml-1 opacity-50 animate-pulse">_</span>}
-      </span>
-      {status === 'active' && (
-        <div className="flex gap-1">
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
-              style={{ background: step.color, animationDelay: `${i * 120}ms`, opacity: 0.8 }} />
-          ))}
+
+      {/* Label & Details */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={`text-[12.5px] font-bold tracking-tight truncate ${
+            isActive ? 'text-white' : isDone ? 'text-white/85' : 'text-white/40'
+          }`}>
+            {step.label}
+          </span>
+          {isActive && (
+            <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase bg-[#c81e3c]/20 text-white border border-[#c81e3c]/40 animate-pulse">
+              Synthesizing
+            </span>
+          )}
         </div>
-      )}
-      {status === 'done' && (
-        <span className="text-[10px] font-mono text-emerald-400 font-semibold">ready</span>
-      )}
-      {status === 'skipped' && (
-        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>skipped</span>
-      )}
+      </div>
+
+      {/* Status Pill */}
+      <div className="shrink-0 text-right">
+        {isDone && (
+          <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20">
+            Ready
+          </span>
+        )}
+        {isActive && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c] animate-ping" />
+            <span className="text-[10.5px] font-mono text-white/70 font-semibold">Generating…</span>
+          </div>
+        )}
+        {!isDone && !isActive && !isSkipped && (
+          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">
+            Queued
+          </span>
+        )}
+        {isSkipped && (
+          <span className="text-[10px] font-mono text-white/20 uppercase">Skipped</span>
+        )}
+      </div>
     </div>
   )
 }
@@ -1377,20 +1417,11 @@ export default function AiDoesItPanel({ onClose }) {
                 </div>
               </div>
 
-              {/* Dual Launch CTA */}
+              {/* Launch CTA */}
               <div className="flex items-center gap-2.5 w-full md:w-auto">
                 <button
-                  onClick={loadInstantStudio}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-none border text-[12px] font-bold text-white/80 hover:text-white transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
-                  title="Instantly view tailored pitch deck and assets without waiting"
-                >
-                  <Eye size={13} /> Instant Preview
-                </button>
-
-                <button
                   onClick={run}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  className="w-full md:w-auto flex items-center justify-center gap-2.5 px-6 py-3 rounded-none font-bold text-[13px] text-white transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                   style={{
                     background: '#c81e3c',
                     boxShadow: '0 8px 24px rgba(200, 30, 60, 0.35)',
@@ -1451,43 +1482,93 @@ export default function AiDoesItPanel({ onClose }) {
           </div>
         )}
 
-        {/* ── 2. RUNNING STATE: ANIMATED GENERATION ──────────── */}
+        {/* ── 2. RUNNING STATE: ANIMATED GENERATION (Image 3 Overhaul) ──────────── */}
         {phase === 'running' && (
-          <div className="py-3">
+          <div className="py-2">
             <div
-              className="rounded-none border p-5 mb-4 shadow-xl"
-              style={{ background: '#0d0d11', borderColor: `rgba(${accent.rgb},0.2)` }}
+              className="rounded-none border overflow-hidden shadow-2xl"
+              style={{
+                background: '#090a0f',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderTop: '2px solid #c81e3c',
+                borderRadius: '0px'
+              }}
             >
-              <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                <div className="flex items-center gap-2.5">
-                  <Sparkles size={15} style={{ color: accent.color }} className="animate-pulse" />
+              {/* Header with live progress stats */}
+              <div
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b"
+                style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#0e1017' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.35)', borderRadius: '0px' }}
+                  >
+                    <Sparkles size={16} className="text-white animate-pulse" />
+                  </div>
                   <div>
-                    <span className="text-[13px] font-bold text-white">Synthesizing Launch Ecosystem</span>
-                    <p className="text-[10px] text-white/40">Calibrating copy and presentation for {creatorName}</p>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[14px] font-black text-white tracking-wide">
+                        Synthesizing Launch Ecosystem
+                      </h4>
+                      <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase bg-[#c81e3c] text-white" style={{ borderRadius: '0px', color: '#ffffff' }}>
+                        AI Active
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white/50 mt-0.5">
+                      Grounding pitch deck, announcement emails, viral social suite &amp; 4K visuals for {creatorName}
+                    </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    cancelBgJob(PACK_JOB)
-                    cancelBgJob(IMAGE_JOB)
-                    setPhase('idle')
-                  }}
-                  className="text-[11px] font-semibold text-white/40 hover:text-white border border-white/10 hover:border-white/25 px-3 py-1.5 rounded-none transition-all"
-                >
-                  Cancel
-                </button>
+
+                <div className="flex items-center gap-3 self-end sm:self-center">
+                  <div className="text-right">
+                    <span className="text-[11.5px] font-mono font-bold text-white block">
+                      {STEPS.filter(s => stepStatus[s.id] === 'done').length} / {STEPS.length} Completed
+                    </span>
+                    <span className="text-[9.5px] font-mono text-white/40">
+                      {Math.round((STEPS.filter(s => stepStatus[s.id] === 'done').length / STEPS.length) * 100)}% Synchronized
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cancelBgJob(PACK_JOB)
+                      cancelBgJob(IMAGE_JOB)
+                      setPhase('idle')
+                    }}
+                    className="text-[11px] font-bold text-white/70 hover:text-white border border-white/15 hover:border-white/30 px-3.5 py-1.5 rounded-none transition-all cursor-pointer bg-white/[0.04]"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
 
-              <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-                {STEPS.map(step => (
-                  <StepRow key={step.id} step={step} status={stepStatus[step.id] || 'pending'} />
+              {/* Integrated Precision Progress Track */}
+              <div className="h-1.5 w-full bg-white/[0.04] overflow-hidden relative">
+                <div
+                  className="h-full transition-all duration-500 ease-out"
+                  style={{
+                    background: '#c81e3c',
+                    width: `${Math.max(8, (STEPS.filter(s => stepStatus[s.id] === 'done').length / STEPS.length) * 100)}%`,
+                    boxShadow: '0 0 12px rgba(200, 30, 60, 0.6)'
+                  }}
+                />
+              </div>
+
+              {/* Steps List */}
+              <div className="divide-y divide-white/[0.04] p-1">
+                {STEPS.map((step, idx) => (
+                  <StepRow
+                    key={step.id}
+                    step={step}
+                    index={idx}
+                    status={stepStatus[step.id] || 'pending'}
+                  />
                 ))}
               </div>
-            </div>
-
-            {/* Shimmer progress line */}
-            <div className="h-1 rounded-none overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <div className="h-full rounded-none shimmer-line" style={{ background: accent.color, width: '100%' }} />
             </div>
           </div>
         )}
