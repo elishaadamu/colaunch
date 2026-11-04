@@ -6,7 +6,7 @@ import {
   Edit3, Settings2
 } from 'lucide-react'
 import html2canvas from 'html2canvas'
-import { generateProductImageWithOpenAI } from '../../services/ai'
+import { generateProductImage, generateProductImageWithOpenAI } from '../../services/ai'
 
 export default function ProductMockupCanvas({ project, onSaveMockupImage, onShowNotification }) {
   const mockupRef = useRef(null)
@@ -176,15 +176,16 @@ export default function ProductMockupCanvas({ project, onSaveMockupImage, onShow
     }
   }
 
-  // Generate with OpenAI DALL-E 3
+  // Generate with AI
   const handleGenerateOpenAIImage = async () => {
     setIsGeneratingAI(true)
-    onShowNotification?.('🎨 Generating high-resolution product mockup with AI (DALL-E 3)...')
+    onShowNotification?.('🎨 Generating high-resolution product mockup with AI...')
     try {
-      const generated = await generateProductImageWithOpenAI({
+      const generated = await generateProductImage({
         productName,
         creatorName,
-        niche
+        niche,
+        brandColor: '#c81e3c'
       })
       if (generated) {
         setAiImageUrl(generated)

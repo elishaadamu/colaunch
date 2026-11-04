@@ -12,9 +12,19 @@ import {
   generateMarketingPack, generateProductImage,
   regenerateSection, hasTextKey, hasTogetherKey,
   buildChannelNativeMarketingPack, getChannelHeroFallbackImage,
+  buildChannelSpecificImagePrompt, generateProductImageWithFlux,
   resetFailedAiKeys
 } from '../../services/ai'
 import ApiKeysModal from '../ui/ApiKeysModal'
+
+// ── AI Commercial Image Styles ────────────────────────────────────────────────
+const IMAGE_STYLES = [
+  { id: 'saas_dashboard', label: '🖥️ SaaS Dashboard UI', desc: 'Dark obsidian UI with telemetry & charts' },
+  { id: 'multi_device', label: '📱 Multi-Device Showcase', desc: 'MacBook Pro & iPhone 16 Pro on executive desk' },
+  { id: 'studio_desk', label: '📸 Minimalist Studio Desk', desc: 'Executive creator workspace with 32" display' },
+  { id: 'isometric_3d', label: '✨ 3D Floating Isometric', desc: 'Translucent glassmorphism panels & holographic streams' },
+  { id: 'cyberpunk', label: '⚡ Dark Cyberdeck UI', desc: 'High-contrast futuristic matte black telemetry' },
+]
 
 // ── Copy button ────────────────────────────────────────────────────────────────
 
@@ -954,8 +964,27 @@ export default function AiDoesItPanel({ onClose }) {
   })
 
   const [imageUrl, setImageUrl] = useState(() => {
-    return localStorage.getItem(`forge_${handle}_launch_image`) || getChannelHeroFallbackImage(creatorData) || null
+    const cached = localStorage.getItem(`forge_${handle}_launch_image`)
+    if (cached && !cached.includes('/images/saas_multi_device_showcase.jpg') && !cached.includes('/images/hero_saas_macbook.jpg')) {
+      return cached
+    }
+    return getChannelHeroFallbackImage(creatorData) || null
   })
+
+  // User-directed AI Image Studio state
+  const [selectedStyle, setSelectedStyle] = useState('saas_dashboard')
+  const [imageEngine, setImageEngine] = useState('flux') // 'flux' (free cloud AI) | 'openai' | 'gemini'
+  const [customImagePrompt, setCustomImagePrompt] = useState(() => {
+    return buildChannelSpecificImagePrompt(creatorData, 'saas_dashboard', accent.color)
+  })
+  const [isPromptDirty, setIsPromptDirty] = useState(false)
+
+  // Keep prompt in sync with channel data if not customized by user
+  useEffect(() => {
+    if (!isPromptDirty) {
+      setCustomImagePrompt(buildChannelSpecificImagePrompt(creatorData, selectedStyle, accent.color))
+    }
+  }, [creatorData?.name, creatorData?.handle, creatorData?.productName, creatorData?.niche, selectedStyle, accent.color, isPromptDirty])
 
   const [phase, setPhase] = useState(() => {
     const cachedPack = localStorage.getItem(`forge_${handle}_launch_pack`)
@@ -992,7 +1021,7 @@ export default function AiDoesItPanel({ onClose }) {
     }
   }, [imageUrl, handle, syncSessionToDb])
 
-  // Sync from cache
+  // Sync from cache & purge legacy static mockups
   useEffect(() => {
     const h = creatorData?.handle
     if (!h || h === 'default') return
@@ -1008,8 +1037,12 @@ export default function AiDoesItPanel({ onClose }) {
     }
 
     const cachedImage = localStorage.getItem(`forge_${h}_launch_image`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_image`)
-    if (cachedImage) {
+    if (cachedImage && !cachedImage.includes('/images/saas_multi_device_showcase.jpg') && !cachedImage.includes('/images/hero_saas_macbook.jpg')) {
       setImageUrl(cachedImage)
+    } else {
+      const fresh = getChannelHeroFallbackImage(creatorData)
+      setImageUrl(fresh)
+      localStorage.setItem(`forge_${h}_launch_image`, fresh)
     }
 
     const cachedEdits = localStorage.getItem(`forge_${h}_launch_pack_edits`) || localStorage.getItem(`forge_${h.toLowerCase()}_launch_pack_edits`)
@@ -1169,35 +1202,47 @@ export default function AiDoesItPanel({ onClose }) {
     }
   }
 
+  // Custom User-Directed AI Image Generator
+  const handleGenerateCustomImage = async (engineOverride = null, seedOverride = null) => {
+    const engineToUse = engineOverride || imageEngine
+    setRegenning(p => ({ ...p, image: true }))
+    if (incrementAiActions) incrementAiActions()
+    setImageError('')
+    setStepStatus(prev => ({ ...prev, image: 'active' }))
+    try {
+      const generated = await generateProductImage(creatorData, {
+        prompt: customImagePrompt,
+        style: selectedStyle,
+        brandColor: accent.color,
+        engine: engineToUse,
+        seed: seedOverride || Math.floor(Math.random() * 899999) + 100000
+      })
+      if (generated) {
+        setImageUrl(generated)
+        setStepStatus(prev => ({ ...prev, image: 'done' }))
+        localStorage.setItem(`forge_${handle}_launch_image`, generated)
+        if (triggerToast) triggerToast(`Product hero visual generated with ${engineToUse.toUpperCase()} AI!`, 'success')
+      }
+    } catch (err) {
+      console.error('Image generation error:', err)
+      setImageError(err.message || 'Image generation failed')
+      const fallback = getChannelHeroFallbackImage(creatorData)
+      if (fallback) {
+        setImageUrl(fallback)
+        setStepStatus(prev => ({ ...prev, image: 'done' }))
+      } else {
+        setStepStatus(prev => ({ ...prev, image: 'error' }))
+      }
+      if (triggerToast) triggerToast(`Image generation: ${err.message}`, 'error')
+    } finally {
+      setRegenning(p => ({ ...p, image: false }))
+    }
+  }
+
   // Regen single section
   const regen = async (section) => {
     if (section === 'image') {
-      setRegenning(p => ({ ...p, image: true }))
-      if (incrementAiActions) incrementAiActions()
-      setImageError('')
-      setStepStatus(prev => ({ ...prev, image: 'active' }))
-      try {
-        const img = await generateProductImage(creatorData)
-        if (img) {
-          setImageUrl(img)
-          setStepStatus(prev => ({ ...prev, image: 'done' }))
-          localStorage.setItem(`forge_${handle}_launch_image`, img)
-          if (triggerToast) triggerToast('Product hero visual generated with OpenAI DALL-E!', 'success')
-        }
-      } catch (err) {
-        console.error('Image regen error:', err)
-        setImageError(err.message || 'Image generation failed')
-        const fallback = getChannelHeroFallbackImage(creatorData)
-        if (fallback) {
-          setImageUrl(fallback)
-          setStepStatus(prev => ({ ...prev, image: 'done' }))
-        } else {
-          setStepStatus(prev => ({ ...prev, image: 'error' }))
-        }
-        if (triggerToast) triggerToast(`Image generation: ${err.message}`, 'error')
-      } finally {
-        setRegenning(p => ({ ...p, image: false }))
-      }
+      await handleGenerateCustomImage()
       return
     }
 
@@ -1534,89 +1579,271 @@ export default function AiDoesItPanel({ onClose }) {
                     <ProductMockup creatorData={creatorData} accent={accent} />
                   </div>
 
-                  {/* AI Generated 4K Image Render */}
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-white">Commercial Product Hero Image</span>
+                  {/* AI Generated 4K Commercial Hero Studio */}
+                  <div className="pt-2 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-white/5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[12px] font-bold text-white tracking-wide">AI Visual Studio · Commercial Product Hero</span>
                         <span className="text-[9.5px] font-mono px-2 py-0.5 rounded-none font-bold"
                           style={{ background: 'rgba(200, 30, 60, 0.25)', border: '1px solid rgba(200, 30, 60, 0.5)', color: '#ffffff', borderRadius: '0px' }}>
-                          ⚡ Powered by OpenAI DALL-E 3
+                          ⚡ {imageEngine === 'flux' ? 'FLUX.1 Cloud AI' : imageEngine === 'openai' ? 'OpenAI DALL-E 3' : 'Gemini Imagen'}
                         </span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 text-[9.5px] font-mono font-bold"
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#ffffff', borderRadius: '0px' }}>
+                          <span className="w-2 h-2 inline-block rounded-none" style={{ background: accent.color }} />
+                          <span>Website Theme: {accent.color}</span>
+                        </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => regen('image')}
-                          disabled={regenning.image || stepStatus.image === 'active'}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-none text-[11px] font-bold transition-all cursor-pointer"
-                          style={{
-                            background: '#c81e3c',
-                            color: '#ffffff',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '0px'
-                          }}
-                        >
-                          <Sparkles size={11} className={regenning.image || stepStatus.image === 'active' ? "animate-spin text-white" : "text-white"} />
-                          <span>{regenning.image || stepStatus.image === 'active' ? 'Synthesizing with OpenAI...' : 'Regenerate with OpenAI'}</span>
-                        </button>
-                        
-                        {setApiModalOpen && (
-                          <button
-                            type="button"
-                            onClick={() => setApiModalOpen(true)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-none text-[11px] font-bold text-white transition-all cursor-pointer"
-                            style={{
-                              background: 'rgba(255,255,255,0.08)',
-                              border: '1px solid rgba(255,255,255,0.18)',
-                              color: '#ffffff',
-                              borderRadius: '0px'
-                            }}
-                            title="Configure OpenAI API Key"
-                          >
-                            <Settings size={11} className="text-white" />
-                            <span>OpenAI Key</span>
-                          </button>
-                        )}
-                        
                         {imageUrl && (
                           <a
                             href={imageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white"
+                            className="flex items-center gap-1 text-[10.5px] text-white/70 hover:text-white font-medium"
                           >
-                            <ExternalLink size={10} /> Full resolution
+                            <ExternalLink size={11} /> Full resolution
                           </a>
                         )}
                       </div>
                     </div>
 
-                    {stepStatus.image === 'active' && (
+                    {/* Interactive Prompt & AI Control Panel */}
+                    <div className="p-3.5 border space-y-3"
+                      style={{ background: '#0a0a0e', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
+                      
+                      {/* Style Preset Selector */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-white/60 font-bold">1. Select Visual Style & Environment</span>
+                          <span className="text-[9.5px] font-mono text-white/40">Calibrated to {creatorName}</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
+                          {IMAGE_STYLES.map(st => {
+                            const active = selectedStyle === st.id
+                            return (
+                              <button
+                                key={st.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedStyle(st.id)
+                                  setCustomImagePrompt(buildChannelSpecificImagePrompt(creatorData, st.id, accent.color))
+                                  setIsPromptDirty(false)
+                                }}
+                                className="px-2.5 py-1.5 text-left transition-all border cursor-pointer"
+                                style={{
+                                  background: active ? '#c81e3c' : 'rgba(255,255,255,0.03)',
+                                  borderColor: active ? '#c81e3c' : 'rgba(255,255,255,0.08)',
+                                  color: active ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                                  borderRadius: '0px'
+                                }}
+                                title={st.desc}
+                              >
+                                <div className="text-[11px] font-bold truncate" style={{ color: active ? '#ffffff' : 'inherit' }}>
+                                  {st.label}
+                                </div>
+                                <div className="text-[9px] font-mono truncate opacity-60">
+                                  {st.id}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Prompt Editor */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <label className="font-bold text-white flex items-center gap-1.5">
+                            <Sparkles size={12} className="text-[#c81e3c]" />
+                            <span>2. Creative AI Prompt (Direct User Control)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            {isPromptDirty && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const defPrompt = buildChannelSpecificImagePrompt(creatorData, selectedStyle, accent.color)
+                                  setCustomImagePrompt(defPrompt)
+                                  setIsPromptDirty(false)
+                                }}
+                                className="text-[10px] text-white/50 hover:text-white underline cursor-pointer"
+                              >
+                                Reset to Channel Default
+                              </button>
+                            )}
+                            <span className="text-[10px] font-mono text-white/40">{customImagePrompt.length} chars</span>
+                          </div>
+                        </div>
+                        <textarea
+                          value={customImagePrompt}
+                          onChange={(e) => {
+                            setCustomImagePrompt(e.target.value)
+                            setIsPromptDirty(true)
+                          }}
+                          rows={3}
+                          className="w-full text-[11.5px] text-white p-2.5 outline-none transition-all resize-y font-mono"
+                          placeholder="Type what image you want the AI to generate..."
+                          style={{
+                            background: '#121218',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: '0px',
+                            lineHeight: '1.45'
+                          }}
+                        />
+                      </div>
+
+                      {/* Controls Bar: Engine Selector & Action Buttons */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-white/5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-white/50 font-bold">Engine:</span>
+                          <div className="flex items-center border" style={{ borderColor: 'rgba(255,255,255,0.12)', borderRadius: '0px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setImageEngine('flux')}
+                              className={`px-2.5 py-1 text-[10.5px] font-bold transition-all cursor-pointer ${imageEngine === 'flux' ? 'text-white' : 'text-white/60 hover:text-white'}`}
+                              style={{
+                                background: imageEngine === 'flux' ? '#c81e3c' : 'rgba(255,255,255,0.04)',
+                                borderRadius: '0px',
+                                color: '#ffffff'
+                              }}
+                            >
+                              ⚡ FLUX.1 (Free / Instant)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setImageEngine('openai')}
+                              className={`px-2.5 py-1 text-[10.5px] font-bold transition-all cursor-pointer ${imageEngine === 'openai' ? 'text-white' : 'text-white/60 hover:text-white'}`}
+                              style={{
+                                background: imageEngine === 'openai' ? '#c81e3c' : 'rgba(255,255,255,0.04)',
+                                borderRadius: '0px',
+                                color: '#ffffff'
+                              }}
+                            >
+                              OpenAI DALL-E 3
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setImageEngine('gemini')}
+                              className={`px-2.5 py-1 text-[10.5px] font-bold transition-all cursor-pointer ${imageEngine === 'gemini' ? 'text-white' : 'text-white/60 hover:text-white'}`}
+                              style={{
+                                background: imageEngine === 'gemini' ? '#c81e3c' : 'rgba(255,255,255,0.04)',
+                                borderRadius: '0px',
+                                color: '#ffffff'
+                              }}
+                            >
+                              Gemini Imagen
+                            </button>
+                          </div>
+
+                          {setApiModalOpen && (
+                            <button
+                              type="button"
+                              onClick={() => setApiModalOpen(true)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-none text-[10.5px] font-medium text-white/70 hover:text-white transition-all cursor-pointer"
+                              style={{
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '0px'
+                              }}
+                              title="Configure API Keys"
+                            >
+                              <Settings size={10} />
+                              <span>API Keys</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateCustomImage(null, Math.floor(Math.random() * 899999) + 100000)}
+                            disabled={regenning.image || stepStatus.image === 'active'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-[11px] font-bold text-white transition-all cursor-pointer"
+                            style={{
+                              background: 'rgba(255,255,255,0.06)',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              borderRadius: '0px',
+                              color: '#ffffff'
+                            }}
+                            title="Generate another variation with a fresh seed"
+                          >
+                            <RefreshCw size={11} className={regenning.image ? "animate-spin text-white" : "text-white"} />
+                            <span>Re-roll Variant</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleGenerateCustomImage()}
+                            disabled={regenning.image || stepStatus.image === 'active'}
+                            className="flex items-center gap-2 px-4 py-1.5 rounded-none text-[11.5px] font-bold shadow-lg transition-all cursor-pointer"
+                            style={{
+                              background: '#c81e3c',
+                              color: '#ffffff',
+                              border: '1px solid rgba(255,255,255,0.25)',
+                              borderRadius: '0px'
+                            }}
+                          >
+                            <Sparkles size={12} className={regenning.image || stepStatus.image === 'active' ? "animate-spin text-white" : "text-white"} />
+                            <span>{regenning.image || stepStatus.image === 'active' ? 'Synthesizing with AI...' : 'Generate Image with AI'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Indicator */}
+                    {(regenning.image || stepStatus.image === 'active') && (
                       <div className="rounded-none flex items-center gap-3 px-4 py-5 border border-dashed"
                         style={{ background: 'rgba(200,30,60,0.08)', borderColor: 'rgba(200,30,60,0.3)', borderRadius: '0px' }}>
                         <div className="w-5 h-5 rounded-none border-2 border-t-transparent animate-spin"
                           style={{ borderColor: '#c81e3c', borderTopColor: 'transparent' }} />
-                        <p className="text-[12px] text-white font-medium">
-                          Synthesizing 4K commercial hero asset with OpenAI DALL-E 3 for {creatorName}...
-                        </p>
+                        <div>
+                          <p className="text-[12px] text-white font-bold">
+                            Synthesizing 4K commercial hero asset with {imageEngine.toUpperCase()} AI for {creatorName}...
+                          </p>
+                          <p className="text-[10.5px] text-white/60 mt-0.5">
+                            Calibrated to website theme color {accent.color} (strictly no lime green) • Generating photorealistic high-res scene
+                          </p>
+                        </div>
                       </div>
                     )}
 
+                    {/* Image Preview Canvas */}
                     {imageUrl && (
                       <div className="space-y-2">
-                        <div className="relative rounded-none overflow-hidden border group shadow-2xl" style={{ borderColor: 'rgba(255,255,255,0.08)', borderRadius: '0px' }}>
-                          <img src={imageUrl} alt="AI product hero" className="w-full max-h-[440px] object-cover" style={{ borderRadius: '0px' }} />
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4"
-                            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)', borderRadius: '0px' }}>
-                            <span className="text-[11px] text-white font-medium">Channel-native 4K asset • OpenAI DALL-E</span>
+                        <div className="relative rounded-none overflow-hidden border group shadow-2xl" style={{ borderColor: 'rgba(255,255,255,0.12)', borderRadius: '0px' }}>
+                          <img
+                            src={imageUrl}
+                            alt="AI product hero"
+                            className="w-full max-h-[460px] object-cover"
+                            style={{ borderRadius: '0px' }}
+                          />
+                          
+                          {/* Top Badges */}
+                          <div className="absolute top-3 left-3 flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 text-[9.5px] font-mono font-bold tracking-wide uppercase shadow-lg"
+                              style={{ background: '#c81e3c', color: '#ffffff', borderRadius: '0px' }}>
+                              AI Generated • 4K Commercial Hero
+                            </span>
+                            <span className="px-2.5 py-0.5 text-[9.5px] font-mono font-bold shadow-lg"
+                              style={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.2)', color: '#ffffff', borderRadius: '0px' }}>
+                              Theme: {accent.color}
+                            </span>
+                          </div>
+
+                          {/* Hover Action Bar */}
+                          <div className="absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-3.5"
+                            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)', borderRadius: '0px' }}>
+                            <span className="text-[11px] text-white font-medium">
+                              Channel-grounded 4K asset for @{handle}
+                            </span>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => regen('image')}
+                                onClick={() => handleGenerateCustomImage()}
                                 disabled={regenning.image}
-                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-[#c81e3c] text-white shadow-lg border border-white/20"
+                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-[#c81e3c] text-white shadow-lg border border-white/20 cursor-pointer"
                                 style={{ borderRadius: '0px', color: '#ffffff' }}
                               >
                                 <Sparkles size={11} className={regenning.image ? "animate-spin text-white" : "text-white"} />
@@ -1626,7 +1853,7 @@ export default function AiDoesItPanel({ onClose }) {
                                 href={imageUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-white text-black shadow-lg"
+                                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-none font-bold bg-white text-black shadow-lg hover:bg-white/90"
                                 style={{ borderRadius: '0px' }}
                               >
                                 <ExternalLink size={11} /> Open Full Size
@@ -1641,7 +1868,7 @@ export default function AiDoesItPanel({ onClose }) {
                             <div className="text-[11px] text-white/90">
                               <span className="font-bold text-white">Notice: </span>
                               {imageError.includes('Expired') || imageError.includes('401')
-                                ? 'OpenAI API key expired in .env. Displaying channel-grounded product hero asset. Add an active OpenAI key to generate custom DALL-E 3 renders.'
+                                ? 'OpenAI API key expired in .env. Switched to FLUX.1 high-res generator to ensure your assets are always rendered with your brand colors.'
                                 : imageError.slice(0, 160)}
                             </div>
                             {setApiModalOpen && (

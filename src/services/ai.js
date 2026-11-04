@@ -1181,30 +1181,64 @@ export async function regenerateSection(section, creatorData) {
 
 // ── Channel-Specific Image Prompt Builder ─────────────────────────────────────
 
-export function buildChannelSpecificImagePrompt(creatorData) {
+export function buildChannelSpecificImagePrompt(creatorData, stylePreset = 'saas_dashboard', customColor = null) {
   const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
   const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`
   const niche = (creatorData?.niche || 'creator community').toLowerCase()
-  const type = creatorData?.blueprint?.type || 'Platform'
-  const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('mkbhd') || name.toLowerCase().includes('marques')
-  const isCooking = niche.includes('cook') || niche.includes('food') || niche.includes('culinary') || niche.includes('meal') || name.toLowerCase().includes('angry birds') || name.toLowerCase().includes('chef')
-  const isGaming = niche.includes('game') || niche.includes('gaming') || niche.includes('play') || niche.includes('stream')
-  const isFitness = niche.includes('fit') || niche.includes('workout') || niche.includes('train') || niche.includes('gym')
+  const brandColor = customColor || creatorData?.brandColor || '#c81e3c'
 
-  // Signature brand color: bold crimson red (#c81e3c) matching the website identity
-  if (isCoding) {
-    return `Ultra-high-resolution commercial product mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. A cutting-edge digital workspace on a sleek matte black and deep graphite canvas with striking signature crimson red (#c81e3c) accent lighting, glowing red interactive CTA buttons, clean developer dashboard panels, live telemetry streams, and crisp white typography. Premium modern aesthetic matching Marques Brownlee studio style, photorealistic, 8k render.`
+  const colorDirective = `Dominant brand accent color: ${brandColor} (RGB: 200, 30, 60). All UI telemetry graphs, illuminated action buttons, glow halos, and metric bars must strictly use this signature website color ${brandColor}. Deep obsidian matte black canvas (#09090c) and carbon finish. Crisp white typography. Strictly NO lime green, NO neon green.`
+
+  if (stylePreset === 'multi_device') {
+    return `Ultra-realistic commercial product photography of an Apple MacBook Pro and iPhone 16 Pro displaying "${productName}" by ${name} in ${niche}. Both screens feature a high-end dark mode interface with striking glowing ${brandColor} telemetry charts, revenue metrics, and interactive widgets. Sleek graphite desk, shallow depth of field, studio edge lighting. ${colorDirective} Photorealistic 8k commercial render.`
   }
-  if (isCooking) {
-    return `Luxury commercial product photography shot for "${productName}" by ${name} in ${niche}. A gourmet culinary box unboxed on a modern dark slate countertop with rich crimson red (#c81e3c) brand packaging accents, fresh organic ingredients, artisan recipe booklet, and an elegant tablet running an interactive dashboard. Cinematic lighting, shallow depth of field, 8k commercial photography.`
+
+  if (stylePreset === 'studio_desk') {
+    return `Minimalist executive creator studio desk setup showcasing "${productName}" by ${name}. 32-inch high-resolution pro studio display presenting the software workspace with glowing ${brandColor} telemetry accents, custom keyboard with subtle ${brandColor} underglow, studio monitor speakers, and cinematic moody ambient lighting. ${colorDirective} Commercial product photography style, ultra-sharp 8k.`
   }
-  if (isGaming) {
-    return `Futuristic gaming hub and creator platform mockup for "${productName}" by ${name}. High-contrast dark mode dashboard with glowing crimson red (#c81e3c) neon tournament brackets, real-time leaderboard, custom stream integrations, and sleek graphite accents. 8k Unreal Engine UI render.`
+
+  if (stylePreset === 'isometric_3d') {
+    return `Striking 3D isometric floating tech workspace and software ecosystem for "${productName}" by ${name} in ${niche}. Sleek glassmorphism cards, floating translucent UI panels, glowing ${brandColor} data streams, clean metric indicators, dark graphite baseplate, and volumetric laser illumination. ${colorDirective} Octane Render 8k, ultra-detailed 3D digital art.`
   }
-  if (isFitness) {
-    return `Premium athlete training and coaching app mockup for "${productName}" by ${name}. Sleek dark mode mobile interface with striking crimson red (#c81e3c) performance telemetry, heart rate metrics, HD exercise video demonstrations, and nutrition targets. Dark carbon fiber and red accents, 8k render.`
+
+  if (stylePreset === 'cyberpunk') {
+    return `Futuristic dark cyberdeck control center for "${productName}" by ${name}. Ultra-high-contrast matte black interface with intense neon ${brandColor} accents, real-time live telemetry feeds, radar widgets, and high-frequency spark charts. ${colorDirective} Blade Runner aesthetic, ultra-sharp 8k UI render.`
   }
-  return `Award-winning commercial product hero mockup for "${productName}" created by ${name} for the ${niche} community. Sleek dark mode application on deep graphite background with striking signature crimson red (#c81e3c) glowing accents, clean telemetry graphs, module cards, and professional product photography style. Ultra sharp, photorealistic, 8k render.`
+
+  // Default: saas_dashboard
+  return `Ultra-high-resolution commercial product hero mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. A cutting-edge digital workspace on a sleek matte black and deep graphite canvas with striking signature ${brandColor} accent lighting, glowing red interactive CTA buttons, clean developer dashboard panels, live telemetry streams, and crisp white typography. ${colorDirective} Premium modern aesthetic matching Marques Brownlee studio style, photorealistic, 8k render.`
+}
+
+// ── FLUX.1 Real AI Image Generation (Free, instant cloud AI, zero keys required) ─
+
+export async function generateProductImageWithFlux(
+  creatorData,
+  customPrompt = '',
+  seed = null
+) {
+  const brandColor = creatorData?.brandColor || '#c81e3c'
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`
+  const niche = creatorData?.niche || 'Technology'
+
+  let resolvedSeed = seed
+  if (!resolvedSeed) {
+    const seedBase = `${name}-${productName}-${Date.now()}`
+    let hash = 42
+    for (let i = 0; i < seedBase.length; i++) {
+      hash = (hash * 31 + seedBase.charCodeAt(i)) % 999999
+    }
+    resolvedSeed = Math.abs(hash) || 777777
+  }
+
+  const promptText = (customPrompt && customPrompt.trim())
+    ? (customPrompt.includes(brandColor) ? customPrompt : `${customPrompt}. Dominant brand accent color: ${brandColor}. Dark obsidian UI, no lime green.`)
+    : buildChannelSpecificImagePrompt(creatorData, 'saas_dashboard', brandColor)
+
+  const encoded = encodeURIComponent(promptText.slice(0, 1000))
+  const fluxUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&model=flux&seed=${resolvedSeed}&nologo=true`
+
+  return fluxUrl
 }
 
 // ── Gemini image generation (uses existing Gemini key — no extra signup) ───────
@@ -1213,12 +1247,13 @@ export function buildChannelSpecificImagePrompt(creatorData) {
 
 export async function generateProductImageWithGemini(
   creatorData,
+  promptOverride = null,
   signal = undefined,
 ) {
   const { geminiKey } = loadAiKeys();
   if (!geminiKey) throw new Error("NO_GEMINI_KEY");
 
-  const prompt = buildChannelSpecificImagePrompt(creatorData);
+  const prompt = promptOverride || buildChannelSpecificImagePrompt(creatorData);
 
   const url = `/api/gemini/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${geminiKey}`;
 
@@ -1252,12 +1287,13 @@ export async function generateProductImageWithGemini(
 
 export async function generateProductImageWithTogether(
   creatorData,
+  promptOverride = null,
   signal = undefined,
 ) {
   const { togetherKey } = loadAiKeys();
   if (!togetherKey) throw new Error("NO_TOGETHER_KEY");
 
-  const prompt = buildChannelSpecificImagePrompt(creatorData);
+  const prompt = promptOverride || buildChannelSpecificImagePrompt(creatorData);
 
   const res = await fetch("/api/together/v1/images/generations", {
     method: "POST",
@@ -1290,39 +1326,35 @@ export async function generateProductImageWithTogether(
 }
 
 // ── Channel-Calibrated Product Fallback Image ────────────────────────────────
-export function getChannelHeroFallbackImage(creatorData) {
-  const niche = (creatorData?.niche || "").toLowerCase();
-  const name = (creatorData?.name || creatorData?.creatorName || creatorData?.handle || "").toLowerCase();
-  const productName = (creatorData?.productName || creatorData?.blueprint?.name || "").toLowerCase();
+export function getChannelHeroFallbackImage(creatorData, customSeed = null) {
+  const brandColor = creatorData?.brandColor || '#c81e3c';
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '');
+  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`;
+  const niche = (creatorData?.niche || 'creator community').toLowerCase();
 
-  if (
-    niche.includes("tech") ||
-    niche.includes("code") ||
-    niche.includes("dev") ||
-    niche.includes("software") ||
-    niche.includes("hardware") ||
-    name.includes("mkbhd") ||
-    name.includes("marques") ||
-    productName.includes("panel")
-  ) {
-    return "/images/saas_multi_device_showcase.jpg";
+  // Clean deterministic seed from creator identity
+  let seed = customSeed;
+  if (!seed) {
+    const seedBase = `${name}-${productName}-${niche}`;
+    let hash = 42;
+    for (let i = 0; i < seedBase.length; i++) {
+      hash = (hash * 31 + seedBase.charCodeAt(i)) % 999999;
+    }
+    seed = Math.abs(hash) || 555555;
   }
-  if (
-    niche.includes("design") ||
-    niche.includes("creative") ||
-    niche.includes("media") ||
-    niche.includes("video") ||
-    niche.includes("photo")
-  ) {
-    return "/images/creator_desk_mask.png";
-  }
-  return "/images/hero_saas_macbook.jpg";
+
+  const prompt = encodeURIComponent(
+    `Ultra-high-resolution commercial product hero mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. Modern laptop and mobile device on sleek dark obsidian desk with glowing crimson red (${brandColor}) telemetry charts, metrics, illuminated buttons, crisp white typography, strictly no lime green, photorealistic 8k render`
+  );
+
+  return `https://image.pollinations.ai/prompt/${prompt}?width=1280&height=720&model=flux&seed=${seed}&nologo=true`;
 }
 
 // ── OpenAI DALL-E 3 image generation ─────────────────────────────────────────
 
 export async function generateProductImageWithOpenAI(
   creatorData,
+  promptOverride = null,
   signal = undefined,
 ) {
   const { openaiKey } = loadAiKeys();
@@ -1330,7 +1362,7 @@ export async function generateProductImageWithOpenAI(
     throw new Error("NO_OPENAI_KEY: Please enter an active OpenAI API key in Settings to generate DALL-E images.");
   }
 
-  const prompt = buildChannelSpecificImagePrompt(creatorData);
+  const prompt = promptOverride || buildChannelSpecificImagePrompt(creatorData);
 
   // 1. Primary: OpenAI DALL-E 3 (1024x1024 photorealistic)
   try {
@@ -1445,68 +1477,73 @@ async function saveImageToBackendMedia(imageResult) {
   return imageResult;
 }
 
-export async function generateProductImage(creatorData, signal = undefined) {
+export async function generateProductImage(creatorData, optionsOrSignal = {}) {
   try {
     await ensureServerAiKeysLoaded();
   } catch (_) {}
+
+  const isSignal = optionsOrSignal && typeof optionsOrSignal === 'object' && 'aborted' in optionsOrSignal;
+  const options = isSignal ? {} : (optionsOrSignal || {});
+  const signal = isSignal ? optionsOrSignal : options.signal;
+
   const { openaiKey, togetherKey, geminiKey } = loadAiKeys();
+  const brandColor = options.brandColor || creatorData?.brandColor || '#c81e3c';
+  const customPrompt = options.prompt || '';
+  const stylePreset = options.style || 'saas_dashboard';
+  const engine = options.engine || (openaiKey && !failedKeys.has(openaiKey) ? 'openai' : 'flux');
+  const seed = options.seed || Math.floor(Math.random() * 899999) + 100000;
+
+  const finalPrompt = (customPrompt && customPrompt.trim())
+    ? (customPrompt.includes(brandColor) ? customPrompt : `${customPrompt}. Dominant brand accent color: ${brandColor}. Dark obsidian UI, strictly no lime green.`)
+    : buildChannelSpecificImagePrompt(creatorData, stylePreset, brandColor);
+
   let rawImage = null;
   let lastImageError = null;
 
-  // 1. Primary: OpenAI DALL-E 3 (Default & direct creator choice)
-  if (openaiKey && !failedKeys.has(openaiKey)) {
+  // 1. Explicit or preferred: OpenAI DALL-E 3
+  if (engine === 'openai' && openaiKey && !failedKeys.has(openaiKey)) {
     try {
-      rawImage = await generateProductImageWithOpenAI(creatorData, signal);
+      rawImage = await generateProductImageWithOpenAI(creatorData, finalPrompt, signal);
     } catch (err) {
-      if (err.name === "AbortError") throw err;
-      lastImageError = err.message || "OpenAI DALL-E generation failed";
-      if (err.message.includes("401") || err.message.includes("Expired") || err.message.includes("429")) {
+      if (err.name === 'AbortError') throw err;
+      lastImageError = err.message || 'OpenAI DALL-E generation failed';
+      if (err.message.includes('401') || err.message.includes('Expired') || err.message.includes('429')) {
         failedKeys.add(openaiKey);
       }
-      console.warn(
-        "[Forge] OpenAI DALL-E generation failed, attempting backup providers:",
-        err,
-      );
-    }
-  } else if (!openaiKey) {
-    lastImageError = "No OpenAI API key provided";
-  }
-
-  // 2. Backup: Together.ai FLUX
-  if (!rawImage && togetherKey && !failedKeys.has(togetherKey)) {
-    try {
-      rawImage = await generateProductImageWithTogether(creatorData, signal);
-    } catch (err) {
-      if (err.name === "AbortError") throw err;
-      if (err.message.includes("401") || err.message.includes("429")) {
-        failedKeys.add(togetherKey);
-      }
-      console.warn(
-        "[Forge] Together.ai Image Generation failed, trying fallback:",
-        err,
-      );
+      console.warn('[Forge] OpenAI DALL-E generation failed, falling back to FLUX.1:', err);
     }
   }
 
-  // 3. Backup: Gemini Image Generation
-  if (!rawImage && geminiKey && !failedKeys.has(geminiKey)) {
+  // 2. Explicit or preferred: Gemini Image Generation
+  if (!rawImage && (engine === 'gemini' || !openaiKey) && geminiKey && !failedKeys.has(geminiKey)) {
     try {
-      rawImage = await generateProductImageWithGemini(creatorData, signal);
+      rawImage = await generateProductImageWithGemini(creatorData, finalPrompt, signal);
     } catch (err) {
-      if (err.name === "AbortError") throw err;
-      if (err.message.includes("401") || err.message.includes("429")) {
+      if (err.name === 'AbortError') throw err;
+      if (err.message.includes('401') || err.message.includes('429')) {
         failedKeys.add(geminiKey);
       }
-      console.warn("[Forge] Gemini Image Generation failed:", err);
+      console.warn('[Forge] Gemini Image Generation failed, trying FLUX.1:', err);
     }
   }
 
-  // 4. Grounded Channel Hero Fallback (Ensures UI is never left with a broken image box)
+  // 3. High-Quality Free Cloud AI: FLUX.1 (Always reliable, zero keys needed, 1280x720)
   if (!rawImage) {
-    rawImage = getChannelHeroFallbackImage(creatorData) || "/images/saas_multi_device_showcase.jpg";
-    if (lastImageError && typeof window !== "undefined") {
+    try {
+      rawImage = await generateProductImageWithFlux(creatorData, finalPrompt, seed);
+    } catch (err) {
+      if (err.name === 'AbortError') throw err;
+      console.warn('[Forge] FLUX.1 Image Generation failed:', err);
+      lastImageError = err.message;
+    }
+  }
+
+  // 4. Grounded Channel Hero Fallback (Dynamic FLUX URL with seed — NEVER the static lime green file!)
+  if (!rawImage) {
+    rawImage = getChannelHeroFallbackImage(creatorData, seed);
+    if (lastImageError && typeof window !== 'undefined') {
       try {
-        const handle = (creatorData?.handle || "creator").replace(/^@+/, "");
+        const handle = (creatorData?.handle || 'creator').replace(/^@+/, '');
         sessionStorage.setItem(`forge_${handle}_image_note`, lastImageError);
       } catch (_) {}
     }
