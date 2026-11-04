@@ -11,7 +11,7 @@ import Accounts from './Accounts'
 import ForgeChat from './ForgeChat'
 import SupportChatPage from './SupportChatPage'
 import { useForge, getAccent } from '../../App'
-import { 
+import {
   Sparkles, Laptop, Smartphone, Tablet, Menu, LogOut, Zap,
   Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor,
   Mail, AlertTriangle, Headphones, Bell, X, CheckCircle2
@@ -129,11 +129,10 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
                   <button
                     type="button"
                     onClick={() => setDevice('desktop')}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
-                      device === 'desktop'
-                        ? 'text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${device === 'desktop'
+                      ? 'text-white'
+                      : 'text-slate-400 hover:text-white'
+                      }`}
                     style={device === 'desktop' ? { background: '#c81e3c', color: '#ffffff' } : {}}
                     title="Desktop View"
                   >
@@ -143,11 +142,10 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
                   <button
                     type="button"
                     onClick={() => setDevice('mobile')}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
-                      device === 'mobile'
-                        ? 'text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${device === 'mobile'
+                      ? 'text-white'
+                      : 'text-slate-400 hover:text-white'
+                      }`}
                     style={device === 'mobile' ? { background: '#c81e3c', color: '#ffffff' } : {}}
                     title="Mobile View"
                   >
@@ -176,11 +174,10 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
                   <button
                     type="button"
                     onClick={() => setViewMode('landing')}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
-                      viewMode === 'landing'
-                        ? 'bg-white/10 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${viewMode === 'landing'
+                      ? 'bg-white/10 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                      }`}
                     title="Public Landing Page"
                   >
                     <Globe size={11} />
@@ -189,11 +186,10 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
                   <button
                     type="button"
                     onClick={() => setViewMode('product')}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${
-                      viewMode === 'product'
-                        ? 'bg-white/10 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-none transition cursor-pointer ${viewMode === 'product'
+                      ? 'bg-white/10 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                      }`}
                     title="Member App View"
                   >
                     <Layers size={11} />
@@ -331,13 +327,13 @@ const TAB_LABELS = {
 }
 
 export default function DashboardLayout() {
-  const { 
-    creatorData, 
+  const {
+    creatorData,
     updateCreator,
-    isRegistered, 
-    aiActionsCount, 
-    goTo, 
-    apiModalOpen, 
+    isRegistered,
+    aiActionsCount,
+    goTo,
+    apiModalOpen,
     setApiModalOpen,
     activeTab,
     setActiveTab,
@@ -500,10 +496,10 @@ export default function DashboardLayout() {
   const TabComponent = TAB_COMPONENTS[activeTab] || Marketing
 
   return (
-    <div 
-      className="flex h-screen overflow-hidden theme-dark" 
-      style={{ 
-        background: '#090d16', 
+    <div
+      className="flex h-screen overflow-hidden theme-dark"
+      style={{
+        background: '#090d16',
         color: '#F5F3EA',
         '--theme-bg': '#090d16',
         '--theme-sidebar-bg': '#0b0f19',
@@ -538,127 +534,126 @@ export default function DashboardLayout() {
               backdropFilter: 'blur(12px)',
             }}
           >
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setSidebarOpen(o => !o)}
-              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-none transition-colors"
-              style={{ color: 'var(--theme-text-muted)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-            >
-              <Menu size={18} />
-            </button>
-            <div>
-              <h1 className="text-[15px] font-semibold tracking-tight text-white">
-                {TAB_LABELS[activeTab]}
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            {/* Live status pill */}
-            <div
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border"
-              style={{ 
-                background: `rgba(${cr}, ${cg}, ${cb}, 0.1)`, 
-                borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
-              <span className="text-[12px] text-slate-200">
-                {creatorData.productName || 'Creator Academy'} live
-              </span>
-            </div>
-
-            {/* Forge Chat toggle */}
-            <button
-              onClick={() => setChatOpen(o => !o)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-none transition-all duration-150 border"
-              style={{
-                background: chatOpen ? `rgba(${cr}, ${cg}, ${cb}, 0.15)` : 'rgba(255,255,255,0.05)',
-                borderColor: chatOpen ? creatorBrandColor : 'rgba(255,255,255,0.08)',
-                color: chatOpen ? '#ffffff' : 'var(--theme-text-muted)',
-              }}
-            >
-              <Sparkles size={13} style={{ color: chatOpen ? creatorBrandColor : 'inherit' }} />
-              <span className="text-[12px] font-medium hidden sm:block text-slate-200">Ask Forge</span>
-            </button>
-
-            {/* Notification Bell Button with Badge Count */}
-            <button
-              type="button"
-              onClick={() => setNotificationsModalOpen(true)}
-              className="relative p-2 rounded-none transition-all duration-150 border flex items-center justify-center cursor-pointer"
-              style={{
-                background: notificationsModalOpen ? 'rgba(200, 30, 60, 0.18)' : 'rgba(255,255,255,0.05)',
-                borderColor: notificationCount > 0 ? 'rgba(200, 30, 60, 0.45)' : 'rgba(255,255,255,0.08)',
-                color: notificationCount > 0 ? '#ffffff' : 'var(--theme-text-muted)',
-              }}
-              title={notificationCount > 0 ? `${notificationCount} unread alert${notificationCount > 1 ? 's' : ''}` : 'Notifications & System Alerts'}
-            >
-              <Bell size={15} className={notificationCount > 0 ? 'text-white' : 'text-slate-400'} />
-              {notificationCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-lg border border-black/40"
-                  style={{ background: '#c81e3c' }}
-                >
-                  {notificationCount}
-                </span>
-              )}
-            </button>
-
-            {/* Creator name + avatar */}
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] hidden sm:block text-slate-300 font-medium">
-                {resolvedCreatorName}
-              </span>
-              <div
-                className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
-                style={{
-                  background: '#121722',
-                  color: '#ffffff',
-                }}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setSidebarOpen(o => !o)}
+                className="lg:hidden w-9 h-9 flex items-center justify-center rounded-none transition-colors"
+                style={{ color: 'var(--theme-text-muted)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >
-                {resolvedAvatar ? (
-                  <img
-                    src={resolvedAvatar}
-                    alt={resolvedCreatorName}
-                    className="w-full h-full object-cover"
-                    onError={e => { e.currentTarget.style.display = 'none' }}
-                  />
-                ) : (
-                  (resolvedCreatorName || 'C').replace('@', '').charAt(0).toUpperCase()
-                )}
+                <Menu size={18} />
+              </button>
+              <div>
+                <h1 className="text-[15px] font-semibold tracking-tight text-white">
+                  {TAB_LABELS[activeTab]}
+                </h1>
               </div>
             </div>
 
-            {/* Individual User Logout Button */}
-            <button
-              onClick={logout}
-              title={`Logout ${userProfile?.username || userProfile?.email || 'User'}`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
-            >
-              <LogOut size={13} className="text-rose-400" />
-              <span className="hidden md:inline">Logout</span>
-            </button>
+            <div className="flex items-center gap-2.5">
+              {/* Live status pill */}
+              <div
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border"
+                style={{
+                  background: `rgba(${cr}, ${cg}, ${cb}, 0.1)`,
+                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
+                <span className="text-[12px] text-slate-200">
+                  {creatorData.productName || 'Creator Academy'} live
+                </span>
+              </div>
+
+              {/* Forge Chat toggle */}
+              <button
+                onClick={() => setChatOpen(o => !o)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-none transition-all duration-150 border"
+                style={{
+                  background: chatOpen ? `rgba(${cr}, ${cg}, ${cb}, 0.15)` : 'rgba(255,255,255,0.05)',
+                  borderColor: chatOpen ? creatorBrandColor : 'rgba(255,255,255,0.08)',
+                  color: chatOpen ? '#ffffff' : 'var(--theme-text-muted)',
+                }}
+              >
+                <Sparkles size={13} style={{ color: chatOpen ? creatorBrandColor : 'inherit' }} />
+                <span className="text-[12px] font-medium hidden sm:block text-slate-200">Ask Forge</span>
+              </button>
+
+              {/* Notification Bell Button with Badge Count */}
+              <button
+                type="button"
+                onClick={() => setNotificationsModalOpen(true)}
+                className="relative p-2 rounded-none transition-all duration-150 border flex items-center justify-center cursor-pointer"
+                style={{
+                  background: notificationsModalOpen ? 'rgba(200, 30, 60, 0.18)' : 'rgba(255,255,255,0.05)',
+                  borderColor: notificationCount > 0 ? 'rgba(200, 30, 60, 0.45)' : 'rgba(255,255,255,0.08)',
+                  color: notificationCount > 0 ? '#ffffff' : 'var(--theme-text-muted)',
+                }}
+                title={notificationCount > 0 ? `${notificationCount} unread alert${notificationCount > 1 ? 's' : ''}` : 'Notifications & System Alerts'}
+              >
+                <Bell size={15} className={notificationCount > 0 ? 'text-white' : 'text-slate-400'} />
+                {notificationCount > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow-lg border border-black/40"
+                    style={{ background: '#c81e3c' }}
+                  >
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Creator name + avatar */}
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] hidden sm:block text-slate-300 font-medium">
+                  {resolvedCreatorName}
+                </span>
+                <div
+                  className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-semibold text-[13px] cursor-pointer flex-shrink-0"
+                  style={{
+                    background: '#121722',
+                    color: '#ffffff',
+                  }}
+                >
+                  {resolvedAvatar ? (
+                    <img
+                      src={resolvedAvatar}
+                      alt={resolvedCreatorName}
+                      className="w-full h-full object-cover"
+                      onError={e => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : (
+                    (resolvedCreatorName || 'C').replace('@', '').charAt(0).toUpperCase()
+                  )}
+                </div>
+              </div>
+
+              {/* Individual User Logout Button */}
+              <button
+                onClick={logout}
+                title={`Logout ${userProfile?.username || userProfile?.email || 'User'}`}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
+              >
+                <LogOut size={13} className="text-rose-400" />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Content row */}
         <div className="flex-1 flex overflow-hidden h-full">
           {/* Tab content (scrolls smoothly from top to bottom, or fullscreen on calendar) */}
-          <div 
-            ref={tabContentRef} 
-            className={`flex-1 min-w-0 max-w-full flex flex-col ${
-              activeTab === 'calendar' 
-                ? 'overflow-hidden h-full' 
-                : 'overflow-y-auto overflow-x-hidden custom-scrollbar scroll-smooth'
-            }`}
+          <div
+            ref={tabContentRef}
+            className={`flex-1 min-w-0 max-w-full flex flex-col ${activeTab === 'calendar'
+              ? 'overflow-hidden h-full'
+              : 'overflow-y-auto overflow-x-hidden custom-scrollbar scroll-smooth'
+              }`}
           >
             {/* Guest Action Suggestion Banner */}
             {!isRegistered && aiActionsCount >= 3 && (
-              <div 
+              <div
                 className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 rounded-none border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 animate-fade-in-down relative overflow-hidden flex-shrink-0"
                 style={{
                   background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%)`,
@@ -669,16 +664,16 @@ export default function DashboardLayout() {
                 }}
               >
                 {/* Ambient creator background glow */}
-                <div 
-                  className="absolute -right-8 -top-8 w-24 h-24 blur-xl pointer-events-none" 
+                <div
+                  className="absolute -right-8 -top-8 w-24 h-24 blur-xl pointer-events-none"
                   style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
                 />
-                
+
                 <div className="flex items-center gap-3.5 relative z-10">
-                  <div 
+                  <div
                     className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
-                    style={{ 
-                      background: `rgba(${cr}, ${cg}, ${cb}, 0.18)`, 
+                    style={{
+                      background: `rgba(${cr}, ${cg}, ${cb}, 0.18)`,
                       borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.35)`,
                       borderRadius: '0px'
                     }}
@@ -688,7 +683,7 @@ export default function DashboardLayout() {
                   <div className="space-y-0.5 text-left">
                     <h4 className="text-[13px] font-semibold text-white tracking-tight flex items-center gap-2">
                       Upgrade to Secure Account
-                      <span 
+                      <span
                         className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-none text-white shadow-xs"
                         style={{
                           background: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
@@ -705,9 +700,9 @@ export default function DashboardLayout() {
                     </p>
                   </div>
                 </div>
-                
-                <button 
-                  onClick={() => goTo('signup')} 
+
+                <button
+                  onClick={() => goTo('signup')}
                   className="forge-btn-primary text-[12px] py-2 px-4 whitespace-nowrap self-start sm:self-center relative z-10 flex items-center gap-1.5 rounded-none"
                   style={{ borderRadius: '0px' }}
                 >
@@ -725,7 +720,7 @@ export default function DashboardLayout() {
           <ForgeChat isOpen={chatOpen} onClose={() => setChatOpen(false)} />
         </div>
       </main>
-      
+
       {/* Global Modals */}
       {apiModalOpen && (
         <ApiKeysModal onClose={() => setApiModalOpen(false)} tab="ai" />

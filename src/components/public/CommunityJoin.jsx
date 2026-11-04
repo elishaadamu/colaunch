@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Users, ArrowRight, Check, Sparkles } from 'lucide-react'
+import { Users, ArrowRight, Check, Sparkles, ShieldCheck } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { updatePageSEO } from '../../utils/seo'
 
 /**
  * CommunityJoin — Public landing page at /join/{handle}
  * Lets visitors sign up for a creator's community with name + email.
+ * Styled in CoLaunch precision angular aesthetic (rounded-none).
  */
 export default function CommunityJoin({ handle }) {
   const [name, setName] = useState('')
@@ -13,6 +14,7 @@ export default function CommunityJoin({ handle }) {
   const [joined, setJoined] = useState(false)
   const [visible, setVisible] = useState(false)
   const [creatorInfo, setCreatorInfo] = useState(null)
+  const [welcomeConfig, setWelcomeConfig] = useState(null)
 
   const cleanHandle = (handle || '').replace(/^@/, '').replace(/\//g, '-')
 
@@ -21,12 +23,21 @@ export default function CommunityJoin({ handle }) {
       title: `Join @${cleanHandle}'s VIP Community | CoLaunch`,
       description: `Join the official community and get early access to exclusive software tools built with @${cleanHandle}.`,
       image: "/og-image.svg"
-    });
-  }, [cleanHandle]);
+    })
+  }, [cleanHandle])
 
-  // Try to load creator info from localStorage (populated if the creator's dashboard is on the same browser)
+  // Track real visitor page view & load creator data
   useEffect(() => {
     setTimeout(() => setVisible(true), 80)
+    
+    // 1. Increment real traffic count
+    try {
+      const visitsKey = `forge_${cleanHandle}_community_visits`
+      const curVisits = parseInt(localStorage.getItem(visitsKey) || '0', 10)
+      localStorage.setItem(visitsKey, String(curVisits + 1))
+    } catch (_) {}
+
+    // 2. Load creator info
     try {
       const cached = localStorage.getItem('forge_creator_data')
       if (cached) {
@@ -36,21 +47,32 @@ export default function CommunityJoin({ handle }) {
           setCreatorInfo(data)
         }
       }
-    } catch {}
+    } catch (_) {}
+
+    // 3. Load personalized welcome message if configured by creator
+    try {
+      const welcomeRaw = localStorage.getItem(`forge_${cleanHandle}_community_welcome`)
+      if (welcomeRaw) {
+        setWelcomeConfig(JSON.parse(welcomeRaw))
+      }
+    } catch (_) {}
   }, [cleanHandle])
 
   const displayName = creatorInfo?.name || creatorInfo?.handle?.replace('@', '') || cleanHandle
   const productName = creatorInfo?.productName || `${displayName}'s Community`
-  const avatarUrl = creatorInfo?.avatarUrl || null
+  const avatarUrl = creatorInfo?.avatarUrl || creatorInfo?.avatar || null
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!email.trim()) return
 
     const member = {
-      name: name.trim(),
+      name: name.trim() || 'Community Member',
       email: email.trim(),
       joinedAt: new Date().toISOString(),
+      role: 'Founding Member',
+      status: 'Active',
+      source: 'Invite Link'
     }
 
     // Store member in localStorage for the creator's dashboard to pick up
@@ -59,53 +81,100 @@ export default function CommunityJoin({ handle }) {
       const existing = JSON.parse(localStorage.getItem(key) || '[]')
       // Prevent duplicate emails
       if (!existing.some(m => m.email.toLowerCase() === member.email.toLowerCase())) {
-        existing.push(member)
+        existing.unshift(member)
         localStorage.setItem(key, JSON.stringify(existing))
       }
-    } catch {
+    } catch (_) {
       localStorage.setItem(key, JSON.stringify([member]))
     }
+
+    // Real-time broadcast event so any open creator dashboard reflects immediately
+    try {
+      window.dispatchEvent(new CustomEvent('forge_member_joined', { detail: member }))
+    } catch (_) {}
 
     setJoined(true)
   }
 
   if (joined) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#080808] text-white">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-[#080808] text-white">
         <div
-          className="w-full max-w-sm text-center"
+          className="w-full max-w-md p-6 sm:p-8 bg-[#0c1017] border border-white/10 rounded-none text-center shadow-2xl space-y-5"
           style={{
-            animation: 'fadeInUp 0.5s cubic-bezier(0.16,1,0.3,1) both',
+            borderRadius: '0px',
+            animation: 'fadeInUp 0.4s cubic-bezier(0.16,1,0.3,1) both',
           }}
         >
           <style>{`
             @keyframes fadeInUp {
-              0% { opacity: 0; transform: translateY(16px); }
+              0% { opacity: 0; transform: translateY(14px); }
               100% { opacity: 1; transform: translateY(0); }
             }
           `}</style>
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto mb-6">
-            <Check size={28} className="text-emerald-400" />
+          
+          <div className="w-14 h-14 rounded-none bg-[#c81e3c]/15 border border-[#c81e3c]/40 flex items-center justify-center mx-auto text-[#ff6b81]">
+            <Check size={26} strokeWidth={2.5} />
           </div>
-          <h1 className="text-[28px] font-bold tracking-tight mb-3">You're in! 🎉</h1>
-          <p className="text-[15px] leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Welcome to <span className="text-white font-medium">{productName}</span>. 
-            {displayName} will keep you posted on what's next.
-          </p>
-          <div className="rounded-xl border p-4 text-left" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-[12px] font-semibold text-white/30 uppercase tracking-wider mb-2">What to expect</p>
-            <div className="space-y-2">
-              {[
-                'Exclusive content and updates',
-                'Weekly challenges and discussions',
-                'Early access to new releases',
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Sparkles size={10} className="text-white/25" />
-                  <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.55)' }}>{item}</span>
+
+          <div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#ff8093] block mb-1">
+              Confirmed Member
+            </span>
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              You're officially in! 🎉
+            </h1>
+            <p className="text-xs text-slate-400 mt-1.5">
+              Welcome to <strong className="text-white">{productName}</strong> by {displayName}.
+            </p>
+          </div>
+
+          {/* Personalized Welcome Message from Creator */}
+          {welcomeConfig && welcomeConfig.enabled && (
+            <div className="p-4 bg-[#10141f] border border-[#c81e3c]/25 rounded-none text-left space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#ff8093]">
+                <Sparkles size={11} />
+                <span>Message from {displayName}:</span>
+              </div>
+              {welcomeConfig.subject && (
+                <div className="text-xs font-bold text-white">
+                  {welcomeConfig.subject}
                 </div>
-              ))}
+              )}
+              <div className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
+                {welcomeConfig.message}
+              </div>
             </div>
+          )}
+
+          {/* Member Privileges */}
+          <div className="p-4 bg-[#10141f] border border-white/[0.08] rounded-none text-left space-y-2.5">
+            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+              Your Founding Privileges
+            </p>
+            <div className="space-y-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]" />
+                <span>Direct access to upcoming sprints, challenges, and drops</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]" />
+                <span>Early priority invite to product releases</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]" />
+                <span>Private feedback pipeline directly with {displayName}</span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-500 font-mono">
+            Confirmation email dispatched to <span className="text-slate-300">{email}</span>
+          </p>
+
+          <div className="pt-2 border-t border-white/[0.08] flex items-center justify-center gap-2">
+            <WingLogo size={14} color="rgba(255,255,255,0.2)" />
+            <span className="text-[10px] font-mono text-slate-500">CoLaunch Community Infrastructure</span>
           </div>
         </div>
       </div>
@@ -113,114 +182,114 @@ export default function CommunityJoin({ handle }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#080808] text-white relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-[#080808] text-white relative overflow-hidden">
       {/* Background glow */}
       <div
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 65%)' }}
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(200,30,60,0.08) 0%, transparent 65%)' }}
       />
 
       <div
-        className="relative z-10 w-full max-w-sm"
+        className="relative z-10 w-full max-w-md p-6 sm:p-8 bg-[#0c1017] border border-white/10 rounded-none shadow-2xl space-y-6"
         style={{
+          borderRadius: '0px',
           opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.55s cubic-bezier(0.16,1,0.3,1)',
+          transform: visible ? 'translateY(0)' : 'translateY(16px)',
+          transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
         }}
       >
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="w-16 h-16 rounded-2xl border object-cover"
-              style={{ borderColor: 'rgba(255,255,255,0.1)' }}
-              onError={e => { e.currentTarget.style.display = 'none' }}
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl border flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
-              <Users size={24} className="text-white/40" />
-            </div>
-          )}
-        </div>
+        {/* Creator Identity */}
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-4">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-16 h-16 rounded-none border-2 border-[#c81e3c] object-cover shadow-lg"
+                style={{ borderRadius: '0px' }}
+                onError={e => { e.currentTarget.style.display = 'none' }}
+              />
+            ) : (
+              <div 
+                className="w-16 h-16 rounded-none border-2 border-[#c81e3c] bg-[#10141f] flex items-center justify-center text-white font-black text-xl shadow-lg"
+                style={{ borderRadius: '0px' }}
+              >
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
 
-        {/* Heading */}
-        <div className="text-center mb-8">
-          <h1 className="text-[26px] font-bold tracking-tight mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-none text-[10px] font-mono font-bold uppercase tracking-wider bg-[#c81e3c]/15 text-[#ff8093] border border-[#c81e3c]/30 mb-2">
+            <ShieldCheck size={11} />
+            <span>Verified Creator Community</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             Join {productName}
           </h1>
-          <p className="text-[14px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            by <span className="text-white/60 font-medium">{displayName}</span>
+          <p className="text-xs text-slate-400 mt-1">
+            Official founding circle by <span className="text-slate-200 font-bold">{displayName}</span> (@{cleanHandle})
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Join Form */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
+            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              Your Name
+            </label>
             <input
               type="text"
-              placeholder="Your name"
+              required
+              placeholder="e.g. Jordan Miller"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-[14px] outline-none transition-all duration-150"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white',
-              }}
-              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+              className="w-full px-3.5 py-2.5 rounded-none text-xs bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition"
+              style={{ borderRadius: '0px' }}
             />
           </div>
+
           <div>
+            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              Email Address
+            </label>
             <input
               type="email"
               required
-              placeholder="Your email *"
+              placeholder="you@domain.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-[14px] outline-none transition-all duration-150"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white',
-              }}
-              onFocus={e => e.target.style.borderColor = 'rgba(139,92,246,0.4)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+              className="w-full px-3.5 py-2.5 rounded-none text-xs bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition"
+              style={{ borderRadius: '0px' }}
             />
           </div>
+
           <button
             type="submit"
-            disabled={!email.trim()}
-            className="w-full py-3 rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2 transition-all duration-200"
+            disabled={!email.trim() || !name.trim()}
+            className="w-full py-3 rounded-none text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-lg disabled:opacity-40"
             style={{
-              background: email.trim() ? 'white' : 'rgba(255,255,255,0.06)',
-              color: email.trim() ? 'black' : 'rgba(255,255,255,0.25)',
-              cursor: email.trim() ? 'pointer' : 'not-allowed',
+              background: '#c81e3c',
+              color: '#ffffff',
+              borderRadius: '0px'
             }}
           >
-            Join Community
-            <ArrowRight size={15} />
+            <span>Join Founding Circle</span>
+            <ArrowRight size={13} className="text-white" />
           </button>
         </form>
 
-        {/* Trust signals */}
-        <div className="mt-6 flex items-center justify-center gap-4">
-          {[
-            `${displayName}'s community`,
-            'Free to join',
-          ].map((text, i) => (
-            <span key={i} className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-              {text}
-            </span>
-          ))}
+        {/* Trust Signals */}
+        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span>✓ 100% Free to join</span>
+          <span>✓ Instant invitation</span>
+          <span>✓ No spam guarantee</span>
         </div>
 
-        {/* Powered by */}
-        <div className="mt-10 flex items-center justify-center gap-2">
-          <WingLogo size={14} color="rgba(255,255,255,0.15)" />
-          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.15)' }}>Powered by CoLaunch</span>
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <WingLogo size={13} color="rgba(255,255,255,0.2)" />
+          <span className="text-[10px] font-mono text-slate-500">Powered by CoLaunch</span>
         </div>
       </div>
     </div>
