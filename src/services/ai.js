@@ -1209,36 +1209,15 @@ export function buildChannelSpecificImagePrompt(creatorData, stylePreset = 'saas
   return `Ultra-high-resolution commercial product hero mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. A cutting-edge digital workspace on a sleek matte black and deep graphite canvas with striking signature ${brandColor} accent lighting, glowing red interactive CTA buttons, clean developer dashboard panels, live telemetry streams, and crisp white typography. ${colorDirective} Premium modern aesthetic matching Marques Brownlee studio style, photorealistic, 8k render.`
 }
 
-// ── FLUX.1 Real AI Image Generation (Free, instant cloud AI, zero keys required) ─
+// ── OpenAI DALL-E 3 Image Generation ─────────────────────────────────────────
 
 export async function generateProductImageWithFlux(
   creatorData,
   customPrompt = '',
   seed = null
 ) {
-  const brandColor = creatorData?.brandColor || '#c81e3c'
-  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
-  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`
-  const niche = creatorData?.niche || 'Technology'
-
-  let resolvedSeed = seed
-  if (!resolvedSeed) {
-    const seedBase = `${name}-${productName}-${Date.now()}`
-    let hash = 42
-    for (let i = 0; i < seedBase.length; i++) {
-      hash = (hash * 31 + seedBase.charCodeAt(i)) % 999999
-    }
-    resolvedSeed = Math.abs(hash) || 777777
-  }
-
-  const promptText = (customPrompt && customPrompt.trim())
-    ? (customPrompt.includes(brandColor) ? customPrompt : `${customPrompt}. Dominant brand accent color: ${brandColor}. Dark obsidian UI, no lime green.`)
-    : buildChannelSpecificImagePrompt(creatorData, 'saas_dashboard', brandColor)
-
-  const encoded = encodeURIComponent(promptText.slice(0, 1000))
-  const fluxUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&model=flux&seed=${resolvedSeed}&nologo=true`
-
-  return fluxUrl
+  // Deprecated: Redirect directly to OpenAI DALL-E 3
+  return await generateProductImageWithOpenAI(creatorData, customPrompt);
 }
 
 // ── Gemini image generation (uses existing Gemini key — no extra signup) ───────
@@ -1326,28 +1305,12 @@ export async function generateProductImageWithTogether(
 }
 
 // ── Channel-Calibrated Product Fallback Image ────────────────────────────────
-export function getChannelHeroFallbackImage(creatorData, customSeed = null) {
-  const brandColor = creatorData?.brandColor || '#c81e3c';
-  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '');
-  const productName = creatorData?.productName || creatorData?.blueprint?.name || `${name} Pro Suite`;
-  const niche = (creatorData?.niche || 'creator community').toLowerCase();
-
-  // Clean deterministic seed from creator identity
-  let seed = customSeed;
-  if (!seed) {
-    const seedBase = `${name}-${productName}-${niche}`;
-    let hash = 42;
-    for (let i = 0; i < seedBase.length; i++) {
-      hash = (hash * 31 + seedBase.charCodeAt(i)) % 999999;
-    }
-    seed = Math.abs(hash) || 555555;
+export function getChannelHeroFallbackImage(creatorData) {
+  const niche = (creatorData?.niche || '').toLowerCase();
+  if (niche.includes('music') || niche.includes('worship')) {
+    return '/images/hero_saas_macbook.jpg';
   }
-
-  const prompt = encodeURIComponent(
-    `Ultra-high-resolution commercial product hero mockup and UI software screenshot for "${productName}" by ${name} in ${niche}. Modern laptop and mobile device on sleek dark obsidian desk with glowing crimson red (${brandColor}) telemetry charts, metrics, illuminated buttons, crisp white typography, strictly no lime green, photorealistic 8k render`
-  );
-
-  return `https://image.pollinations.ai/prompt/${prompt}?width=1280&height=720&model=flux&seed=${seed}&nologo=true`;
+  return '/images/saas_multi_device_showcase.jpg';
 }
 
 // ── OpenAI DALL-E 3 image generation ─────────────────────────────────────────
@@ -1486,67 +1449,27 @@ export async function generateProductImage(creatorData, optionsOrSignal = {}) {
   const options = isSignal ? {} : (optionsOrSignal || {});
   const signal = isSignal ? optionsOrSignal : options.signal;
 
-  const { openaiKey, togetherKey, geminiKey } = loadAiKeys();
   const brandColor = options.brandColor || creatorData?.brandColor || '#c81e3c';
   const customPrompt = options.prompt || '';
   const stylePreset = options.style || 'saas_dashboard';
-  const engine = options.engine || (openaiKey && !failedKeys.has(openaiKey) ? 'openai' : 'flux');
-  const seed = options.seed || Math.floor(Math.random() * 899999) + 100000;
 
   const finalPrompt = (customPrompt && customPrompt.trim())
-    ? (customPrompt.includes(brandColor) ? customPrompt : `${customPrompt}. Dominant brand accent color: ${brandColor}. Dark obsidian UI, strictly no lime green.`)
+    ? (customPrompt.includes(brandColor) ? customPrompt : `${customPrompt}. Dominant brand accent color: ${brandColor}. Dark obsidian UI, crisp white typography, strictly no lime green.`)
     : buildChannelSpecificImagePrompt(creatorData, stylePreset, brandColor);
 
   let rawImage = null;
-  let lastImageError = null;
 
-  // 1. Explicit or preferred: OpenAI DALL-E 3
-  if (engine === 'openai' && openaiKey && !failedKeys.has(openaiKey)) {
-    try {
-      rawImage = await generateProductImageWithOpenAI(creatorData, finalPrompt, signal);
-    } catch (err) {
-      if (err.name === 'AbortError') throw err;
-      lastImageError = err.message || 'OpenAI DALL-E generation failed';
-      if (err.message.includes('401') || err.message.includes('Expired') || err.message.includes('429')) {
-        failedKeys.add(openaiKey);
-      }
-      console.warn('[Forge] OpenAI DALL-E generation failed, falling back to FLUX.1:', err);
-    }
+  // Strictly OpenAI DALL-E 3 image generation
+  try {
+    rawImage = await generateProductImageWithOpenAI(creatorData, finalPrompt, signal);
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    console.warn('[Forge] OpenAI DALL-E generation notice:', err);
+    throw err;
   }
 
-  // 2. Explicit or preferred: Gemini Image Generation
-  if (!rawImage && (engine === 'gemini' || !openaiKey) && geminiKey && !failedKeys.has(geminiKey)) {
-    try {
-      rawImage = await generateProductImageWithGemini(creatorData, finalPrompt, signal);
-    } catch (err) {
-      if (err.name === 'AbortError') throw err;
-      if (err.message.includes('401') || err.message.includes('429')) {
-        failedKeys.add(geminiKey);
-      }
-      console.warn('[Forge] Gemini Image Generation failed, trying FLUX.1:', err);
-    }
-  }
-
-  // 3. High-Quality Free Cloud AI: FLUX.1 (Always reliable, zero keys needed, 1280x720)
   if (!rawImage) {
-    try {
-      rawImage = await generateProductImageWithFlux(creatorData, finalPrompt, seed);
-    } catch (err) {
-      if (err.name === 'AbortError') throw err;
-      console.warn('[Forge] FLUX.1 Image Generation failed:', err);
-      lastImageError = err.message;
-    }
-  }
-
-  // 4. Grounded Channel Hero Fallback (Dynamic FLUX URL with seed — NEVER the static lime green file!)
-  if (!rawImage) {
-    rawImage = getChannelHeroFallbackImage(creatorData, seed);
-    if (lastImageError && typeof window !== 'undefined') {
-      try {
-        const handle = (creatorData?.handle || 'creator').replace(/^@+/, '');
-        sessionStorage.setItem(`forge_${handle}_image_note`, lastImageError);
-      } catch (_) {}
-    }
+    rawImage = getChannelHeroFallbackImage(creatorData);
   }
 
   return await saveImageToBackendMedia(rawImage);
