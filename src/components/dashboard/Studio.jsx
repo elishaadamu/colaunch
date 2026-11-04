@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import {
   Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronRight,
