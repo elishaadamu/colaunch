@@ -575,7 +575,9 @@ export default function App() {
     meta_connection: null
   })
 
-  // Directly save a dashboard section into MongoDB Atlas user_profiles
+  const saveDebounceMapRef = useRef({})
+
+  // Directly save a dashboard section into MongoDB Atlas user_profiles (debounced per section)
   const saveDashboardData = useCallback((section, data) => {
     setDashboardData(prev => ({
       ...prev,
@@ -588,7 +590,21 @@ export default function App() {
     }))
     const uname = userProfile?.username || ''
     const handle = creatorData?.handle || 'default'
-    return saveDashboardSection(uname, handle, section, data)
+
+    if (saveDebounceMapRef.current[section]) {
+      clearTimeout(saveDebounceMapRef.current[section])
+    }
+
+    return new Promise((resolve) => {
+      saveDebounceMapRef.current[section] = setTimeout(async () => {
+        try {
+          const res = await saveDashboardSection(uname, handle, section, data)
+          resolve(res)
+        } catch (_) {
+          resolve(false)
+        }
+      }, 800)
+    })
   }, [userProfile?.username, creatorData?.handle])
 
   // Synchronize localStorage configuration to the backend SQLite database

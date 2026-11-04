@@ -1127,9 +1127,13 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     }
   }, [activeCreatorKey, creatorData, productName, handleClean, userProfile?.email])
 
-  // Hydrate calendar from MongoDB Atlas user_profiles
+  // Hydrate calendar from MongoDB Atlas user_profiles only ONCE or when creator changes
+  const hasHydratedCalendarRef = useRef(false)
+
   useEffect(() => {
+    if (hasHydratedCalendarRef.current) return
     if (dashboardData?.calendar_data) {
+      hasHydratedCalendarRef.current = true
       const cal = dashboardData.calendar_data
       if (Array.isArray(cal.campaign_posts) && cal.campaign_posts.length > 0) {
         if (!isStaleOrClashingCalendar(cal.campaign_posts, creatorData)) {
@@ -1149,16 +1153,21 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     }
   }, [dashboardData?.calendar_data, creatorData, productName, handleClean])
 
-  // Automatically persist calendar state directly to MongoDB Atlas
+  // Automatically persist calendar state directly to MongoDB Atlas (debounced)
   useEffect(() => {
-    if (saveDashboardData && posts && posts.length > 0 && !isStaleOrClashingCalendar(posts, creatorData)) {
+    if (!posts || posts.length === 0 || isStaleOrClashingCalendar(posts, creatorData)) return
+    if (!saveDashboardData) return
+
+    const timer = setTimeout(() => {
       saveDashboardData('calendar', {
         campaign_posts: posts,
         bonus_xp: bonusXp,
         claimed_quests: claimedQuests,
         synced_at: new Date().toISOString()
       })
-    }
+    }, 1500)
+
+    return () => clearTimeout(timer)
   }, [posts, bonusXp, claimedQuests, saveDashboardData, creatorData])
 
   // Active Post for Right Inspector Studio

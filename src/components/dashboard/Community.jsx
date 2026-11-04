@@ -2,10 +2,9 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent } from '../../App'
 import { 
   Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, 
-  Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send, ExternalLink, Zap
+  Radio, ChevronRight, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, Send, ExternalLink, Zap, Search, ShieldCheck, Flame
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
-import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
 
 // ─── Dynamic Community Content Generator ─────────────────────────────────────
 
@@ -19,42 +18,42 @@ function getCommunityContentTypes(productName, creatorName, handle, niche) {
       id: 'welcome',
       icon: Users,
       label: 'Welcome post',
-      description: 'Onboard new members with energy',
+      description: 'Onboard new members with energy & clarity',
       example: `Welcome to ${productName}! 🎉\n\nYou made it. This is the official founding community where we build, execute, and collaborate directly with @${cleanHandle}.\n\nHere is your immediate kickoff checklist:\n→ Introduce yourself below (where you are from & your #1 goal)\n→ Check the pinned resources and asset drops\n→ Join this week's active sprint challenge\n\nTag someone who should be here. Let's build together 👇`,
     },
     {
       id: 'challenge',
       icon: Radio,
       label: 'Weekly challenge',
-      description: 'Drive engagement and accountability',
+      description: 'Drive engagement and active milestone execution',
       example: `⚡ Weekly Challenge: The 72-Hour ${nicheTopic.toUpperCase()} Sprint!\n\nNo overthinking this week. Every member of ${productName} takes one concrete action towards their goals.\n\nDirect milestone. Clear execution. Ship it.\n\nTag me (@${cleanHandle}) when you drop it — I will personally review and highlight the top submissions in our next update.\n\nWho is in? Comment "IN" below 👇`,
     },
     {
       id: 'discussion',
       icon: MessageSquare,
       label: 'Discussion starter',
-      description: 'Get members talking and engaging',
+      description: 'Get members talking and solving bottlenecks',
       example: `Quick question for the ${productName} community:\n\nWhat is the SINGLE biggest bottleneck holding you back in ${nicheTopic} right now?\n\nBe 100% honest. I am personally answering and breaking down solutions for the top questions this week.\n\nDrop your thoughts below 👇`,
     },
     {
       id: 'announcement',
       icon: Plus,
       label: 'Member announcement',
-      description: 'Share news, drops, or updates',
+      description: 'Share news, asset drops, or major updates',
       example: `🚀 Milestone Update for ${productName} Members:\n\nOur latest milestone and member toolkit are officially live!\n\nHere is what this unlocks for our members:\n→ Exclusive member-only templates & frameworks\n→ Direct access to our upcoming community session\n→ Early-bird access to our next product drop\n\nHead over to the Resources tab to check it out. Questions? Drop them below!`,
     },
     {
       id: 'recap',
       icon: ChevronRight,
       label: 'Weekly recap',
-      description: 'Celebrate wins and keep momentum',
+      description: 'Celebrate member wins and maintain momentum',
       example: `🏁 Week in Review: ${productName}\n\nWhat an incredible week across our community:\n✓ Multiple members shipped their first milestones\n✓ Great breakthroughs in our challenge threads\n✓ Our member base continues to grow with high-caliber creators\n\nDrop your biggest win of the week in the comments below! 👇`,
     },
     {
       id: 'qa',
       icon: MessageSquare,
       label: 'Audience Q&A prompt',
-      description: 'Collect questions for a live or post',
+      description: 'Collect questions for live coaching or recap',
       example: `🎙️ Exclusive ${productName} Community Q&A with ${name}\n\nI am collecting questions directly from our founding circle for an exclusive deep-dive breakdown.\n\nAsk me anything about:\n→ My workflows and scaling secrets\n→ How we structured ${productName}\n→ My biggest lessons in ${nicheTopic}\n\nDrop your question below — nothing is off-limits!`,
     },
   ]
@@ -65,14 +64,14 @@ function getCommunityContentTypes(productName, creatorName, handle, niche) {
 function getInitialFoundingMembers(productName, handle) {
   const now = Date.now()
   return [
-    { name: 'Alex Rivera', email: 'alex.rivera@techpulse.io', joinedAt: new Date(now - 1 * 86400000).toISOString(), role: 'Founding Member' },
-    { name: 'Sarah Lin', email: 'sarah.lin@studioflow.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'VIP Contributor' },
-    { name: 'Marcus Vance', email: 'marcus.vance99@gmail.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'Founding Member' },
-    { name: 'Elena Rostova', email: 'elena.rostova@designlab.co', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'Founding Member' },
-    { name: 'Priya Sharma', email: 'priya.creatives@gmail.com', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'VIP Contributor' },
-    { name: 'David Kim', email: 'dkim.builds@horizon.co', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member' },
-    { name: 'Chloe Bennett', email: 'chloe.bennett@creatorpulse.org', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member' },
-    { name: 'Lucas Silva', email: 'lucas.silva@ventures.io', joinedAt: new Date(now - 5 * 86400000).toISOString(), role: 'Founding Member' },
+    { name: 'Alex Rivera', email: 'alex.rivera@techpulse.io', joinedAt: new Date(now - 1 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
+    { name: 'Sarah Lin', email: 'sarah.lin@studioflow.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'VIP Contributor', status: 'Active' },
+    { name: 'Marcus Vance', email: 'marcus.vance99@gmail.com', joinedAt: new Date(now - 2 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
+    { name: 'Elena Rostova', email: 'elena.rostova@designlab.co', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
+    { name: 'Priya Sharma', email: 'priya.creatives@gmail.com', joinedAt: new Date(now - 3 * 86400000).toISOString(), role: 'VIP Contributor', status: 'Active' },
+    { name: 'David Kim', email: 'dkim.builds@horizon.co', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
+    { name: 'Chloe Bennett', email: 'chloe.bennett@creatorpulse.org', joinedAt: new Date(now - 4 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
+    { name: 'Lucas Silva', email: 'lucas.silva@ventures.io', joinedAt: new Date(now - 5 * 86400000).toISOString(), role: 'Founding Member', status: 'Active' },
   ]
 }
 
@@ -115,12 +114,12 @@ function getInitialScheduledPosts(productName, creatorName, handle, niche) {
   ]
 }
 
-// ─── Mini Calendar Component ──────────────────────────────────────────────────
+// ─── Mini Calendar Component (Precision Angular Style) ────────────────────────
 
 const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' }) {
+function MiniCalendar({ onSelect, scheduledPosts = [], brandRed = '#c81e3c' }) {
   const [viewDate, setViewDate] = useState(new Date())
 
   const year = viewDate.getFullYear()
@@ -141,11 +140,19 @@ function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' 
     <div className="w-full text-white">
       {/* Month nav */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <button onClick={prevMonth} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5">
+        <button 
+          type="button"
+          onClick={prevMonth} 
+          className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
+        >
           <ChevronRight size={13} className="rotate-180" />
         </button>
-        <span className="text-[12px] font-semibold text-white tracking-wide">{MONTHS[month]} {year}</span>
-        <button onClick={nextMonth} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5">
+        <span className="text-xs font-bold text-white tracking-wide">{MONTHS[month]} {year}</span>
+        <button 
+          type="button"
+          onClick={nextMonth} 
+          className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
+        >
           <ChevronRight size={13} />
         </button>
       </div>
@@ -153,7 +160,7 @@ function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' 
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {DAYS_SHORT.map(d => (
-          <div key={d} className="text-center text-[10px] font-bold text-white/20 py-1">{d}</div>
+          <div key={d} className="text-center text-[10px] font-mono font-bold text-slate-500 py-1">{d}</div>
         ))}
       </div>
 
@@ -166,7 +173,6 @@ function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' 
           const isPast = dateObj < today
           const isToday = dateObj.getTime() === today.getTime()
 
-          // Check if this date has scheduled posts
           const postsForDay = scheduledPosts.filter(p => {
             const d = new Date(p.date)
             d.setHours(0, 0, 0, 0)
@@ -177,35 +183,22 @@ function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' 
           return (
             <button
               key={day}
+              type="button"
               disabled={isPast}
               onClick={() => onSelect(dateObj)}
-              className="relative w-full aspect-square rounded-lg flex flex-col items-center justify-center text-[11px] font-semibold transition-all duration-100"
+              className="relative w-full aspect-square rounded-none flex flex-col items-center justify-center text-[11px] font-mono font-bold transition cursor-pointer"
               style={{
-                color: isPast ? 'rgba(255,255,255,0.15)' : isToday ? '#ffffff' : 'rgba(255,255,255,0.7)',
-                background: isToday ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: isToday ? `1px solid ${creatorColor}` : '1px solid transparent',
+                color: isPast ? '#475569' : isToday ? '#ffffff' : '#cbd5e1',
+                background: isToday ? 'rgba(200,30,60,0.15)' : 'transparent',
+                border: isToday ? `1px solid ${brandRed}` : '1px solid transparent',
                 cursor: isPast ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={e => {
-                if (!isPast) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-                  e.currentTarget.style.borderColor = creatorColor
-                  e.currentTarget.style.color = 'white'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isPast) {
-                  e.currentTarget.style.background = isToday ? 'rgba(255,255,255,0.08)' : 'transparent'
-                  e.currentTarget.style.borderColor = isToday ? creatorColor : 'transparent'
-                  e.currentTarget.style.color = isToday ? '#ffffff' : 'rgba(255,255,255,0.7)'
-                }
               }}
             >
               <span>{day}</span>
               {hasPost && (
                 <span 
-                  className="absolute bottom-1 w-1.5 h-1.5 rounded-full"
-                  style={{ background: creatorColor }}
+                  className="absolute bottom-1 w-1.5 h-1.5 rounded-none"
+                  style={{ background: brandRed }}
                   title={`${postsForDay.length} post(s) scheduled`}
                 />
               )}
@@ -219,7 +212,7 @@ function MiniCalendar({ onSelect, scheduledPosts = [], creatorColor = '#10B981' 
 
 // ─── Broadcast Email Modal Component ──────────────────────────────────────────
 
-function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, handle, creatorColor, cr, cg, cb }) {
+function BroadcastModal({ members, onClose, triggerToast, creatorData, productName, brandRed = '#c81e3c' }) {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -232,7 +225,6 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
       const inputContext = `Write an email update to my community "${productName}". Niche: ${creatorData.niche || 'creation'}. Warm, personal, engaging tone.`
       const draft = await generateStudioContent(type, inputContext, creatorData, 'Confident')
       
-      // Separate subject if AI returned one
       if (draft.includes('Subject:')) {
         const lines = draft.split('\n')
         const subjLine = lines.find(l => l.toLowerCase().startsWith('subject:'))
@@ -262,137 +254,103 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
       setIsSending(false)
       if (triggerToast) triggerToast(`Broadcast sent to ${members.length} member(s)!`, 'success')
       onClose()
-    }, 1800)
+    }, 1200)
   }
 
   const mailtoLink = `mailto:?bcc=${members.map(m => m.email).filter(Boolean).join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
       <div 
-        className="w-full max-w-lg rounded-2xl border p-4 sm:p-6 flex flex-col shadow-2xl relative max-h-[92vh]"
-        style={{
-          background: 'rgba(13,13,13,0.95)',
-          borderColor: 'rgba(255,255,255,0.08)',
-          animation: 'modalSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both',
-        }}
+        className="w-full max-w-lg rounded-none border border-white/10 p-5 sm:p-6 flex flex-col shadow-2xl relative max-h-[92vh] bg-[#0c1017] space-y-4"
       >
-        <style>{`
-          @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-        
         {/* Close Button */}
         <button 
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/40 hover:text-white transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/5"
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition w-8 h-8 rounded-none flex items-center justify-center bg-[#10141f] border border-white/10 cursor-pointer"
         >
-          <X size={14} />
+          <X size={15} />
         </button>
 
         {/* Title */}
-        <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-white/5">
+        <div className="flex items-center gap-3 pb-3 border-b border-white/[0.08]">
           <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center border" 
-            style={{ 
-              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
-              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
-            }}
+            className="w-9 h-9 rounded-none flex items-center justify-center border border-[#c81e3c]/30 bg-[#c81e3c]/15 text-[#ff6b81]" 
           >
-            <Send size={14} style={{ color: creatorColor }} />
+            <Send size={15} />
           </div>
           <div>
-            <h3 className="text-[16px] font-bold text-white">Send Email Broadcast</h3>
-            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              Reaching out to all <span className="text-white font-medium">{members.length} members</span>
+            <h3 className="text-sm font-bold text-white tracking-tight">Send Email Broadcast</h3>
+            <p className="text-[11px] text-slate-400">
+              Reaching out to all <span className="text-white font-medium">{members.length} founding members</span>
             </p>
           </div>
         </div>
 
         {/* Content */}
-        <div className="space-y-4 flex-1 overflow-y-auto pr-1 py-1 custom-scrollbar">
+        <div className="space-y-3.5 flex-1 overflow-y-auto pr-1 py-1 custom-scrollbar">
           <div>
-            <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider block mb-1.5">Subject</label>
+            <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">Subject</label>
             <input 
               type="text" 
               required
-              placeholder="e.g. Big news about our next challenge!"
+              placeholder="e.g. Milestone unlocked: New resources available inside"
               value={subject}
               onChange={e => setSubject(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none transition-all duration-150"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white',
-              }}
-              onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.45)`}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+              className="w-full px-3 py-2 rounded-none text-xs bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition"
             />
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="text-[11px] font-bold text-white/40 uppercase tracking-wider block m-0">Message Body</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block m-0">Message Body</label>
               <button 
+                type="button"
                 onClick={handleDraftWithAi}
                 disabled={isDrafting}
-                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all"
-                style={{
-                  color: creatorColor,
-                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                  borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
-                }}
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border border-[#c81e3c]/30 bg-[#c81e3c]/15 text-[#ff8093] hover:bg-[#c81e3c]/25 transition cursor-pointer"
               >
                 {isDrafting ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                Draft with AI
+                <span>Draft with AI</span>
               </button>
             </div>
             <textarea
               required
               rows={6}
-              placeholder="Write your email update..."
+              placeholder="Write your member email update..."
               value={message}
               onChange={e => setMessage(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none transition-all duration-150 resize-none font-mono"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'white',
-              }}
-              onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.45)`}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+              className="w-full px-3 py-2.5 rounded-none text-xs bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition resize-none font-mono"
             />
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
+        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between gap-3">
           <a
             href={mailtoLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/80 transition-colors"
+            className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition"
           >
             <ExternalLink size={12} />
-            Use my email client
+            <span>Open in Mail Client</span>
           </a>
           <div className="flex gap-2">
             <button 
+              type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all border border-white/5"
+              className="px-4 py-2 rounded-none text-xs font-semibold bg-[#10141f] hover:bg-[#161d2d] text-slate-300 hover:text-white transition border border-white/10 cursor-pointer"
             >
               Cancel
             </button>
             <button 
+              type="button"
               onClick={handleSend}
               disabled={isSending || !subject.trim() || !message.trim()}
-              className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed transition-all"
-              style={{
-                background: isSending || !subject.trim() || !message.trim() ? undefined : creatorColor,
-                boxShadow: isSending || !subject.trim() || !message.trim() ? 'none' : `0 0 16px rgba(${cr}, ${cg}, ${cb}, 0.35)`
-              }}
+              className="px-4 py-2 rounded-none text-xs font-bold text-white transition cursor-pointer border-0 shadow-sm disabled:opacity-50"
+              style={{ background: brandRed, color: '#ffffff' }}
             >
               {isSending ? 'Sending...' : 'Send Broadcast'}
             </button>
@@ -406,14 +364,11 @@ function BroadcastModal({ members, onClose, triggerToast, creatorData, productNa
 // ─── Main Community Component ─────────────────────────────────────────────────
 
 export default function Community() {
-  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dashboardData, saveDashboardData } = useForge()
+  const { creatorData, incrementAiActions, setApiModalOpen, triggerToast, syncSessionToDb, dashboardData, saveDashboardData, setActiveTab } = useForge()
 
-  // Unified single brand color across the entire application (co-launch.app brand red)
-  const creatorColor = '#c81e3c'
-  const [cr, cg, cb] = [200, 30, 60]
-
+  const brandRed = '#c81e3c'
   const handle = creatorData?.handle || '@creator'
-  const productName = creatorData.productName || 'Creator Academy'
+  const productName = creatorData?.productName || 'Creator Academy'
   const cleanHandle = handle.replace(/^@/, '').replace(/\//g, '-')
   const creatorName = creatorData?.name || cleanHandle || 'Creator'
   const niche = creatorData?.niche || 'content creation'
@@ -424,17 +379,19 @@ export default function Community() {
     [productName, creatorName, cleanHandle, niche]
   )
 
+  const [activeTabSub, setActiveTabSub] = useState('hub') // 'hub' | 'members'
   const [selectedType, setSelectedType] = useState(() => communityContentTypes[0])
   const [generated, setGenerated] = useState(() => communityContentTypes[0]?.example || '')
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
-  const [showMembers, setShowMembers] = useState(false)
   const [highlightCalendar, setHighlightCalendar] = useState(false)
   const [expandedPostId, setExpandedPostId] = useState(null)
   const [editingPostId, setEditingPostId] = useState(null)
   const [editingText, setEditingText] = useState('')
   const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [memberFilter, setMemberFilter] = useState('all')
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const calendarRef = useRef(null)
   const outputRef = useRef(null)
 
@@ -455,21 +412,12 @@ export default function Community() {
     }
   })
 
-  // Sync members from localStorage on focus (when join page adds one)
+  // Hydrate once from MongoDB Atlas
+  const hasHydratedCommunityRef = useRef(false)
   useEffect(() => {
-    const handler = () => {
-      try {
-        const cached = localStorage.getItem(getMembersKey())
-        if (cached) setMembers(JSON.parse(cached))
-      } catch {}
-    }
-    window.addEventListener('focus', handler)
-    return () => window.removeEventListener('focus', handler)
-  }, [cleanHandle])
-
-  // Hydrate community data from MongoDB Atlas
-  useEffect(() => {
+    if (hasHydratedCommunityRef.current) return
     if (dashboardData?.community_data) {
+      hasHydratedCommunityRef.current = true
       if (Array.isArray(dashboardData.community_data.members) && dashboardData.community_data.members.length > 0) {
         setMembers(dashboardData.community_data.members)
       }
@@ -502,32 +450,25 @@ export default function Community() {
       localStorage.setItem(getScheduledKey(), JSON.stringify(posts))
     } catch (_) {}
     if (saveDashboardData) {
-      saveDashboardData('community', {
-        members,
-        scheduled_posts: posts,
-        synced_at: new Date().toISOString()
-      })
+      setTimeout(() => {
+        saveDashboardData('community', {
+          members,
+          scheduled_posts: posts,
+          synced_at: new Date().toISOString()
+        })
+      }, 50)
     }
-    setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
   }
 
   // ── Invite link ──
-  const inviteLink = `${window.location.origin}/join/${cleanHandle}`
+  const inviteLink = `${typeof window !== 'undefined' ? window.location.origin : 'https://co-launch.app'}/join/${cleanHandle}`
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink)
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
-    if (triggerToast) triggerToast('Invite link copied!', 'success')
+    if (triggerToast) triggerToast('Community invite link copied!', 'success')
   }
-
-  useEffect(() => {
-    if (generated && window.innerWidth < 1024) {
-      setTimeout(() => {
-        outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      }, 100)
-    }
-  }, [generated])
 
   // ── AI Generation ──
   const handleGenerate = async (type) => {
@@ -548,9 +489,9 @@ export default function Community() {
       setGenerated(result || type.example)
       if (incrementAiActions) incrementAiActions()
     } catch (err) {
-      console.error('[Forge Community] AI generation failed:', err)
+      console.error('[Forge Community] AI generation notice:', err)
       setGenerated(type.example)
-      if (triggerToast) triggerToast('AI unavailable — showing tailored template', 'error')
+      if (triggerToast) triggerToast('Showing tailored community template', 'info')
     } finally {
       setIsGenerating(false)
     }
@@ -593,7 +534,7 @@ export default function Community() {
   const handleDeleteScheduled = (id) => {
     saveScheduledPosts(scheduledPosts.filter(p => p.id !== id))
     if (editingPostId === id) setEditingPostId(null)
-    if (triggerToast) triggerToast('Scheduled post deleted', 'info')
+    if (triggerToast) triggerToast('Scheduled post removed', 'info')
   }
 
   const handleSaveEdit = (id) => {
@@ -620,541 +561,463 @@ export default function Community() {
     return d >= weekAgo && d <= weekAhead
   }).length
 
-  const memberStats = [
-    { 
-      label: 'Members', 
-      value: members.length.toString(), 
-      sub: `${members.length} founding members joined`,
-      badge: '● Live Community'
-    },
-    { 
-      label: 'Scheduled', 
-      value: scheduledPosts.length.toString(), 
-      sub: `${scheduledPosts.length} posts in queue`,
-      badge: scheduledPosts[0]?.dateLabel ? `Next: ${scheduledPosts[0].dateLabel}` : 'Active'
-    },
-    { 
-      label: 'Posts this week', 
-      value: postsThisWeek.toString(), 
-      sub: `${postsThisWeek} scheduled this cycle`,
-      badge: 'Active Cadence'
-    },
-  ]
+  // Filtered members list
+  const filteredMembers = useMemo(() => {
+    return members.filter(m => {
+      const matchesSearch = !memberSearchQuery || 
+        (m.name || '').toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+        (m.email || '').toLowerCase().includes(memberSearchQuery.toLowerCase())
+      const matchesFilter = memberFilter === 'all' || 
+        (memberFilter === 'vip' && m.role?.includes('VIP')) ||
+        (memberFilter === 'founding' && m.role?.includes('Founding'))
+      return matchesSearch && matchesFilter
+    })
+  }, [members, memberSearchQuery, memberFilter])
 
   return (
-    <div className="p-3 sm:p-6 max-w-4xl">
-      {/* Header */}
-      <p className="forge-label mb-3">Community</p>
-      <h2 className="forge-heading mb-2" style={{ fontSize: 'clamp(22px, 3vw, 30px)', letterSpacing: '-0.03em' }}>
-        {productName} community
-      </h2>
-      <p className="text-[14px] mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>
-        Generate posts, challenges, and discussions — keep your community active and engaged.
-      </p>
-
-      {/* ── Invite Link Card ── */}
-      <div
-        className="rounded-xl border p-4 mb-6 relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, rgba(${cr}, ${cg}, ${cb}, 0.08) 0%, rgba(255,255,255,0.02) 100%)`,
-          borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)`,
-        }}
-      >
-        <div 
-          className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-xl pointer-events-none" 
-          style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.15)` }}
-        />
-        <div className="flex items-center gap-3 mb-3">
-          <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center border" 
-            style={{ 
-              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
-              borderColor: `rgba(${cr}, ${cg}, ${cb}, 0.25)` 
-            }}
-          >
-            <Link2 size={14} style={{ color: creatorColor }} />
+    <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-6 space-y-6">
+      
+      {/* ── TOP HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="w-2 h-2 rounded-none bg-[#c81e3c]" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Community Hub &amp; Engagement Engine
+            </span>
+            <span className="px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider bg-[#c81e3c]/15 text-white border border-[#c81e3c]/30">
+              Founding Circle
+            </span>
           </div>
-          <div>
-            <p className="text-[13px] font-semibold text-white">Community invite link</p>
-            <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Share this link so people can join your community
-            </p>
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <span>{productName} Community</span>
+            <Sparkles size={18} className="text-[#c81e3c]" />
+          </h1>
+          <p className="text-xs text-slate-400 max-w-2xl mt-1">
+            Generate challenges, discussion starters, and milestone announcements to maintain high retention across your member base.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-200 bg-[#121622] hover:bg-[#181e30] border border-white/10 rounded-none transition cursor-pointer"
+            title="Copy community invite link"
+          >
+            {linkCopied ? <Check size={13} className="text-emerald-400" /> : <Link2 size={13} />}
+            <span>{linkCopied ? 'Link Copied!' : 'Copy Invite Link'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBroadcastOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition shadow-sm cursor-pointer hover:opacity-90 border-0"
+            style={{ background: brandRed, color: '#ffffff' }}
+          >
+            <Send size={13} className="text-white" />
+            <span>Broadcast Email</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 4 COMMUNITY HEALTH METRIC CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Total Members</span>
+            <Users size={14} className="text-slate-400" />
+          </div>
+          <div className="text-2xl font-black text-white tracking-tight">{members.length}</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-1 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" />
+            <span>Founding circle active</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono truncate"
-            style={{ background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            {inviteLink}
+
+        <div className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Scheduled Queue</span>
+            <Calendar size={14} className="text-slate-400" />
           </div>
+          <div className="text-2xl font-black text-white tracking-tight">{scheduledPosts.length}</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-1">
+            {scheduledPosts[0]?.dateLabel ? `Next: ${scheduledPosts[0].dateLabel}` : 'Ready for drafts'}
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Posts This Week</span>
+            <Clock size={14} className="text-slate-400" />
+          </div>
+          <div className="text-2xl font-black text-white tracking-tight">{postsThisWeek}</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-1">
+            <span>Optimal 3-4 weekly cadence</span>
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-[#0c1017] border border-white/[0.08] rounded-none">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Health Status</span>
+            <Flame size={14} className="text-slate-400" />
+          </div>
+          <div className="text-2xl font-black text-white tracking-tight">Active</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-1">
+            <span>Private community ready</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SUB-TABS: HUB & GENERATOR vs MEMBERS DIRECTORY ── */}
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-1">
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleCopyLink}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-150"
-            style={{
-              background: linkCopied ? 'rgba(52,211,153,0.15)' : `rgba(${cr}, ${cg}, ${cb}, 0.15)`,
-              color: linkCopied ? '#34d399' : creatorColor,
-              border: `1px solid ${linkCopied ? 'rgba(52,211,153,0.25)' : `rgba(${cr}, ${cg}, ${cb}, 0.3)`}`,
-            }}
+            type="button"
+            onClick={() => setActiveTabSub('hub')}
+            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${
+              activeTabSub === 'hub' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
+            }`}
+            style={activeTabSub === 'hub' ? { background: brandRed, color: '#ffffff' } : {}}
           >
-            {linkCopied ? <Check size={12} /> : <Copy size={12} />}
-            {linkCopied ? 'Copied' : 'Copy'}
+            Content Engine &amp; Calendar
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTabSub('members')}
+            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${
+              activeTabSub === 'members' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
+            }`}
+            style={activeTabSub === 'members' ? { background: brandRed, color: '#ffffff' } : {}}
+          >
+            Members Directory ({members.length})
           </button>
         </div>
 
-        {/* Member count + toggle */}
-        {members.length > 0 && (
-          <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowMembers(o => !o)}
-                className="flex items-center gap-2 text-[12px] font-medium transition-colors"
-                style={{ color: 'rgba(255,255,255,0.6)' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'white'}
-                onMouseLeave={e => { if (!showMembers) e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
-              >
-                <Users size={12} style={{ color: creatorColor }} />
-                <span>{members.length} member{members.length !== 1 ? 's' : ''} joined</span>
-                <ChevronDown size={11} className={`transition-transform duration-200 ${showMembers ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <button
-                onClick={() => setBroadcastOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
-                style={{
-                  background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                  color: creatorColor,
-                  border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`,
-                }}
-              >
-                <Send size={10} />
-                Broadcast Email
-              </button>
-            </div>
-            {showMembers && (
-              <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {members.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-white/[0.04] group" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" 
-                        style={{ 
-                          background: `rgba(${cr}, ${cg}, ${cb}, 0.2)`, 
-                          color: creatorColor 
-                        }}
-                      >
-                        {(m.name || m.email || '?').charAt(0).toUpperCase()}
+        <div className="hidden sm:block text-[11px] font-mono text-slate-400">
+          URL: <code className="text-slate-300">/join/{cleanHandle}</code>
+        </div>
+      </div>
+
+      {/* ── TAB 1: HUB & CONTENT ENGINE ── */}
+      {activeTabSub === 'hub' && (
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 w-full">
+          {/* Left Column: Post Types & MiniCalendar */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#0c1017] border border-white/[0.08] p-4 rounded-none space-y-3">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                Select Content Type
+              </span>
+              <div className="space-y-1.5">
+                {communityContentTypes.map(type => {
+                  const isSelected = selectedType?.id === type.id
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => handleGenerate(type)}
+                      className={`w-full text-left p-2.5 rounded-none border transition cursor-pointer flex items-center gap-2.5 ${
+                        isSelected 
+                          ? 'border-[#c81e3c]/50 bg-[#c81e3c]/10 text-white' 
+                          : 'border-white/[0.06] bg-[#10141f] text-slate-300 hover:bg-[#151b2a] hover:text-white'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-none flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#c81e3c] text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                        <type.icon size={12} className={isSelected ? 'text-white' : 'text-slate-400'} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[12px] font-medium text-white truncate">{m.name || 'Anonymous'}</p>
-                          {m.role && (
-                            <span 
-                              className="text-[9px] px-1.5 py-0.2 rounded font-medium"
-                              style={{
-                                background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                                color: creatorColor,
-                              }}
-                            >
-                              {m.role}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{m.email}</p>
+                        <div className="text-xs font-bold truncate">{type.label}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{type.description}</div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                        {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                      </span>
-                      <a
-                        href={`mailto:${m.email}`}
-                        onClick={e => e.stopPropagation()}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 text-white/40 hover:text-white transition-all"
-                        title={`Email ${m.name || 'member'}`}
-                      >
-                        <Mail size={11} />
-                      </a>
-                    </div>
-                  </div>
-                ))}
+                    </button>
+                  )
+                })}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        {memberStats.map(s => (
-          <div 
-            key={s.label} 
-            className="rounded-xl border p-4 transition-all duration-200" 
-            style={{ 
-              background: '#111', 
-              borderColor: 'rgba(255,255,255,0.07)' 
-            }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{s.label}</p>
-              {s.badge && (
-                <span 
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                    color: creatorColor,
-                    border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
-                  }}
-                >
-                  {s.badge}
+            {/* Content Calendar Widget */}
+            <div
+              ref={calendarRef}
+              className="bg-[#0c1017] border border-white/[0.08] p-4 rounded-none space-y-2.5"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Post Calendar
                 </span>
-              )}
-            </div>
-            <p className="text-[24px] font-bold tracking-tight text-white">{s.value}</p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 w-full max-w-full overflow-hidden">
-        {/* Left: Sidebar (Generate Categories + Calendar) */}
-        <div className="flex flex-col gap-5 lg:flex-shrink-0 w-full">
-          <div className="w-full min-w-0">
-            <p className="forge-label mb-3">Generate</p>
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 w-full">
-              {communityContentTypes.map(type => {
-                const isSelected = selectedType?.id === type.id
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => handleGenerate(type)}
-                    className="w-full text-left flex flex-col lg:flex-row items-start lg:items-center gap-2.5 lg:gap-3 p-3 lg:p-3.5 rounded-xl border transition-all duration-150"
-                    style={{
-                      background: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.1)` : '#111',
-                      borderColor: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.4)` : 'rgba(255,255,255,0.07)',
-                    }}
-                    onMouseEnter={e => { 
-                      if (!isSelected) { 
-                        e.currentTarget.style.background = '#161616'
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' 
-                      } 
-                    }}
-                    onMouseLeave={e => { 
-                      if (!isSelected) { 
-                        e.currentTarget.style.background = '#111'
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' 
-                      } 
-                    }}
-                  >
-                    <div 
-                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" 
-                      style={{ 
-                        background: isSelected ? `rgba(${cr}, ${cg}, ${cb}, 0.2)` : 'rgba(255,255,255,0.07)',
-                        color: isSelected ? creatorColor : 'rgba(255,255,255,0.5)'
-                      }}
-                    >
-                      <type.icon size={13} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] lg:text-[13px] font-semibold text-white truncate">{type.label}</p>
-                      <p className="text-[10px] lg:text-[11px] hidden lg:block" style={{ color: 'rgba(255,255,255,0.35)' }}>{type.description}</p>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Calendar Widget */}
-          <div
-            ref={calendarRef}
-            className="rounded-xl border p-4 transition-all duration-300 w-full lg:w-full mx-auto lg:mx-0"
-            style={{
-              background: '#111',
-              borderColor: highlightCalendar ? `rgba(${cr}, ${cg}, ${cb}, 0.6)` : 'rgba(255,255,255,0.07)',
-              boxShadow: highlightCalendar ? `0 0 15px rgba(${cr}, ${cg}, ${cb}, 0.25)` : 'none',
-              maxWidth: '320px'
-            }}
-          >
-            <div className="flex items-center justify-between mb-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider m-0">Content Calendar</p>
-              {generated && (
-                <span 
-                  className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-                  style={{
-                    background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                    color: creatorColor,
-                    border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
-                  }}
-                >
-                  Select date to schedule
+                <span className="text-[9px] font-mono text-slate-300 bg-white/[0.04] px-2 py-0.5 border border-white/[0.08]">
+                  Click day to schedule
                 </span>
-              )}
+              </div>
+              <MiniCalendar
+                onSelect={handleScheduleDate}
+                scheduledPosts={scheduledPosts}
+                brandRed={brandRed}
+              />
             </div>
-            <MiniCalendar
-              onSelect={handleScheduleDate}
-              scheduledPosts={scheduledPosts}
-              creatorColor={creatorColor}
-            />
           </div>
-        </div>
 
-        {/* Right: Output */}
-        <div ref={outputRef}>
-          {isGenerating ? (
-            <div className="rounded-2xl border p-6 flex items-center gap-3" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.08)' }}>
-              <div 
-                className="w-6 h-6 rounded-lg flex items-center justify-center"
-                style={{ background: creatorColor, color: '#ffffff' }}
-              >
-                <Sparkles size={11} />
-              </div>
-              <div className="flex gap-1">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: `rgba(${cr}, ${cg}, ${cb}, 0.6)`, animationDelay: `${i * 0.15}s` }} />
-                ))}
-              </div>
-              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>AI writing {selectedType?.label}...</span>
-            </div>
-          ) : generated ? (
-            <div className="rounded-2xl border overflow-hidden" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.09)' }}>
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          {/* Right Column: AI Content Generator & Scheduled Posts */}
+          <div className="space-y-5" ref={outputRef}>
+            {/* AI Generator Box */}
+            <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles size={13} style={{ color: creatorColor }} />
-                  <span className="text-[13px] font-semibold text-white">{selectedType?.label}</span>
+                  <Sparkles size={15} className="text-[#c81e3c]" />
+                  <h3 className="text-sm font-bold text-white tracking-tight">
+                    {selectedType?.label || 'Community Post'}
+                  </h3>
+                  <span className="text-[9px] font-mono text-slate-400 bg-white/[0.04] px-2 py-0.5 border border-white/[0.08]">
+                    {selectedType?.description}
+                  </span>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex items-center gap-2">
                   <button 
+                    type="button"
                     onClick={handleCopy} 
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all" 
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
                   >
-                    {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                    {copied ? 'Copied' : 'Copy'}
+                    {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    <span>{copied ? 'Copied!' : 'Copy'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleGenerate(selectedType)}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={isGenerating ? 'animate-spin' : ''} />
+                    <span>Regenerate</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleScheduleClick}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition cursor-pointer border-0 shadow-sm hover:opacity-90"
+                    style={{ background: brandRed, color: '#ffffff' }}
+                  >
+                    <Calendar size={12} className="text-white" />
+                    <span>Schedule to Calendar</span>
                   </button>
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="p-5 max-h-80 overflow-y-auto border border-transparent rounded-xl focus-within:border-white/5 transition-all">
+              {/* Editor Textarea */}
+              <div className="p-3 bg-[#090c14] border border-white/[0.08] rounded-none">
                 <textarea
-                  value={generated}
+                  value={generated || ''}
                   onChange={e => setGenerated(e.target.value)}
-                  className="w-full text-[13px] whitespace-pre-wrap leading-relaxed bg-transparent outline-none border-none resize-none text-white/90"
-                  style={{ fontFamily: 'inherit', minHeight: '160px', height: 'auto' }}
-                  placeholder="Edit your generated content post here..."
+                  className="w-full text-xs font-sans leading-relaxed bg-transparent outline-none border-none resize-none text-slate-200"
+                  style={{ minHeight: '180px' }}
+                  placeholder="Generate or draft your community post..."
                 />
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 px-5 py-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                <button onClick={() => handleGenerate(selectedType)} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5">
-                  <RefreshCw size={11} />
-                  Regenerate
-                </button>
-                <button
-                  onClick={handleScheduleClick}
-                  className="text-[12px] py-2 px-4 gap-1.5 ml-auto flex items-center font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                  style={{
-                    background: creatorColor,
-                    color: '#ffffff',
-                    boxShadow: `0 0 16px rgba(${cr}, ${cg}, ${cb}, 0.35)`
-                  }}
-                >
-                  <Calendar size={11} />
-                  Schedule Post
-                </button>
+            {/* Scheduled Posts Queue */}
+            <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <Clock size={13} />
+                  <span>Scheduled Community Pipeline ({scheduledPosts.length})</span>
+                </h3>
+                <span className="text-[10px] font-mono text-slate-400">Auto-synced</span>
               </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl border flex flex-col items-center justify-center text-center py-16 px-8" style={{ borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)' }}>
-              <Sparkles size={24} className="mb-3" style={{ color: `rgba(${cr}, ${cg}, ${cb}, 0.4)` }} />
-              <p className="text-[14px] font-medium text-white/60 mb-1">Select a post type</p>
-              <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                Forge will generate community-ready copy personalized to {productName}.
-              </p>
-            </div>
-          )}
 
-          {/* ── Scheduled Posts ── */}
-          {scheduledPosts.length > 0 && (
-            <div className="mt-5">
-              <p className="forge-label mb-3">Scheduled posts</p>
-              <div className="space-y-2">
-                {scheduledPosts.map(post => (
-                  <div
-                    key={post.id}
-                    onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
-                    className="flex flex-col p-3.5 rounded-xl border group cursor-pointer transition-all duration-150"
-                    style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}
-                  >
-                    <div className="flex items-start gap-3 w-full">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                        <Clock size={13} className="text-white/40" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[12px] font-semibold text-white">{post.type}</span>
-                          <span 
-                            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" 
-                            style={{ 
-                              background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`, 
-                              color: creatorColor,
-                              border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
-                            }}
-                          >
+              {scheduledPosts.length === 0 ? (
+                <div className="p-6 text-center bg-[#10141f] border border-white/[0.06] rounded-none text-xs text-slate-400">
+                  No scheduled community posts. Click any date on the calendar to queue your next update.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {scheduledPosts.map(post => (
+                    <div
+                      key={post.id}
+                      onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
+                      className="p-3 bg-[#10141f] border border-white/[0.06] hover:border-white/20 transition rounded-none cursor-pointer space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-6 h-6 rounded-none bg-white/[0.05] border border-white/10 flex items-center justify-center shrink-0">
+                            <Clock size={12} className="text-slate-400" />
+                          </div>
+                          <span className="text-xs font-bold text-white truncate">{post.type}</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-[#c81e3c]/15 text-[#ff8093] border border-[#c81e3c]/30">
                             {post.dateLabel}
                           </span>
                         </div>
-                        {expandedPostId !== post.id && (
-                          <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{post.content}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 self-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteScheduled(post.id)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ color: 'rgba(255,255,255,0.3)' }}
-                          onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
-                          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'transparent' }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                        <ChevronDown
-                          size={14}
-                          className={`text-white/30 transition-transform duration-200 ${expandedPostId === post.id ? 'rotate-180' : ''}`}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Accordion content */}
-                    {expandedPostId === post.id && (
-                      <div
-                        className="mt-3 pt-3 w-full border-t border-white/5"
-                        style={{
-                          animation: 'slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) both',
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <style>{`
-                          @keyframes slideDown {
-                            from { opacity: 0; transform: translateY(-4px); }
-                            to { opacity: 1; transform: translateY(0); }
-                          }
-                        `}</style>
-                        {editingPostId === post.id ? (
-                          <textarea
-                            value={editingText}
-                            onChange={e => setEditingText(e.target.value)}
-                            className="w-full text-[12px] whitespace-pre-wrap leading-relaxed bg-black/45 p-3 rounded-lg overflow-x-auto border border-white/10 outline-none text-white/90 font-mono transition-colors"
-                            style={{ minHeight: '120px' }}
-                            placeholder="Edit post content..."
-                            onFocus={e => e.target.style.borderColor = `rgba(${cr}, ${cg}, ${cb}, 0.5)`}
-                            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                          />
-                        ) : (
-                          <pre className="text-[12px] whitespace-pre-wrap leading-relaxed text-white/80 font-mono bg-black/35 p-3 rounded-lg overflow-x-auto border border-white/5">
-                            {post.fullContent || post.content}
-                          </pre>
-                        )}
-                        <div className="flex gap-2 justify-end mt-2">
-                          {editingPostId === post.id ? (
-                            <>
-                              <button
-                                onClick={() => handleSaveEdit(post.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all"
-                              >
-                                <Check size={11} />
-                                Save
-                              </button>
-                              <button
-                                onClick={() => setEditingPostId(null)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/50 border border-white/5 transition-all"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingPostId(post.id)
-                                  setEditingText(post.fullContent || post.content)
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
-                              >
-                                <Edit size={11} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(post.fullContent || post.content)
-                                  if (triggerToast) triggerToast('Copied content to clipboard', 'success')
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all border border-white/5"
-                              >
-                                <Copy size={11} />
-                                Copy content
-                              </button>
-                            </>
-                          )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteScheduled(post.id)
+                            }}
+                            className="text-slate-500 hover:text-rose-400 p-1 transition cursor-pointer bg-transparent border-0"
+                            title="Delete"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                          <ChevronDown size={14} className={`text-slate-400 transition-transform ${expandedPostId === post.id ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Quick wins */}
-          <div className="mt-5">
-            <p className="forge-label mb-3">Quick wins</p>
-            <div className="space-y-2">
-              {[
-                { icon: Users, label: 'Post your first welcome message', typeId: 'welcome' },
-                { icon: MessageSquare, label: 'Start a discussion to break the ice', typeId: 'discussion' },
-                { icon: Zap, label: 'Create your first weekly challenge', typeId: 'challenge' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl border" style={{ background: '#111', borderColor: 'rgba(255,255,255,0.07)' }}>
-                  <div 
-                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: `rgba(${cr}, ${cg}, ${cb}, 0.12)`,
-                      border: `1px solid rgba(${cr}, ${cg}, ${cb}, 0.25)`
-                    }}
-                  >
-                    <item.icon size={14} style={{ color: creatorColor }} />
-                  </div>
-                  <span className="text-[13px] flex-1 font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>{item.label}</span>
-                  <button
-                    onClick={() => {
-                      const type = communityContentTypes.find(t => t.id === item.typeId)
-                      if (type) handleGenerate(type)
-                    }}
-                    className="text-[12px] px-3 py-1 rounded-full transition-all duration-150 font-medium" 
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}
-                    onMouseEnter={e => { 
-                      e.target.style.background = `rgba(${cr}, ${cg}, ${cb}, 0.2)`
-                      e.target.style.color = creatorColor 
-                    }}
-                    onMouseLeave={e => { 
-                      e.target.style.background = 'rgba(255,255,255,0.07)'
-                      e.target.style.color = 'rgba(255,255,255,0.6)' 
-                    }}
-                  >
-                    Generate →
-                  </button>
+                      {expandedPostId !== post.id ? (
+                        <p className="text-[11px] text-slate-400 truncate pl-8">{post.content}</p>
+                      ) : (
+                        <div className="pt-2 border-t border-white/[0.06] space-y-2" onClick={e => e.stopPropagation()}>
+                          {editingPostId === post.id ? (
+                            <textarea
+                              value={editingText}
+                              onChange={e => setEditingText(e.target.value)}
+                              className="w-full text-xs leading-relaxed bg-[#090c14] p-3 rounded-none border border-white/10 outline-none text-slate-200 font-mono"
+                              rows={5}
+                            />
+                          ) : (
+                            <pre className="text-xs leading-relaxed text-slate-300 font-sans whitespace-pre-wrap bg-[#090c14] p-3 rounded-none border border-white/[0.06]">
+                              {post.fullContent || post.content}
+                            </pre>
+                          )}
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            {editingPostId === post.id ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEdit(post.id)}
+                                  className="px-3 py-1 text-xs font-bold text-white bg-emerald-600 rounded-none cursor-pointer border-0"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPostId(null)}
+                                  className="px-3 py-1 text-xs font-semibold text-slate-300 bg-white/5 rounded-none cursor-pointer border-0"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingPostId(post.id)
+                                    setEditingText(post.fullContent || post.content)
+                                  }}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-none cursor-pointer border border-white/10"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(post.fullContent || post.content)
+                                    if (triggerToast) triggerToast('Copied content to clipboard', 'success')
+                                  }}
+                                  className="px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-none cursor-pointer border border-white/10"
+                                >
+                                  Copy
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── TAB 2: MEMBERS DIRECTORY ── */}
+      {activeTabSub === 'members' && (
+        <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-tight">Founding Circle Members</h3>
+              <p className="text-xs text-slate-400">Manage member privileges, view join timestamps, and direct contact</p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative">
+                <Search size={13} className="absolute left-2.5 top-2.5 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search member or email..."
+                  value={memberSearchQuery}
+                  onChange={e => setMemberSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 text-xs bg-[#10141f] border border-white/10 rounded-none text-white outline-none focus:border-[#c81e3c] transition"
+                />
+              </div>
+
+              <div className="flex items-center gap-1">
+                {['all', 'founding', 'vip'].map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setMemberFilter(f)}
+                    className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-none transition cursor-pointer border-0 ${
+                      memberFilter === f ? 'bg-[#c81e3c] text-white' : 'bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {filteredMembers.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">
+                No members match the query "{memberSearchQuery}".
+              </div>
+            ) : (
+              filteredMembers.map((m, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-[#10141f] border border-white/[0.06] hover:border-white/15 transition rounded-none flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-none bg-[#c81e3c]/20 border border-[#c81e3c]/30 text-white font-bold flex items-center justify-center text-xs shrink-0">
+                      {(m.name || m.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white truncate">{m.name || 'Member'}</span>
+                        <span className="px-1.5 py-0.2 rounded-none text-[9px] font-bold uppercase bg-[#c81e3c]/15 text-[#ff8093] border border-[#c81e3c]/30">
+                          {m.role || 'Member'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400 truncate block">{m.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
+                      Joined {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent'}
+                    </span>
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="px-2.5 py-1 text-xs font-bold text-slate-200 bg-[#151b2a] hover:bg-[#1f283d] border border-white/10 rounded-none transition flex items-center gap-1.5"
+                      title={`Send email to ${m.email}`}
+                    >
+                      <Mail size={12} className="text-[#c81e3c]" />
+                      <span>Contact</span>
+                    </a>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Broadcast Modal Overlay */}
       {broadcastOpen && (
@@ -1164,11 +1027,7 @@ export default function Community() {
           triggerToast={triggerToast}
           creatorData={creatorData}
           productName={productName}
-          handle={handle}
-          creatorColor={creatorColor}
-          cr={cr}
-          cg={cg}
-          cb={cb}
+          brandRed={brandRed}
         />
       )}
     </div>

@@ -207,6 +207,7 @@ const STUDIO_JOB = 'studio-gen'
 export default function Studio() {
   const { 
     creatorData, 
+    userProfile,
     startBgJob, 
     cancelBgJob, 
     clearBgJob, 
@@ -221,7 +222,7 @@ export default function Studio() {
     dashboardData,
     saveDashboardData
   } = useForge()
-  const accent = getAccent(creatorData.platform)
+  const accent = getAccent(creatorData?.platform)
   const studioJob = useBgJob(STUDIO_JOB)
 
   const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
@@ -230,7 +231,7 @@ export default function Studio() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 select-none p-4 sm:p-8 items-center justify-center">
+      <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
           <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">
             <Sparkles size={28} className="text-white" />
@@ -278,10 +279,13 @@ export default function Studio() {
 
   const handle = creatorData?.handle || 'default'
   const recentKey = `forge_${handle}_studio_recent_outputs`
+  const hasHydratedStudioRef = useRef(false)
 
   // Hydrate recent outputs from MongoDB Atlas
   useEffect(() => {
+    if (hasHydratedStudioRef.current) return
     if (dashboardData?.studio_data?.recent_outputs && Array.isArray(dashboardData.studio_data.recent_outputs) && dashboardData.studio_data.recent_outputs.length > 0) {
+      hasHydratedStudioRef.current = true
       setRecentOutputs(dashboardData.studio_data.recent_outputs)
     }
   }, [dashboardData?.studio_data])
@@ -319,7 +323,9 @@ export default function Studio() {
       const next = [entry, ...prev].slice(0, 20) // cap at 20
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
       if (saveDashboardData) {
-        saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+        setTimeout(() => {
+          saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+        }, 50)
       }
       return next
     })
@@ -331,7 +337,9 @@ export default function Studio() {
       const next = prev.filter(o => o.id !== id)
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
       if (saveDashboardData) {
-        saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+        setTimeout(() => {
+          saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+        }, 50)
       }
       return next
     })

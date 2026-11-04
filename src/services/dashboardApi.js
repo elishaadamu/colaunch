@@ -5,13 +5,11 @@
  * not dependent on localStorage.
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com').replace(/\/$/, '')
 
 const CANDIDATE_URLS = [
   '',
-  BACKEND_URL,
-  'https://creator-forge-backend-jj1y.onrender.com',
-  'https://creator-forge-backend.onrender.com'
+  BACKEND_URL
 ].filter((v, i, a) => a.indexOf(v) === i)
 
 /**
@@ -25,9 +23,13 @@ export async function fetchDashboardData(username = '', handle = '') {
 
   for (const baseUrl of CANDIDATE_URLS) {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${baseUrl}/api/dashboard/data${qs}`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
       if (res.ok) {
         const data = await res.json()
         if (data && data.status === 'success') {
@@ -58,14 +60,18 @@ export async function saveDashboardSection(username = '', handle = '', section, 
 
   for (const baseUrl of CANDIDATE_URLS) {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
       const res = await fetch(`${baseUrl}/api/dashboard/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
       if (res.ok) {
         const result = await res.json()
         if (result && result.status === 'success') {
