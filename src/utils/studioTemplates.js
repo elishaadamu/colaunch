@@ -429,3 +429,4 @@ Founder, ${c.productName}`
 ]
 
 export const ALL_TEMPLATES = [...SOCIAL_TEMPLATES, ...EMAIL_TEMPLATES]
+
