@@ -4,10 +4,11 @@ import {
   Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronRight,
   Instagram, Youtube, Twitter, Mail, FileText, Video,
   Radio, ArrowRight, X, Calendar, Send, AlertCircle, Volume2,
-  Clock, Trash2
+  Clock, Trash2, Sliders, Bot, BookOpen, Layers, CheckCircle, Zap
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
 import { generateAuthenticFallbackCopy, refineAuthenticCopy } from '../../utils/authenticStudioCopy'
+import { SOCIAL_TEMPLATES, EMAIL_TEMPLATES, ALL_TEMPLATES } from '../../utils/studioTemplates'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
@@ -155,18 +156,62 @@ export default function Studio() {
   const [expandedOutputId, setExpandedOutputId] = useState(null)
   const [currentGeneratedId, setCurrentGeneratedId] = useState(null)
 
+  // ── Mode & Template States ──
+  const [sidebarMode, setSidebarMode] = useState('types') // 'types' | 'templates'
+  const [templateFilter, setTemplateFilter] = useState('all') // 'all' | 'social' | 'email'
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [aiSetupOpen, setAiSetupOpen] = useState(false)
+
   const handle = creatorData?.handle || 'default'
   const recentKey = `forge_${handle}_studio_recent_outputs`
   const hasHydratedStudioRef = useRef(false)
 
-  // Hydrate recent outputs from MongoDB Atlas
+  // ── AI Setup Preferences ──
+  const [aiSetupConfig, setAiSetupConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`forge_${handle}_studio_ai_setup`)
+      if (saved) return JSON.parse(saved)
+    } catch (_) {}
+    return {
+      provider: 'gemini',
+      creativity: 'balanced',
+      tone: 'Confident',
+      customVoice: '',
+      audiencePersona: creatorData?.targetAudience || 'creators, builders, and learners',
+      includeEmojis: true,
+      includeHashtags: true,
+    }
+  })
+
+  // Hydrate AI setup & recent outputs from MongoDB Atlas
   useEffect(() => {
     if (hasHydratedStudioRef.current) return
-    if (dashboardData?.studio_data?.recent_outputs && Array.isArray(dashboardData.studio_data.recent_outputs) && dashboardData.studio_data.recent_outputs.length > 0) {
+    if (dashboardData?.studio_data) {
       hasHydratedStudioRef.current = true
-      setRecentOutputs(dashboardData.studio_data.recent_outputs)
+      if (Array.isArray(dashboardData.studio_data.recent_outputs) && dashboardData.studio_data.recent_outputs.length > 0) {
+        setRecentOutputs(dashboardData.studio_data.recent_outputs)
+      }
+      if (dashboardData.studio_data.ai_setup) {
+        setAiSetupConfig(dashboardData.studio_data.ai_setup)
+        if (dashboardData.studio_data.ai_setup.tone) {
+          setTone(dashboardData.studio_data.ai_setup.tone)
+        }
+      }
     }
   }, [dashboardData?.studio_data])
+
+  const handleSaveAiSetup = (newConfig) => {
+    setAiSetupConfig(newConfig)
+    if (newConfig.tone) setTone(newConfig.tone)
+    try {
+      localStorage.setItem(`forge_${handle}_studio_ai_setup`, JSON.stringify(newConfig))
+    } catch (_) {}
+    if (saveDashboardData) {
+      saveDashboardData('studio', { ai_setup: newConfig, recent_outputs: recentOutputs, synced_at: new Date().toISOString() })
+    }
+    setAiSetupOpen(false)
+    if (triggerToast) triggerToast('AI Setup preferences saved!', 'success')
+  }
 
   // Load recent outputs from localStorage on mount (as fallback)
   useEffect(() => {
@@ -183,9 +228,9 @@ export default function Studio() {
       localStorage.setItem(recentKey, JSON.stringify(outputs))
     } catch (e) { /* quota exceeded */ }
     if (saveDashboardData) {
-      saveDashboardData('studio', { recent_outputs: outputs, synced_at: new Date().toISOString() })
+      saveDashboardData('studio', { recent_outputs: outputs, ai_setup: aiSetupConfig, synced_at: new Date().toISOString() })
     }
-  }, [recentKey, saveDashboardData])
+  }, [recentKey, saveDashboardData, aiSetupConfig])
 
   // Push a new output to the history list
   const pushToRecent = useCallback((content, type) => {
@@ -202,13 +247,13 @@ export default function Studio() {
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
       if (saveDashboardData) {
         setTimeout(() => {
-          saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+          saveDashboardData('studio', { recent_outputs: next, ai_setup: aiSetupConfig, synced_at: new Date().toISOString() })
         }, 50)
       }
       return next
     })
     return entry.id
-  }, [recentKey, saveDashboardData])
+  }, [recentKey, saveDashboardData, aiSetupConfig])
 
   const removeFromRecent = useCallback((id) => {
     setRecentOutputs(prev => {
@@ -216,12 +261,12 @@ export default function Studio() {
       try { localStorage.setItem(recentKey, JSON.stringify(next)) } catch(e) {}
       if (saveDashboardData) {
         setTimeout(() => {
-          saveDashboardData('studio', { recent_outputs: next, synced_at: new Date().toISOString() })
+          saveDashboardData('studio', { recent_outputs: next, ai_setup: aiSetupConfig, synced_at: new Date().toISOString() })
         }, 50)
       }
       return next
     })
-  }, [recentKey, saveDashboardData])
+  }, [recentKey, saveDashboardData, aiSetupConfig])
 
   // Dynamic content types reflecting onboarding modifications
   const productName = creatorData.productName || 'Creator Academy'
@@ -236,6 +281,27 @@ export default function Studio() {
       ]
     }] : [])
   ]
+
+  // Template Handlers
+  const handleSelectTemplate = (tpl) => {
+    setSelectedTemplate(tpl)
+    const flatTypes = contentTypes.flatMap(g => g.items)
+    const matchingType = flatTypes.find(t => t.id === tpl.targetTypeId) || flatTypes.find(t => t.platform.toLowerCase() === tpl.platform.toLowerCase()) || flatTypes[0]
+    setSelectedType(matchingType)
+    setInput(tpl.promptGuideline)
+    setShowTypeSelectorMobile(false)
+    if (triggerToast) triggerToast(`Loaded "${tpl.title}" template!`, 'info')
+  }
+
+  const handleLoadBlueprint = (tpl) => {
+    const templateToUse = tpl || selectedTemplate
+    if (!templateToUse) return
+    const draft = templateToUse.generateDraft(creatorData)
+    setGenerated(draft)
+    const newId = pushToRecent(draft, selectedType)
+    setCurrentGeneratedId(newId)
+    if (triggerToast) triggerToast(`Loaded "${templateToUse.title}" blueprint!`, 'success')
+  }
 
   // Preload studio type if set in context (e.g. from Revenue/Products tab)
   useEffect(() => {
@@ -303,16 +369,28 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
 
+    const composedPrompt = [
+      input,
+      selectedTemplate ? `Template Directive: Follow the ${selectedTemplate.title} framework (${selectedTemplate.formula}).` : '',
+      aiSetupConfig.customVoice ? `Brand Voice Directives: ${aiSetupConfig.customVoice}` : '',
+      aiSetupConfig.audiencePersona ? `Target Audience Persona: ${aiSetupConfig.audiencePersona}` : '',
+      aiSetupConfig.includeEmojis === false ? 'Avoid using emojis in this output.' : '',
+      aiSetupConfig.includeHashtags === false ? 'Avoid using hashtags in this output.' : '',
+      `Creativity setting: ${aiSetupConfig.creativity || 'balanced'}.`
+    ].filter(Boolean).join('\n')
+
     if (incrementAiActions) incrementAiActions()
     startBgJob(STUDIO_JOB, async (sig) => {
       try {
-        const res = await generateStudioContent(selectedType, input, creatorData, tone, sig)
+        const res = await generateStudioContent(selectedType, composedPrompt, creatorData, aiSetupConfig.tone || tone, sig)
         if (res && res.trim()) return res
       } catch (err) {
         if (err.name === 'AbortError') throw err
         console.warn('[Studio] Server AI call failed, generating authentic synthesized copy:', err)
       }
-      return generateAuthenticFallbackCopy(selectedType.id, creatorData, tone, input)
+      return selectedTemplate
+        ? selectedTemplate.generateDraft(creatorData)
+        : generateAuthenticFallbackCopy(selectedType.id, creatorData, aiSetupConfig.tone || tone, composedPrompt)
     })
   }
 
@@ -321,14 +399,19 @@ export default function Studio() {
     setIsGenerating(true)
     setGenerated(null)
 
+    const composedInstruction = [
+      instruction,
+      aiSetupConfig.customVoice ? `Maintain brand voice: ${aiSetupConfig.customVoice}` : '',
+    ].filter(Boolean).join('. ')
+
     if (incrementAiActions) incrementAiActions()
     startBgJob(STUDIO_JOB, async (sig) => {
       try {
         const res = await generateStudioContent(
           selectedType,
-          `${input ? `${input}. ` : ''}Please rewrite the previous copy with this direction: ${instruction}. Current copy: ${generated || ''}`,
+          `${input ? `${input}. ` : ''}Please rewrite the previous copy with this direction: ${composedInstruction}. Current copy: ${generated || ''}`,
           creatorData,
-          tone,
+          aiSetupConfig.tone || tone,
           sig
         )
         if (res && res.trim()) return res
@@ -336,7 +419,7 @@ export default function Studio() {
         if (err.name === 'AbortError') throw err
         console.warn('[Studio] Server AI refinement failed, refining authentically:', err)
       }
-      return refineAuthenticCopy(generated, instruction, selectedType.id, creatorData, tone)
+      return refineAuthenticCopy(generated, instruction, selectedType.id, creatorData, aiSetupConfig.tone || tone)
     })
   }
 
@@ -355,7 +438,7 @@ export default function Studio() {
           matchedType,
           `${input ? `${input}. ` : ''}Adapt this copy to suit the ${platformName} platform rules, format, length, and best practices. Current copy: ${generated || ''}`,
           creatorData,
-          tone,
+          aiSetupConfig.tone || tone,
           sig
         )
         if (res && res.trim()) return res
@@ -363,7 +446,7 @@ export default function Studio() {
         if (err.name === 'AbortError') throw err
         console.warn('[Studio] Server AI adapt failed, adapting authentically:', err)
       }
-      return generateAuthenticFallbackCopy(matchedType.id, creatorData, tone, `Adapted for ${platformName}: ${input || ''}`)
+      return generateAuthenticFallbackCopy(matchedType.id, creatorData, aiSetupConfig.tone || tone, `Adapted for ${platformName}: ${input || ''}`)
     })
   }
 
@@ -524,51 +607,174 @@ export default function Studio() {
 
   const renderSelectorItems = () => (
     <>
-      <p className="forge-label px-4 mb-3 hidden md:block">Content type</p>
+      {/* Mode Switcher Tabs */}
+      <div className="grid grid-cols-2 gap-1 px-3 pb-3 mb-2 border-b border-white/[0.08]">
+        <button
+          type="button"
+          onClick={() => setSidebarMode('types')}
+          className={`py-1.5 text-[10px] font-bold uppercase tracking-wider text-center transition cursor-pointer border ${
+            sidebarMode === 'types'
+              ? 'border-[#c81e3c] bg-[#c81e3c]/15 text-white'
+              : 'border-white/5 text-slate-400 hover:text-white bg-white/[0.02]'
+          }`}
+          style={{ borderRadius: '0px' }}
+        >
+          Formats
+        </button>
+        <button
+          type="button"
+          onClick={() => setSidebarMode('templates')}
+          className={`py-1.5 text-[10px] font-bold uppercase tracking-wider text-center transition cursor-pointer border flex items-center justify-center gap-1 ${
+            sidebarMode === 'templates'
+              ? 'border-[#c81e3c] bg-[#c81e3c]/15 text-white'
+              : 'border-white/5 text-slate-400 hover:text-white bg-white/[0.02]'
+          }`}
+          style={{ borderRadius: '0px' }}
+        >
+          <span>Templates</span>
+          <span className="px-1 py-0.2 text-[8px] font-mono bg-[#c81e3c] text-white font-bold">12</span>
+        </button>
+      </div>
 
-      {contentTypes.map(group => (
-        <div key={group.group}>
-          <button
-            onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
-            className="w-full flex items-center justify-between px-4 py-2 transition-colors"
-            style={{ color: 'var(--theme-text-muted)' }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
-          >
-            <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
-            <ChevronDown
-              size={12}
-              style={{
-                transition: 'transform 0.2s',
-                transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
-              }}
-            />
-          </button>
-
-          {expandedGroup === group.group && (
-            <div className="pb-2">
-              {group.items.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => { setSelectedType(item); setGenerated(null); setShowTypeSelectorMobile(false) }}
-                  className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150"
+      {sidebarMode === 'types' ? (
+        <>
+          <p className="forge-label px-4 mb-2 hidden md:block">Content Formats</p>
+          {contentTypes.map(group => (
+            <div key={group.group}>
+              <button
+                onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
+                className="w-full flex items-center justify-between px-4 py-2 transition-colors cursor-pointer"
+                style={{ color: 'var(--theme-text-muted)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
+                <ChevronDown
+                  size={12}
                   style={{
-                    background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
-                    borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
+                    transition: 'transform 0.2s',
+                    transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
                   }}
-                  onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
-                  onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
-                >
-                  <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
-                  <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
-                    {item.label}
-                  </span>
-                </button>
-              ))}
+                />
+              </button>
+
+              {expandedGroup === group.group && (
+                <div className="pb-2">
+                  {group.items.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => { setSelectedType(item); setSelectedTemplate(null); setGenerated(null); setShowTypeSelectorMobile(false) }}
+                      className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150 cursor-pointer"
+                      style={{
+                        background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
+                        borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
+                      }}
+                      onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
+                      onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
+                      <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
+                        {item.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      ) : (
+        <div className="px-2 space-y-3">
+          {/* Category Filter Pills */}
+          <div className="flex gap-1 px-1">
+            {['all', 'social', 'email'].map(cat => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setTemplateFilter(cat)}
+                className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider text-center border transition cursor-pointer ${
+                  templateFilter === cat
+                    ? 'bg-[#c81e3c] text-white border-[#c81e3c]'
+                    : 'bg-[#10141f] text-slate-400 border-white/10 hover:text-white'
+                }`}
+                style={{ borderRadius: '0px' }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Social Templates Section */}
+          {(templateFilter === 'all' || templateFilter === 'social') && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 px-2 block">
+                Social Frameworks
+              </span>
+              {SOCIAL_TEMPLATES.map(tpl => {
+                const isSelected = selectedTemplate?.id === tpl.id
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(tpl)}
+                    className={`w-full text-left p-2.5 transition border block cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#c81e3c]/15 border-[#c81e3c] text-white'
+                        : 'bg-[#10141f]/60 hover:bg-[#141926] border-white/5 text-slate-300'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-white truncate">{tpl.title}</span>
+                      <span className="text-[8px] font-mono px-1 py-0.2 bg-white/10 text-slate-300">
+                        {tpl.platform}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                      {tpl.description}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Email Templates Section */}
+          {(templateFilter === 'all' || templateFilter === 'email') && (
+            <div className="space-y-1 pt-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 px-2 block">
+                Email Frameworks
+              </span>
+              {EMAIL_TEMPLATES.map(tpl => {
+                const isSelected = selectedTemplate?.id === tpl.id
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => handleSelectTemplate(tpl)}
+                    className={`w-full text-left p-2.5 transition border block cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#c81e3c]/15 border-[#c81e3c] text-white'
+                        : 'bg-[#10141f]/60 hover:bg-[#141926] border-white/5 text-slate-300'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-bold text-white truncate">{tpl.title}</span>
+                      <span className="text-[8px] font-mono px-1 py-0.2 bg-[#c81e3c]/20 text-[#ff8093]">
+                        {tpl.badge}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                      {tpl.description}
+                    </p>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
-      ))}
+      )}
     </>
   )
 
@@ -669,29 +875,31 @@ export default function Studio() {
               <Sparkles size={16} className="text-black" />
             </div>
             <h3 className="forge-heading mb-2" style={{ fontSize: '20px', letterSpacing: '-0.03em' }}>AI Content Studio</h3>
-            <p className="text-[13px] max-w-xs" style={{ color: 'var(--theme-text-muted)', lineHeight: '1.5' }}>
-              Choose a content type from the left to generate creator-ready assets for {productName}.
+            <p className="text-[13px] max-w-sm" style={{ color: 'var(--theme-text-muted)', lineHeight: '1.5' }}>
+              Choose a format from the left or select a proven copywriting template for Socials &amp; Email to generate creator-ready assets for {productName}.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-sm">
+            <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-md">
               {[
-                { label: 'Instagram caption', id: 'ig-caption' },
-                { label: 'X thread', id: 'x-thread' },
-                { label: 'Launch email', id: 'email-announce' },
-                { label: '60-sec ad script', id: 'yt-ad' },
-                { label: 'Offer copy', id: 'offer-copy' },
-              ].map(t => {
-                const matched = contentTypes.flatMap(g => g.items).find(i => i.id === t.id)
+                { label: 'Hook-Story-Offer (Social)', tplId: 'tpl-hso' },
+                { label: 'Launch Email (Official)', tplId: 'tpl-email-launch' },
+                { label: 'Problem-Agitate-Solve', tplId: 'tpl-pas' },
+                { label: 'Soap Opera Sequence', tplId: 'tpl-email-soap' },
+                { label: 'Closing Tonight Urgency', tplId: 'tpl-email-closing' },
+                { label: '5-Pillar Masterclass', tplId: 'tpl-thread' },
+              ].map(item => {
+                const matchedTpl = ALL_TEMPLATES.find(t => t.id === item.tplId)
                 return (
                   <button 
-                    key={t.id}
+                    key={item.tplId}
                     type="button"
                     onClick={() => {
-                      if (matched) setSelectedType(matched)
+                      if (matchedTpl) handleSelectTemplate(matchedTpl)
                     }}
-                    className="text-[11px] px-3 py-1 rounded-none font-medium transition cursor-pointer hover:border-white/30 hover:text-white" 
+                    className="text-[11px] px-3 py-1.5 rounded-none font-medium transition cursor-pointer hover:border-white/30 hover:text-white flex items-center gap-1.5" 
                     style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
                   >
-                    {t.label}
+                    <Sparkles size={10} className="text-[#c81e3c]" />
+                    <span>{item.label}</span>
                   </button>
                 )
               })}
@@ -711,28 +919,92 @@ export default function Studio() {
                 </div>
               </div>
 
-              {/* Tone selector */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px]" style={{ color: 'var(--theme-text-muted)' }}>Tone:</span>
-                <div className="flex gap-1 flex-wrap">
-                  {TONE_OPTIONS.map(t => (
-                    <button key={t} onClick={() => setTone(t)}
-                      className="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-none transition-all duration-150 font-semibold"
-                      style={{
-                        background: tone === t ? '#c81e3c' : 'rgba(255,255,255,0.05)',
-                        color: tone === t ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
+              {/* Top Bar Controls: Tone selector & AI Setup */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px]" style={{ color: 'var(--theme-text-muted)' }}>Tone:</span>
+                  <div className="flex gap-1 flex-wrap">
+                    {TONE_OPTIONS.map(t => (
+                      <button key={t} onClick={() => setTone(t)}
+                        className="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-none transition-all duration-150 font-semibold cursor-pointer"
+                        style={{
+                          background: tone === t ? '#c81e3c' : 'rgba(255,255,255,0.05)',
+                          color: tone === t ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* AI Setup Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setAiSetupOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-white bg-[#141926] hover:bg-[#1d2436] border border-white/10 rounded-none transition cursor-pointer"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <Sliders size={12} className="text-[#c81e3c]" />
+                  <span>AI Setup</span>
+                  {aiSetupConfig.customVoice && (
+                    <span className="w-1.5 h-1.5 rounded-none bg-emerald-400" title="Custom Voice Directive Active" />
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Input area */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--theme-border-color)' }}>
-              <p className="text-[11px] sm:text-[12px] mb-2" style={{ color: 'var(--theme-text-muted)' }}>Context (optional)</p>
+            {/* Input area with Active Template Banner */}
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0 space-y-2.5" style={{ borderColor: 'var(--theme-border-color)' }}>
+              {selectedTemplate && (
+                <div 
+                  className="p-2.5 bg-[#c81e3c]/10 border border-[#c81e3c]/30 rounded-none flex items-center justify-between gap-3 flex-wrap animate-fade-in-down"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Sparkles size={13} className="text-[#ff8093] shrink-0" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-white truncate">{selectedTemplate.title}</span>
+                        <span className="px-1.5 py-0.2 rounded-none text-[8px] font-mono uppercase bg-[#c81e3c] text-white">
+                          {selectedTemplate.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-300 font-mono truncate">{selectedTemplate.formula}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadBlueprint(selectedTemplate)}
+                      className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#0c1017] hover:bg-[#141926] border border-white/15 rounded-none transition cursor-pointer"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      Load Blueprint
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedTemplate(null); setInput('') }}
+                      className="p-1 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+                      title="Clear template"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] sm:text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>
+                  {selectedTemplate ? 'Template Context & Angles' : 'Context (optional)'}
+                </p>
+                {selectedTemplate && (
+                  <span className="text-[10px] font-mono text-[#ff8093]">
+                    Template Framework Applied
+                  </span>
+                )}
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div
                   className="flex-1 rounded-none border px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 focus-within:border-white/20"
@@ -982,6 +1254,211 @@ export default function Studio() {
           </div>
         )}
       </div>
+      {/* ── AI ENGINE & BRAND VOICE SETUP MODAL ── */}
+      {aiSetupOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div 
+            className="w-full max-w-lg bg-[#0c1017] border border-white/15 p-5 space-y-4 shadow-2xl rounded-none animate-fade-in-down"
+            style={{ borderRadius: '0px' }}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Sliders size={16} className="text-[#c81e3c]" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">AI Studio Engine &amp; Brand Voice Setup</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">Fine-tune generation parameters, models, and creator persona</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setAiSetupOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer bg-transparent border-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+              {/* Model & Engine */}
+              <div>
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                  ACTIVE AI GENERATION ENGINE
+                </label>
+                <select
+                  value={aiSetupConfig.provider || 'gemini'}
+                  onChange={(e) => setAiSetupConfig(prev => ({ ...prev, provider: e.target.value }))}
+                  className="w-full text-xs bg-[#10141f] border border-white/10 px-3 py-2 text-white outline-none focus:border-[#c81e3c] rounded-none"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <option value="gemini">Google Gemini 2.5 Flash (Recommended · Cloud Proxy Active)</option>
+                  <option value="openai">OpenAI GPT-4o (High Nuance Copywriting)</option>
+                  <option value="anthropic">Claude 3.5 Sonnet (Long-form Prose &amp; Emails)</option>
+                  <option value="cloud">CoLaunch Cloud AI Proxy (Instant)</option>
+                </select>
+                <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 font-mono">
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Cloud AI Active (~320ms latency)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setAiSetupOpen(false); setApiModalOpen(true) }}
+                    className="text-[#ff8093] hover:underline cursor-pointer bg-transparent border-0 text-[10px]"
+                  >
+                    Configure Custom API Keys →
+                  </button>
+                </div>
+              </div>
+
+              {/* Tone Preset */}
+              <div>
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">DEFAULT TONE PRESET</label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
+                  {TONE_OPTIONS.map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setAiSetupConfig(prev => ({ ...prev, tone: t }))}
+                      className={`py-1 text-[10px] font-bold text-center border rounded-none transition cursor-pointer ${
+                        (aiSetupConfig.tone || tone) === t
+                          ? 'bg-[#c81e3c] text-white border-[#c81e3c]'
+                          : 'bg-[#10141f] text-slate-400 border-white/10 hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Brand Voice Directives */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-mono text-slate-400">
+                    CREATOR VOICE DIRECTIVES (PROMPT INJECTION)
+                  </label>
+                  <span className="text-[10px] text-slate-500 font-mono">Custom Rules</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={aiSetupConfig.customVoice || ''}
+                  onChange={(e) => setAiSetupConfig(prev => ({ ...prev, customVoice: e.target.value }))}
+                  placeholder="e.g. Write with high conviction. Use short sentences under 15 words. No buzzwords. Emphasize practical frameworks and real numbers."
+                  className="w-full text-xs bg-[#10141f] border border-white/10 px-3 py-2 text-white outline-none focus:border-[#c81e3c] rounded-none font-mono"
+                  style={{ borderRadius: '0px' }}
+                />
+                {/* Quick preset chips */}
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  <span className="text-[9px] text-slate-500 font-mono self-center mr-1">Presets:</span>
+                  {[
+                    { label: 'Punchy & Direct', prompt: 'Short punchy sentences. High conviction. No corporate buzzwords. Emphasize tangible results.' },
+                    { label: 'Educational Authority', prompt: 'Authoritative and pedagogical tone. Break complex insights into 3 step-by-step points with concrete examples.' },
+                    { label: 'Vulnerable Storyteller', prompt: 'Authentic founder voice. Share the honest struggles and turning points before revealing the lesson.' },
+                    { label: 'Urgent Launch', prompt: 'High urgency, decisive FOMO, emphasize locked-in founding pricing and immediate enrollment.' },
+                  ].map(chip => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => setAiSetupConfig(prev => ({ ...prev, customVoice: chip.prompt }))}
+                      className="text-[9px] px-2 py-0.5 bg-[#141926] hover:bg-[#1d2538] text-slate-300 border border-white/10 rounded-none transition cursor-pointer"
+                      style={{ borderRadius: '0px' }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Audience Persona */}
+              <div>
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                  TARGET AUDIENCE PERSONA
+                </label>
+                <input
+                  type="text"
+                  value={aiSetupConfig.audiencePersona || ''}
+                  onChange={(e) => setAiSetupConfig(prev => ({ ...prev, audiencePersona: e.target.value }))}
+                  placeholder="e.g. Ambitious creators, builders, and professionals in gaming"
+                  className="w-full text-xs bg-[#10141f] border border-white/10 px-3 py-2 text-white outline-none focus:border-[#c81e3c] rounded-none"
+                  style={{ borderRadius: '0px' }}
+                />
+              </div>
+
+              {/* Creativity / Temperature */}
+              <div>
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                  CREATIVITY &amp; TEMPERATURE
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'precise', label: 'Precise (0.2)', desc: 'Strict structure' },
+                    { id: 'balanced', label: 'Balanced (0.7)', desc: 'Natural voice (Default)' },
+                    { id: 'creative', label: 'Creative (0.95)', desc: 'Unexpected analogies' },
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setAiSetupConfig(prev => ({ ...prev, creativity: opt.id }))}
+                      className={`p-2 text-left border rounded-none transition cursor-pointer ${
+                        (aiSetupConfig.creativity || 'balanced') === opt.id
+                          ? 'bg-[#c81e3c]/15 border-[#c81e3c] text-white'
+                          : 'bg-[#10141f] border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <p className="text-[10px] font-bold">{opt.label}</p>
+                      <p className="text-[9px] text-slate-500">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Formatting Toggles */}
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aiSetupConfig.includeEmojis !== false}
+                    onChange={(e) => setAiSetupConfig(prev => ({ ...prev, includeEmojis: e.target.checked }))}
+                    className="accent-[#c81e3c]"
+                  />
+                  <span>Include emojis in copy</span>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aiSetupConfig.includeHashtags !== false}
+                    onChange={(e) => setAiSetupConfig(prev => ({ ...prev, includeHashtags: e.target.checked }))}
+                    className="accent-[#c81e3c]"
+                  />
+                  <span>Include hashtags on posts</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setAiSetupOpen(false)}
+                className="px-3 py-1.5 text-xs font-bold text-slate-300 bg-[#151b2a] border border-white/10 rounded-none transition cursor-pointer"
+                style={{ borderRadius: '0px' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveAiSetup(aiSetupConfig)}
+                className="px-4 py-1.5 text-xs font-bold text-white rounded-none transition cursor-pointer shadow-sm border-0"
+                style={{ background: '#c81e3c', color: '#ffffff', borderRadius: '0px' }}
+              >
+                Save &amp; Apply Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showKeys && <ApiKeysModal onClose={() => setShowKeys(false)} defaultTab="ai" />}
     </div>
   )
