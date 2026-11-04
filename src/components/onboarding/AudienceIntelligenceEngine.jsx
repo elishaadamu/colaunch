@@ -304,66 +304,66 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const intel = intelligence || getDynamicAudienceIntelligence(creatorData)
 
   return (
-    <div className="mt-8 rounded-none bg-[#090c13] border-0 text-slate-200 overflow-hidden shadow-2xl">
+    <div className="mt-4 sm:mt-5 rounded-none bg-[#090c13] border border-white/[0.08] text-slate-200 overflow-hidden shadow-2xl" style={{ borderRadius: '0px' }}>
       
-      {/* ── HEADER STRIP (With Live Status & Re-Sync Button) ── */}
-      <div className="px-5 py-4 bg-[#0e131f] flex flex-col md:flex-row md:items-center justify-between gap-3 border-0">
-        <div>
-          <div className="flex items-center gap-2">
+      {/* ── HEADER STRIP (Tight, High-Density, Precision Angular) ── */}
+      <div className="px-4 py-2.5 bg-[#0e131f] flex flex-col md:flex-row md:items-center justify-between gap-2.5 border-b border-white/[0.06]">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <span 
-              className="px-2 py-0.5 rounded-none text-[10px] font-mono font-bold tracking-wider uppercase text-white shadow-xs"
-              style={{ background: brandRed, color: '#ffffff' }}
+              className="px-1.5 py-0.5 rounded-none text-[9px] font-mono font-bold tracking-wider uppercase text-white shadow-xs"
+              style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
             >
               Intelligence Engine
             </span>
-            <span className="text-[11px] font-mono text-slate-400">
+            <span className="text-[10px] font-mono text-slate-400">
               Market Intelligence &bull; Channel Telemetry
             </span>
             {lastAnalyzedTime && (
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-none">
+              <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-none border border-emerald-500/20" style={{ borderRadius: '0px' }}>
                 Synced at {lastAnalyzedTime}
               </span>
             )}
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mt-1">
+          <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5 leading-snug">
             Audience Intelligence &amp; Market Feasibility Analysis
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-[11px] text-slate-400 leading-tight">
             Synthesized across verified uploads, viewer comments, and search market benchmarks for @{handleClean}.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Re-Analyze Live Button */}
+        <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+          {/* Re-Analyze Live Button (Tight) */}
           <button
             type="button"
             onClick={() => runFullPipeline(true)}
             disabled={isAnalyzing}
-            className="px-3.5 py-2 text-xs font-bold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer hover:opacity-95 shrink-0 border-0 disabled:opacity-50"
-            style={{ background: brandRed, color: '#ffffff' }}
+            className="px-3 py-1.5 text-xs font-bold text-white rounded-none flex items-center gap-1.5 transition cursor-pointer hover:opacity-95 shrink-0 border-0 disabled:opacity-50 shadow-sm"
+            style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
             title="Re-run live comments and competitive search synthesis"
           >
-            <RefreshCw size={12} className={isAnalyzing ? 'animate-spin text-white' : 'text-white'} />
+            <RefreshCw size={11} className={isAnalyzing ? 'animate-spin text-white' : 'text-white'} />
             <span>{isAnalyzing ? 'Analyzing Telemetry...' : 'Re-Sync Audience Telemetry'}</span>
           </button>
 
-          <div className="hidden sm:block px-3 py-1.5 bg-[#141a29] rounded-none text-left">
-            <div className="text-[10px] font-mono uppercase text-slate-400">Confidence Score</div>
-            <div className="text-sm font-extrabold text-emerald-400">{intel.pmf.score}% PMF Index</div>
+          <div className="px-2.5 py-1 bg-[#141a29] border border-white/10 rounded-none text-left shrink-0" style={{ borderRadius: '0px' }}>
+            <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 leading-none">Confidence Score</div>
+            <div className="text-xs font-bold text-emerald-400 mt-0.5 leading-none">{intel.pmf.score}% PMF Index</div>
           </div>
         </div>
       </div>
 
       {/* ── LIVE PIPELINE BANNER (Shows during active analysis) ── */}
       {isAnalyzing && (
-        <div className="px-5 py-2.5 bg-rose-500/10 border-0 flex items-center gap-2 text-xs text-rose-300 animate-pulse">
-          <RefreshCw size={13} className="animate-spin text-rose-400 shrink-0" />
+        <div className="px-4 py-2 bg-rose-500/10 border-b border-rose-500/20 flex items-center gap-2 text-xs text-rose-300 animate-pulse">
+          <RefreshCw size={12} className="animate-spin text-rose-400 shrink-0" />
           <span><b>Live Analysis Active:</b> {analysisStatus}</span>
         </div>
       )}
 
-      {/* ── 10 TAB NAVIGATOR (Zero Border Radius, High Contrast) ── */}
-      <div className="bg-[#0b0e17] px-3 pt-3 flex items-center gap-1 overflow-x-auto custom-scrollbar border-0">
+      {/* ── 10 TAB NAVIGATOR (Tight, High Contrast, Precision Angular) ── */}
+      <div className="bg-[#0b0e17] px-2.5 pt-2 flex items-center gap-1 overflow-x-auto custom-scrollbar border-b border-white/[0.06]">
         {MODULES.map(m => {
           const Icon = m.icon
           const isActive = activeTab === m.id
@@ -372,19 +372,23 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               key={m.id}
               type="button"
               onClick={() => setActiveTab(m.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold rounded-none whitespace-nowrap transition cursor-pointer border-0 shrink-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-none whitespace-nowrap transition cursor-pointer border-0 shrink-0 ${
                 isActive
                   ? 'text-white shadow-md'
                   : 'bg-[#111624] text-slate-400 hover:text-white hover:bg-[#161c2e]'
               }`}
-              style={isActive ? { background: brandRed, color: '#ffffff' } : {}}
+              style={{
+                borderRadius: '0px',
+                ...(isActive ? { background: brandRed, color: '#ffffff' } : {})
+              }}
             >
-              <Icon size={13} className={isActive ? 'text-white' : 'text-slate-400'} />
+              <Icon size={12} className={isActive ? 'text-white' : 'text-slate-400'} />
               <span>{m.label}</span>
               <span 
-                className={`text-[9px] px-1 py-0.2 rounded-none font-mono ${
+                className={`text-[9px] px-1 py-0.5 rounded-none font-mono ${
                   isActive ? 'bg-black/30 text-white' : 'bg-[#1a2236] text-slate-300'
                 }`}
+                style={{ borderRadius: '0px' }}
               >
                 {m.badge}
               </span>
@@ -394,7 +398,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       </div>
 
       {/* ── TAB CONTENT BODY (Dynamically Bound to Synthesized Telemetry) ── */}
-      <div className="p-5 sm:p-6 bg-[#090c13] min-h-[380px]">
+      <div className="p-4 sm:p-5 bg-[#090c13] min-h-[360px]">
         
         {/* ═══ MODULE 1: CHANNEL TELEMETRY & GROWTH ═══ */}
         {activeTab === 'telemetry' && (
