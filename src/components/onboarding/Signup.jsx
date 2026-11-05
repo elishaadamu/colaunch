@@ -102,8 +102,32 @@ export default function Signup() {
           localStorage.setItem('forge_user_profile', JSON.stringify(profile))
           localStorage.setItem('forge_active_session', 'true')
           if (setUserProfile) setUserProfile(profile)
-          window.history.replaceState({}, document.title, '/portal')
-          goTo('creator-link')
+
+          // Restore existing creator & calendar data if user previously signed up
+          const cData = data.creator_data || {}
+          if (cData && Object.keys(cData).length > 0) {
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(cData)) } catch (_) {}
+          }
+          if (data.calendar_data) {
+            try { localStorage.setItem('forge_calendar_data', JSON.stringify(data.calendar_data)) } catch (_) {}
+          }
+
+          const hasCompletedOnboarding = Boolean(
+            data.has_completed_onboarding ||
+            cData.blueprint ||
+            cData.productName ||
+            data.calendar_data ||
+            data.launch_pack_data ||
+            (data.is_existing_user && cData.handle && cData.handle !== 'default' && cData.handle !== '@creator')
+          )
+
+          window.history.replaceState({}, document.title, hasCompletedOnboarding ? '/dashboard' : '/portal')
+          if (hasCompletedOnboarding) {
+            try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch (_) {}
+            goTo('dashboard')
+          } else {
+            goTo('creator-link')
+          }
         })
         .catch(err => {
           console.warn('[Google OAuth Error]', err)
@@ -157,7 +181,31 @@ export default function Signup() {
               localStorage.setItem('forge_user_profile', JSON.stringify(profile))
               localStorage.setItem('forge_active_session', 'true')
               if (setUserProfile) setUserProfile(profile)
-              goTo('creator-link')
+
+              // Restore existing creator & calendar data if user previously signed up
+              const cData = data.creator_data || {}
+              if (cData && Object.keys(cData).length > 0) {
+                try { localStorage.setItem('forge_creator_data', JSON.stringify(cData)) } catch (_) {}
+              }
+              if (data.calendar_data) {
+                try { localStorage.setItem('forge_calendar_data', JSON.stringify(data.calendar_data)) } catch (_) {}
+              }
+
+              const hasCompletedOnboarding = Boolean(
+                data.has_completed_onboarding ||
+                cData.blueprint ||
+                cData.productName ||
+                data.calendar_data ||
+                data.launch_pack_data ||
+                (data.is_existing_user && cData.handle && cData.handle !== 'default' && cData.handle !== '@creator')
+              )
+
+              if (hasCompletedOnboarding) {
+                try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch (_) {}
+                goTo('dashboard')
+              } else {
+                goTo('creator-link')
+              }
             } catch (err) {
               console.warn('[Google Token Exchange Notice]', err)
               const fallback = {
@@ -193,21 +241,71 @@ export default function Signup() {
   }
 
 
-  // Password strength visualizer
+  // Password strength visualizer with broad character and length detection
   const getPasswordStrength = (pass) => {
-    if (!pass) return { score: 0, label: 'None', color: 'rgba(255,255,255,0.06)', text: 'Create a password with at least 8 characters' }
-    let score = 0
-    if (pass.length >= 8) score++
-    if (/\d/.test(pass)) score++
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) score++
-    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score++
+    if (!pass) {
+      return { score: 0, label: 'None', color: 'rgba(255,255,255,0.06)', text: 'Create a password with at least 8 characters' }
+    }
+
+    const hasMinLen = pass.length >= 8
+    const hasGoodLen = pass.length >= 10
+    const hasLongLen = pass.length >= 14
+    const hasDigits = /\d/.test(pass)
+    const hasSymbols = /[^a-zA-Z0-9]/.test(pass) // Catches all symbols including !@#$%^&*()_+-=[]{};':",./<>?\|~`
+    const hasLower = /[a-z]/.test(pass)
+    const hasUpper = /[A-Z]/.test(pass)
+    const hasMixedCase = hasLower && hasUpper
+
+    const varietyCount = [hasDigits, hasSymbols, hasLower, hasUpper].filter(Boolean).length
+
+    // Score out of 4 bars
+    let score = 1
+    if (hasMinLen) score = 2
+    if (hasMinLen && varietyCount >= 3) score = 3
+    if (
+      (hasMinLen && varietyCount >= 4) ||
+      (hasGoodLen && varietyCount >= 3) ||
+      (hasLongLen && varietyCount >= 2)
+    ) {
+      score = 4
+    }
 
     if (score <= 1) {
-      return { score, label: 'Weak', color: '#ef4444', text: 'Add numbers, symbols & mixed case' }
-    } else if (score <= 3) {
-      return { score, label: 'Medium', color: '#f59e0b', text: 'Good! Add a symbol to make it stronger' }
+      return {
+        score: 1,
+        label: 'Weak',
+        color: '#ef4444',
+        text: pass.length < 8 ? 'Must be at least 8 characters' : 'Add numbers, symbols or mixed case'
+      }
+    } else if (score === 2) {
+      const missing = []
+      if (!hasDigits) missing.push('numbers')
+      if (!hasSymbols) missing.push('symbols')
+      if (!hasMixedCase) missing.push('mixed case (A-Z)')
+      return {
+        score: 2,
+        label: 'Medium',
+        color: '#f59e0b',
+        text: missing.length > 0 ? `Add ${missing.join(' & ')} to strengthen` : 'Good! Make it longer to make it strong'
+      }
+    } else if (score === 3) {
+      const missing = []
+      if (!hasSymbols) missing.push('a symbol')
+      if (!hasDigits) missing.push('a number')
+      if (!hasMixedCase) missing.push('uppercase letters')
+      return {
+        score: 3,
+        label: 'Strong',
+        color: '#10b981',
+        text: missing.length > 0 ? `Strong! You can also add ${missing[0]}` : 'Strong password'
+      }
     } else {
-      return { score, label: 'Strong', color: '#10b981', text: 'Password strength is optimal' }
+      return {
+        score: 4,
+        label: 'Very Strong',
+        color: '#10b981',
+        text: 'Password strength is optimal ✓'
+      }
     }
   }
 

@@ -251,10 +251,21 @@ export default function Login() {
     setLoading(false)
     setLoadingText('')
 
-    // If user has not completed onboarding yet, take them to the onboarding page
-    if (!data.creator_data?.handle && !localStorage.getItem('forge_creator_data')) {
+    // If user has not completed onboarding yet, take them to the onboarding page; otherwise move straight to dashboard
+    const hasCompletedOnboarding = Boolean(
+      data.has_completed_onboarding ||
+      data.creator_data?.blueprint ||
+      data.creator_data?.productName ||
+      data.calendar_data ||
+      data.launch_pack_data ||
+      (data.creator_data?.handle && data.creator_data.handle !== 'default' && data.creator_data.handle !== '@creator') ||
+      localStorage.getItem('forge_creator_data')
+    )
+
+    if (!hasCompletedOnboarding) {
       goTo('creator-link')
     } else {
+      try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch (_) {}
       goTo('dashboard')
     }
   }
