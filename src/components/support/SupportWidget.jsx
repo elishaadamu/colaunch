@@ -34,9 +34,17 @@ export default function SupportWidget({ currentStage }) {
   const [emailInput, setEmailInput] = useState(userIdentity.email || '')
 
   const accent = getAccent(creatorData)
-  const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
+  const hasConnectedAccount = Boolean(
+    creatorData?.youtube_connected || 
+    creatorData?.instagram_connected || 
+    creatorData?.facebook_connected ||
+    creatorData?.otherAccounts?.youtube?.connected ||
+    creatorData?.otherAccounts?.instagram?.connected ||
+    (creatorData?.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator' && !creatorData.handle.startsWith('@creator') && !creatorData.handle.toLowerCase().includes((creatorData?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')))
+  )
+  const rawHandle = hasConnectedAccount ? (creatorData?.handle || '') : ''
   const cleanHandle = rawHandle.replace(/^@+/, '')
-  const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
+  const handle = cleanHandle ? `@${cleanHandle}` : ''
   const creatorId = getCreatorId(creatorData)
 
   const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))

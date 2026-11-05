@@ -6,6 +6,7 @@ import {
   Send, ExternalLink, Zap, Search, ShieldCheck, Flame, UserPlus, Eye, TrendingUp, CheckCircle2, ArrowRight
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
+import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
 import { loadSyncedCampaignPosts, getMonthCalendarGrid } from './ContentCalendar'
 
 // ─── Dynamic Community Content Templates ─────────────────────────────────────
@@ -67,191 +68,126 @@ function getCommunityContentTypes(productName, creatorName, handle, niche) {
   ]
 }
 
-// ─── Community Month Calendar Component (Matching Content Calendar) ───────────
+// ─── Mini Calendar Component (Precision Angular Style) ────────────────────────
 
-function CommunityMonthCalendar({ 
-  calendarDate, 
-  setCalendarDate, 
-  onSelectDate, 
-  selectedDate, 
-  scheduledPosts = [], 
-  brandRed = '#c81e3c' 
-}) {
-  const year = calendarDate.getFullYear()
-  const month = calendarDate.getMonth()
-  const monthGrid = useMemo(() => {
-    return getMonthCalendarGrid(year, month)
-  }, [year, month])
+const DAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-  const prevMonth = () => setCalendarDate(new Date(year, month - 1, 1))
-  const nextMonth = () => setCalendarDate(new Date(year, month + 1, 1))
-  const goToToday = () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    setCalendarDate(new Date())
-    if (onSelectDate) onSelectDate(today)
-  }
+function MiniCalendar({ onSelectDate, selectedDate, scheduledPosts = [], brandRed = '#c81e3c' }) {
+  const [viewDate, setViewDate] = useState(new Date())
 
-  const selectedDateKey = useMemo(() => {
-    if (!selectedDate) return ''
-    return `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-  }, [selectedDate])
+  const year = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-  const todayKey = useMemo(() => {
-    const t = new Date()
-    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
-  }, [])
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1))
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
+
+  const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
-    <div className="w-full flex flex-col bg-[#0c1017] border border-white/[0.08] p-4 sm:p-5 rounded-none space-y-3.5 shadow-sm" style={{ borderRadius: '0px' }}>
-      {/* Month Navigation & Controls */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] flex-wrap gap-2">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="p-1.5 text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
-              style={{ borderRadius: '0px' }}
-              title="Previous Month"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={nextMonth}
-              className="p-1.5 text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
-              style={{ borderRadius: '0px' }}
-              title="Next Month"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-          <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
-            {monthNames[month]} {year}
-          </h3>
-          <button
-            type="button"
-            onClick={goToToday}
-            className="px-2.5 py-1 text-[10px] font-mono font-bold text-slate-300 hover:text-white bg-[#141926] hover:bg-[#1b2234] border border-white/10 rounded-none transition cursor-pointer ml-1"
-            style={{ borderRadius: '0px' }}
-          >
-            Today
-          </button>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 flex-wrap">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-none bg-emerald-400" style={{ borderRadius: '0px' }} />
-            <span>Delivered</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-none bg-sky-400" style={{ borderRadius: '0px' }} />
-            <span>Scheduled</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-none bg-[#c81e3c]" style={{ borderRadius: '0px' }} />
-            <span>Draft</span>
-          </span>
-        </div>
+    <div className="w-full text-white">
+      {/* Month nav */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <button 
+          type="button"
+          onClick={prevMonth} 
+          className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
+          style={{ borderRadius: '0px' }}
+        >
+          <ChevronRight size={13} className="rotate-180" />
+        </button>
+        <span className="text-xs font-bold text-white tracking-wide">{MONTHS[month]} {year}</span>
+        <button 
+          type="button"
+          onClick={nextMonth} 
+          className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
+          style={{ borderRadius: '0px' }}
+        >
+          <ChevronRight size={13} />
+        </button>
       </div>
 
-      {/* Week Day Header */}
-      <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 uppercase tracking-wider bg-[#10141f] py-2 border-b border-white/[0.06]" style={{ borderRadius: '0px' }}>
-        <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
-        <div>Sun</div>
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {DAYS_SHORT.map(d => (
+          <div key={d} className="text-center text-[10px] font-mono font-bold text-slate-500 py-1">{d}</div>
+        ))}
       </div>
 
-      {/* 7-Column Month Grid */}
-      <div className="grid grid-cols-7 gap-1 bg-[#090d16] p-1 border border-white/[0.04]" style={{ borderRadius: '0px' }}>
-        {monthGrid.map((cell, idx) => {
-          const isSelected = selectedDateKey === cell.dateKey
-          const isToday = todayKey === cell.dateKey
+      {/* Day grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (!day) return <div key={`empty-${i}`} />
+          const dateObj = new Date(year, month, day)
+          dateObj.setHours(0, 0, 0, 0)
+          const isToday = dateObj.getTime() === today.getTime()
+          const dayShort = dayNamesShort[dateObj.getDay()]
 
-          const cellPosts = scheduledPosts.filter(p => {
-            if (p.dateKey) return p.dateKey === cell.dateKey
+          const isSelected = selectedDate && (
+            selectedDate.getFullYear() === dateObj.getFullYear() &&
+            selectedDate.getMonth() === dateObj.getMonth() &&
+            selectedDate.getDate() === dateObj.getDate()
+          )
+
+          const dateKeyStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+          const postsForDay = scheduledPosts.filter(p => {
+            if (p.dateKey) {
+              return p.dateKey === dateKeyStr
+            }
             if (p.date) {
               const d = new Date(p.date)
               if (!isNaN(d.getTime())) {
-                const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-                return k === cell.dateKey
+                d.setHours(0, 0, 0, 0)
+                return d.getTime() === dateObj.getTime()
               }
             }
             return false
           })
+          const hasPost = postsForDay.length > 0
 
           return (
-            <div
-              key={idx}
-              onClick={() => onSelectDate && onSelectDate(cell.dateObj)}
-              className={`min-h-[82px] sm:min-h-[96px] p-2 flex flex-col justify-between transition cursor-pointer rounded-none border ${
-                isSelected
-                  ? 'border-2 border-[#c81e3c] bg-[#121726] shadow-xl'
-                  : 'border-white/[0.04] hover:bg-[#151b2a]'
-              } ${
-                !cell.isCurrentMonth
-                  ? 'bg-[#090c14]/40 text-slate-600'
-                  : 'bg-[#0c1017] text-slate-300'
-              }`}
-              style={{ borderRadius: '0px' }}
+            <button
+              key={day}
+              type="button"
+              onClick={() => onSelectDate && onSelectDate(dateObj)}
+              title={`${dayShort}, ${MONTHS[month]} ${day}${hasPost ? ` · ${postsForDay.length} post(s) in community pipeline` : ' · Click to filter'}`}
+              className="relative w-full aspect-square rounded-none flex flex-col items-center justify-center text-[11px] font-mono font-bold transition cursor-pointer hover:border-white/40"
+              style={{
+                borderRadius: '0px',
+                color: isSelected ? '#ffffff' : isToday ? '#ffffff' : hasPost ? '#ffffff' : '#94a3b8',
+                background: isSelected 
+                  ? brandRed 
+                  : isToday 
+                    ? 'rgba(200,30,60,0.18)' 
+                    : hasPost 
+                      ? 'rgba(255,255,255,0.05)' 
+                      : 'transparent',
+                border: isSelected 
+                  ? `1px solid ${brandRed}` 
+                  : isToday 
+                    ? `1px solid ${brandRed}` 
+                    : hasPost 
+                      ? '1px solid rgba(255,255,255,0.16)' 
+                      : '1px solid transparent',
+              }}
             >
-              <div className="flex items-center justify-between">
-                {isSelected ? (
-                  <div
-                    className="w-6 h-6 flex items-center justify-center text-white text-xs font-black shadow-sm"
-                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    {cell.dayNumber}
-                  </div>
-                ) : (
-                  <span className={`text-xs font-bold ${isToday ? 'text-[#ff8093] font-black' : cell.isCurrentMonth ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {cell.dayNumber}
-                  </span>
-                )}
-
-                {cellPosts.length > 0 && !isSelected && (
-                  <span className="w-1.5 h-1.5 rounded-none bg-[#c81e3c]" style={{ borderRadius: '0px' }} />
-                )}
-              </div>
-
-              {/* Badges for drops on this date */}
-              <div className="space-y-1 mt-1 overflow-hidden">
-                {cellPosts.slice(0, 2).map(p => {
-                  const isSent = (p.status || '').toLowerCase() === 'sent' || (p.status || '').toLowerCase() === 'published'
-                  const isSched = (p.status || '').toLowerCase() === 'scheduled'
-                  return (
-                    <div
-                      key={p.id}
-                      className={`text-[9px] font-mono px-1 py-0.5 truncate border leading-tight ${
-                        isSent
-                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
-                          : isSched
-                          ? 'bg-sky-950/80 text-sky-200 border-sky-500/40'
-                          : 'bg-white/[0.04] text-slate-300 border-white/10'
-                      }`}
-                      style={{ borderRadius: '0px' }}
-                      title={`${p.title} (${p.platform || p.type})`}
-                    >
-                      <span className="font-bold uppercase mr-1">{p.platform ? p.platform.slice(0, 2) : 'DR'}:</span>
-                      <span>{p.title}</span>
-                    </div>
-                  )
-                })}
-                {cellPosts.length > 2 && (
-                  <div className="text-[8px] font-mono text-slate-500 text-right pr-0.5">
-                    +{cellPosts.length - 2} more
-                  </div>
-                )}
-              </div>
-            </div>
+              <span>{day}</span>
+              {hasPost && (
+                <span 
+                  className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-none ${isSelected ? 'bg-white' : 'bg-[#c81e3c]'}`}
+                  style={{ borderRadius: '0px' }}
+                />
+              )}
+            </button>
           )
         })}
       </div>
@@ -1193,9 +1129,11 @@ export default function Community() {
       }
     } catch (_) {}
 
-    // B. Read central launch plan from Content Calendar
-    try {
-      const campaignPosts = loadSyncedCampaignPosts(creatorData, productName, cleanHandle)
+    // B. Read central launch plan from Content Calendar ONLY IF channel is connected
+    const isChannelConnected = isChannelConnectedOrConfigured(creatorData)
+    if (isChannelConnected) {
+      try {
+        const campaignPosts = loadSyncedCampaignPosts(creatorData, productName, cleanHandle)
       if (Array.isArray(campaignPosts)) {
         campaignPosts.forEach(p => {
           const d = p.dateKey ? new Date(p.dateKey + 'T12:00:00') : (p.date ? new Date(p.date) : null)
@@ -1228,8 +1166,9 @@ export default function Community() {
           })
         })
       }
-    } catch (err) {
-      console.warn('[Community] Failed to sync campaign posts:', err)
+      } catch (err) {
+        console.warn('[Community] Failed to sync campaign posts:', err)
+      }
     }
 
     // De-duplicate by title/id/dateKey
@@ -1789,30 +1728,200 @@ export default function Community() {
 
       {/* ── TAB 1: HUB & CALENDAR CONTENT ENGINE ── */}
       {activeTabSub === 'hub' && (
-        <div className="flex flex-col space-y-6 w-full">
-          {/* A. Top: Full-Width Community Month Calendar (Matching Content Calendar) */}
-          <div ref={calendarRef}>
-            <CommunityMonthCalendar
-              calendarDate={calendarMonthDate}
-              setCalendarDate={setCalendarMonthDate}
-              selectedDate={selectedCalendarDate}
-              onSelectDate={(dateObj) => setSelectedCalendarDate(dateObj)}
-              scheduledPosts={scheduledPosts}
-              brandRed={brandRed}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-5 w-full">
+          {/* Left Column: Post Types & MiniCalendar */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-[#0c1017] border border-white/[0.08] p-4 rounded-none space-y-3" style={{ borderRadius: '0px' }}>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                Select Community Type
+              </span>
+              <div className="space-y-1.5">
+                {communityContentTypes.map(type => {
+                  const isSelected = selectedType?.id === type.id
+                  return (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => handleSelectType(type)}
+                      className={`w-full text-left p-2.5 rounded-none border transition cursor-pointer flex items-center gap-2.5 ${
+                        isSelected 
+                          ? 'border-[#c81e3c]/60 bg-[#c81e3c]/15 text-white' 
+                          : 'border-white/[0.06] bg-[#10141f] text-slate-300 hover:bg-[#151b2a] hover:text-white'
+                      }`}
+                      style={{ borderRadius: '0px' }}
+                    >
+                      <div 
+                        className={`w-6 h-6 rounded-none flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#c81e3c] text-white' : 'bg-white/[0.05] text-slate-400'}`}
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <type.icon size={12} className={isSelected ? 'text-white' : 'text-slate-400'} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold truncate">{type.label}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{type.description}</div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Content Calendar Widget */}
+            <div
+              ref={calendarRef}
+              className="bg-[#0c1017] border border-white/[0.08] p-4 rounded-none space-y-2.5"
+              style={{ borderRadius: '0px' }}
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Post Calendar Sync
+                </span>
+                <span className="text-[9px] font-mono text-slate-300 bg-white/[0.04] px-2 py-0.5 border border-white/[0.08]" style={{ borderRadius: '0px' }}>
+                  Click date to filter
+                </span>
+              </div>
+              <MiniCalendar
+                onSelectDate={(dateObj) => {
+                  if (selectedCalendarDate && selectedCalendarDate.getTime() === dateObj.getTime()) {
+                    setSelectedCalendarDate(null)
+                  } else {
+                    setSelectedCalendarDate(dateObj)
+                  }
+                }}
+                selectedDate={selectedCalendarDate}
+                scheduledPosts={scheduledPosts}
+                brandRed={brandRed}
+              />
+
+              {/* Direct date action prompt if date is selected */}
+              {selectedCalendarDate && (
+                <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-mono">
+                      Selected: <strong className="text-white">{selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCalendarDate(null)}
+                      className="text-[10px] font-mono text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, selectedCalendarDate)}
+                    className="w-full py-1.5 px-2 text-xs font-bold text-white transition cursor-pointer border-0 flex items-center justify-center gap-1.5"
+                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Calendar size={12} className="text-white" />
+                    <span>Queue Draft for {selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* B. Bottom Grid: Day Drop Pipeline Focus (Left) + Community Content Composer (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-5 w-full">
-            
-            {/* ── COLUMN 1: FOCUSED DAY DROP PIPELINE (Strictly That Day) ── */}
-            <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-3.5 shadow-sm" style={{ borderRadius: '0px' }}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-white/[0.06] gap-2">
+          {/* Right Column: AI Content Generator & Scheduled Posts */}
+          <div className="space-y-5">
+            {/* AI Generator Box with Title Refinement */}
+            <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-4 shadow-sm" style={{ borderRadius: '0px' }}>
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={15} className="text-[#c81e3c]" />
+                  <h3 className="text-sm font-bold text-white tracking-tight">
+                    {selectedType?.label || 'Community Post'}
+                  </h3>
+                  <span className="text-[9px] font-mono text-slate-400 bg-white/[0.04] px-2 py-0.5 border border-white/[0.08]" style={{ borderRadius: '0px' }}>
+                    {selectedType?.description}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={handleCopy} 
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    <span>{copied ? 'Copied!' : 'Copy'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleGenerateBody}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer disabled:opacity-50"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    <RefreshCw size={12} className={isGenerating ? 'animate-spin' : ''} />
+                    <span>{isGenerating ? 'Drafting...' : 'AI Refine Body'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, selectedCalendarDate || new Date())}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-none transition cursor-pointer border-0 shadow-sm hover:opacity-95"
+                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  >
+                    <Calendar size={12} className="text-white" />
+                    <span>{selectedCalendarDate ? `Schedule for ${selectedCalendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'Schedule to Calendar'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Title & Headline Input with AI Refine Title */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                    Post Title / Headline
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRefineTitle}
+                    disabled={isRefiningTitle}
+                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border border-[#c81e3c]/40 bg-[#c81e3c]/20 text-white hover:bg-[#c81e3c]/35 transition cursor-pointer"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    <Sparkles size={10} className={isRefiningTitle ? 'animate-spin' : ''} />
+                    <span>{isRefiningTitle ? 'Refining...' : 'AI Refine Title'}</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={postTitle}
+                  onChange={e => setPostTitle(e.target.value)}
+                  placeholder="Enter community post title..."
+                  className="w-full px-3 py-2 text-xs font-bold bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition"
+                  style={{ borderRadius: '0px' }}
+                />
+              </div>
+
+              {/* Editor Textarea */}
+              <div className="p-3 bg-[#090c14] border border-white/[0.08] rounded-none" style={{ borderRadius: '0px' }}>
+                <textarea
+                  value={generated || ''}
+                  onChange={e => setGenerated(e.target.value)}
+                  className="w-full text-xs font-mono leading-relaxed bg-transparent outline-none border-none resize-none text-slate-200"
+                  style={{ minHeight: '170px' }}
+                  placeholder="Generate or draft your community post..."
+                />
+              </div>
+            </div>
+
+            {/* Scheduled Posts Queue Directly Reflecting Calendar based on date */}
+            <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-3" style={{ borderRadius: '0px' }}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-white/[0.06] gap-2">
                 <div className="flex items-center gap-2">
                   <Clock size={13} className="text-[#c81e3c]" />
-                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Day Focus: {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Selected Day'} ({filteredPipelinePosts.length})
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                    Content Calendar Synced Pipeline ({filteredPipelinePosts.length}{selectedCalendarDate ? ` for ${selectedCalendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ` of ${scheduledPosts.length}`})
                   </h3>
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" style={{ borderRadius: '0px' }} />
+                    <span>Live Calendar Sync</span>
+                  </span>
                 </div>
 
                 {/* Channel Filter Chips */}
@@ -1840,7 +1949,7 @@ export default function Community() {
                     }`}
                     style={{ borderRadius: '0px' }}
                   >
-                    Community
+                    Community ({communityPostsCount})
                   </button>
 
                   <button
@@ -1853,7 +1962,7 @@ export default function Community() {
                     }`}
                     style={{ borderRadius: '0px' }}
                   >
-                    Email
+                    Email ({emailPostsCount})
                   </button>
 
                   <button
@@ -1866,7 +1975,7 @@ export default function Community() {
                     }`}
                     style={{ borderRadius: '0px' }}
                   >
-                    YouTube
+                    YouTube ({ytPostsCount})
                   </button>
 
                   <button
@@ -1879,354 +1988,161 @@ export default function Community() {
                     }`}
                     style={{ borderRadius: '0px' }}
                   >
-                    Social
+                    Social ({socialPostsCount})
                   </button>
                 </div>
               </div>
 
+              {/* Posts List strictly based on selected date */}
               {filteredPipelinePosts.length === 0 ? (
-                <div className="p-8 text-center bg-[#10141f] border border-white/[0.06] rounded-none text-xs text-slate-400 space-y-3" style={{ borderRadius: '0px' }}>
-                  <Calendar size={22} className="text-slate-500 mx-auto" />
-                  <p className="font-bold text-white text-xs">
-                    No community drops or broadcasts scheduled for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'this day'}.
-                  </p>
-                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
-                    There are no scheduled drops yet for this day. Draft a new community drop in the composer on the right.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(communityContentTypes[0])
-                      setPostTitle(`Community Drop: ${selectedCalendarDate ? selectedCalendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}`)
-                    }}
-                    className="px-3.5 py-1.5 text-xs font-bold text-white transition cursor-pointer border-0 shadow-sm"
-                    style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                  >
-                    + Draft Drop for This Day
-                  </button>
+                <div className="p-8 text-center text-xs text-slate-400 bg-[#10141f] border border-white/[0.06] rounded-none" style={{ borderRadius: '0px' }}>
+                  {selectedCalendarDate ? (
+                    <div>
+                      <p className="font-bold text-slate-300">
+                        No posts scheduled for {selectedCalendarDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Draft a post above and click "Queue Draft for {selectedCalendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}" to add it to this day.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-bold text-slate-300">No community posts currently queued</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Select a date on the calendar to schedule a new drop, or refine one above.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2.5">
                   {filteredPipelinePosts.map(post => {
-                    const isEmail = (post.platform || '').toLowerCase().includes('email') || (post.type || '').toLowerCase().includes('email')
-                    const isSent = (post.status || '').toLowerCase() === 'sent' || (post.status || '').toLowerCase() === 'published' || (post.status || '').toLowerCase() === 'delivered'
+                    const isDelivered = (post.status || '').toLowerCase() === 'sent' || (post.status || '').toLowerCase() === 'published'
                     const isScheduled = (post.status || '').toLowerCase() === 'scheduled'
+                    const isDraft = !isDelivered && !isScheduled
+                    const isEmail = (post.platform || '').toLowerCase().includes('email') || (post.type || '').toLowerCase().includes('email')
 
                     return (
                       <div
                         key={post.id}
-                        onClick={() => setExpandedPostId(prev => prev === post.id ? null : post.id)}
-                        className="p-3 bg-[#10141f] border border-white/[0.06] hover:border-white/20 transition rounded-none cursor-pointer space-y-2"
+                        className={`p-3.5 bg-[#10141f] border transition rounded-none space-y-2.5 ${
+                          isDelivered 
+                            ? 'border-emerald-500/30' 
+                            : isScheduled 
+                              ? 'border-sky-500/30' 
+                              : 'border-white/[0.08] hover:border-white/20'
+                        }`}
                         style={{ borderRadius: '0px' }}
                       >
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div 
-                              className={`w-6 h-6 rounded-none flex items-center justify-center shrink-0 border ${
-                                isEmail ? 'bg-[#c81e3c]/20 border-[#c81e3c]/40 text-white' : 'bg-white/[0.05] border-white/10 text-slate-400'
-                              }`} 
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span 
+                              className="px-2 py-0.5 rounded-none text-[9px] font-mono font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white"
                               style={{ borderRadius: '0px' }}
                             >
-                              {isEmail ? <Mail size={12} className="text-white" /> : <Clock size={12} className="text-[#c81e3c]" />}
-                            </div>
-
-                            <span className="text-xs font-bold text-white truncate max-w-sm sm:max-w-md">
-                              {post.title || post.type}
+                              {post.platform || 'YouTube'}
                             </span>
-
-                            {post.platform && (
-                              <span 
-                                className={`text-[9px] font-mono px-1.5 py-0.5 rounded-none shrink-0 border ${
-                                  isEmail ? 'bg-[#c81e3c]/15 text-rose-200 border-[#c81e3c]/35' : 'bg-white/[0.05] text-slate-300 border-white/10'
-                                }`} 
-                                style={{ borderRadius: '0px' }}
-                              >
-                                {post.platform}
-                              </span>
-                            )}
-
-                            {isSent ? (
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold shrink-0" style={{ borderRadius: '0px' }}>
-                                DELIVERED ✓
-                              </span>
-                            ) : isScheduled ? (
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-sky-500/15 text-sky-300 border border-sky-500/30 font-bold shrink-0" style={{ borderRadius: '0px' }}>
-                                SCHEDULED
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-none bg-slate-800 text-slate-300 border border-slate-700 font-bold shrink-0" style={{ borderRadius: '0px' }}>
-                                DRAFT
-                              </span>
-                            )}
+                            <span 
+                              className="px-2 py-0.5 rounded-none text-[9px] font-mono font-bold uppercase tracking-wider"
+                              style={{
+                                borderRadius: '0px',
+                                background: isDelivered 
+                                  ? 'rgba(52, 211, 153, 0.15)' 
+                                  : isScheduled 
+                                    ? 'rgba(56, 189, 248, 0.15)' 
+                                    : 'rgba(200, 30, 60, 0.18)',
+                                color: isDelivered 
+                                  ? '#34d399' 
+                                  : isScheduled 
+                                    ? '#38bdf8' 
+                                    : '#ff8093',
+                                border: isDelivered 
+                                  ? '1px solid rgba(52, 211, 153, 0.3)' 
+                                  : isScheduled 
+                                    ? '1px solid rgba(56, 189, 248, 0.3)' 
+                                    : '1px solid rgba(200, 30, 60, 0.3)'
+                              }}
+                            >
+                              {post.status || 'Draft'}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-300">
+                              {post.type}
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* Primary Action Button directly on the card */}
-                            {isEmail && !isSent && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleOpenBroadcastForPost(post)
-                                }}
-                                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white transition cursor-pointer border-0 shadow-sm"
-                                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                                title="Broadcast this email to community members now"
-                              >
-                                <Send size={11} className="text-white" />
-                                <span>Send Broadcast</span>
-                              </button>
-                            )}
-
-                            {isSent && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleTogglePostStatus(post)
-                                }}
-                                className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-none cursor-pointer"
-                                title="Click to reset status to Scheduled"
-                              >
-                                <CheckCircle2 size={11} />
-                                <span>Sent</span>
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleLoadToComposer(post)
-                              }}
-                              className="text-slate-400 hover:text-white p-1 transition cursor-pointer bg-transparent border-0"
-                              title="Edit in Composer"
-                            >
-                              <Edit size={13} />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleTogglePostStatus(post)
-                              }}
-                              className="text-slate-400 hover:text-emerald-400 p-1 transition cursor-pointer bg-transparent border-0"
-                              title={isSent ? 'Reset status' : 'Mark as Sent / Delivered'}
-                            >
-                              <Check size={13} />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeletePost(post.id)
-                              }}
-                              className="text-slate-500 hover:text-rose-400 p-1 transition cursor-pointer bg-transparent border-0"
-                              title="Delete"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-
-                            <ChevronDown size={14} className={`text-slate-400 transition-transform ${expandedPostId === post.id ? 'rotate-180' : ''}`} />
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                            <Clock size={11} className="text-slate-500" />
+                            <span>{post.dateLabel || post.time || 'Active Sprint'}</span>
                           </div>
                         </div>
 
-                        {expandedPostId !== post.id ? (
-                          <p className="text-[11px] text-slate-400 truncate pl-8">{post.content}</p>
-                        ) : (
-                          <div className="pt-2 border-t border-white/[0.06] space-y-2.5" onClick={e => e.stopPropagation()}>
-                            <pre className="text-xs leading-relaxed text-slate-300 font-sans whitespace-pre-wrap bg-[#090c14] p-3 rounded-none border border-white/[0.06]" style={{ borderRadius: '0px' }}>
-                              {post.fullContent || post.content}
-                            </pre>
+                        <div>
+                          <h4 className="text-xs font-bold text-white mb-1">
+                            {post.title}
+                          </h4>
+                          <p className="text-[11px] font-mono text-slate-300 line-clamp-2 leading-relaxed bg-black/20 p-2 border border-white/[0.04]" style={{ borderRadius: '0px' }}>
+                            {post.fullContent || post.content}
+                          </p>
+                        </div>
 
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
-                              <span className="text-[10px] font-mono text-slate-400">
-                                Channel: <strong className="text-white">{post.platform || 'Social'}</strong> · Status: <strong className={isSent ? 'text-emerald-400' : isScheduled ? 'text-sky-300' : 'text-slate-400'}>{isSent ? 'Delivered' : isScheduled ? 'Scheduled' : 'Draft'}</strong>
-                              </span>
+                        {/* Action Toolbar */}
+                        <div className="flex items-center justify-between pt-1 border-t border-white/[0.04] flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Broadcast trigger for email / announcement */}
+                            {isEmail && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenBroadcastForPost(post)}
+                                className="px-2 py-0.5 text-[10px] font-bold text-white rounded-none transition cursor-pointer flex items-center gap-1 border-0"
+                                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                                title="Broadcast this post directly to member inboxes"
+                              >
+                                <Mail size={10} className="text-white" />
+                                <span>Broadcast Email</span>
+                              </button>
+                            )}
 
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenBroadcastForPost(post)}
-                                  className="px-2.5 py-1 text-xs font-bold text-white transition cursor-pointer border-0 flex items-center gap-1 shadow-sm"
-                                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                                >
-                                  <Send size={11} className="text-white" />
-                                  <span>Send as Broadcast Email</span>
-                                </button>
+                            {/* Load into composer */}
+                            <button
+                              type="button"
+                              onClick={() => handleLoadToComposer(post)}
+                              className="px-2 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white bg-[#151b2a] hover:bg-[#1f283d] border border-white/10 rounded-none transition cursor-pointer flex items-center gap-1"
+                              style={{ borderRadius: '0px' }}
+                              title="Edit in composer"
+                            >
+                              <Edit size={10} className="text-[#c81e3c]" />
+                              <span>Edit</span>
+                            </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => handleLoadToComposer(post)}
-                                  className="px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white bg-[#151c2d] hover:bg-[#1a2338] rounded-none cursor-pointer border border-white/10"
-                                  style={{ borderRadius: '0px' }}
-                                >
-                                  Edit in Composer
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleTogglePostStatus(post)}
-                                  className="px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white bg-[#151c2d] hover:bg-[#1a2338] rounded-none cursor-pointer border border-white/10"
-                                  style={{ borderRadius: '0px' }}
-                                >
-                                  {isSent ? 'Reset Status' : 'Mark as Delivered ✓'}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(`${post.title}\n\n${post.fullContent || post.content}`)
-                                    if (triggerToast) triggerToast('Copied post content to clipboard', 'success')
-                                  }}
-                                  className="px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-white/5 rounded-none cursor-pointer border border-white/10"
-                                  style={{ borderRadius: '0px' }}
-                                >
-                                  Copy Text
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveTab && setActiveTab('calendar')}
-                                  className="px-2.5 py-1 text-xs font-bold text-slate-200 hover:text-white bg-[#182132] transition cursor-pointer border border-white/15"
-                                  style={{ borderRadius: '0px' }}
-                                >
-                                  Open in Calendar →
-                                </button>
-                              </div>
-                            </div>
+                            {/* Mark Sent / Scheduled Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePostStatus(post)}
+                              className="px-2 py-0.5 text-[10px] font-mono font-bold text-slate-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-none transition cursor-pointer flex items-center gap-1"
+                              style={{ borderRadius: '0px' }}
+                              title="Toggle between Scheduled and Sent"
+                            >
+                              <CheckCircle2 size={10} className={isDelivered ? 'text-emerald-400' : 'text-slate-500'} />
+                              <span>{isDelivered ? 'Mark Scheduled' : 'Mark Sent'}</span>
+                            </button>
                           </div>
-                        )}
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="p-1 text-slate-500 hover:text-red-400 transition cursor-pointer"
+                            title="Remove from queue"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
                 </div>
               )}
             </div>
-
-            {/* ── COLUMN 2: COMMUNITY CONTENT COMPOSER & AI GENERATOR ── */}
-            <div className="space-y-4">
-              {/* Post Type Selector Card */}
-              <div className="bg-[#0c1017] border border-white/[0.08] p-4 rounded-none space-y-2.5" style={{ borderRadius: '0px' }}>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
-                  Select Community Post Type
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {communityContentTypes.map(type => {
-                    const isSelected = selectedType?.id === type.id
-                    return (
-                      <button
-                        key={type.id}
-                        type="button"
-                        onClick={() => handleSelectType(type)}
-                        className={`w-full text-left p-2 rounded-none border transition cursor-pointer flex items-center gap-2 ${
-                          isSelected 
-                            ? 'border-[#c81e3c]/60 bg-[#c81e3c]/15 text-white' 
-                            : 'border-white/[0.06] bg-[#10141f] text-slate-300 hover:bg-[#151b2a] hover:text-white'
-                        }`}
-                        style={{ borderRadius: '0px' }}
-                      >
-                        <div 
-                          className={`w-5 h-5 rounded-none flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#c81e3c] text-white' : 'bg-white/[0.05] text-slate-400'}`}
-                          style={{ borderRadius: '0px' }}
-                        >
-                          <type.icon size={11} className={isSelected ? 'text-white' : 'text-slate-400'} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold truncate">{type.label}</div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* AI Generator Box with Title Refinement */}
-              <div className="bg-[#0c1017] border border-white/[0.08] rounded-none p-4 sm:p-5 space-y-3.5 shadow-sm" style={{ borderRadius: '0px' }}>
-                <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.06] flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-[#c81e3c]" />
-                    <h3 className="text-xs font-bold text-white tracking-tight uppercase font-mono">
-                      {selectedType?.label || 'Community Post'} Composer
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <button 
-                      type="button"
-                      onClick={handleCopy} 
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                      <span>{copied ? 'Copied!' : 'Copy'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleGenerateBody}
-                      disabled={isGenerating}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer disabled:opacity-50"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <RefreshCw size={11} className={isGenerating ? 'animate-spin' : ''} />
-                      <span>{isGenerating ? 'Drafting...' : 'AI Refine Body'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => scheduleCommunityPostToCalendar({ title: postTitle, body: generated }, selectedCalendarDate)}
-                      className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-white rounded-none transition cursor-pointer border-0 shadow-sm hover:opacity-95"
-                      style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
-                    >
-                      <Calendar size={11} className="text-white" />
-                      <span>Schedule for {selectedCalendarDate ? selectedCalendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Day'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Title & Headline Input with AI Refine Title */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                      Post Title / Headline
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleRefineTitle}
-                      disabled={isRefiningTitle}
-                      className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-none border border-[#c81e3c]/40 bg-[#c81e3c]/20 text-white hover:bg-[#c81e3c]/35 transition cursor-pointer"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      <Sparkles size={10} className={isRefiningTitle ? 'animate-spin' : ''} />
-                      <span>{isRefiningTitle ? 'Refining...' : 'AI Refine Title'}</span>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={postTitle}
-                    onChange={e => setPostTitle(e.target.value)}
-                    placeholder="Enter community post title..."
-                    className="w-full px-3 py-2 text-xs font-bold bg-[#10141f] border border-white/10 text-white outline-none focus:border-[#c81e3c] transition"
-                    style={{ borderRadius: '0px' }}
-                  />
-                </div>
-
-                {/* Editor Textarea */}
-                <div className="p-3 bg-[#090c14] border border-white/[0.08] rounded-none" style={{ borderRadius: '0px' }}>
-                  <textarea
-                    value={generated || ''}
-                    onChange={e => setGenerated(e.target.value)}
-                    className="w-full text-xs font-mono leading-relaxed bg-transparent outline-none border-none resize-none text-slate-200"
-                    style={{ minHeight: '150px' }}
-                    placeholder="Generate or draft your community post..."
-                  />
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       )}

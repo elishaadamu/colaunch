@@ -28,9 +28,21 @@ export default function SupportChatPage() {
   const accent = getAccent(creatorData)
   const creatorId = getCreatorId(creatorData)
   const authenticCreatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
-  const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
+
+  // Do NOT assume or fabricate social handle until an account is authentically connected
+  const hasConnectedAccount = Boolean(
+    creatorData?.youtube_connected || 
+    creatorData?.instagram_connected || 
+    creatorData?.facebook_connected ||
+    creatorData?.otherAccounts?.youtube?.connected ||
+    creatorData?.otherAccounts?.instagram?.connected ||
+    userProfile?.youtube_connection?.connected ||
+    (creatorData?.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator' && !creatorData.handle.startsWith('@creator') && !creatorData.handle.toLowerCase().includes((creatorData?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')))
+  )
+
+  const rawHandle = hasConnectedAccount ? (creatorData?.handle || '') : ''
   const cleanHandle = rawHandle.replace(/^@+/, '')
-  const handle = cleanHandle ? `@${cleanHandle}` : '@creator'
+  const handle = cleanHandle ? `@${cleanHandle}` : null
 
   // Creator Identity - scoped strictly to this creator
   const [userIdentity, setUserIdentity] = useState(() => getSupportUserIdentity(creatorData))
@@ -343,7 +355,16 @@ export default function SupportChatPage() {
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Creator</span>
-                <span className="font-semibold text-white">{creatorName} (<span style={{ color: accent.color }}>{handle}</span>)</span>
+                <span className="font-semibold text-white">
+                  {creatorName}
+                  {handle ? (
+                    <span style={{ color: accent.color }}> ({handle})</span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-500 font-normal ml-1">
+                      (No handle · Account not connected)
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Audience</span>

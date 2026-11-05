@@ -18,8 +18,25 @@ export function getCreatorId(creatorData) {
   if (creatorData.id) return creatorData.id
   if (creatorData.channelId) return creatorData.channelId
   if (creatorData._id) return creatorData._id
-  const cleanHandle = (creatorData.handle || creatorData.name || 'creator').replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
-  return 'cr_' + cleanHandle
+  if (creatorData.userId) return `cr_user_${creatorData.userId}`
+  if (creatorData.uid) return `cr_user_${creatorData.uid}`
+
+  // Never assume or fabricate a handle from creator's name or email if account is not connected
+  const hasConnectedAccount = Boolean(
+    creatorData.youtube_connected ||
+    creatorData.instagram_connected ||
+    creatorData.facebook_connected ||
+    creatorData.otherAccounts?.youtube?.connected ||
+    creatorData.otherAccounts?.instagram?.connected
+  )
+
+  if (hasConnectedAccount && creatorData.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator') {
+    const cleanHandle = creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
+    if (cleanHandle) return 'cr_' + cleanHandle
+  }
+
+  // Neutral unlinked identifier when no social account is connected
+  return 'cr_unlinked'
 }
 
 export function getSupportSessionId(creatorData = null) {

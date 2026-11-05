@@ -746,6 +746,8 @@ export function isStaleOrClashingCalendar(calendar, creatorData) {
 
 // Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
 export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
+  const isConnected = isChannelConnectedOrConfigured(creatorData)
+
   const creatorName = creatorData?.name || (creatorData?.handle || '').replace(/^@+/, '') || 'Creator'
   const handle = creatorData?.handle || creatorName || 'creator'
   const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
@@ -762,6 +764,17 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length > 0 && !isStaleOrClashingCalendar(parsed, creatorData)) {
+          // If no account is connected, reject and purge ungrounded dummy template posts
+          const hasUngroundedDummy = parsed.some(d => (d.posts || []).some(p => 
+            (p.title || '').includes('Official Reveal: Inside the New') ||
+            (p.title || '').includes('The Biggest Announcement of the Year') ||
+            (p.title || '').includes('3 Things You Can Do Today Inside')
+          ))
+          if (!isConnected && hasUngroundedDummy) {
+            localStorage.removeItem(k)
+            try { localStorage.removeItem(`forge_campaign_posts_${hClean}`) } catch (_) {}
+            continue
+          }
           rawCalendar = parsed
           break
         } else if (parsed && isStaleOrClashingCalendar(parsed, creatorData)) {
@@ -771,8 +784,11 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     } catch (_) {}
   }
 
-  // If no calendar in localStorage yet or it was stale/clashing, build tailored week and persist to localStorage
+  // If no calendar in localStorage and NO channel connected, do NOT fabricate ungrounded dummy posts
   if (!rawCalendar) {
+    if (!isConnected) {
+      return []
+    }
     rawCalendar = buildTailoredFallbackWeek(creatorData)
     cacheKeys.forEach(k => {
       try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}

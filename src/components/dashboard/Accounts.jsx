@@ -358,6 +358,35 @@ export default function Accounts() {
 
   // Dynamic scheduled posts preview for the sidebar from real campaign data
   const upcomingQueue = useMemo(() => {
+    // If no social channel is connected yet, AI cannot study channel to propose schedules
+    if (!isYouTubeActive && activeCount === 0) {
+      try {
+        const handle = creatorData?.handle || 'default'
+        const hClean = handle.replace(/^@+/, '')
+        const saved = localStorage.getItem(`forge_campaign_posts_${hClean}`)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed)) {
+            // Only show if the user explicitly drafted custom posts
+            const customPosts = parsed.filter(p => p.isCustomUserDraft || p.status === 'Scheduled')
+            if (customPosts.length > 0) {
+              return customPosts.slice(0, 3).map(p => ({
+                id: p.id,
+                day: p.fullDayName || p.dayName,
+                date: p.fullDateStr,
+                channel: p.channel,
+                format: p.format,
+                title: p.title,
+                time: p.time,
+                status: 'scheduled'
+              }))
+            }
+          }
+        }
+      } catch (_) {}
+      return []
+    }
+
     try {
       const handle = creatorData?.handle || 'default'
       const hClean = handle.replace(/^@+/, '')
@@ -391,29 +420,8 @@ export default function Accounts() {
         }
       }
     } catch (_) {}
-    return [
-      {
-        id: 'q1',
-        day: 'Tuesday',
-        date: 'Nov 3, 2026',
-        channel: 'YouTube',
-        format: 'VIDEO',
-        title: creatorData?.productName ? `Launch: Unveiling ${creatorData.productName}` : 'Launch Campaign Video',
-        time: '11:30 AM',
-        status: 'draft'
-      },
-      {
-        id: 'q2',
-        day: 'Wednesday',
-        date: 'Nov 4, 2026',
-        channel: 'Instagram',
-        format: 'REEL',
-        title: 'Behind the Scenes & Community Teaser',
-        time: '1:00 PM',
-        status: 'draft'
-      }
-    ]
-  }, [creatorData?.handle, creatorData?.productName])
+    return []
+  }, [creatorData?.handle, isYouTubeActive, activeCount])
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 w-full space-y-6 text-slate-200">
@@ -1367,26 +1375,36 @@ export default function Accounts() {
             </div>
 
             <div className="space-y-2">
-              {upcomingQueue.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setActiveTab && setActiveTab('content-calendar')}
-                  className="p-3 bg-[#101420] border border-[#1b2336] hover:border-slate-600 transition cursor-pointer space-y-1"
-                  style={{ borderRadius: '0px' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-slate-800 text-slate-300">
-                      {item.channel.toUpperCase()} • {item.format}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {item.day}, {item.time}
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-200 truncate">
-                    {item.title}
+              {upcomingQueue.length === 0 ? (
+                <div className="p-4 text-center space-y-2 bg-[#101420] border border-[#1b2336]" style={{ borderRadius: '0px' }}>
+                  <Clock size={18} className="mx-auto text-slate-500" />
+                  <p className="text-xs font-bold text-slate-300">No scheduled broadcasts</p>
+                  <p className="text-[11px] text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    Connect your channel above so the AI can analyze your uploads and generate an aligned launch schedule.
                   </p>
                 </div>
-              ))}
+              ) : (
+                upcomingQueue.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveTab && setActiveTab('content-calendar')}
+                    className="p-3 bg-[#101420] border border-[#1b2336] hover:border-slate-600 transition cursor-pointer space-y-1"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-slate-800 text-slate-300">
+                        {item.channel.toUpperCase()} • {item.format}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {item.day}, {item.time}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-200 truncate">
+                      {item.title}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="pt-1 flex items-center justify-between gap-2">

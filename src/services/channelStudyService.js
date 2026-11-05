@@ -11,18 +11,38 @@ import { saveDashboardSection } from './dashboardApi'
 /**
  * Returns true if the user has an authenticated or verified social channel.
  * Returns false if the user directly signed up / signed in without linking a channel.
+ * NEVER assumes or fabricates connection status from blueprints or email addresses.
  */
 export function isChannelConnectedOrConfigured(creatorData, youtubeConn, metaConn) {
   if (youtubeConn?.connected || creatorData?.youtube_connected) return true
   if (metaConn?.facebook?.connected || creatorData?.facebook_connected) return true
   if (metaConn?.instagram?.connected || creatorData?.instagram_connected) return true
+  if (creatorData?.otherAccounts?.youtube?.connected) return true
+  if (creatorData?.otherAccounts?.instagram?.connected) return true
+  if (creatorData?.otherAccounts?.facebook?.connected) return true
+  if (creatorData?.otherAccounts?.twitter?.connected) return true
+  if (creatorData?.otherAccounts?.tiktok?.connected) return true
 
-  const handle = creatorData?.handle || ''
-  const hasRealHandle = handle && handle !== '@creator' && handle !== 'default' && handle !== '@'
-  const hasRealPosts = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
-  const hasRealBlueprint = Boolean(creatorData?.blueprint?.name && !creatorData?.blueprint?.name?.includes('Creator Academy'))
+  // Check stored YouTube connection if in browser
+  if (typeof window !== 'undefined') {
+    try {
+      const email = creatorData?.email
+      if (email) {
+        const stored = localStorage.getItem(`forge_youtube_connection_${email}`)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (parsed?.connected) return true
+        }
+      }
+    } catch (_) {}
+  }
 
-  return Boolean(hasRealHandle && (hasRealPosts || hasRealBlueprint))
+  // Real authenticated channel ID or real verified videos scraped from channel
+  if (creatorData?.channelId && creatorData?.channelId !== 'default') return true
+  if (Array.isArray(creatorData?.connectedChannels) && creatorData.connectedChannels.length > 0) return true
+  if (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0 && creatorData?.platform) return true
+
+  return false
 }
 
 /**
