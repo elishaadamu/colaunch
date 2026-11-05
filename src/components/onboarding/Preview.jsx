@@ -12,7 +12,8 @@ import {
 import WingLogo from '../ui/WingLogo'
 import { parseFollowerCount } from '../../services/ai'
 import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
-import { fetchCreatorComments } from '../../services/scraper'
+import { fetchCreatorComments, cleanPostTitle } from '../../services/scraper'
+export { cleanPostTitle }
 
 function isLightColor(hex) {
   if (!hex || typeof hex !== 'string') return false
@@ -41,6 +42,7 @@ export function getPlatformInfo(platform) {
   if (p === 'instagram') {
     return {
       name: 'Instagram',
+      featuredLabel: 'Featured Release',
       exploreLabel: 'Explore Profile on Instagram',
       watchLabel: 'Watch on Instagram',
       viewLabel: 'View on Instagram',
@@ -54,6 +56,7 @@ export function getPlatformInfo(platform) {
   if (p === 'tiktok') {
     return {
       name: 'TikTok',
+      featuredLabel: 'Featured TikTok',
       exploreLabel: 'Explore Profile on TikTok',
       watchLabel: 'Watch on TikTok',
       viewLabel: 'View on TikTok',
@@ -67,6 +70,7 @@ export function getPlatformInfo(platform) {
   if (p === 'twitter' || p === 'x') {
     return {
       name: 'X (Twitter)',
+      featuredLabel: 'Featured Post',
       exploreLabel: 'Explore Profile on X',
       watchLabel: 'View on X',
       viewLabel: 'View on X',
@@ -79,6 +83,7 @@ export function getPlatformInfo(platform) {
   }
   return {
     name: 'YouTube',
+    featuredLabel: 'Featured Channel Video',
     exploreLabel: 'Explore Channel on YouTube',
     watchLabel: 'Watch on YouTube',
     viewLabel: 'View on YouTube',
@@ -506,7 +511,7 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-white truncate">
-                      {vid.title}
+                      {cleanPostTitle(vid.title, 55)}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 font-mono">
@@ -673,7 +678,7 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-xs font-bold text-white truncate">
-              {videoTitle}
+              {cleanPostTitle(videoTitle, 65)}
             </span>
           </div>
 
@@ -781,9 +786,9 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
                     )}
                   </div>
                   <p className={`text-xs text-slate-200 leading-relaxed font-normal ${showFullCaption ? '' : 'line-clamp-2'}`}>
-                    {videoTitle}
+                    {video.caption || video.description || video.text || videoTitle}
                   </p>
-                  {videoTitle.length > 120 && (
+                  {(video.caption || video.description || video.text || videoTitle).length > 120 && (
                     <button
                       type="button"
                       onClick={() => setShowFullCaption(!showFullCaption)}
@@ -1130,14 +1135,14 @@ function ProductLandingPage({
         {topVideo && (
           <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
             <div className="max-w-4xl mx-auto space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1 pr-0 sm:pr-4">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-                    Featured Channel Video
+                    <span className="w-2 h-2 shrink-0" style={{ backgroundColor: dynamicAccent }} />
+                    <span>{platformInfo.featuredLabel || 'Featured Release'}</span>
                   </span>
-                  <h3 className="text-base sm:text-xl font-bold text-white mt-1">
-                    {topVideoTitle}
+                  <h3 className="text-base sm:text-xl font-bold text-white mt-1 line-clamp-2 leading-snug">
+                    {cleanPostTitle(topVideoTitle, 75)}
                   </h3>
                 </div>
                 {creatorUrl && (
@@ -1145,7 +1150,7 @@ function ProductLandingPage({
                     href={topVideoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0"
+                    className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0 self-start sm:self-auto py-1"
                   >
                     <span>{platformInfo.watchLabel}</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1286,7 +1291,7 @@ function ProductLandingPage({
                             onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
                             className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug hover:underline cursor-pointer"
                           >
-                            {v.title}
+                            {cleanPostTitle(v.title, 65)}
                           </h5>
                           <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
                             {formatViewsString(v.views) ? (
@@ -1767,7 +1772,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                     {/* Info */}
                     <div className="p-3.5">
                       <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug transition-colors">
-                        {v.title}
+                        {cleanPostTitle(v.title, 65)}
                       </h5>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 font-mono flex-wrap">
                         {formatViewsString(v.views) ? (
@@ -2011,7 +2016,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
 
             {topVideoTitle ? (
               <p className="text-xs text-slate-300 leading-relaxed">
-                Latest release from channel: <strong className="text-white">"{topVideoTitle}"</strong>.
+                Latest release from channel: <strong className="text-white">"{cleanPostTitle(topVideoTitle, 75)}"</strong>.
               </p>
             ) : null}
 
@@ -2057,7 +2062,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                     <Play className="w-6 h-6 text-slate-500" />
                   )}
                 </div>
-                <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{v.title}</h5>
+                <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{cleanPostTitle(v.title, 65)}</h5>
                 <span className="text-[10px] text-slate-400 font-mono mt-1 block">{formatViewsString(v.views) || (v.likes ? `${v.likes} likes` : 'Lesson Video')}</span>
               </div>
               <a
@@ -2129,7 +2134,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">Live Stage & Broadcasts</span>
             </div>
             <h4 className="text-sm sm:text-base font-bold text-white">
-              {topVideoTitle ? `Live Stream: ${topVideoTitle}` : `${creatorName} Live Community Broadcast`}
+              {topVideoTitle ? `Live Stream: ${cleanPostTitle(topVideoTitle, 65)}` : `${creatorName} Live Community Broadcast`}
             </h4>
             <p className="text-xs text-slate-300">
               Join the live stream on {platformInfo.name} and connect with fellow viewers in real time.

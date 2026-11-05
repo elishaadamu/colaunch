@@ -101,6 +101,46 @@ function fmt(n) {
   return String(n)
 }
 
+/**
+ * Truncate long captions (e.g. from Instagram / TikTok) into a punchy, clean post title.
+ * Meta and TikTok lack native title fields, returning lengthy multi-paragraph captions.
+ */
+export function cleanPostTitle(rawTitle, maxLength = 72) {
+  if (!rawTitle || typeof rawTitle !== 'string') return ''
+  let str = rawTitle.trim()
+  if (!str) return ''
+
+  // 1. If text has multiple lines, inspect the first non-empty line
+  const lines = str.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+  if (lines.length > 0) {
+    const firstLine = lines[0]
+    if (firstLine.length >= 8 && !firstLine.startsWith('http')) {
+      str = firstLine
+    }
+  }
+
+  // 2. Strip leading hashtags, mentions, or bullet markers
+  str = str.replace(/^[#@\s•\-*]+/, '').trim()
+
+  // 3. If there is a natural sentence or break mark within the first 12-80 chars, use it
+  const sentenceMatch = str.match(/^([^.!?|·—\n]{12,80})[.!?|·—]/)
+  if (sentenceMatch && sentenceMatch[1] && sentenceMatch[1].trim().length >= 12) {
+    return sentenceMatch[1].trim()
+  }
+
+  // 4. Truncate at word boundary if still longer than maxLength
+  if (str.length > maxLength) {
+    const cut = str.slice(0, maxLength)
+    const lastSpace = cut.lastIndexOf(' ')
+    if (lastSpace > 24) {
+      return cut.slice(0, lastSpace).trim().replace(/[,:;\-–—]+$/, '') + '...'
+    }
+    return cut.trim().replace(/[,:;\-–—]+$/, '') + '...'
+  }
+
+  return str
+}
+
 /** Parse subscriber strings like "524M", "524M subscribers", "450K", "10,000" into a number */
 export function parseBigNum(val) {
   if (typeof val === 'number') return val
@@ -291,8 +331,12 @@ async function _doScrape(url, platform) {
         formattedViews = fmt(parsedLikes * 6);
       }
 
+      const rawCaption = p.caption || p.text || p.desc || p.description || p.title || '';
+      const cleanTitle = cleanPostTitle(p.title || rawCaption, 75);
+
       return {
-        title: p.title || p.caption || '',
+        title: cleanTitle,
+        caption: rawCaption,
         thumbnail: p.thumbnail || p.thumbnailUrl || p.displayUrl || '',
         videoId: p.videoId || p.id || '',
         videoUrl: p.videoUrl || p.video_url || '',
@@ -574,8 +618,10 @@ export async function scrapeInstagram(url) {
       const postUrl = post.url || (shortcode ? `https://www.instagram.com/p/${shortcode}/` : '');
       const likesCnt = post.likesCount || post.like_count || post.edge_liked_by?.count || 0;
       const viewsCnt = post.videoViewCount || post.video_view_count || (likesCnt ? likesCnt * 6 : 0);
+      const rawCaption = post.caption || '';
       return {
-        title: post.caption || '',
+        title: cleanPostTitle(rawCaption, 75),
+        caption: rawCaption,
         url: postUrl,
         videoId: shortcode,
         videoUrl: post.videoUrl || post.video_url || '',
@@ -630,7 +676,10 @@ export async function scrapeTikTok(url) {
     )
     recentPosts = (videoRes || []).slice(0, 6).map(v => {
       const meta = v.videoMeta || {}
+      const rawCaption = v.text || v.desc || meta.desc || ''
       return {
+        title:     cleanPostTitle(rawCaption, 75),
+        caption:   rawCaption,
         url:       v.webVideoUrl || v.videoUrl || (v.id ? `https://www.tiktok.com/@${uniqueId}/video/${v.id}` : ''),
         thumbnail: meta.coverUrl    || v.covers?.[0]    || v.coverUrl     || '',
         views:     fmt(v.playCount  || meta.playCount   || 0),
