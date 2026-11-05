@@ -958,6 +958,11 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const productName = creatorData?.productName || creatorData?.blueprint?.name || `${creatorName} Pro Suite`
 
+  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
+  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
+  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
+
   // Brand Red styling with guaranteed white text
   const brandRed = '#c81e3c'
 
@@ -2164,11 +2169,6 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     if (channel === 'LinkedIn') return <Linkedin className="w-4 h-4 text-sky-400 shrink-0" />
     return <Send className="w-4 h-4 text-slate-400 shrink-0" />
   }
-
-  const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
-  const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
-  const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
-  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
   return (
     <div 
