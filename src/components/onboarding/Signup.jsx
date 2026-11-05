@@ -292,22 +292,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-between py-6 px-4 sm:px-6 bg-[#07090e] text-white relative overflow-hidden">
-      {/* Background ambient video atmosphere */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <video
-          src="/Man_launching_software_animation_100e220a_1080p.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-12 filter blur-md scale-105 pointer-events-none"
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'radial-gradient(circle at 50% 10%, rgba(200, 30, 60, 0.12) 0%, rgba(7, 9, 14, 0.94) 75%)' }}
-        />
-      </div>
+    <div className="min-h-screen flex flex-col justify-between py-6 px-4 sm:px-6 bg-[#07090e] text-white">
       {/* Header */}
       <header className="flex items-center justify-between max-w-4xl mx-auto w-full">
         <button
