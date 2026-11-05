@@ -372,19 +372,9 @@ export default function CreatorLink() {
           <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </a>
 
-        {/* Right: Login + Reset Creator Button + Step Indicator Dots & Counter */}
+        {/* Right: Reset Creator Button + Step Indicator Dots & Counter */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {userProfile ? (
-            <button
-              type="button"
-              onClick={() => goTo('dashboard')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-[#111317]/80 hover:bg-[#1a1e26] border border-[#1f242c] hover:border-slate-500 rounded-none transition-all cursor-pointer shadow-sm"
-              title="Go to Dashboard"
-            >
-              <LogIn className="w-3.5 h-3.5 text-slate-400" />
-              <span>Dashboard</span>
-            </button>
-          ) : (
+          {!userProfile && (
             <button
               type="button"
               onClick={() => goTo('login')}

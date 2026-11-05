@@ -267,18 +267,13 @@ export default function Signup() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         const msg = data.detail || data.message || 'Could not create account.'
-        // If username/email already taken, inform user clearly
-        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists')) {
-          throw new Error('An account with this email already exists. Please sign in instead.')
-        }
+        throw new Error(msg)
       }
     } catch (err) {
       console.warn('[Signup Notice]', err.message)
-      if (err.message.includes('already exists')) {
-        setError(err.message)
-        setLoading(false)
-        return
-      }
+      setError(err.message || 'Could not create account.')
+      setLoading(false)
+      return
     }
 
     // 2. Persist local session
