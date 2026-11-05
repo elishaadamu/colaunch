@@ -18,7 +18,6 @@ import {
 export default function SupportWidget({ currentStage }) {
   const { creatorData } = useForge()
   const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -240,69 +239,64 @@ export default function SupportWidget({ currentStage }) {
 
   return (
     <>
-      {/* Floating Right Support Button - Positioned above sticky bottom action bars */}
-      <div className="fixed bottom-24 right-4 sm:right-6 z-50 flex items-center gap-1.5">
-        {isMinimized ? (
-          <button
-            onClick={() => setIsMinimized(false)}
-            className="w-10 h-10 rounded-none bg-[#121722]/95 hover:bg-[#1a2233] text-white border border-[#2b354c] shadow-2xl transition-all duration-200 cursor-pointer flex items-center justify-center group relative backdrop-blur-md"
-            style={{
-              borderColor: isOpen ? accent.color : 'rgba(255,255,255,0.16)',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
-            }}
-            title="Expand Support Widget"
+      {/* Floating Right Support Button - Icon only with tooltip on hover to the left */}
+      <div className="fixed bottom-24 right-4 sm:right-6 z-50 flex items-center">
+        <div className="relative group flex items-center">
+          {/* Tooltip strictly positioned to the LEFT on hover */}
+          <div
+            role="tooltip"
+            className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 transform translate-x-1 group-hover:translate-x-0 z-50 flex items-center"
           >
-            <Headphones className="w-4 h-4 transition-transform group-hover:scale-110" style={{ color: accent.color }} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+            <div
+              className="relative px-3 py-1.5 bg-[#0c1017] border border-[#2b354c] shadow-2xl text-left whitespace-nowrap"
+              style={{ borderRadius: '0px' }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-white tracking-tight">Support</span>
+                <span className="w-1.5 h-1.5 rounded-none" style={{ background: accent.color, borderRadius: '0px' }} />
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
+                AI & Admin Desk
+              </p>
+              {/* Seamless arrow pointing right to the icon */}
+              <div className="absolute -right-[5px] top-1/2 -translate-y-1/2 w-2 h-2 bg-[#0c1017] border-t border-r border-[#2b354c] rotate-45 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Icon-Only Launcher Button */}
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-11 h-11 rounded-none bg-[#121722]/95 hover:bg-[#1a2233] text-white border border-[#2b354c] hover:border-slate-400 shadow-2xl transition-all duration-200 cursor-pointer flex items-center justify-center relative backdrop-blur-md"
+            style={{
+              borderRadius: '0px',
+              borderColor: isOpen ? accent.color : 'rgba(255,255,255,0.18)',
+              boxShadow: isOpen 
+                ? `0 0 25px -5px ${accent.color}40, 0 10px 30px rgba(0,0,0,0.6)` 
+                : '0 10px 30px rgba(0,0,0,0.6)'
+            }}
+            aria-label="Toggle Support AI & Admin Desk"
+          >
+            {isOpen ? (
+              <X className="w-4 h-4 text-white" />
+            ) : (
+              <Headphones 
+                className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" 
+                style={{ color: accent.color }} 
+              />
+            )}
+
+            {/* Unread badge */}
+            {unreadCount > 0 && !isOpen && (
+              <span 
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-none bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shadow-sm"
+                style={{ borderRadius: '0px' }}
+              >
                 {unreadCount}
               </span>
             )}
           </button>
-        ) : (
-          <div 
-            className="flex items-center rounded-none bg-[#121722]/95 border border-[#2b354c] shadow-2xl backdrop-blur-md"
-            style={{
-              borderColor: isOpen ? accent.color : 'rgba(255,255,255,0.16)',
-              boxShadow: isOpen ? `0 0 25px -5px ${accent.color}40` : '0 10px 30px rgba(0,0,0,0.6)'
-            }}
-          >
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-[#1a2233] text-white transition-all duration-200 cursor-pointer"
-              aria-label="Toggle Customer Support"
-            >
-              <div 
-                className="w-7 h-7 rounded-none flex items-center justify-center flex-shrink-0"
-                style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
-              >
-                <Headphones className="w-4 h-4" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
-                  Support
-                  <span className="w-1.5 h-1.5 rounded-none" style={{ background: accent.color }} />
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  AI & Admin Desk
-                </span>
-              </div>
-              {unreadCount > 0 && (
-                <span className="w-5 h-5 rounded-none bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ml-1">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsMinimized(true)}
-              className="p-2 text-slate-500 hover:text-white hover:bg-white/5 transition cursor-pointer border-l border-[#2b354c]/60"
-              title="Minimize support button"
-            >
-              <Minimize2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Slide-over Right Chat Panel */}
