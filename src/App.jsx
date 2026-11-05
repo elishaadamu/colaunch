@@ -429,8 +429,11 @@ export default function App() {
           if (data.gemini_api_key && !localStorage.getItem('forge_gemini_api_key')) {
             localStorage.setItem('forge_gemini_api_key', data.gemini_api_key)
           }
-          if (data.openai_api_key && !localStorage.getItem('forge_openai_api_key')) {
-            localStorage.setItem('forge_openai_api_key', data.openai_api_key)
+          if (data.openai_api_key) {
+            const currentStored = localStorage.getItem('forge_openai_api_key')
+            if (!currentStored || currentStored.length < 20 || currentStored.includes('expired')) {
+              localStorage.setItem('forge_openai_api_key', data.openai_api_key)
+            }
           }
           if (data.anthropic_api_key && !localStorage.getItem('forge_anthropic_api_key')) {
             localStorage.setItem('forge_anthropic_api_key', data.anthropic_api_key)

@@ -1425,8 +1425,19 @@ export async function generateProductImageWithOpenAI(
 
     console.warn(`[Forge] DALL-E 3 API returned status ${res.status}:`, errMsg);
 
-    // If key has expired or unauthorized, throw immediate clear message
+    // If key has expired or unauthorized, throw immediate clear message and purge stale cache
     if (res.status === 401) {
+      if (openaiKey) {
+        failedKeys.add(openaiKey);
+        try {
+          if (localStorage.getItem("forge_openai_api_key") === openaiKey) {
+            localStorage.removeItem("forge_openai_api_key");
+          }
+          if (inMemoryAiKeys.openaiKey === openaiKey) {
+            inMemoryAiKeys.openaiKey = "";
+          }
+        } catch (_) {}
+      }
       throw new Error(`OpenAI Key Expired: ${errMsg}`);
     }
 
