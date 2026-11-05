@@ -11,6 +11,7 @@ import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../.
 import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
+import { cleanPostTitle } from '../../services/scraper'
 
 // ─── PIXEL COACH ─────────────────────────────────────────────────────────────
 // A tiny pixel-art character that coaches the creator
@@ -1057,7 +1058,8 @@ function buildDynamicTodayActions(creatorData) {
   const product = creatorData?.productName || 'VIP Launch Pass'
   const niche = creatorData?.niche || 'creator community'
   const followers = creatorData?.followers ? Number(creatorData.followers).toLocaleString() : 'audience'
-  const latestVideo = creatorData?.recentVideos?.[0]?.title || creatorData?.videos?.[0]?.title || null
+  const postList = (creatorData?.recentPosts || creatorData?.recentVideos || creatorData?.videos || [])
+  const latestVideo = postList[0]?.title || postList[0]?.caption || null
 
   if (p === 'youtube') {
     return [
