@@ -1447,18 +1447,37 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
     }
 
     // 2. Genuine scraped creator posts (filter out any dummy/unsplash fallbacks)
-    if (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0) {
-      const genuine = creatorData.recentPosts.filter(p => p && (!p.thumbnail || !p.thumbnail.includes('unsplash.com')) && p.title && !p.title.includes('Complete Launch Blueprint'))
+    const rawPostList = (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0)
+      ? creatorData.recentPosts
+      : (Array.isArray(creatorData?.videos) && creatorData.videos.length > 0)
+        ? creatorData.videos
+        : []
+
+    if (rawPostList.length > 0) {
+      const genuine = rawPostList.filter(p => p && (!p.thumbnail || !p.thumbnail.includes('unsplash.com')) && (p.title || p.caption || p.text) && !(p.title || '').includes('Complete Launch Blueprint'))
       if (genuine.length > 0) {
+        const platform = (creatorData?.platform || 'youtube').toLowerCase()
+        const cleanHandle = (creatorData?.handle || 'creator').replace(/^@+/, '')
+
         return genuine.slice(0, 6).map(p => {
           const vidId = p.videoId || p.id || ''
           const thumb = (p.thumbnail && !p.thumbnail.includes('unsplash.com')) ? p.thumbnail : (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : '')
+          const fallbackUrl = platform === 'instagram'
+            ? (vidId ? `https://www.instagram.com/p/${vidId}/` : `https://www.instagram.com/${cleanHandle}/`)
+            : platform === 'tiktok'
+              ? (vidId ? `https://www.tiktok.com/@${cleanHandle}/video/${vidId}` : `https://www.tiktok.com/@${cleanHandle}`)
+              : (vidId ? `https://www.youtube.com/watch?v=${vidId}` : '#')
+          const rawViews = p.views
+          const formattedViews = (rawViews && rawViews !== '0' && rawViews !== '0 views' && rawViews !== 0)
+            ? (typeof rawViews === 'number' ? `${rawViews.toLocaleString()} views` : String(rawViews))
+            : (p.likes ? (String(p.likes).includes('like') ? p.likes : `${p.likes} likes`) : 'Verified')
+
           return {
-            title: p.title || 'Latest Video',
+            title: cleanPostTitle(p.title || p.caption || p.text || 'Latest Post', 65),
             thumbnail: thumb,
-            views: p.views ? (typeof p.views === 'number' ? `${p.views.toLocaleString()} views` : String(p.views)) : 'Verified',
+            views: formattedViews,
             likes: p.likes,
-            url: p.url || (vidId ? `https://www.youtube.com/watch?v=${vidId}` : '#')
+            url: p.url || fallbackUrl
           }
         })
       }
@@ -1493,7 +1512,7 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
   const productName = creatorData.productName || 'Creator Academy'
   const niche       = creatorData.niche        || 'your niche'
 
-  const CONTENT = buildContent(handle, productName, niche)
+  const CONTENT = buildContent(handle, productName, niche, creatorData)
 
   const [dismissedActions, setDismissedActions] = useState(() => {
     try {
