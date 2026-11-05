@@ -33,37 +33,37 @@ const ANALYSIS_STEPS = [
     id: 'profile',
     label: 'Scanning creator profile & indexing media',
     why: 'Pulling verified follower metrics, engagement patterns, and channel telemetry directly from the platform.',
-    duration: 2800,
+    duration: 800,
   },
   {
     id: 'identity',
     label: 'Extracting audience signals & sentiment',
     why: 'Analyzing audience resonance, comment velocity, and buyer readiness across recent content releases.',
-    duration: 3000,
+    duration: 850,
   },
   {
     id: 'audience',
     label: 'Synthesizing market demand & pricing rails',
     why: 'Benchmarking customer willingness to pay and high-retention software niches proven for your audience.',
-    duration: 3200,
+    duration: 900,
   },
   {
     id: 'intelligence',
     label: 'Synthesizing 10-point audience & market intelligence',
     why: 'Extracting verbatim community inquiries, sentiment breakdown, demographics, and competitive market gaps.',
-    duration: 3400,
+    duration: 950,
   },
   {
     id: 'demand',
     label: 'Architecting custom software blueprint',
     why: 'Synthesizing feature specifications, membership paywalls, and interactive platform modules.',
-    duration: 3200,
+    duration: 900,
   },
   {
     id: 'model',
     label: 'Selecting optimal monetization engine',
     why: 'Finalizing unit economics, recurring subscription tiers, and go-to-market launch sequences.',
-    duration: 3000,
+    duration: 800,
   },
 ]
 
@@ -238,7 +238,7 @@ export default function Analyzing() {
     setTimeout(next, 700)
   }
 
-  // Synthesize 10-point audience intelligence during analysis
+  // Synthesize 10-point audience intelligence during analysis with fast concurrent resolution
   const runTenPointsAnalysis = async (targetData) => {
     try {
       const cleanHandle = String(targetData?.handle || creatorData?.handle || 'creator').replace(/^@/, '').trim().toLowerCase()
@@ -246,34 +246,45 @@ export default function Analyzing() {
       const niche = targetData?.niche || 'Digital Content Creation'
       const platform = targetData?.platform || 'youtube'
 
-      let comments = []
-      try {
-        comments = await fetchCreatorComments(cleanHandle, platform, 12)
-        if (!comments || comments.length === 0) {
-          const urls = (targetData?.recentPosts || []).map(p => p.url).filter(Boolean)
-          if (urls.length > 0) {
-            comments = await fetchCreatorComments(urls[0], platform, 12)
-          }
-        }
-      } catch (err) {
-        console.warn('[Forge] Analyzing comments error:', err)
-      }
+      const withTimeout = (promise, ms = 3000) =>
+        Promise.race([
+          promise,
+          new Promise((resolve) => setTimeout(() => resolve(null), ms))
+        ])
 
-      let searchItems = []
-      try {
-        searchItems = await searchGoogleApify(`${creatorName} ${niche} software tools reviews`)
+      // Run comments and search in parallel with strict 3-second ceiling
+      const [commentsResult, searchResult] = await Promise.allSettled([
+        withTimeout(
+          fetchCreatorComments(cleanHandle, platform, 12).catch(async () => {
+            const urls = (targetData?.recentPosts || []).map(p => p.url).filter(Boolean)
+            if (urls.length > 0) return await fetchCreatorComments(urls[0], platform, 12)
+            return []
+          }),
+          3000
+        ),
+        withTimeout(
+          searchGoogleApify(`${creatorName} ${niche} software tools reviews`),
+          3000
+        )
+      ])
+
+      const comments = (commentsResult.status === 'fulfilled' && Array.isArray(commentsResult.value)) ? commentsResult.value : []
+      const searchItems = (searchResult.status === 'fulfilled' && Array.isArray(searchResult.value)) ? searchResult.value : []
+
+      if (searchItems.length > 0) {
         try {
           localStorage.setItem(`forge_apify_search_${cleanHandle}`, JSON.stringify(searchItems))
         } catch {}
-      } catch (err) {
-        console.warn('[Forge] Analyzing search error:', err)
       }
 
       let synthesized = null
       try {
-        synthesized = await generateAudienceIntelligenceAI(targetData, comments, searchItems)
+        synthesized = await withTimeout(generateAudienceIntelligenceAI(targetData, comments, searchItems), 2500)
       } catch (err) {
         console.warn('[Forge] Analyzing AI synthesis notice:', err)
+      }
+
+      if (!synthesized) {
         synthesized = getDynamicAudienceIntelligence(targetData, comments, searchItems)
       }
 
@@ -448,7 +459,7 @@ export default function Analyzing() {
               scrapeDoneRef.current = true
               finishAndAdvance()
             }
-          }, 16000)
+          }, 1500)
         }
         return
       }

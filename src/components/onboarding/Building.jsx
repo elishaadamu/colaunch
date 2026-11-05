@@ -26,9 +26,9 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
   artifacts.push({
     id: 'shell',
     icon: Globe,
-    label: 'Core application engine',
+    label: 'App Engine',
     description: `Edge-rendered responsive shell for ${name}`,
-    duration: 1300,
+    duration: 1100,
   })
 
   // Feature-driven artifacts
@@ -38,65 +38,65 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
       artifacts.push({
         id: `podcast-${i}`,
         icon: Volume2,
-        label: 'Podcast streaming player',
+        label: 'Podcast Player',
         description: 'Audio syndication, show notes feed & episode player',
-        duration: 1400,
+        duration: 1200,
       })
     } else if (fLower.includes('live') || fLower.includes('ama') || fLower.includes('event')) {
       artifacts.push({
         id: `live-${i}`,
         icon: Radio,
-        label: 'Live stage & AMAs',
+        label: 'Live Stage',
         description: 'Live broadcast rooms, event scheduling & audience Q&A',
-        duration: 1400,
+        duration: 1200,
       })
     } else if (fLower.includes('store') || fLower.includes('product') || fLower.includes('drop')) {
       artifacts.push({
         id: `store-${i}`,
         icon: ShoppingBag,
-        label: 'Digital storefront & vault',
+        label: 'Digital Store',
         description: 'Secure file downloads, checkout flows & product vault',
-        duration: 1400,
+        duration: 1200,
       })
     } else if (fLower.includes('video') || fLower.includes('vault') || fLower.includes('release')) {
       artifacts.push({
         id: `videos-${i}`,
         icon: Play,
-        label: 'Video archive & player',
+        label: 'Video Vault',
         description: 'YouTube channel feed sync & curated video vault',
-        duration: 1400,
+        duration: 1200,
       })
     } else if (fLower.includes('forum') || fLower.includes('community') || fLower.includes('discussion')) {
       artifacts.push({
         id: `community-${i}`,
         icon: Users,
-        label: 'Member community feed',
+        label: 'Community Feed',
         description: 'Threaded discussions, real audience comments & profiles',
-        duration: 1300,
+        duration: 1100,
       })
     } else if (fLower.includes('tier') || fLower.includes('perk') || fLower.includes('membership')) {
       artifacts.push({
         id: `billing-${i}`,
         icon: BarChart2,
-        label: 'Tiered membership gates',
+        label: 'Membership Gates',
         description: 'Stripe subscription tiers, member perks & access keys',
-        duration: 1400,
+        duration: 1200,
       })
     } else if (fLower.includes('announcement')) {
       artifacts.push({
         id: `announcements-${i}`,
         icon: Megaphone,
-        label: 'Official announcements',
+        label: 'Announcements',
         description: 'Creator broadcast channel & instant push alerts',
-        duration: 1200,
+        duration: 1000,
       })
     } else if (fLower.includes('course') || fLower.includes('curriculum')) {
       artifacts.push({
         id: `curriculum-${i}`,
         icon: Layout,
-        label: 'Course curriculum builder',
+        label: 'Course Builder',
         description: 'Lesson modules, progress tracking & completion awards',
-        duration: 1400,
+        duration: 1200,
       })
     }
   })
@@ -105,9 +105,9 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
   artifacts.push({
     id: 'launch-portal',
     icon: Package,
-    label: 'Launch & dashboard readiness',
+    label: 'Launch Ready',
     description: `Configuring ${name} modules for Creator Studio`,
-    duration: 1200,
+    duration: 1000,
   })
 
   return artifacts.slice(0, 6)
@@ -132,25 +132,25 @@ function ArtifactPreview({ artifact, isActive, isBuilt, accent, elapsedSec }) {
     >
       {/* Title bar */}
       <div
-        className="flex items-center justify-between px-3 py-2 border-b"
+        className="flex items-center justify-between px-2.5 py-1.5 border-b gap-1.5 min-w-0"
         style={{ borderColor: 'rgba(255,255,255,0.06)' }}
       >
-        <div className="flex items-center gap-2">
-          <Icon size={12} style={{ color: isActive ? accent.color : 'rgba(255,255,255,0.5)' }} />
-          <span className="text-[11px] font-medium truncate" style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.5)' }}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+          <Icon size={11} className="shrink-0" style={{ color: isActive ? accent.color : 'rgba(255,255,255,0.5)' }} />
+          <span className="text-[10px] font-semibold tracking-tight truncate leading-tight block w-full" style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.65)' }}>
             {artifact.label}
           </span>
         </div>
         {isBuilt && (
           <div
-            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0"
             style={{ background: accent.color }}
           >
-            <Check size={9} style={{ color: isLight ? '#000000' : '#ffffff' }} strokeWidth={3} />
+            <Check size={8} style={{ color: isLight ? '#000000' : '#ffffff' }} strokeWidth={3} />
           </div>
         )}
         {isActive && (
-          <div className="flex gap-1 flex-shrink-0">
+          <div className="flex gap-0.5 shrink-0">
             {[1, 2, 3].map(i => (
               <div
                 key={i}
@@ -345,7 +345,7 @@ export default function Building() {
         </div>
 
         {/* Artifact grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 mb-8">
           {artifacts.map((artifact, i) => (
             <ArtifactPreview
               key={artifact.id}

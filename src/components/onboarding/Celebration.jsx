@@ -309,22 +309,22 @@ export default function Celebration() {
                     key={m.id}
                     className="flex items-center justify-between p-3 rounded-none bg-[#161922] border border-[#222634] hover:border-slate-700 transition group"
                   >
-                    <div className="flex items-center space-x-3.5 min-w-0 pr-3">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1 pr-3">
                       <div 
-                        className="w-9 h-9 rounded-none flex items-center justify-center flex-shrink-0 border"
+                        className="w-8 h-8 rounded-none flex items-center justify-center flex-shrink-0 border"
                         style={{
                           background: `rgba(${accent.rgb}, 0.1)`,
                           color: accent.color,
                           borderColor: `rgba(${accent.rgb}, 0.25)`
                         }}
                       >
-                        <ModIcon className="w-4 h-4" />
+                        <ModIcon className="w-3.5 h-3.5" />
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-sm font-semibold text-white block truncate">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <span className="text-xs sm:text-sm font-semibold text-white block truncate leading-snug">
                           {m.title}
                         </span>
-                        <span className="text-xs text-slate-400 block truncate">
+                        <span className="text-[11px] text-slate-400 block truncate leading-tight mt-0.5">
                           {m.description}
                         </span>
                       </div>
