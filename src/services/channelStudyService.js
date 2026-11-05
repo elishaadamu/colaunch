@@ -44,6 +44,25 @@ export function isChannelConnectedOrConfigured(creatorData, youtubeConn, metaCon
 }
 
 /**
+ * Check whether creator completed onboarding and has rich scraped profile/channel data.
+ * When true, creator views, studio, campaigns, and AI tools use onboarding data directly,
+ * only prompting for OAuth when they explicitly schedule or publish live to social networks.
+ */
+export function hasOnboardedSocialData(creatorData) {
+  if (!creatorData) return false
+  return Boolean(
+    creatorData.handle ||
+    creatorData.name ||
+    creatorData.creator_name ||
+    creatorData.url ||
+    (Array.isArray(creatorData.recentPosts) && creatorData.recentPosts.length > 0) ||
+    (Array.isArray(creatorData.videos) && creatorData.videos.length > 0) ||
+    creatorData.blueprint ||
+    creatorData.productName
+  )
+}
+
+/**
  * Infer primary niche from channel title, description, and video titles
  */
 function inferNiche(title = '', description = '', videos = []) {

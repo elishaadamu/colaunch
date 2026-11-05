@@ -27,7 +27,7 @@ import {
   Link as LinkIcon
 } from 'lucide-react'
 import { useForge } from '../../App'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 import { fetchCreatorYouTubeVideos } from '../../services/scraper'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'

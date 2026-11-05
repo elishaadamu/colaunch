@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import AiDoesItPanel from './AiDoesItPanel'
 import { hexToRgb, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
 
@@ -1357,9 +1357,10 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
   const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
   const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
-  // If user signed up directly and hasn't connected a channel yet, show empty state with link to Accounts
-  if (!isConnected) {
+  // Show connection blocker ONLY if creator has neither connected an account NOR completed onboarding
+  if (!isConnected && !hasOnboardedData) {
     return (
       <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">
