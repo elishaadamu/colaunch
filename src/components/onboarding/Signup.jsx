@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForge } from '../../App'
-import { 
-  ArrowRight, Lock, Mail, User, AlertTriangle, ShieldCheck, 
+import {
+  ArrowRight, Lock, Mail, User, AlertTriangle, ShieldCheck,
   Sparkles, Eye, EyeOff, CheckCircle2, Loader2, Check
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
@@ -41,8 +41,8 @@ export default function Signup() {
             try {
               window.grecaptcha.execute(siteKey, { action: 'signup_init' }).then(tok => {
                 if (tok) setRecaptchaToken(tok)
-              }).catch(() => {})
-            } catch (_) {}
+              }).catch(() => { })
+            } catch (_) { }
           })
         }
         if (checkTimer) clearInterval(checkTimer)
@@ -295,9 +295,9 @@ export default function Signup() {
     <div className="min-h-screen flex flex-col justify-between py-6 px-4 sm:px-6 bg-[#07090e] text-white">
       {/* Header */}
       <header className="flex items-center justify-between max-w-4xl mx-auto w-full">
-        <button 
+        <button
           type="button"
-          onClick={() => goTo('welcome')} 
+          onClick={() => goTo('welcome')}
           className="flex items-center gap-2 hover:opacity-80 transition cursor-pointer bg-transparent border-0"
         >
           <WingLogo size={22} />
@@ -315,7 +315,7 @@ export default function Signup() {
       </header>
 
       {/* Main Signup Form Card */}
-      <main 
+      <main
         className="flex-1 flex items-center justify-center my-6"
         style={{
           opacity: visible ? 1 : 0,
@@ -323,7 +323,7 @@ export default function Signup() {
           transition: 'all 0.4s ease-out'
         }}
       >
-        <div 
+        <div
           className="w-full max-w-md border border-[#1b2438] p-6 sm:p-7 space-y-5 shadow-2xl relative bg-[#0b0e17]"
           style={{ borderRadius: '0px' }}
         >
@@ -377,7 +377,7 @@ export default function Signup() {
 
           {/* Error message */}
           {error && (
-            <div 
+            <div
               className="p-2.5 bg-rose-950/40 border border-rose-500/50 text-white text-xs flex items-start gap-2"
               style={{ borderRadius: '0px', color: '#ffffff' }}
             >
@@ -446,7 +446,7 @@ export default function Signup() {
                   </div>
                   <div className="grid grid-cols-4 gap-1 h-1">
                     {[1, 2, 3, 4].map(idx => (
-                      <div 
+                      <div
                         key={idx}
                         className="transition-all duration-200"
                         style={{
