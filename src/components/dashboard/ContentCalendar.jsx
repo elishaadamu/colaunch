@@ -197,7 +197,7 @@ function getFullDayName(postOrCell) {
 }
 
 // Dynamic Month Calendar Grid calculation (7 columns: Mon to Sun)
-function getMonthCalendarGrid(year, monthIndex) {
+export function getMonthCalendarGrid(year, monthIndex) {
   const firstDay = new Date(year, monthIndex, 1)
   const lastDay = new Date(year, monthIndex + 1, 0)
   

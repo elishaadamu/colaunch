@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
 import { generateAuthenticFallbackCopy, refineAuthenticCopy } from '../../utils/authenticStudioCopy'
-import { SOCIAL_TEMPLATES, EMAIL_TEMPLATES, ALL_TEMPLATES } from '../../utils/studioTemplates'
 import PlatformNativeStudioPreview from './PlatformNativeStudioPreview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
@@ -146,7 +145,7 @@ export default function Studio() {
     )
   }
 
-  const [selectedType, setSelectedType] = useState(null)
+  const [selectedType, setSelectedType] = useState(() => CONTENT_TYPES[0].items[0])
   const [showTypeSelectorMobile, setShowTypeSelectorMobile] = useState(false)
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState(null)
@@ -160,11 +159,6 @@ export default function Studio() {
   const [expandedOutputId, setExpandedOutputId] = useState(null)
   const [currentGeneratedId, setCurrentGeneratedId] = useState(null)
   const [studioViewMode, setStudioViewMode] = useState('native') // 'native' | 'raw'
-
-  // ── Mode & Template States ──
-  const [sidebarMode, setSidebarMode] = useState('types') // 'types' | 'templates'
-  const [templateFilter, setTemplateFilter] = useState('all') // 'all' | 'social' | 'email'
-  const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [aiSetupOpen, setAiSetupOpen] = useState(false)
 
   const handle = creatorData?.handle || 'default'
@@ -287,35 +281,6 @@ export default function Studio() {
     }] : [])
   ]
 
-  // Template Handlers
-  const handleSelectTemplate = (tpl) => {
-    setSelectedTemplate(tpl)
-    const flatTypes = contentTypes.flatMap(g => g.items)
-    const matchingType = flatTypes.find(t => t.id === tpl.targetTypeId) || flatTypes.find(t => t.platform.toLowerCase() === tpl.platform.toLowerCase()) || flatTypes[0]
-    setSelectedType(matchingType)
-    setInput(tpl.promptGuideline)
-    if (typeof tpl.generateDraft === 'function') {
-      const draft = tpl.generateDraft(creatorData)
-      setGenerated(draft)
-      const newId = pushToRecent(draft, matchingType)
-      setCurrentGeneratedId(newId)
-    }
-    setStudioViewMode('native')
-    setShowTypeSelectorMobile(false)
-    if (triggerToast) triggerToast(`Loaded "${tpl.title}" template!`, 'info')
-  }
-
-  const handleLoadBlueprint = (tpl) => {
-    const templateToUse = tpl || selectedTemplate
-    if (!templateToUse) return
-    const draft = templateToUse.generateDraft(creatorData)
-    setGenerated(draft)
-    setStudioViewMode('native')
-    const newId = pushToRecent(draft, selectedType)
-    setCurrentGeneratedId(newId)
-    if (triggerToast) triggerToast(`Loaded "${templateToUse.title}" blueprint!`, 'success')
-  }
-
   // Preload studio type if set in context (e.g. from Revenue/Products tab)
   useEffect(() => {
     if (preloadStudioType) {
@@ -384,7 +349,6 @@ export default function Studio() {
 
     const composedPrompt = [
       input,
-      selectedTemplate ? `Template Directive: Follow the ${selectedTemplate.title} framework (${selectedTemplate.formula}).` : '',
       aiSetupConfig.customVoice ? `Brand Voice Directives: ${aiSetupConfig.customVoice}` : '',
       aiSetupConfig.audiencePersona ? `Target Audience Persona: ${aiSetupConfig.audiencePersona}` : '',
       aiSetupConfig.includeEmojis === false ? 'Avoid using emojis in this output.' : '',
@@ -401,9 +365,7 @@ export default function Studio() {
         if (err.name === 'AbortError') throw err
         console.warn('[Studio] Server AI call failed, generating authentic synthesized copy:', err)
       }
-      return selectedTemplate
-        ? selectedTemplate.generateDraft(creatorData)
-        : generateAuthenticFallbackCopy(selectedType.id, creatorData, aiSetupConfig.tone || tone, composedPrompt)
+      return generateAuthenticFallbackCopy(selectedType.id, creatorData, aiSetupConfig.tone || tone, composedPrompt)
     })
   }
 
@@ -620,174 +582,56 @@ export default function Studio() {
 
   const renderSelectorItems = () => (
     <>
-      {/* Mode Switcher Tabs */}
-      <div className="grid grid-cols-2 gap-1 px-3 pb-3 mb-2 border-b border-white/[0.08]">
-        <button
-          type="button"
-          onClick={() => setSidebarMode('types')}
-          className={`py-1.5 text-[10px] font-bold uppercase tracking-wider text-center transition cursor-pointer border ${
-            sidebarMode === 'types'
-              ? 'border-[#c81e3c] bg-[#c81e3c]/15 text-white'
-              : 'border-white/5 text-slate-400 hover:text-white bg-white/[0.02]'
-          }`}
-          style={{ borderRadius: '0px' }}
-        >
-          Formats
-        </button>
-        <button
-          type="button"
-          onClick={() => setSidebarMode('templates')}
-          className={`py-1.5 text-[10px] font-bold uppercase tracking-wider text-center transition cursor-pointer border flex items-center justify-center gap-1 ${
-            sidebarMode === 'templates'
-              ? 'border-[#c81e3c] bg-[#c81e3c]/15 text-white'
-              : 'border-white/5 text-slate-400 hover:text-white bg-white/[0.02]'
-          }`}
-          style={{ borderRadius: '0px' }}
-        >
-          <span>Templates</span>
-          <span className="px-1 py-0.2 text-[8px] font-mono bg-[#c81e3c] text-white font-bold">12</span>
-        </button>
+      <div className="px-3 pb-2.5 mb-2 border-b border-white/[0.08]">
+        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+          Platform Formats &amp; Layouts
+        </span>
       </div>
 
-      {sidebarMode === 'types' ? (
-        <>
-          <p className="forge-label px-4 mb-2 hidden md:block">Content Formats</p>
-          {contentTypes.map(group => (
-            <div key={group.group}>
-              <button
-                onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
-                className="w-full flex items-center justify-between px-4 py-2 transition-colors cursor-pointer"
-                style={{ color: 'var(--theme-text-muted)' }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
-              >
-                <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
-                <ChevronDown
-                  size={12}
+      <p className="forge-label px-4 mb-2 hidden md:block">Content Formats</p>
+      {contentTypes.map(group => (
+        <div key={group.group}>
+          <button
+            onClick={() => setExpandedGroup(g => g === group.group ? null : group.group)}
+            className="w-full flex items-center justify-between px-4 py-2 transition-colors cursor-pointer"
+            style={{ color: 'var(--theme-text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--theme-text)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--theme-text-muted)' }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-wider">{group.group}</span>
+            <ChevronDown
+              size={12}
+              style={{
+                transition: 'transform 0.2s',
+                transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            />
+          </button>
+
+          {expandedGroup === group.group && (
+            <div className="pb-2">
+              {group.items.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setSelectedType(item); setGenerated(null); setShowTypeSelectorMobile(false) }}
+                  className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150 cursor-pointer"
                   style={{
-                    transition: 'transform 0.2s',
-                    transform: expandedGroup === group.group ? 'rotate(180deg)' : 'rotate(0deg)',
+                    background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
+                    borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
                   }}
-                />
-              </button>
-
-              {expandedGroup === group.group && (
-                <div className="pb-2">
-                  {group.items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => { setSelectedType(item); setSelectedTemplate(null); setGenerated(null); setShowTypeSelectorMobile(false) }}
-                      className="w-full text-left px-4 py-2 flex items-center gap-2.5 transition-all duration-150 cursor-pointer"
-                      style={{
-                        background: selectedType?.id === item.id ? 'var(--theme-accent-bg)' : 'transparent',
-                        borderLeft: selectedType?.id === item.id ? '2px solid var(--theme-accent)' : '2px solid transparent',
-                      }}
-                      onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
-                      onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
-                      <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
-                        {item.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </>
-      ) : (
-        <div className="px-2 space-y-3">
-          {/* Category Filter Pills */}
-          <div className="flex gap-1 px-1">
-            {['all', 'social', 'email'].map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setTemplateFilter(cat)}
-                className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider text-center border transition cursor-pointer ${
-                  templateFilter === cat
-                    ? 'bg-[#c81e3c] text-white border-[#c81e3c]'
-                    : 'bg-[#10141f] text-slate-400 border-white/10 hover:text-white'
-                }`}
-                style={{ borderRadius: '0px' }}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Social Templates Section */}
-          {(templateFilter === 'all' || templateFilter === 'social') && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 px-2 block">
-                Social Frameworks
-              </span>
-              {SOCIAL_TEMPLATES.map(tpl => {
-                const isSelected = selectedTemplate?.id === tpl.id
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => handleSelectTemplate(tpl)}
-                    className={`w-full text-left p-2.5 transition border block cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#c81e3c]/15 border-[#c81e3c] text-white'
-                        : 'bg-[#10141f]/60 hover:bg-[#141926] border-white/5 text-slate-300'
-                    }`}
-                    style={{ borderRadius: '0px' }}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-bold text-white truncate">{tpl.title}</span>
-                      <span className="text-[8px] font-mono px-1 py-0.2 bg-white/10 text-slate-300">
-                        {tpl.platform}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                      {tpl.description}
-                    </p>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Email Templates Section */}
-          {(templateFilter === 'all' || templateFilter === 'email') && (
-            <div className="space-y-1 pt-1">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 px-2 block">
-                Email Frameworks
-              </span>
-              {EMAIL_TEMPLATES.map(tpl => {
-                const isSelected = selectedTemplate?.id === tpl.id
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => handleSelectTemplate(tpl)}
-                    className={`w-full text-left p-2.5 transition border block cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#c81e3c]/15 border-[#c81e3c] text-white'
-                        : 'bg-[#10141f]/60 hover:bg-[#141926] border-white/5 text-slate-300'
-                    }`}
-                    style={{ borderRadius: '0px' }}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-bold text-white truncate">{tpl.title}</span>
-                      <span className="text-[8px] font-mono px-1 py-0.2 bg-[#c81e3c]/20 text-[#ff8093]">
-                        {tpl.badge}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                      {tpl.description}
-                    </p>
-                  </button>
-                )
-              })}
+                  onMouseEnter={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'var(--theme-accent-bg)' }}
+                  onMouseLeave={e => { if (selectedType?.id !== item.id) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <item.icon size={12} style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)', flexShrink: 0 }} />
+                  <span className="text-[12px] leading-tight" style={{ color: selectedType?.id === item.id ? 'var(--theme-text)' : 'var(--theme-text-muted)' }}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
             </div>
           )}
         </div>
-      )}
+      ))}
     </>
   )
 
@@ -892,30 +736,18 @@ export default function Studio() {
               Choose a format from the left or select a proven copywriting template for Socials &amp; Email to generate creator-ready assets for {productName}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-md">
-              {[
-                { label: 'Hook-Story-Offer (Instagram)', tplId: 'tpl-hso' },
-                { label: 'TikTok 3-Sec Viral Hook', tplId: 'tpl-tiktok-viral' },
-                { label: 'Facebook Official Launch', tplId: 'tpl-fb-announcement' },
-                { label: 'Launch Email (Official)', tplId: 'tpl-email-launch' },
-                { label: 'Problem-Agitate-Solve (X)', tplId: 'tpl-pas' },
-                { label: '24-Hour Founding Drop (YouTube)', tplId: 'tpl-urgency-drop' },
-              ].map(item => {
-                const matchedTpl = ALL_TEMPLATES.find(t => t.id === item.tplId)
-                return (
-                  <button 
-                    key={item.tplId}
-                    type="button"
-                    onClick={() => {
-                      if (matchedTpl) handleSelectTemplate(matchedTpl)
-                    }}
-                    className="text-[11px] px-3 py-1.5 rounded-none font-medium transition cursor-pointer hover:border-white/30 hover:text-white flex items-center gap-1.5" 
-                    style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  >
-                    <Sparkles size={10} className="text-[#c81e3c]" />
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
+              {contentTypes.flatMap(g => g.items).slice(0, 6).map(item => (
+                <button 
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedType(item)}
+                  className="text-[11px] px-3 py-1.5 rounded-none font-medium transition cursor-pointer hover:border-white/30 hover:text-white flex items-center gap-1.5" 
+                  style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  <Sparkles size={10} className="text-[#c81e3c]" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         ) : (
@@ -967,55 +799,12 @@ export default function Studio() {
               </div>
             </div>
 
-            {/* Input area with Active Template Banner */}
+            {/* Input area */}
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0 space-y-2.5" style={{ borderColor: 'var(--theme-border-color)' }}>
-              {selectedTemplate && (
-                <div 
-                  className="p-2.5 bg-[#c81e3c]/10 border border-[#c81e3c]/30 rounded-none flex items-center justify-between gap-3 flex-wrap animate-fade-in-down"
-                  style={{ borderRadius: '0px' }}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Sparkles size={13} className="text-[#ff8093] shrink-0" />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-white truncate">{selectedTemplate.title}</span>
-                        <span className="px-1.5 py-0.2 rounded-none text-[8px] font-mono uppercase bg-[#c81e3c] text-white">
-                          {selectedTemplate.badge}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-300 font-mono truncate">{selectedTemplate.formula}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleLoadBlueprint(selectedTemplate)}
-                      className="px-2.5 py-1 text-[10px] font-bold text-white bg-[#0c1017] hover:bg-[#141926] border border-white/15 rounded-none transition cursor-pointer"
-                      style={{ borderRadius: '0px' }}
-                    >
-                      Load Blueprint
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedTemplate(null); setInput('') }}
-                      className="p-1 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
-                      title="Clear template"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-center justify-between">
                 <p className="text-[11px] sm:text-[12px]" style={{ color: 'var(--theme-text-muted)' }}>
-                  {selectedTemplate ? 'Template Context & Angles' : 'Context (optional)'}
+                  Context or specific topic (optional)
                 </p>
-                {selectedTemplate && (
-                  <span className="text-[10px] font-mono text-[#ff8093]">
-                    Template Framework Applied
-                  </span>
-                )}
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -1068,10 +857,10 @@ export default function Studio() {
                     Cancel
                   </button>
                 </div>
-              ) : generated ? (
-                <div>
-                  {/* View Mode Switcher: Original Platform Design vs Raw Copy Editor */}
-                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08] flex-wrap gap-2">
+              ) : (
+                <div className="space-y-6">
+                  {/* View Mode Switcher: Platform Phone View vs Raw Copy Editor */}
+                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] flex-wrap gap-2">
                     <div className="flex items-center gap-1 bg-white/[0.04] p-1 border border-white/10" style={{ borderRadius: '0px' }}>
                       <button
                         type="button"
@@ -1084,7 +873,7 @@ export default function Studio() {
                         }}
                       >
                         <Eye size={12} className="text-white" />
-                        <span>Original Platform Design</span>
+                        <span>Platform Phone View</span>
                       </button>
                       <button
                         type="button"
@@ -1103,13 +892,13 @@ export default function Studio() {
 
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono text-emerald-400 border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5">
-                        {studioViewMode === 'native' ? '● Native Mockup Active' : '● Raw Text Mode'}
+                        {studioViewMode === 'native' ? '● Live Mobile Phone View' : '● Raw Text Mode'}
                       </span>
                     </div>
                   </div>
 
                   {studioViewMode === 'native' ? (
-                    <div className="mb-4">
+                    <div className="w-full">
                       <PlatformNativeStudioPreview
                         content={generated}
                         contentType={selectedType}
@@ -1120,16 +909,16 @@ export default function Studio() {
                   ) : (
                     /* Output card */
                     <div
-                      className="rounded-none border p-5 mb-4 relative group flex flex-col"
+                      className="rounded-none border p-5 relative group flex flex-col"
                       style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
                     >
                       <pre className="text-[13px] whitespace-pre-wrap leading-relaxed flex-1" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
-                        {generated}
+                        {generated || generateAuthenticFallbackCopy(selectedType.id, creatorData, aiSetupConfig.tone || tone)}
                       </pre>
                       
                       <div className="mt-4 pt-3 border-t flex items-center justify-between text-[11px]" style={{ borderColor: 'rgba(255,255,255,0.05)', color: 'var(--theme-text-muted)' }}>
-                        <span>Word count: {generated.trim().split(/\s+/).filter(Boolean).length}</span>
-                        <span>Character count: {generated.length}</span>
+                        <span>Word count: {(generated || '').trim().split(/\s+/).filter(Boolean).length}</span>
+                        <span>Character count: {(generated || '').length}</span>
                       </div>
                     </div>
                   )}
@@ -1138,11 +927,11 @@ export default function Studio() {
                   <div className="flex flex-wrap gap-2">
                     <button onClick={handleCopy} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5 rounded-none">
                       {copied ? <Check size={12} /> : <Copy size={12} />}
-                      {copied ? 'Copied' : 'Copy'}
+                      {copied ? 'Copied' : 'Copy Text'}
                     </button>
                     <button onClick={handleGenerate} className="forge-btn-secondary text-[12px] py-2 px-4 gap-1.5 rounded-none">
                       <RefreshCw size={12} />
-                      Regenerate
+                      {generated ? 'Regenerate' : 'Generate with AI'}
                     </button>
                     <button onClick={() => handleRefine('make it bolder, more high-energy, and direct')} className="forge-btn-secondary text-[12px] py-2 px-4 rounded-none">Make bolder</button>
                     <button onClick={() => handleRefine('shorten it significantly, making it concise and punchy')} className="forge-btn-secondary text-[12px] py-2 px-4 rounded-none">Shorten</button>
@@ -1162,7 +951,7 @@ export default function Studio() {
                   </div>
 
                   {/* Adapt to other platforms */}
-                  <div className="mt-5">
+                  <div className="mt-4 pt-4 border-t border-white/[0.08]">
                     <p className="text-[12px] mb-3" style={{ color: 'var(--theme-text-muted)' }}>Adapt for other platforms</p>
                     <div className="flex flex-wrap gap-2">
                       {['Instagram', 'X / Twitter', 'LinkedIn', 'TikTok', 'Email', 'YouTube'].map(p => (
@@ -1175,42 +964,30 @@ export default function Studio() {
                       ))}
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="py-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Clock size={13} style={{ color: 'var(--theme-text-muted)' }} />
-                      <p className="text-[13px] font-medium" style={{ color: 'var(--theme-text-muted)' }}>Recent outputs</p>
-                      {recentOutputs.length > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-none font-bold bg-[#c81e3c] text-white">
-                          {recentOutputs.length}
-                        </span>
-                      )}
-                    </div>
-                    {recentOutputs.length > 0 && (
-                      <button
-                        onClick={() => { saveRecentOutputs([]); if (triggerToast) triggerToast('History cleared', 'info') }}
-                        className="text-[10px] px-2 py-1 rounded-none transition-all"
-                        style={{ color: 'var(--theme-text-muted)', border: '1px solid var(--theme-border-color)' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; e.currentTarget.style.color = 'rgba(239,68,68,0.8)' }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--theme-border-color)'; e.currentTarget.style.color = 'var(--theme-text-muted)' }}
-                      >
-                        Clear all
-                      </button>
-                    )}
-                  </div>
 
-                  {recentOutputs.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-10 h-10 rounded-none mx-auto mb-3 flex items-center justify-center bg-white/[0.04] border border-white/10">
-                        <Sparkles size={15} style={{ color: 'var(--theme-text-muted)' }} />
+                  {/* Recent Outputs History Section */}
+                  {recentOutputs.length > 0 && (
+                    <div className="pt-4 border-t border-white/[0.08]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Clock size={13} style={{ color: 'var(--theme-text-muted)' }} />
+                          <p className="text-[13px] font-medium" style={{ color: 'var(--theme-text-muted)' }}>Recent outputs</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-none font-bold bg-[#c81e3c] text-white">
+                            {recentOutputs.length}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => { saveRecentOutputs([]); if (triggerToast) triggerToast('History cleared', 'info') }}
+                          className="text-[10px] px-2 py-1 rounded-none transition-all"
+                          style={{ color: 'var(--theme-text-muted)', border: '1px solid var(--theme-border-color)' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; e.currentTarget.style.color = 'rgba(239,68,68,0.8)' }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--theme-border-color)'; e.currentTarget.style.color = 'var(--theme-text-muted)' }}
+                        >
+                          Clear all
+                        </button>
                       </div>
-                      <p className="text-[12px] mb-1" style={{ color: 'var(--theme-text-muted)' }}>No outputs yet</p>
-                      <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>Hit Generate above to create your first piece of content</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
+
+                      <div className="space-y-2">
                       {recentOutputs.map(entry => {
                         const isOpen = expandedOutputId === entry.id
                         const preview = entry.content.split('\n')[0].substring(0, 90) + (entry.content.length > 90 ? '…' : '')
@@ -1315,13 +1092,14 @@ export default function Studio() {
                         )
                       })}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
       {/* ── AI ENGINE & BRAND VOICE SETUP MODAL ── */}
       {aiSetupOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
