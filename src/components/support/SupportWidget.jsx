@@ -40,12 +40,15 @@ export default function SupportWidget({ currentStage }) {
     creatorData?.facebook_connected ||
     creatorData?.otherAccounts?.youtube?.connected ||
     creatorData?.otherAccounts?.instagram?.connected ||
-    (creatorData?.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator' && !creatorData.handle.startsWith('@creator') && !creatorData.handle.toLowerCase().includes((creatorData?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')))
+    creatorData?.otherAccounts?.facebook?.connected ||
+    creatorData?.otherAccounts?.twitter?.connected ||
+    creatorData?.otherAccounts?.tiktok?.connected ||
+    (Array.isArray(creatorData?.connectedChannels) && creatorData.connectedChannels.some(c => c.connected))
   )
   const rawHandle = hasConnectedAccount ? (creatorData?.handle || '') : ''
   const cleanHandle = rawHandle.replace(/^@+/, '')
   const handle = cleanHandle ? `@${cleanHandle}` : ''
-  const creatorId = getCreatorId(creatorData)
+  const creatorId = hasConnectedAccount ? getCreatorId(creatorData) : 'cr_unlinked'
 
   const hasIdentity = Boolean(userIdentity.name && userIdentity.email && userIdentity.email.includes('@'))
 
