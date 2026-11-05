@@ -113,7 +113,7 @@ What you actually need:
 
 That is why I created ${productName}.
 
-Founding passes are live today: https://${cleanHandle}.co-launch.app${extraNote}`
+Founding passes are live today: https://app.co-launch.app/member/${cleanHandle}${extraNote}`
 
     case 'x-thread':
       return `1/ I spent years figuring out ${niche} the hard way.
@@ -141,7 +141,7 @@ I wanted to give ${audience} the exact toolkit, accountability, and guidance I w
 → Weekly AMAs with me (${name})
 
 Grab your spot before founding enrollment closes:
-https://${cleanHandle}.co-launch.app${extraNote}`
+https://app.co-launch.app/member/${cleanHandle}${extraNote}`
 
     case 'linkedin':
       return `Over the past few years working in ${niche}, I noticed a glaring pattern:
@@ -162,7 +162,7 @@ To solve this gap for ${audience}, I'm proud to announce the official launch of 
 Inside, we've distilled our entire methodology into an actionable, step-by-step curriculum backed by a private community where members share real workflows and support each other's growth.
 
 If you're serious about taking your work in ${niche} to the next tier, explore what we’ve built here:
-https://${cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${cleanHandle}
 
 Looking forward to welcoming you inside.
 
@@ -184,7 +184,7 @@ Here is what you get immediate access to:
 Founding member pricing is locked at ${pricing} for our early supporters.
 
 👉 Check out the official offer page and claim your founding pass:
-https://${cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${cleanHandle}
 
 Drop your questions below, and let me know which module you're most excited to explore first!${extraNote}`
 
@@ -276,7 +276,7 @@ Host: ${name} (${handle})
 [35:00 - 45:00] FOUNDING MEMBER INVITATION & CLOSE
 • Announcing limited founding member enrollment at ${pricing}
 • Reminding members of the guarantee and bonuses
-• Final drop of offer link: https://${cleanHandle}.co-launch.app
+• Final drop of offer link: https://app.co-launch.app/member/${cleanHandle}
 • Closing words and community send-off${extraNote}`
 
     case 'hook':
@@ -323,7 +323,7 @@ Because you’ve been here supporting our journey, I want to make joining as eff
 Founding member pricing is locked at just ${pricing}. When you join today, this rate is grandfathered for as long as you stay active.
 
 → Claim your founding member pass here:
-https://${cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${cleanHandle}
 
 I cannot wait to see you on the inside and help you hit your next milestone.
 
@@ -397,7 +397,7 @@ So I wanted to check in personally: What’s your biggest hesitation right now?
 Whatever is on your mind, just hit reply and let me know. I’m happy to give you an honest answer on whether ${productName} is the right move for you right now.
 
 Or if you're ready to dive in, here is the link to join:
-https://${cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${cleanHandle}
 
 Talk soon,
 ${name}${extraNote}`
@@ -465,7 +465,7 @@ VARIANT 5 (Short & Punchy):
 1. TWITTER / X & INSTAGRAM (SHORT & PUNCHY):
 ${name} | Building ${productName} 🚀
 Helping ${audience} master ${niche}.
-Join our founding cohort: https://${cleanHandle}.co-launch.app 👇
+Join our founding cohort: https://app.co-launch.app/member/${cleanHandle} 👇
 
 2. LINKEDIN & YOUTUBE (PROFESSIONAL & CREDIBLE):
 Founder of ${productName}. Creator at ${handle}. Dedicated to building practical frameworks and community for practitioners in ${niche}.
@@ -501,7 +501,7 @@ You need:
 • 1 clear execution framework
 • 1 dedicated community
 • Weekly feedback loops
-That's why I created ${productName}. Founding passes open: https://${cleanHandle}.co-launch.app
+That's why I created ${productName}. Founding passes open: https://app.co-launch.app/member/${cleanHandle}
 
 2. FOR LINKEDIN:
 The biggest obstacle in ${niche} today is fragmented learning. When practitioners have access to a structured curriculum and active peer reviews, outcomes improve exponentially. That is the core thesis behind ${productName}.
@@ -528,7 +528,7 @@ That’s why I created ${productName}. I wanted to take our internal frameworks�
 If you’ve been looking for that missing structure, our founding doors are currently open at ${pricing}.
 
 Check it out here:
-https://${cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${cleanHandle}
 
 Have an amazing week ahead!
 
@@ -538,7 +538,7 @@ ${name}${extraNote}`
       return `[5 READY-TO-USE ENGAGEMENT & COMMENT REPLIES]
 
 REPLY 1 (When someone asks for the link):
-"Just sent you a direct message with all the details! You can also check it directly here: https://${cleanHandle}.co-launch.app 🚀"
+"Just sent you a direct message with all the details! You can also check it directly here: https://app.co-launch.app/member/${cleanHandle} 🚀"
 
 REPLY 2 (When someone asks about beginner suitability):
 "100%! We designed ${productName} with clear beginner foundations through advanced execution modules so you can progress at your own pace."
@@ -577,7 +577,7 @@ Host: ${name} (${handle})
 [26:00 - 30:00] EPISODE WRAP & LISTENER CALL TO ACTION
 • Summary of the 3 key takeaways
 • Special invitation for listeners: Join ${productName} at ${pricing}
-• Official show link: https://${cleanHandle}.co-launch.app${extraNote}`
+• Official show link: https://app.co-launch.app/member/${cleanHandle}${extraNote}`
 
     case 'podcast-intro':
       return `[PODCAST SHOW INTRO & COLD OPEN]
@@ -588,7 +588,7 @@ If you're passionate about ${niche}, but you're exhausted from guessing your nex
 
 Today, we are breaking down the exact systems required to transform your skills into a high-leverage asset. No fluff, no generic motivational speeches—just the actionable blueprints we use every single day.
 
-And before we jump in: founding passes for our brand-new community, ${productName}, are officially live right now at https://${cleanHandle}.co-launch.app.
+And before we jump in: founding passes for our brand-new community, ${productName}, are officially live right now at https://app.co-launch.app/member/${cleanHandle}.
 
 Grab a notepad, settle in, and let's dive into today's episode."${extraNote}`
 
@@ -627,7 +627,7 @@ Key takeaways:
 • Get direct live feedback and guidance (${f3})
 
 Founding passes are available today at ${pricing}.
-Join us here: https://${cleanHandle}.co-launch.app${extraNote}`
+Join us here: https://app.co-launch.app/member/${cleanHandle}${extraNote}`
   }
 }
 
@@ -638,7 +638,7 @@ export function refineAuthenticCopy(originalCopy, instruction, typeId, creatorDa
   if (instrLower.includes('shorten') || instrLower.includes('concise')) {
     const lines = (originalCopy || '').split('\n').filter(Boolean)
     const condensed = lines.slice(0, Math.max(3, Math.floor(lines.length * 0.6))).join('\n\n')
-    return `${condensed}\n\n👉 Join ${ctx.productName} today: https://${ctx.cleanHandle}.co-launch.app`
+    return `${condensed}\n\n👉 Join ${ctx.productName} today: https://app.co-launch.app/member/${ctx.cleanHandle}`
   }
 
   if (instrLower.includes('bolder') || instrLower.includes('high-energy')) {
@@ -647,7 +647,7 @@ export function refineAuthenticCopy(originalCopy, instruction, typeId, creatorDa
 ${originalCopy}
 
 Don't settle for average results. Step inside ${ctx.productName} right now:
-https://${ctx.cleanHandle}.co-launch.app`
+https://app.co-launch.app/member/${ctx.cleanHandle}`
   }
 
   if (instrLower.includes('simplify')) {
@@ -657,7 +657,7 @@ ${ctx.f2} makes everything easier.
 When you combine it with ${ctx.f1}, you stop guessing and start making real progress.
 
 That is why I created ${ctx.productName}.
-Join us here for ${ctx.pricing}: https://${ctx.cleanHandle}.co-launch.app`
+Join us here for ${ctx.pricing}: https://app.co-launch.app/member/${ctx.cleanHandle}`
   }
 
   return `[Refined Direction: ${instruction}]\n\n${originalCopy || generateAuthenticFallbackCopy(typeId, creatorData, tone)}`

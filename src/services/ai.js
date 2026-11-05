@@ -1591,6 +1591,11 @@ export async function generateStudioContent(
     ? `\nBio: "${creatorData.description.slice(0, 150)}"`
     : "";
 
+  const cleanHandle = (creatorData.handle || 'creator').replace(/^@+/, '')
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
+
   const system = `You are an elite creator economy copywriter. You write highly engaging, high-conversion copy for creators. Return ONLY a JSON object containing a "content" field with the generated copy text.`;
 
   const prompt = `Write a piece of copy with the following requirements:
@@ -1600,9 +1605,12 @@ Creator Name: ${name} (${handle})
 Platform: ${platform} (${followers} followers, ${engRate} engagement)
 Niche: ${niche}${bio}
 Product Launching: "${productName}" — ${productDesc}
+Live Member Portal Link: ${portalUrl}
 ${inputContext ? `Additional Context/Instructions: ${inputContext}` : ""}
 
 Write native, high-impact, authentic copy for this specific content type. Avoid generic templates, make it sound like a real creator on that platform. Use line breaks and emojis where appropriate for the platform.
+CRITICAL: If you include a link or call-to-action, use strictly the Live Member Portal Link: ${portalUrl}. NEVER output bracketed placeholders like [Link to your documentation/GitHub/blog post here] or [Link to ...].
+
 Return exactly this JSON:
 {
   "content": "the generated copy here, with formatting, line breaks, or paragraphs if needed"
@@ -1610,7 +1618,16 @@ Return exactly this JSON:
 
   try {
     const data = await aiTextCall(prompt, system, 8192, signal, true);
-    return data.content || "";
+    let content = data.content || "";
+    if (content) {
+      content = content
+        .replace(/\[Link to your documentation\/GitHub\/blog post here\]/gi, portalUrl)
+        .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+        .replace(/\[Link to [^\]]+\]/gi, portalUrl)
+        .replace(/\[(?:Link|your link|link to waitlist|link to product|link to github|link to documentation)[^\]]*\]/gi, portalUrl)
+        .replace(/\[(?:https?:\/\/)?[^\]]*(?:link|url|github|documentation|blog|landing|waitlist)[^\]]*\]/gi, portalUrl);
+    }
+    return content;
   } catch (err) {
     if (err.name === "AbortError") throw err;
     throw new Error(`AI generation failed: ${err.message}`);

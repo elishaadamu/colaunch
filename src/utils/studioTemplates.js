@@ -68,7 +68,7 @@ The fix:
 We built ${c.productName} to solve this once and for all.
 
 Lock in founding pricing (${c.pricing}) today:
-https://${c.cleanHandle}.co-launch.app`
+https://app.co-launch.app/member/${c.cleanHandle}`
     }
   },
   {
@@ -127,7 +127,7 @@ This is the exact operating system we created inside ${c.productName}.
 We designed it specifically for ${c.audience} who want high-leverage outcomes without the 60-hour burnout.
 
 Explore the curriculum and join our founding cohort:
-https://${c.cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${c.cleanHandle}
 
 #${c.nicheTag} #strategy #systems #creatorbusiness`
     }
@@ -164,7 +164,7 @@ Why recreate templates from scratch? Leverage proven ${c.f4} and focus on your u
 All 4 pillars packed into one dedicated member workspace for ${c.pricing}.
 
 Founding passes are officially live today:
-https://${c.cleanHandle}.co-launch.app`
+https://app.co-launch.app/member/${c.cleanHandle}`
     }
   },
   {
@@ -192,9 +192,73 @@ Here is what is waiting for you inside:
 Founding rate is locked at just ${c.pricing} (grandfathered for life).
 
 Grab your pass before founding enrollment closes:
-👉 https://${c.cleanHandle}.co-launch.app
+👉 https://app.co-launch.app/member/${c.cleanHandle}
 
 See you on the inside! 🚀`
+    }
+  },
+  {
+    id: 'tpl-fb-announcement',
+    category: 'Social',
+    badge: 'Community Launch',
+    title: 'Facebook Official Launch Post',
+    targetTypeId: 'fb-post',
+    platform: 'Facebook',
+    description: 'Warm, authoritative announcement formatted for Facebook groups and pages with rich link previews.',
+    formula: 'Personal Check-in → The Problem in Niche → Introducing ${productName} → Founding Cohort Access',
+    promptGuideline: 'Write a warm, community-first Facebook announcement. Share why you spent months creating this platform, detail the core features, and invite members to explore the portal.',
+    generateDraft: (creatorData) => {
+      const c = extractCreatorDetails(creatorData)
+      return `Hey everyone! Excited to share a huge milestone with our community today.
+
+For the past several months, one question kept surfacing across our comments and messages:
+"How do we take the concepts from the channel and apply them to build real-world, production-ready systems?"
+
+Watching videos is great for inspiration, but when you sit down to execute in ${c.niche}, you shouldn't have to piece together fragmented tutorials alone.
+
+That is why I created ${c.productName}.
+
+Here is what is waiting for you inside our official member workspace:
+• ${c.f1} — our private peer network of active builders
+• ${c.f2} — structured, step-by-step implementation blueprints
+• ${c.f3} — weekly live office hours and direct architecture reviews
+• ${c.f4} — complete downloadable code, asset vault, and templates
+
+Founding member pricing is officially live at ${c.pricing}.
+
+👉 Explore the ${c.productName} and lock in your founding pass today:
+https://app.co-launch.app/member/${c.cleanHandle}
+
+Thank you so much for being part of this community from day one. Let's build something extraordinary together!`
+    }
+  },
+  {
+    id: 'tpl-tiktok-viral',
+    category: 'Social',
+    badge: '3-Sec Hook',
+    title: 'TikTok Viral Hook & System Breakdown',
+    targetTypeId: 'tiktok',
+    platform: 'TikTok',
+    description: 'High-hook retention script engineered for TikTok vertical video with pattern interrupts.',
+    formula: 'Contrarian Hook (0-3s) → The Trap (3-10s) → The Framework (10-22s) → Profile Link CTA',
+    promptGuideline: 'Write a punchy 30-second TikTok video script with a retention hook in the first 3 seconds and a direct call to action.',
+    generateDraft: (creatorData) => {
+      const c = extractCreatorDetails(creatorData)
+      return `HOOK (First 3 seconds):
+"Stop overcomplicating ${c.niche} in 2026. Here is the exact system."
+
+THE TRAP (0:03 - 0:12):
+Most people spend 6 months watching random videos with zero structured execution. You end up overwhelmed with nothing shipped.
+
+THE FRAMEWORK (0:12 - 0:24):
+Instead of guessing, here is the 3-step playbook we use inside ${c.productName}:
+1. ${c.f1} — collaborate with high-signal peers
+2. ${c.f2} — deploy proven blueprints
+3. ${c.f3} — get live feedback so you never get stuck
+
+CALL TO ACTION (0:24 - 0:30):
+Founding passes are officially live. Tap the link in my bio or visit:
+https://app.co-launch.app/member/${c.cleanHandle}`
     }
   }
 ]
@@ -235,7 +299,7 @@ Because you are part of our core audience, founding member pricing is locked at 
 When you join today, this rate is grandfathered for as long as you remain a member.
 
 → Secure your founding pass here:
-https://${c.cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${c.cleanHandle}
 
 I cannot wait to see you inside and build together.
 
@@ -274,7 +338,7 @@ Core Narrative: Screen-by-screen breakdown of the member experience. Spotlight o
 
 EMAIL 4: THE HARD DEADLINE (Day 4)
 Subject: Tonight: Founding passes for ${c.productName} close ⏳
-Core Narrative: Remind subscribers that the grandfathered rate closes tonight. Reiterate the 100% money-back guarantee. Final checkout link: https://${c.cleanHandle}.co-launch.app`
+Core Narrative: Remind subscribers that the grandfathered rate closes tonight. Reiterate the 100% money-back guarantee. Final checkout link: https://app.co-launch.app/member/${c.cleanHandle}`
     }
   },
   {
@@ -308,7 +372,7 @@ You can spend those 90 days guessing your way through scattered videos... or you
 You're completely protected by our 100% satisfaction guarantee. If inside 30 days you don't feel this is the highest-value investment in your craft, just send one email for a full refund.
 
 → Lock in your grandfathered founding pass here:
-https://${c.cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${c.cleanHandle}
 
 Doors close at midnight. Hope to see you on the inside!
 
@@ -339,7 +403,7 @@ I noticed you checked out ${c.productName} yesterday. If you had any specific qu
 I'm happy to give you my honest thoughts on whether it's the right fit for your goals right now.
 
 Or if you're ready to jump in:
-https://${c.cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${c.cleanHandle}
 
 Best,
 ${c.name}`
@@ -380,7 +444,7 @@ Yes, anytime in one click. No contracts, no fine print.
 Ready to build with us?
 
 → Claim your founding member pass here:
-https://${c.cleanHandle}.co-launch.app
+https://app.co-launch.app/member/${c.cleanHandle}
 
 Talk soon,
 ${c.name}`

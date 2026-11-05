@@ -4,11 +4,13 @@ import {
   Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronRight,
   Instagram, Youtube, Twitter, Mail, FileText, Video,
   Radio, ArrowRight, X, Calendar, Send, AlertCircle, Volume2,
-  Clock, Trash2, Sliders, Bot, BookOpen, Layers, CheckCircle, Zap
+  Clock, Trash2, Sliders, Bot, BookOpen, Layers, CheckCircle, Zap,
+  Facebook, Eye, LayoutGrid
 } from 'lucide-react'
 import { generateStudioContent } from '../../services/ai'
 import { generateAuthenticFallbackCopy, refineAuthenticCopy } from '../../utils/authenticStudioCopy'
 import { SOCIAL_TEMPLATES, EMAIL_TEMPLATES, ALL_TEMPLATES } from '../../utils/studioTemplates'
+import PlatformNativeStudioPreview from './PlatformNativeStudioPreview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
@@ -25,9 +27,10 @@ const CONTENT_TYPES = [
       { id: 'ig-reel', label: 'Instagram Reel concept', platform: 'Instagram', icon: Instagram },
       { id: 'x-post', label: 'X / Twitter post', platform: 'Twitter', icon: Twitter },
       { id: 'x-thread', label: 'X thread (5–7 tweets)', platform: 'Twitter', icon: Twitter },
-      { id: 'linkedin', label: 'LinkedIn post', platform: 'LinkedIn', icon: FileText },
-      { id: 'yt-community', label: 'YouTube community post', platform: 'YouTube', icon: Youtube },
+      { id: 'fb-post', label: 'Facebook launch post', platform: 'Facebook', icon: Facebook },
       { id: 'tiktok', label: 'TikTok caption + hook', platform: 'TikTok', icon: Radio },
+      { id: 'yt-community', label: 'YouTube community post', platform: 'YouTube', icon: Youtube },
+      { id: 'linkedin', label: 'LinkedIn post', platform: 'LinkedIn', icon: FileText },
     ],
   },
   {
@@ -73,10 +76,11 @@ const PLATFORM_COLORS = {
   Instagram: 'rgba(225,48,108,0.2)',
   Twitter: 'rgba(29,161,242,0.2)',
   YouTube: 'rgba(255,0,0,0.2)',
-  Email: 'rgba(255,255,255,0.08)',
+  Facebook: 'rgba(24,119,242,0.2)',
+  TikTok: 'rgba(255,0,80,0.2)',
+  Email: 'rgba(52,211,153,0.15)',
   Product: 'rgba(255,255,255,0.08)',
   Multi: 'rgba(255,255,255,0.08)',
-  TikTok: 'rgba(255,255,255,0.08)',
   LinkedIn: 'rgba(10,102,194,0.2)',
   Podcast: 'rgba(139,92,246,0.2)',
 }
@@ -155,6 +159,7 @@ export default function Studio() {
   const [recentOutputs, setRecentOutputs] = useState([])
   const [expandedOutputId, setExpandedOutputId] = useState(null)
   const [currentGeneratedId, setCurrentGeneratedId] = useState(null)
+  const [studioViewMode, setStudioViewMode] = useState('native') // 'native' | 'raw'
 
   // ── Mode & Template States ──
   const [sidebarMode, setSidebarMode] = useState('types') // 'types' | 'templates'
@@ -289,6 +294,13 @@ export default function Studio() {
     const matchingType = flatTypes.find(t => t.id === tpl.targetTypeId) || flatTypes.find(t => t.platform.toLowerCase() === tpl.platform.toLowerCase()) || flatTypes[0]
     setSelectedType(matchingType)
     setInput(tpl.promptGuideline)
+    if (typeof tpl.generateDraft === 'function') {
+      const draft = tpl.generateDraft(creatorData)
+      setGenerated(draft)
+      const newId = pushToRecent(draft, matchingType)
+      setCurrentGeneratedId(newId)
+    }
+    setStudioViewMode('native')
     setShowTypeSelectorMobile(false)
     if (triggerToast) triggerToast(`Loaded "${tpl.title}" template!`, 'info')
   }
@@ -298,6 +310,7 @@ export default function Studio() {
     if (!templateToUse) return
     const draft = templateToUse.generateDraft(creatorData)
     setGenerated(draft)
+    setStudioViewMode('native')
     const newId = pushToRecent(draft, selectedType)
     setCurrentGeneratedId(newId)
     if (triggerToast) triggerToast(`Loaded "${templateToUse.title}" blueprint!`, 'success')
@@ -880,12 +893,12 @@ export default function Studio() {
             </p>
             <div className="mt-5 flex flex-wrap gap-2 justify-center max-w-md">
               {[
-                { label: 'Hook-Story-Offer (Social)', tplId: 'tpl-hso' },
+                { label: 'Hook-Story-Offer (Instagram)', tplId: 'tpl-hso' },
+                { label: 'TikTok 3-Sec Viral Hook', tplId: 'tpl-tiktok-viral' },
+                { label: 'Facebook Official Launch', tplId: 'tpl-fb-announcement' },
                 { label: 'Launch Email (Official)', tplId: 'tpl-email-launch' },
-                { label: 'Problem-Agitate-Solve', tplId: 'tpl-pas' },
-                { label: 'Soap Opera Sequence', tplId: 'tpl-email-soap' },
-                { label: 'Closing Tonight Urgency', tplId: 'tpl-email-closing' },
-                { label: '5-Pillar Masterclass', tplId: 'tpl-thread' },
+                { label: 'Problem-Agitate-Solve (X)', tplId: 'tpl-pas' },
+                { label: '24-Hour Founding Drop (YouTube)', tplId: 'tpl-urgency-drop' },
               ].map(item => {
                 const matchedTpl = ALL_TEMPLATES.find(t => t.id === item.tplId)
                 return (
@@ -1057,20 +1070,69 @@ export default function Studio() {
                 </div>
               ) : generated ? (
                 <div>
-                  {/* Output card */}
-                  <div
-                    className="rounded-none border p-5 mb-4 relative group flex flex-col"
-                    style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
-                  >
-                    <pre className="text-[13px] whitespace-pre-wrap leading-relaxed flex-1" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
-                      {generated}
-                    </pre>
-                    
-                    <div className="mt-4 pt-3 border-t flex items-center justify-between text-[11px]" style={{ borderColor: 'rgba(255,255,255,0.05)', color: 'var(--theme-text-muted)' }}>
-                      <span>Word count: {generated.trim().split(/\s+/).filter(Boolean).length}</span>
-                      <span>Character count: {generated.length}</span>
+                  {/* View Mode Switcher: Original Platform Design vs Raw Copy Editor */}
+                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08] flex-wrap gap-2">
+                    <div className="flex items-center gap-1 bg-white/[0.04] p-1 border border-white/10" style={{ borderRadius: '0px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setStudioViewMode('native')}
+                        className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition cursor-pointer"
+                        style={{
+                          background: studioViewMode === 'native' ? '#c81e3c' : 'transparent',
+                          color: '#ffffff',
+                          borderRadius: '0px'
+                        }}
+                      >
+                        <Eye size={12} className="text-white" />
+                        <span>Original Platform Design</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStudioViewMode('raw')}
+                        className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition cursor-pointer"
+                        style={{
+                          background: studioViewMode === 'raw' ? 'rgba(255,255,255,0.12)' : 'transparent',
+                          color: studioViewMode === 'raw' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                          borderRadius: '0px'
+                        }}
+                      >
+                        <FileText size={12} />
+                        <span>Raw Copy Editor</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-emerald-400 border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5">
+                        {studioViewMode === 'native' ? '● Native Mockup Active' : '● Raw Text Mode'}
+                      </span>
                     </div>
                   </div>
+
+                  {studioViewMode === 'native' ? (
+                    <div className="mb-4">
+                      <PlatformNativeStudioPreview
+                        content={generated}
+                        contentType={selectedType}
+                        creatorData={creatorData}
+                        onCopy={handleCopy}
+                      />
+                    </div>
+                  ) : (
+                    /* Output card */
+                    <div
+                      className="rounded-none border p-5 mb-4 relative group flex flex-col"
+                      style={{ background: 'var(--theme-card-bg)', borderColor: 'var(--theme-border-color)' }}
+                    >
+                      <pre className="text-[13px] whitespace-pre-wrap leading-relaxed flex-1" style={{ color: 'var(--theme-text)', fontFamily: 'inherit', opacity: 0.85 }}>
+                        {generated}
+                      </pre>
+                      
+                      <div className="mt-4 pt-3 border-t flex items-center justify-between text-[11px]" style={{ borderColor: 'rgba(255,255,255,0.05)', color: 'var(--theme-text-muted)' }}>
+                        <span>Word count: {generated.trim().split(/\s+/).filter(Boolean).length}</span>
+                        <span>Character count: {generated.length}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Action bar */}
                   <div className="flex flex-wrap gap-2">
@@ -1227,10 +1289,16 @@ export default function Studio() {
                                     <Calendar size={11} className="text-white" /> <span className="text-white">Add to Calendar</span>
                                   </button>
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); setSelectedType({ id: entry.typeId, label: entry.typeLabel, platform: entry.platform, icon: FileText }); setGenerated(entry.content) }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedType({ id: entry.typeId, label: entry.typeLabel, platform: entry.platform, icon: FileText })
+                                      setGenerated(entry.content)
+                                      setStudioViewMode('native')
+                                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                                    }}
                                     className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-none border border-white/10 hover:border-white/25 text-white/70 hover:text-white flex items-center gap-1"
                                   >
-                                    <RefreshCw size={11} /> Reopen
+                                    <Eye size={11} /> View in Native Design
                                   </button>
                                   <div className="ml-auto">
                                     <button

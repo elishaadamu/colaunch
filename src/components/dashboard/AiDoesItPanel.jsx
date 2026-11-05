@@ -1885,7 +1885,7 @@ export default function AiDoesItPanel({ onClose }) {
   const sanitizeEmailBody = (raw) => {
     if (!raw) return ''
     return raw
-      .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, memberPortalUrl)
+      .replace(/\[Link to your documentation\/GitHub\/blog post here\]/gi, memberPortalUrl)
       .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, memberPortalUrl)
       .replace(/\[Link to Documentation\]/gi, memberPortalUrl)
       .replace(/\[Link to Landing Page\]/gi, memberPortalUrl)
@@ -1894,6 +1894,7 @@ export default function AiDoesItPanel({ onClose }) {
       .replace(/\[PRODUCT_LINK\]/gi, memberPortalUrl)
       .replace(/\[your link\]/gi, memberPortalUrl)
       .replace(/\[link\]/gi, memberPortalUrl)
+      .replace(/\[(?:Link to [^\]]+|[^\]]*(?:link|url|github|documentation|blog|landing|waitlist)[^\]]*)\]/gi, memberPortalUrl)
   }
 
   const [isSendingLaunchEmail, setIsSendingLaunchEmail] = useState(false)

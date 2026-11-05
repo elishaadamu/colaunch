@@ -331,6 +331,22 @@ function BroadcastModal({
   const [isRefiningTitle, setIsRefiningTitle] = useState(false)
   const [isRefiningBody, setIsRefiningBody] = useState(false)
 
+  // Live Member Dashboard destination URL
+  const cleanHandle = (creatorData?.handle || 'creator').replace(/^@+/, '')
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
+
+  const sanitizeBroadcastCopy = (raw) => {
+    if (!raw) return ''
+    return raw
+      .replace(/\[Link to your documentation\/GitHub\/blog post here\]/gi, portalUrl)
+      .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+      .replace(/\[Link to [^\]]+\]/gi, portalUrl)
+      .replace(/\[(?:Link|your link|link to waitlist|link to product|link to github|link to documentation)[^\]]*\]/gi, portalUrl)
+      .replace(/\[(?:https?:\/\/)?[^\]]*(?:link|url|github|documentation|blog|landing|waitlist)[^\]]*\]/gi, portalUrl)
+  }
+
   // Identify the creator / logged in user's email
   const creatorEmail = (userProfile?.email || creatorData?.email || creatorData?.contactEmail || '').trim()
 
@@ -416,10 +432,12 @@ function BroadcastModal({
         }
         cleanDraft = lines.filter(l => !l.toLowerCase().startsWith('subject:')).join('\n').trim()
       }
+      cleanDraft = sanitizeBroadcastCopy(cleanDraft)
       setMessage(cleanDraft)
       if (triggerToast) triggerToast('Email body refined by AI!', 'success')
     } catch (_) {
-      setMessage(`Hey everyone,\n\nHere is a quick milestone update for our ${productName} community...\n\nKeep building,\n${creatorData?.name || 'Creator'}`)
+      const fallback = sanitizeBroadcastCopy(`Hey everyone,\n\nHere is a quick milestone update for our ${productName} community...\n\n👉 Explore the ${productName} here:\n${portalUrl}\n\nKeep building,\n${creatorData?.name || 'Creator'}`)
+      setMessage(fallback)
       if (triggerToast) triggerToast('Applied community email draft', 'info')
     } finally {
       setIsRefiningBody(false)
@@ -440,12 +458,15 @@ function BroadcastModal({
     setIsSending(true)
     setSendError('')
 
+    const finalMessage = sanitizeBroadcastCopy(message.trim())
+    setMessage(finalMessage)
+
     const payload = {
-      handle: (creatorData?.handle || 'creator').replace(/^@/, ''),
+      handle: cleanHandle,
       creator_name: creatorData?.name || 'Creator',
       product_name: productName || 'Community',
       subject: subject.trim(),
-      message: message.trim(),
+      message: finalMessage,
       recipients: recipients,
       reply_to: creatorEmail || undefined,
       from_name: `${creatorData?.name || 'Creator'} · ${productName || 'CoLaunch'}`
@@ -629,6 +650,51 @@ function BroadcastModal({
             </a>
           </div>
         )}
+
+        {/* Live Member Portal Link Callout */}
+        <div
+          className="p-2.5 border flex items-center justify-between gap-3 text-xs"
+          style={{
+            background: 'rgba(200, 30, 60, 0.08)',
+            borderColor: 'rgba(200, 30, 60, 0.3)',
+            borderRadius: '0px'
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-none bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-white/90">
+                Verified Member Dashboard URL
+              </span>
+            </div>
+            <p className="text-[11px] font-mono text-emerald-300 truncate font-semibold">
+              {portalUrl}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(portalUrl)
+                if (triggerToast) triggerToast('Copied Member Dashboard link!', 'success')
+              }}
+              className="px-2 py-1 text-[10px] font-bold text-white bg-white/10 hover:bg-white/20 border border-white/10"
+              style={{ borderRadius: '0px' }}
+            >
+              Copy Link
+            </button>
+            <a
+              href={portalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-1 text-[10px] font-bold text-white bg-[#c81e3c] hover:brightness-110 flex items-center gap-1"
+              style={{ borderRadius: '0px', color: '#ffffff' }}
+            >
+              <span>View Portal</span>
+              <ExternalLink size={10} className="text-white" />
+            </a>
+          </div>
+        </div>
 
         {/* Form Inputs */}
         <div className="space-y-3.5 flex-1 overflow-y-auto pr-1 py-1 custom-scrollbar">
@@ -1098,9 +1164,10 @@ export default function Community() {
 
   // Quick Action: Open Broadcast Modal pre-populated with any post
   const handleOpenBroadcastForPost = (post) => {
+    const rawMsg = post.fullContent || post.content || ''
     setBroadcastDraft({
       subject: post.title || `Community Update: ${productName}`,
-      message: post.fullContent || post.content || '',
+      message: sanitizeBroadcastCopy(rawMsg),
       targetPostId: post.id
     })
     setBroadcastOpen(true)
