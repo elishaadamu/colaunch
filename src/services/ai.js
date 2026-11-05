@@ -1097,12 +1097,14 @@ export async function generateTodayPrioritiesAI(creatorData, signal = undefined)
   const blueprint = creatorData.blueprint;
   const productDesc = blueprint?.description || `a premium ${niche} product`;
   
-  // Recent videos context
-  const recentVids = (creatorData.recentVideos || creatorData.videos || [])
-    .slice(0, 3)
-    .map(v => `"${v.title}" (${v.views || ''} views)`)
+  // Recent videos / posts context from onboarding
+  const postList = (creatorData.recentPosts || creatorData.recentVideos || creatorData.videos || [])
+  const recentVids = postList
+    .slice(0, 4)
+    .map(v => `"${(v.title || v.caption || '').slice(0, 70)}" (${v.views || v.likes || ''})`)
+    .filter(Boolean)
     .join(', ');
-  const videoContext = recentVids ? `Recent uploads: ${recentVids}.` : '';
+  const videoContext = recentVids ? `Recent top uploads / posts from onboarding: ${recentVids}.` : '';
 
   const system = `You are an elite creator economy launch strategist. You generate personalized, high-converting launch marketing priorities for this specific creator. Return ONLY valid JSON array.`;
 
@@ -1685,6 +1687,13 @@ export async function generateContentCalendar(
   const bio = creatorData.description
     ? `\nBio: "${creatorData.description.slice(0, 150)}"`
     : "";
+  const postList = (creatorData.recentPosts || creatorData.recentVideos || creatorData.videos || [])
+  const recentTopics = postList
+    .slice(0, 4)
+    .map(v => `"${(v.title || v.caption || '').slice(0, 70)}"`)
+    .filter(Boolean)
+    .join(', ');
+  const recentContext = recentTopics ? `\nTop Performing Recent Content Topics from Onboarding: ${recentTopics}. Directly weave these topics, aesthetics, and themes into the launch sprint hooks.` : '';
 
   const system = `You are an elite creator economy content planner. You design highly strategic, platform-native weekly content calendars. Return ONLY a valid JSON object containing a "calendar" array.`;
 
@@ -1692,7 +1701,7 @@ export async function generateContentCalendar(
 Creator: ${name} (${handle})
 Platform: ${platform} (${followers} followers)
 Niche: ${niche}
-Product: "${productName}" (${productDesc})
+Product: "${productName}" (${productDesc})${recentContext}
 Current Campaign Goal: ${goal.toUpperCase()} (e.g., launch a product, drive growth, boost engagement, build community)
 
 The calendar must consist of 7 days: "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun".

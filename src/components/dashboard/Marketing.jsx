@@ -547,10 +547,16 @@ function WeekCalendar({ week, onAddPost, accent, accentRgb, isLoading, onCardCli
 
 // ─── GENERATED CONTENT MAP ────────────────────────────────────────────────────
 
-function buildContent(handle, productName, niche) {
+function buildContent(handle, productName, niche, creatorData = null) {
   const h = handle || '@creator'
   const p = productName || 'Creator Academy'
   const n = niche || 'your niche'
+  const bp = creatorData?.blueprint
+  const bpHook = bp?.hook || bp?.tagline || `The exact resource I always wished existed when I was starting out.`
+  const bpPricing = bp?.pricing ? (typeof bp.pricing === 'object' ? `${bp.pricing.model || 'Access'}: ${bp.pricing.price || '$29'}` : String(bp.pricing)) : 'special founding member pricing'
+  const bpModules = Array.isArray(bp?.modules) && bp.modules.length > 0
+    ? bp.modules.slice(0, 3).map((m, idx) => `- Module ${idx + 1}: ${m.title || m}`).join('\n')
+    : `- Core Frameworks & Video Vault\n- Private Builder Community\n- Direct Templates & Checklists`
 
   return {
     teaser: {
@@ -562,7 +568,7 @@ I've been building this for the past 3 months and I finally feel ready to share 
 
 If you've been following me for a while — you already know what problem this solves.
 
-If you're new here: I make content about ${n}. And I built the exact resource I always wished existed when I was starting out.
+If you're new here: I make content about ${n}. ${bpHook}
 
 Friday. Link in bio. 👀
 
@@ -582,12 +588,10 @@ I just launched ${p}.
 It's the thing I've spent the last few months building for people exactly like you — people who watch my ${n} content and want to actually go deeper.
 
 Here's what's inside:
-- [Module 1 — describe it]
-- [Module 2 — describe it]
-- [Module 3 — describe it]
-- A private community of people doing the same work
+${bpModules}
+- A private community of creators doing the same work
 
-For the next 48 hours, founding members get 40% off. That price closes Friday at midnight.
+For the next 48 hours, founding members get access at ${bpPricing}. That window closes Friday at midnight.
 
 → Get in here: [your link]
 
@@ -639,6 +643,24 @@ Screenshot kind words. Post testimonials. Share a "Day 1 results" update. Keep t
 
 SUNDAY — Recap + extended deadline
 "Last 24 hours at this price." Email non-openers with a different subject line. Post a simple "here's what happened this week" video.`,
+    },
+    vip_offer: {
+      title: 'Founding Member Early-Bird Offer',
+      platforms: ['Instagram', 'Email', 'X'],
+      body: `🚨 FOUNDING MEMBER ACCESS IS OPEN: ${p} 🚨
+
+${bpHook}
+
+For the first 50 people who join this week:
+- Complete founding member access at ${bpPricing}
+- Direct feedback and roadmap voting with ${h}
+- Exclusive launch bonuses and lifetime member perks
+
+Why founding access?
+Because I want the early adopters to shape where this goes next.
+
+Link is live in bio now.
+Comment "FOUNDER" and I'll send you the direct access link.`,
     },
   }
 }

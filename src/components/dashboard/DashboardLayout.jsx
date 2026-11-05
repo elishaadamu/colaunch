@@ -25,7 +25,7 @@ import EmailConfigModal from '../ui/EmailConfigModal'
 import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 
 function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
   const { creatorData, triggerToast, setActiveTab: ctxSetActiveTab, userProfile } = useForge()
@@ -33,6 +33,7 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
   const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
   const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
   const theme = creatorData.theme || 'dark'
   const blueprint = creatorData.blueprint || { name: 'Creator Academy', type: 'Web App' }
@@ -75,7 +76,7 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
     setTimeout(() => setIsReloading(false), 600)
   }
 
-  if (!isConnected) {
+  if (!isConnected && !hasOnboardedData) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center bg-[#090d16] p-4 sm:p-8 text-center overflow-y-auto">
         <div className="max-w-lg w-full p-8 bg-[#0c0f17] border border-[#1b2336] rounded-none shadow-2xl space-y-4 my-auto">
