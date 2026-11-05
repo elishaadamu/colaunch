@@ -488,7 +488,7 @@ export default function Signup() {
                 </>
               ) : (
                 <>
-                  <span className="text-white">Create Account &amp; Start Onboarding</span>
+                  <span className="text-white">Create Account</span>
                   <ArrowRight size={13} className="text-white" />
                 </>
               )}
