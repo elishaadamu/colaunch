@@ -37,10 +37,8 @@ export function isChannelConnectedOrConfigured(creatorData, youtubeConn, metaCon
     } catch (_) {}
   }
 
-  // Real authenticated channel ID or real verified videos scraped from channel
-  if (creatorData?.channelId && creatorData?.channelId !== 'default') return true
-  if (Array.isArray(creatorData?.connectedChannels) && creatorData.connectedChannels.length > 0) return true
-  if (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0 && creatorData?.platform) return true
+  // Real authenticated channel ID with connected token
+  if (Array.isArray(creatorData?.connectedChannels) && creatorData.connectedChannels.some(c => c.connected)) return true
 
   return false
 }

@@ -16,7 +16,7 @@ import {
 } from '../../services/supportService'
 
 export default function SupportChatPage() {
-  const { creatorData } = useForge()
+  const { creatorData, userProfile } = useForge()
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,20 +26,29 @@ export default function SupportChatPage() {
   const messagesEndRef = useRef(null)
 
   const accent = getAccent(creatorData)
-  const creatorId = getCreatorId(creatorData)
-  const authenticCreatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
 
-  // Do NOT assume or fabricate social handle until an account is authentically connected
+  // Strictly check if a real channel account is authenticated/connected
+  const ytConn = userProfile?.youtube_connection || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`forge_youtube_connection_${creatorData?.email}`) || 'null') : null)
+  const metaConn = userProfile?.meta_connection || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`forge_meta_connection_${creatorData?.email}`) || 'null') : null)
+
   const hasConnectedAccount = Boolean(
     creatorData?.youtube_connected || 
     creatorData?.instagram_connected || 
     creatorData?.facebook_connected ||
     creatorData?.otherAccounts?.youtube?.connected ||
     creatorData?.otherAccounts?.instagram?.connected ||
-    userProfile?.youtube_connection?.connected ||
-    (creatorData?.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator' && !creatorData.handle.startsWith('@creator') && !creatorData.handle.toLowerCase().includes((creatorData?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')))
+    creatorData?.otherAccounts?.facebook?.connected ||
+    creatorData?.otherAccounts?.twitter?.connected ||
+    creatorData?.otherAccounts?.tiktok?.connected ||
+    ytConn?.connected ||
+    metaConn?.facebook?.connected ||
+    metaConn?.instagram?.connected ||
+    (Array.isArray(creatorData?.connectedChannels) && creatorData.connectedChannels.some(c => c.connected))
   )
 
+  // Do NOT assume or fabricate social handle or creator ID until an account is authentically connected
+  const creatorId = hasConnectedAccount ? getCreatorId(creatorData) : 'cr_unlinked'
+  const authenticCreatorName = creatorData?.name || creatorData?.channelTitle || 'Creator'
   const rawHandle = hasConnectedAccount ? (creatorData?.handle || '') : ''
   const cleanHandle = rawHandle.replace(/^@+/, '')
   const handle = cleanHandle ? `@${cleanHandle}` : null

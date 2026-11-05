@@ -728,11 +728,19 @@ export default function App() {
         }
         return
       }
-      const hasConn = Boolean(creatorData?.youtube_connected || creatorData?.instagram_connected || creatorData?.facebook_connected)
+      const hasConn = Boolean(
+        creatorData?.youtube_connected || 
+        creatorData?.instagram_connected || 
+        creatorData?.facebook_connected ||
+        creatorData?.otherAccounts?.youtube?.connected ||
+        creatorData?.otherAccounts?.instagram?.connected
+      )
       const cleanHandle = hasConn && creatorData?.handle && creatorData.handle !== 'default'
         ? creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
         : null
-      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked')
+      const cId = hasConn
+        ? (creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked'))
+        : 'cr_unlinked'
       path = cId ? `/dashboard/${cId}` : '/dashboard'
     }
 
@@ -751,11 +759,19 @@ export default function App() {
       try {
         localStorage.setItem('forge_onboarding_step', 'dashboard')
       } catch {}
-      const hasConn = Boolean(creatorData?.youtube_connected || creatorData?.instagram_connected || creatorData?.facebook_connected)
+      const hasConn = Boolean(
+        creatorData?.youtube_connected || 
+        creatorData?.instagram_connected || 
+        creatorData?.facebook_connected ||
+        creatorData?.otherAccounts?.youtube?.connected ||
+        creatorData?.otherAccounts?.instagram?.connected
+      )
       const cleanHandle = hasConn && creatorData?.handle && creatorData.handle !== 'default'
         ? creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
         : null
-      const cId = creatorData?.id || creatorData?.channelId || creatorData?._id || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked')
+      const cId = hasConn
+        ? (creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked'))
+        : 'cr_unlinked'
       if (cId) {
         const targetPath = `/dashboard/${cId}`
         const currentSearch = window.location.search || ''

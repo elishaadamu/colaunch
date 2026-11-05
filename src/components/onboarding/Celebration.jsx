@@ -157,15 +157,24 @@ export default function Celebration() {
   const [copied, setCopied] = useState(false)
 
   const blueprint = creatorData.blueprint || { name: 'Creator Platform' }
-  const handle = creatorData.handle || '@creator'
-  const cleanHandle = (creatorData.handle || creatorData.name || 'creator')
-    .replace(/^@/, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '') || 'creator'
-  
-  const creatorId = creatorData?.id || creatorData?.channelId || creatorData?._id || (
-    'cr_' + cleanHandle + '_' + Math.abs(cleanHandle.split('').reduce((acc, ch) => ((acc << 5) - acc) + ch.charCodeAt(0), 0)).toString(36)
+  const hasConn = Boolean(
+    creatorData?.youtube_connected || 
+    creatorData?.instagram_connected || 
+    creatorData?.facebook_connected ||
+    creatorData?.otherAccounts?.youtube?.connected ||
+    creatorData?.otherAccounts?.instagram?.connected
   )
+  const cleanHandle = hasConn && (creatorData.handle || '')
+    ? creatorData.handle.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
+    : null
+  const handle = cleanHandle ? `@${cleanHandle}` : null
+  
+  const creatorId = creatorData?.id && !creatorData.id.startsWith('cr_')
+    ? creatorData.id
+    : (hasConn && cleanHandle
+        ? 'cr_' + cleanHandle
+        : 'cr_unlinked'
+      )
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app'
   const dashboardUrl = `${baseUrl}/dashboard/${creatorId}`
   
@@ -176,13 +185,13 @@ export default function Celebration() {
   const builtModules = getRichBuiltModules(blueprint, creatorData)
 
   useEffect(() => {
-    if (!creatorData.id) {
+    if (hasConn && cleanHandle && !creatorData.id) {
       creatorData.id = creatorId
       try {
         localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, id: creatorId }))
       } catch {}
     }
-  }, [creatorId, creatorData])
+  }, [hasConn, cleanHandle, creatorId, creatorData])
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 100)

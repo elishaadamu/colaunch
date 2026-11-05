@@ -757,6 +757,16 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     `forge_calendar_${rawH}_launch_w0`
   ]
 
+  // If no social account is connected, AI has not studied the creator's channel yet.
+  // Purge any lingering ungrounded dummy templates and strictly return empty list.
+  if (!isConnected) {
+    cacheKeys.forEach(k => {
+      try { localStorage.removeItem(k) } catch (_) {}
+    })
+    try { localStorage.removeItem(`forge_campaign_posts_${hClean}`) } catch (_) {}
+    return []
+  }
+
   let rawCalendar = null
   for (const k of cacheKeys) {
     try {

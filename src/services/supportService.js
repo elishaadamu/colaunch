@@ -14,23 +14,32 @@ const USER_NAME_KEY = 'forge_support_user_name'
 const USER_EMAIL_KEY = 'forge_support_user_email'
 
 export function getCreatorId(creatorData) {
-  if (!creatorData) return ''
-  if (creatorData.id) return creatorData.id
-  if (creatorData.channelId) return creatorData.channelId
-  if (creatorData._id) return creatorData._id
-  if (creatorData.userId) return `cr_user_${creatorData.userId}`
-  if (creatorData.uid) return `cr_user_${creatorData.uid}`
+  if (!creatorData) return 'cr_unlinked'
 
-  // Never assume or fabricate a handle from creator's name or email if account is not connected
   const hasConnectedAccount = Boolean(
     creatorData.youtube_connected ||
     creatorData.instagram_connected ||
     creatorData.facebook_connected ||
     creatorData.otherAccounts?.youtube?.connected ||
-    creatorData.otherAccounts?.instagram?.connected
+    creatorData.otherAccounts?.instagram?.connected ||
+    creatorData.otherAccounts?.facebook?.connected ||
+    creatorData.otherAccounts?.twitter?.connected ||
+    creatorData.otherAccounts?.tiktok?.connected ||
+    (Array.isArray(creatorData.connectedChannels) && creatorData.connectedChannels.some(c => c.connected))
   )
 
-  if (hasConnectedAccount && creatorData.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator') {
+  // Never assume or fabricate a handle or ID from creator's name or email if account is not connected
+  if (!hasConnectedAccount) {
+    return 'cr_unlinked'
+  }
+
+  if (creatorData.id && !creatorData.id.startsWith('cr_') && creatorData.id !== 'cr_unlinked') return creatorData.id
+  if (creatorData.channelId && creatorData.channelId !== 'default') return creatorData.channelId
+  if (creatorData._id) return String(creatorData._id)
+  if (creatorData.userId) return `cr_user_${creatorData.userId}`
+  if (creatorData.uid) return `cr_user_${creatorData.uid}`
+
+  if (creatorData.handle && creatorData.handle !== 'default' && creatorData.handle !== '@creator') {
     const cleanHandle = creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
     if (cleanHandle) return 'cr_' + cleanHandle
   }

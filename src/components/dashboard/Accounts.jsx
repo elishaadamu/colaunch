@@ -367,8 +367,8 @@ export default function Accounts() {
         if (saved) {
           const parsed = JSON.parse(saved)
           if (Array.isArray(parsed)) {
-            // Only show if the user explicitly drafted custom posts
-            const customPosts = parsed.filter(p => p.isCustomUserDraft || p.status === 'Scheduled')
+            // Only show if the user explicitly drafted custom manual posts (NEVER mock/template items)
+            const customPosts = parsed.filter(p => p.isCustomUserDraft === true)
             if (customPosts.length > 0) {
               return customPosts.slice(0, 3).map(p => ({
                 id: p.id,
@@ -378,7 +378,7 @@ export default function Accounts() {
                 format: p.format,
                 title: p.title,
                 time: p.time,
-                status: 'scheduled'
+                status: 'draft'
               }))
             }
           }
