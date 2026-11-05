@@ -55,8 +55,8 @@ export function useBgJob(jobId) {
 }
 
 const STEPS = [
-  'signup', 'welcome', 'creator-link', 'analyzing', 'blueprint',
-  'preview', 'building', 'pre-finish', 'celebration', 'login', 'dashboard',
+  'welcome', 'creator-link', 'analyzing', 'blueprint',
+  'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
 ]
 
 // Unified CoLaunch brand red color from co-launch.app/#apply
@@ -266,9 +266,6 @@ export default function App() {
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
-        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
-          window.history.replaceState(null, '', '/portal')
-        }
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
         if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
@@ -1102,20 +1099,11 @@ export default function App() {
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
-        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
-        if (hasSession) {
-          if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-            setStep(savedStep)
-          } else {
-            setStep('creator-link')
-          }
+        if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          setStep(savedStep)
         } else {
-          // Signup before onboarding
-          setStep('signup')
-        }
-        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
-          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
+          setStep('creator-link')
         }
       } else if (path === '/login') {
         setStep('login')
@@ -1193,21 +1181,13 @@ export default function App() {
           return
         }
 
-        // Base URL / or unrecognized path: show signup before onboarding unless session exists
-        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+        // Base URL / or unrecognized path: route to onboarding flow
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
-        if (hasSession) {
-          if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-            setStep(savedStep)
-          } else {
-            setStep('creator-link')
-          }
+        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+          setStep(savedStep)
         } else {
-          setStep('signup')
-        }
-        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
-          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
+          setStep('creator-link')
         }
       }
     }
