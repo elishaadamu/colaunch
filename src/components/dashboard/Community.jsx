@@ -6,6 +6,7 @@ import {
   Send, ExternalLink, Zap, Search, ShieldCheck, Flame, UserPlus, Eye, TrendingUp, CheckCircle2, ArrowRight
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
+import { loadSyncedCampaignPosts } from './ContentCalendar'
 
 // ─── Dynamic Community Content Templates ─────────────────────────────────────
 
@@ -135,14 +136,18 @@ function MiniCalendar({ onSelectDate, selectedDate, scheduledPosts = [], brandRe
             selectedDate.getDate() === dateObj.getDate()
           )
 
+          const dateKeyStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
           const postsForDay = scheduledPosts.filter(p => {
+            if (p.dateKey) {
+              return p.dateKey === dateKeyStr
+            }
             if (p.date) {
               const d = new Date(p.date)
-              d.setHours(0, 0, 0, 0)
-              if (d.getTime() === dateObj.getTime()) return true
-            }
-            if (p.dateLabel && p.dateLabel.includes(dayShort)) {
-              return true
+              if (!isNaN(d.getTime())) {
+                d.setHours(0, 0, 0, 0)
+                return d.getTime() === dateObj.getTime()
+              }
             }
             return false
           })
@@ -1091,9 +1096,9 @@ export default function Community() {
   const getCalendarKey = () => `forge_calendar_${cleanHandle}_launch_w0`
   const getCommunityPostsKey = () => `forge_${cleanHandle}_community_posts`
 
-  // Helper to load all community & email posts directly reflecting the central calendar
+  // Helper to load all scheduled campaign posts directly synchronized with Content Calendar
   const loadReflectedCalendarPosts = () => {
-    const allCommunityPosts = []
+    const allPosts = []
     
     // A. Read direct community scheduled posts
     try {
@@ -1103,48 +1108,64 @@ export default function Community() {
         if (Array.isArray(parsed)) {
           // Reject legacy mock posts ('sched-1', 'sched-2')
           const real = parsed.filter(p => p && p.id !== 'sched-1' && p.id !== 'sched-2' && p.id !== 'sched-3')
-          allCommunityPosts.push(...real)
-        }
-      }
-    } catch (_) {}
-
-    // B. Read central launch calendar to reflect YouTube Community / Email drops
-    try {
-      const calRaw = localStorage.getItem(getCalendarKey()) || localStorage.getItem(`forge_calendar_${cleanHandle.replace(/[^a-z0-9_]/g, '_')}_launch_w0`)
-      if (calRaw) {
-        const parsedCal = JSON.parse(calRaw)
-        if (Array.isArray(parsedCal)) {
-          parsedCal.forEach((dayData, dayIdx) => {
-            const posts = dayData.posts || []
-            posts.forEach(p => {
-              const pType = (p.type || '').toLowerCase()
-              const pPlat = (p.platform || '').toLowerCase()
-              const pTheme = (p.theme || '').toLowerCase()
-              if (pType.includes('communit') || pPlat.includes('communit') || pPlat.includes('email') || pType.includes('email') || pTheme === 'community') {
-                allCommunityPosts.push({
-                  id: `cal-${dayData.day}-${p.id}`,
-                  calendarId: p.id,
-                  day: dayData.day,
-                  type: p.type || 'Community Post',
-                  title: p.title || p.label || 'Community Update',
-                  content: p.body || p.title || 'Scheduled campaign update',
-                  fullContent: p.body || p.title || '',
-                  platform: p.platform || 'YouTube',
-                  dateLabel: `${dayData.day} · Active Sprint`,
-                  status: p.status || 'Draft',
-                  fromCalendar: true
-                })
-              }
+          real.forEach(p => {
+            const d = p.date ? new Date(p.date) : null
+            const dKey = p.dateKey || (d && !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null)
+            allPosts.push({
+              ...p,
+              dateKey: dKey,
+              date: d,
+              fromCalendar: false,
+              isCommunityPost: true
             })
           })
         }
       }
     } catch (_) {}
 
-    // De-duplicate by title/id
+    // B. Read central launch plan from Content Calendar
+    try {
+      const campaignPosts = loadSyncedCampaignPosts(creatorData, productName, cleanHandle)
+      if (Array.isArray(campaignPosts)) {
+        campaignPosts.forEach(p => {
+          const d = p.dateKey ? new Date(p.dateKey + 'T12:00:00') : (p.date ? new Date(p.date) : null)
+          allPosts.push({
+            id: p.id,
+            calendarId: p.marketingId || p.id,
+            dateKey: p.dateKey,
+            date: d,
+            day: p.dayName,
+            type: p.format || p.type || 'Campaign Drop',
+            title: p.title || p.label || 'Scheduled Campaign Post',
+            content: p.caption || p.content || '',
+            fullContent: p.caption || p.content || '',
+            platform: p.channel || p.platform || 'Social',
+            strategy: p.strategy || 'LAUNCH',
+            time: p.time || '9:00 AM',
+            dateLabel: p.fullDateStr ? `${p.dayName}, ${p.fullDateStr.split(',')[0]}` : `${p.dayName} · Active Sprint`,
+            status: p.status || 'Scheduled',
+            fromCalendar: true,
+            isCommunityRelated: Boolean(
+              (p.format || '').toLowerCase().includes('communit') ||
+              (p.channel || '').toLowerCase().includes('communit') ||
+              (p.channel || '').toLowerCase().includes('email') ||
+              (p.strategy || '').toLowerCase() === 'community' ||
+              (p.title || '').toLowerCase().includes('community') ||
+              (p.title || '').toLowerCase().includes('poll') ||
+              (p.title || '').toLowerCase().includes('challenge') ||
+              (p.title || '').toLowerCase().includes('member')
+            )
+          })
+        })
+      }
+    } catch (err) {
+      console.warn('[Community] Failed to sync campaign posts:', err)
+    }
+
+    // De-duplicate by title/id/dateKey
     const seen = new Set()
-    return allCommunityPosts.filter(p => {
-      const key = `${p.type}_${p.title}`
+    return allPosts.filter(p => {
+      const key = `${p.dateKey || ''}_${p.type}_${p.title}`
       if (seen.has(key)) return false
       seen.add(key)
       return true
@@ -1244,30 +1265,23 @@ export default function Community() {
     }
   }
 
-  // Helper: Match post with selected calendar date
+  // Helper: Match post with selected calendar date strictly by real date
   const postMatchesDate = (post, targetDate) => {
     if (!targetDate) return true
-    const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const dayShort = dayNamesShort[targetDate.getDay()]
+    const ty = targetDate.getFullYear()
+    const tm = targetDate.getMonth() + 1
+    const td = targetDate.getDate()
+    const targetKeyStr = `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`
+
+    if (post.dateKey) {
+      return post.dateKey === targetKeyStr
+    }
 
     if (post.date) {
       const d = new Date(post.date)
       if (!isNaN(d.getTime())) {
-        if (d.getFullYear() === targetDate.getFullYear() &&
-            d.getMonth() === targetDate.getMonth() &&
-            d.getDate() === targetDate.getDate()) {
-          return true
-        }
+        return d.getFullYear() === ty && (d.getMonth() + 1) === tm && d.getDate() === td
       }
-    }
-
-    if (post.day && post.day.toLowerCase() === dayShort.toLowerCase()) {
-      return true
-    }
-
-    const label = (post.dateLabel || '').toLowerCase()
-    if (label.includes(dayShort.toLowerCase())) {
-      return true
     }
 
     return false
@@ -1277,12 +1291,18 @@ export default function Community() {
   const filteredPipelinePosts = useMemo(() => {
     return scheduledPosts.filter(post => {
       // 1. Channel filter
-      if (pipelineChannelFilter === 'email') {
+      if (pipelineChannelFilter === 'community') {
+        if (!post.isCommunityRelated && !post.isCommunityPost) return false
+      } else if (pipelineChannelFilter === 'email') {
         const isEmail = (post.platform || '').toLowerCase().includes('email') || (post.type || '').toLowerCase().includes('email')
         if (!isEmail) return false
       } else if (pipelineChannelFilter === 'youtube') {
-        const isYt = (post.platform || '').toLowerCase().includes('youtube') || (post.type || '').toLowerCase().includes('communit')
+        const isYt = (post.platform || '').toLowerCase().includes('youtube')
         if (!isYt) return false
+      } else if (pipelineChannelFilter === 'social') {
+        const plat = (post.platform || '').toLowerCase()
+        const isSoc = plat.includes('twitter') || plat.includes('x') || plat.includes('instagram') || plat.includes('tiktok') || plat.includes('facebook') || plat.includes('linkedin')
+        if (!isSoc) return false
       }
 
       // 2. Date filter
@@ -1296,12 +1316,23 @@ export default function Community() {
     })
   }, [scheduledPosts, pipelineChannelFilter, selectedCalendarDate])
 
+  const communityPostsCount = useMemo(() => {
+    return scheduledPosts.filter(p => p.isCommunityRelated || p.isCommunityPost).length
+  }, [scheduledPosts])
+
   const emailPostsCount = useMemo(() => {
     return scheduledPosts.filter(p => (p.platform || '').toLowerCase().includes('email') || (p.type || '').toLowerCase().includes('email')).length
   }, [scheduledPosts])
 
   const ytPostsCount = useMemo(() => {
-    return scheduledPosts.filter(p => (p.platform || '').toLowerCase().includes('youtube') || (p.type || '').toLowerCase().includes('communit')).length
+    return scheduledPosts.filter(p => (p.platform || '').toLowerCase().includes('youtube')).length
+  }, [scheduledPosts])
+
+  const socialPostsCount = useMemo(() => {
+    return scheduledPosts.filter(p => {
+      const plat = (p.platform || '').toLowerCase()
+      return plat.includes('twitter') || plat.includes('x') || plat.includes('instagram') || plat.includes('tiktok') || plat.includes('facebook') || plat.includes('linkedin')
+    }).length
   }, [scheduledPosts])
 
   // Save new scheduled community post to BOTH Community & central Content Calendar
@@ -1873,16 +1904,16 @@ export default function Community() {
                 <div className="flex items-center gap-2">
                   <Clock size={13} className="text-[#c81e3c]" />
                   <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                    Content Calendar Community Pipeline ({filteredPipelinePosts.length}{selectedCalendarDate || pipelineChannelFilter !== 'all' ? ` of ${scheduledPosts.length}` : ''})
+                    Content Calendar Synced Pipeline ({filteredPipelinePosts.length}{selectedCalendarDate || pipelineChannelFilter !== 'all' ? ` of ${scheduledPosts.length}` : ''})
                   </h3>
                   <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-none" style={{ borderRadius: '0px' }} />
-                    <span>Calendar Synced</span>
+                    <span>Live Calendar Sync</span>
                   </span>
                 </div>
 
                 {/* Channel Filter Chips */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('all')}
@@ -1894,6 +1925,19 @@ export default function Community() {
                     style={{ borderRadius: '0px' }}
                   >
                     All ({scheduledPosts.length})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPipelineChannelFilter('community')}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
+                      pipelineChannelFilter === 'community'
+                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Community ({communityPostsCount})
                   </button>
 
                   <button
@@ -1920,6 +1964,19 @@ export default function Community() {
                     style={{ borderRadius: '0px' }}
                   >
                     YouTube ({ytPostsCount})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPipelineChannelFilter('social')}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
+                      pipelineChannelFilter === 'social'
+                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Social ({socialPostsCount})
                   </button>
                 </div>
               </div>
