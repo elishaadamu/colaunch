@@ -115,13 +115,26 @@ function getTargetArchetype(creator) {
 export default function CreatorLink() {
   const { next, prev, goTo, updateCreator, resetCreator, creatorData, clearBgJob, requestWipeCreator, userProfile } = useForge()
 
-  // Retain creator data from session storage across reloads unless explicitly wiped
-  const [url, setUrl] = useState(() => creatorData?.url || '')
-  const [platform, setPlatform] = useState(() => (creatorData?.url ? detectPlatform(creatorData.url) : (creatorData?.platform ? PLATFORMS.find(p => p.id === creatorData.platform) : null)))
-  const [handle, setHandle] = useState(() => creatorData?.handle || '')
+  // Helper to verify if cached creator preview has expired (> 30 mins)
+  const isDataExpired = () => {
+    try {
+      const ts = localStorage.getItem('forge_creator_timestamp')
+      if (ts) {
+        return (Date.now() - parseInt(ts, 10)) > 30 * 60 * 1000
+      }
+    } catch {}
+    return false
+  }
+
+  const initialValidCreator = (!isDataExpired() && creatorData?.handle && creatorData?.followers > 0) ? creatorData : null
+
+  // Retain creator data across reloads unless expired (> 30 mins) or explicitly wiped
+  const [url, setUrl] = useState(() => (initialValidCreator ? (initialValidCreator.url || '') : ''))
+  const [platform, setPlatform] = useState(() => (initialValidCreator?.url ? detectPlatform(initialValidCreator.url) : (initialValidCreator?.platform ? PLATFORMS.find(p => p.id === initialValidCreator.platform) : null)))
+  const [handle, setHandle] = useState(() => (initialValidCreator?.handle || ''))
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [showPreview, setShowPreview] = useState(() => Boolean(creatorData?.handle && creatorData?.followers > 0))
-  const [scrapedPreview, setScrapedPreview] = useState(() => (creatorData?.handle && creatorData?.followers > 0 ? creatorData : null))
+  const [showPreview, setShowPreview] = useState(() => Boolean(initialValidCreator))
+  const [scrapedPreview, setScrapedPreview] = useState(() => initialValidCreator)
 
   // Live Scraping Telemetry Timing States
   const [scrapeElapsedMs, setScrapeElapsedMs] = useState(0)
@@ -132,6 +145,25 @@ export default function CreatorLink() {
   const timerRef = useRef(null)
   const autoAdvanceTimerRef = useRef(null)
   const telemetryLogsEndRef = useRef(null)
+
+  // 30-minute auto-wipe guard: wipe out connected profile preview after 30 mins of inactivity
+  useEffect(() => {
+    const checkExpiry = () => {
+      try {
+        const ts = localStorage.getItem('forge_creator_timestamp')
+        if (ts) {
+          const age = Date.now() - parseInt(ts, 10)
+          if (age > 30 * 60 * 1000) {
+            handleClear()
+          }
+        }
+      } catch {}
+    }
+
+    checkExpiry()
+    const expiryInterval = setInterval(checkExpiry, 15000)
+    return () => clearInterval(expiryInterval)
+  }, [])
 
   const formatElapsedTimer = (ms = 0) => {
     const totalSeconds = (ms || 0) / 1000
@@ -229,6 +261,9 @@ export default function CreatorLink() {
     setIsAnalyzing(false)
     setScrapeElapsedMs(0)
     setScrapeTelemetryLogs([])
+    try {
+      localStorage.removeItem('forge_creator_timestamp')
+    } catch {}
     if (resetCreator) {
       resetCreator()
     }
@@ -312,6 +347,9 @@ export default function CreatorLink() {
         setIsAnalyzing(false)
         if (winner && winner.handle) {
           const finalPayload = { ...winner, url: cleanUrl }
+          try {
+            localStorage.setItem('forge_creator_timestamp', String(Date.now()))
+          } catch {}
           updateCreator(finalPayload)
           setScrapedPreview(finalPayload)
           setShowPreview(true)

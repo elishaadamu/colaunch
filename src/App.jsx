@@ -1208,7 +1208,10 @@ export default function App() {
       } else if (path === '/signup') {
         setStep('signup')
       } else if (path === '/dashboard' || path.startsWith('/dashboard/')) {
-        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+        const hasSession = Boolean(
+          (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+          Boolean(localStorage.getItem('forge_creator_data'))
+        )
         if (!hasSession) {
           window.location.replace('/login')
           return
@@ -1262,7 +1265,10 @@ export default function App() {
           'dashboard', 'login', 'signup', 'api', 'static', 'member'
         ]
         if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
-          const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
+          const hasSession = Boolean(
+            (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+            Boolean(localStorage.getItem('forge_creator_data'))
+          )
           if (!hasSession) {
             window.location.replace('/login')
             return
@@ -1282,7 +1288,15 @@ export default function App() {
         // Base URL / or unrecognized path: route to onboarding flow
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
-        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+        const cachedTime = localStorage.getItem('forge_creator_timestamp')
+        const savedTime = cachedTime ? parseInt(cachedTime, 10) : 0
+        const isExpired = savedTime > 0 && (Date.now() - savedTime > 30 * 60 * 1000)
+        if (isExpired) {
+          localStorage.removeItem('forge_creator_data')
+          localStorage.removeItem('forge_creator_timestamp')
+          localStorage.removeItem('forge_onboarding_step')
+          setStep('creator-link')
+        } else if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
           setStep(savedStep)
         } else {
           setStep('creator-link')
@@ -1789,7 +1803,11 @@ export default function App() {
   }
 
   if (step === 'dashboard') {
-    const hasSession = Boolean(userProfile || (typeof localStorage !== 'undefined' && localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+    const hasSession = Boolean(
+      userProfile || 
+      (typeof localStorage !== 'undefined' && localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+      (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
+    )
     if (!hasSession) {
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.replace('/login')
