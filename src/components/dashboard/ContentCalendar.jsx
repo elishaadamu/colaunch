@@ -343,6 +343,8 @@ function generateWeekCampaignPosts(productName, offset = 0, creatorData = {}) {
     const d = new Date(weekData.monday)
     d.setDate(weekData.monday.getDate() + t.dayIndex)
     const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    // Alternate high-impact scheduled pipeline posts (e.g. Monday, Wednesday, Friday)
+    const isScheduledByDefault = (t.dayIndex === 0 || t.dayIndex === 2 || t.dayIndex === 4) && (offset >= 0 && offset <= 2)
 
     return {
       id: `post-gen-${offset}-${idx}-${d.getTime()}`,
@@ -357,7 +359,8 @@ function generateWeekCampaignPosts(productName, offset = 0, creatorData = {}) {
       strategy: t.strategy,
       title: t.title,
       caption: t.caption,
-      status: 'Draft',
+      status: isScheduledByDefault ? 'Scheduled' : 'Draft',
+      scheduledAt: isScheduledByDefault ? `${dateKey}T${t.time}` : null,
       time: t.time,
       imageUrl: null
     }
@@ -424,11 +427,11 @@ function buildTailoredFallbackWeek(creatorData) {
   const niche = creatorData?.niche || 'Digital Content'
   return [
     { day: 'Mon', posts: [
-      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'scheduled' },
       { id: 2, type: 'Reel', title: `The Biggest Announcement of the Year: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Tue', posts: [
-      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
+      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'scheduled' },
       { id: 4, type: 'Post', title: `Behind The Scenes: Why We Built ${prod} For Our Community`, platform: 'Instagram', theme: 'value', status: 'draft' }
     ]},
     { day: 'Wed', posts: [
@@ -436,11 +439,11 @@ function buildTailoredFallbackWeek(creatorData) {
       { id: 6, type: 'Thread', title: `My Journey Building ${prod} for ${name}'s Audience`, platform: 'Twitter', theme: 'story', status: 'draft' }
     ]},
     { day: 'Thu', posts: [
-      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
+      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'scheduled' },
       { id: 8, type: 'Email', title: `IT'S LIVE! The ${prod} VIP Early Access`, platform: 'Email', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Fri', posts: [
-      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'draft' },
+      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'scheduled' },
       { id: 10, type: 'Shorts', title: `Quick Tour: Everything You Get With ${prod}!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
     ]},
     { day: 'Sat', posts: [
@@ -721,12 +724,7 @@ export function isStaleOrClashingCalendar(calendar, creatorData) {
     'Outfit Check: Doing Good',
     'Foundation Gear',
     'SURPRISE!! We Built a Foundation',
-    'init-mon-1',
-    'Launch teaser reel',
-    'Early access email',
-    '5 things I wish I knew',
-    'YouTube live — product intro',
-    'Launch day announcement'
+    'init-mon-1'
   ]
   for (const phrase of legacyPhrases) {
     if (str.includes(phrase)) return true
@@ -734,10 +732,14 @@ export function isStaleOrClashingCalendar(calendar, creatorData) {
 
   // 2. Reject if calendar clearly names another creator or mismatched brand
   if (creatorData) {
-    const curName = (creatorData.name || (creatorData.handle || '').replace(/^@+/, '')).trim().toLowerCase()
+    const curName = (creatorData.name || '').trim().toLowerCase()
+    const curHandle = (creatorData.handle || '').replace(/^@+/, '').trim().toLowerCase()
     const otherCreators = ['adamu elisha inuwa', 'ali abdaal', 'mrbeast', 'mkbhd', 'basic brain']
     for (const other of otherCreators) {
-      if (curName && !curName.includes(other) && !other.includes(curName)) {
+      const isCurrent = 
+        (curName && (curName.includes(other) || other.includes(curName))) ||
+        (curHandle && (curHandle.includes(other) || other.includes(curHandle)))
+      if (!isCurrent) {
         if (str.toLowerCase().includes(other)) {
           return true
         }
@@ -776,13 +778,13 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     return []
   }
 
-  // 1. Check if we already have valid campaign posts cached for this creator
+  // 1. Check if we already have valid campaign posts cached for this creator (requiring at least 14 posts with dateKeys)
   try {
     const cachedPosts = localStorage.getItem(`forge_campaign_posts_${hClean}`) || localStorage.getItem(`forge_campaign_posts_${cleanHandlePlain}`)
     if (cachedPosts) {
       const parsed = JSON.parse(cachedPosts)
-      if (Array.isArray(parsed) && parsed.length > 0 && !isStaleOrClashingCalendar(parsed, creatorData)) {
-        const hasDateKeys = parsed.some(p => p.dateKey)
+      if (Array.isArray(parsed) && parsed.length >= 14 && !isStaleOrClashingCalendar(parsed, creatorData)) {
+        const hasDateKeys = parsed.filter(p => p.dateKey).length >= 14
         if (hasDateKeys) {
           return parsed
         }
@@ -845,9 +847,10 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       const strategy = (p.theme || p.strategy || 'LAUNCH').toUpperCase()
       const title = p.title || p.label || `Launch Post ${pIdx + 1}`
       const isConnected = isChannelConnected(channel, null, creatorData)
-      const status = isConnected && (p.status === 'posted' || p.done)
+      const isConnOrOnboarded = isConnected || hasOnboardedData
+      const status = isConnOrOnboarded && (p.status === 'posted' || p.done)
         ? 'Posted'
-        : (isConnected && (p.status === 'scheduled' || p.status === 'Scheduled') && p.scheduledAt)
+        : (isConnOrOnboarded && (p.status === 'scheduled' || p.status === 'Scheduled'))
           ? 'Scheduled'
           : 'Draft'
       const time = p.time || defaultTimes[pIdx % defaultTimes.length]
@@ -874,28 +877,25 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     })
   })
 
-  // Get surrounding weeks with valid calendar dates for navigation (-1 and +1)
-  const surrounding = getDefaultCampaignPosts(productName, creatorData).map(p => {
-    const postMon = new Date(monday)
-    postMon.setDate(monday.getDate() + ((p.weekOffset || 0) * 7))
-    const d = new Date(postMon)
-    d.setDate(postMon.getDate() + (p.dayIndex || 0))
-    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    const fullDateStr = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+  // Generate full 7-day schedules across surrounding weeks covering the entire month grid (-2, -1, +1, +2, +3, +4, +5)
+  const weekNeg2Posts = generateWeekCampaignPosts(productName, -2, creatorData)
+  const weekNeg1Posts = generateWeekCampaignPosts(productName, -1, creatorData)
+  const week1Posts = generateWeekCampaignPosts(productName, 1, creatorData)
+  const week2Posts = generateWeekCampaignPosts(productName, 2, creatorData)
+  const week3Posts = generateWeekCampaignPosts(productName, 3, creatorData)
+  const week4Posts = generateWeekCampaignPosts(productName, 4, creatorData)
+  const week5Posts = generateWeekCampaignPosts(productName, 5, creatorData)
 
-    return {
-      ...p,
-      dateKey,
-      fullDateStr,
-      status: 'Draft'
-    }
-  })
-
-  // Populate subsequent weeks across the month (+2 and +3)
-  const week2Posts = generateWeekCampaignPosts(productName, 2, creatorData).map(p => ({ ...p, status: 'Draft' }))
-  const week3Posts = generateWeekCampaignPosts(productName, 3, creatorData).map(p => ({ ...p, status: 'Draft' }))
-
-  const allPosts = [...week0Posts, ...surrounding, ...week2Posts, ...week3Posts]
+  const allPosts = [
+    ...weekNeg2Posts,
+    ...weekNeg1Posts,
+    ...week0Posts,
+    ...week1Posts,
+    ...week2Posts,
+    ...week3Posts,
+    ...week4Posts,
+    ...week5Posts
+  ]
   try {
     localStorage.setItem(`forge_campaign_posts_${hClean}`, JSON.stringify(allPosts))
     localStorage.setItem(`forge_campaign_posts_${cleanHandlePlain}`, JSON.stringify(allPosts))
@@ -1062,7 +1062,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
   // Self-heal: Ensure calendar posts are populated for onboarded creators
   useEffect(() => {
-    if ((!posts || posts.length === 0) && hasOnboardedData) {
+    if ((!posts || posts.length < 14) && hasOnboardedData) {
       const fresh = loadSyncedCampaignPosts(creatorData, productName, handleClean)
       if (fresh && fresh.length > 0) {
         setPosts(fresh)
@@ -1236,20 +1236,20 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     return todayPost?.id || posts[0]?.id || 'post-1'
   })
   
-  // Filtered dataset based on platform, active week, and pipeline status
+  // Filtered dataset based on platform, active week/view, and pipeline status
   const filteredPosts = useMemo(() => {
     return posts.filter(p => {
       // Platform filter
       const matchPlatform = platformFilter === 'all' || p.channel.toLowerCase() === platformFilter.toLowerCase()
-      // Week filter (posts belonging to the current weekOffset)
-      const matchWeek = (p.weekOffset ?? 0) === weekOffset
+      // Week filter: in 7-day sprint view, constrain to active weekOffset. In Month Grid view, show all posts for the month!
+      const matchWeek = viewMode === 'calendar' ? true : (p.weekOffset ?? 0) === weekOffset
       // Status filter
       const matchStatus = statusFilter === 'all'
         ? true
         : (p.status === 'Scheduled' || p.status === 'Posted')
       return matchPlatform && matchWeek && matchStatus
     })
-  }, [posts, platformFilter, weekOffset, statusFilter])
+  }, [posts, platformFilter, weekOffset, statusFilter, viewMode])
 
   // Month Calendar Navigation Handlers
   const handlePrevMonth = () => {
@@ -1330,7 +1330,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     setPosts(currentPosts => {
       const hasPostsForOffset = currentPosts.some(p => (p.weekOffset ?? 0) === nextOffset)
       if (!hasPostsForOffset) {
-        const generated = generateWeekCampaignPosts(productName, nextOffset)
+        const generated = generateWeekCampaignPosts(productName, nextOffset, creatorData)
         return [...currentPosts, ...generated]
       }
       return currentPosts
@@ -1355,6 +1355,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
   // Populate an empty week with structured sprint strategy
   const handlePopulateEmptyWeek = (offset, e) => {
+    const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+    const prod = productName || `${creatorCleanName} Suite`
+    const niche = creatorData?.niche || 'creator workflow'
     const newPosts = [
       {
         id: `post-gen-${offset}-1`,
@@ -1364,8 +1367,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         channel: 'YouTube',
         format: 'VIDEO',
         strategy: 'VALUE',
-        title: `Deep-Dive: How ${productName} Saves 4 Hours Every Week`,
-        caption: `Planning Sunday services shouldn't take over your entire weekend.\n\nInside this walkthrough, we unpack our automated chord transposition and multitrack player.\n\nJoin the founding members now at the link in bio.`,
+        title: `Deep-Dive: How ${prod} Saves 4+ Hours Every Week in ${niche}`,
+        caption: `Scaling your creative workflow shouldn't take over your entire schedule.\n\nInside this walkthrough, we unpack our core architecture and time-saving features in ${prod}.\n\nJoin the founding members now at the link in bio.`,
         status: 'Draft',
         time: '9:00 AM',
         imageUrl: null
@@ -1378,8 +1381,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         channel: 'Instagram',
         format: 'REEL',
         strategy: 'BTS',
-        title: `Rehearsal Breakdown with ${productName}`,
-        caption: `Watch how seamlessly our team flips between keys in real-time.\n\nDrop a comment if your church worship team needs this!`,
+        title: `Behind the Scenes with ${prod}`,
+        caption: `Watch how seamlessly our setup streamlines tasks in real-time.\n\nDrop a comment if you want founding member access!`,
         status: 'Draft',
         time: '12:00 PM',
         imageUrl: null
@@ -1392,8 +1395,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         channel: 'YouTube',
         format: 'SHORTS',
         strategy: 'PROOF',
-        title: `3 Reasons Worship Leaders Are Switching to ${productName}`,
-        caption: `1. Zero handwritten chord errors\n2. Instant tempo alignment\n3. 7-day free trial\n\nLink in bio!`,
+        title: `3 Reasons Creators Are Switching to ${prod}`,
+        caption: `1. Verified productivity gains\n2. Direct community access\n3. Founding member pricing\n\nLink in bio!`,
         status: 'Scheduled',
         time: '3:00 PM',
         imageUrl: null
@@ -1406,8 +1409,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         channel: 'Instagram',
         format: 'COMMUNITY',
         strategy: 'COMMUNITY',
-        title: `Sunday Morning Service Reflection`,
-        caption: `What a powerful morning of worship! Thank you to everyone who shared stems with our community today.`,
+        title: `Sunday Creator Reflection & Community Highlights`,
+        caption: `What an incredible week of shipping and feedback! Thank you to everyone supporting ${prod}.`,
         status: 'Draft',
         time: '1:00 PM',
         imageUrl: null
@@ -1427,9 +1430,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   }, [activePost?.id, activePost?.title, productName])
 
   // Suggested hooks state
-  const [suggestedHooks, setSuggestedHooks] = useState([
-    `Stop spending 3 hours every Saturday fixing chord charts...`,
-    `Here is why 1,400 worship leaders joined our VIP beta yesterday...`
+  const [suggestedHooks, setSuggestedHooks] = useState(() => [
+    `Stop wasting 4+ hours every week on manual setup...`,
+    `Here is why 1,400+ creators joined our early access waitlist...`
   ])
 
   // Caption input ref for "Edit Script" action
@@ -1943,7 +1946,10 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
     setTimeout(() => {
       setIsTweakingAi(false)
-      const elevatedCaption = `Here is the truth about running a high-impact Sunday service:\n\nPreparation beats talent when stress is on the line. We spent 6 months building the ${productName} session toolkit to automate stems and chord transposition in 1 click.\n\nTap the link in description to claim your 7-day founding pass.\n\n#WorshipLeader #ChurchMusic #FoundingPass #SundayService`
+      const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+      const prod = productName || `${creatorCleanName} Suite`
+      const niche = creatorData?.niche || 'creative workflow'
+      const elevatedCaption = `Here is the truth about scaling in ${niche}:\n\nSystems beat raw grind when high-volume output is required. We spent months engineering ${prod} to automate our core workflow in 1 click.\n\nTap the link in description to claim your founding member pass.\n\n#${creatorCleanName.replace(/\s+/g, '')} #FoundingPass #${niche.replace(/\s+/g, '')}`
       updateActivePostCaption(elevatedCaption)
       if (triggerToast) triggerToast('Caption refined with AI creative parameters!', 'success')
     }, 850)
@@ -1953,10 +1959,12 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     setIsGeneratingHooks(true)
     setTimeout(() => {
       setIsGeneratingHooks(false)
+      const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+      const prod = productName || `${creatorCleanName} Suite`
       setSuggestedHooks([
-        `The single biggest mistake church directors make with chord charts...`,
-        `How 1 click transposes an entire Sunday 5-song set...`,
-        `Inside look: Why our members save 4 hours every rehearsal...`
+        `The single biggest mistake creators make when scaling...`,
+        `How 1 click streamlines your entire workflow in ${prod}...`,
+        `Inside look: Why our early members save 4+ hours every week...`
       ])
       if (triggerToast) triggerToast('Generated fresh viral opening hooks!', 'success')
     }, 600)
@@ -2056,15 +2064,15 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
           : idx === 1
           ? `Behind The Scenes: Crafting ${aiProductName}`
           : idx === 2
-          ? `3 Reasons Directors Are Switching to ${aiProductName}`
+          ? `3 Reasons Creators Are Switching to ${aiProductName}`
           : idx === 3
-          ? `The 5-Minute Sunday Planning Framework`
+          ? `The 5-Minute Setup Framework for ${aiProductName}`
           : idx === 4
           ? `Founding Member Pass: Pricing Ends This Weekend`
           : idx === 5
-          ? `Live Community Voice: Member Spotlight`
-          : `Sunday Service Walkthrough with ${aiProductName}`,
-        caption: `Stop spending your weekends fixing chord charts. Today, ${aiProductName} officially opens for early members.\n\n${aiProductUsp}\n\nStart your 7-day trial now.\n\n#${aiProductName.replace(/\s+/g,'')} #Creator #SundayService`,
+          ? `Live Community Voice: Early Adopter Spotlight`
+          : `Inside the Architecture of ${aiProductName}`,
+        caption: `Stop wasting hours on repetitive busywork. Today, ${aiProductName} officially opens for early members.\n\n${aiProductUsp}\n\nStart your founding trial now.\n\n#${aiProductName.replace(/\s+/g,'')} #Creator #LaunchSprint`,
         status: 'Draft',
         time: idx % 2 === 0 ? '9:00 AM' : '2:00 PM',
         imageUrl: null
@@ -4213,25 +4221,25 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             <div className="py-4 space-y-3">
               {[
                 {
-                  title: 'Rehearsal Bloopers & Live Improvisation',
+                  title: `Behind the Scenes: Prototyping ${productName}`,
                   channel: 'Instagram',
                   format: 'REEL',
                   strategy: 'BTS',
-                  caption: 'Unfiltered laughter from rehearsal: What happens when the drummer drops his stick during the bridge!'
+                  caption: `Unfiltered look into our build process: Testing out the newest features in ${productName} before public release.`
                 },
                 {
-                  title: 'The 1 Chord Transpose Trick Every Director Needs',
+                  title: `The 1 Time-Saving Technique Every Creator Needs`,
                   channel: 'YouTube',
                   format: 'SHORTS',
                   strategy: 'VALUE',
-                  caption: 'Quick 45-second tutorial: How to transpose any worship song in seconds without losing the groove.'
+                  caption: `Quick 45-second tutorial: How to 10x your output without burning out.`
                 },
                 {
-                  title: 'Subscriber Q&A: Why Our Members Save 4 Hours Every Week',
+                  title: `Community AMA: Why Supporters Save 4+ Hours Every Week`,
                   channel: 'YouTube',
                   format: 'VIDEO',
                   strategy: 'PROOF',
-                  caption: 'Answering community questions about multitrack stems and audio isolation in WorshipLeader+.'
+                  caption: `Answering top questions from our founding member community about getting real results with ${productName}.`
                 }
               ].map((idea, idx) => (
                 <div key={idx} className="p-3.5 bg-[#111522] rounded-none border-0 flex items-center justify-between gap-3">
