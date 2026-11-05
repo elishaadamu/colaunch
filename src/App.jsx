@@ -268,13 +268,23 @@ export default function App() {
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
+        const cachedTime = localStorage.getItem('forge_creator_timestamp')
+        const savedTime = cachedTime ? parseInt(cachedTime, 10) : 0
+        const isExpired = savedTime > 0 && (Date.now() - savedTime > 30 * 60 * 1000)
+        if (isExpired) {
+          localStorage.removeItem('forge_creator_data')
+          localStorage.removeItem('forge_creator_timestamp')
+          localStorage.removeItem('forge_onboarding_step')
+          return 'creator-link'
+        }
         if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
           return savedStep
         }
         return 'creator-link'
       }
       if (path === '/dashboard' || path.startsWith('/dashboard/')) {
-        const hasSession = localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')
+        const hasSession = (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+          Boolean(localStorage.getItem('forge_creator_data'))
         if (!hasSession) {
           if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
             window.history.replaceState(null, '', '/login')
@@ -306,7 +316,8 @@ export default function App() {
         'dashboard', 'login', 'signup', 'api', 'static', 'member'
       ]
       if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
-        const hasSession = localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')
+        const hasSession = (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+          Boolean(localStorage.getItem('forge_creator_data'))
         if (!hasSession) {
           if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
             window.history.replaceState(null, '', '/login')
@@ -319,6 +330,15 @@ export default function App() {
 
       const savedStep = localStorage.getItem('forge_onboarding_step')
       const savedCreator = localStorage.getItem('forge_creator_data')
+      const cachedTime = localStorage.getItem('forge_creator_timestamp')
+      const savedTime = cachedTime ? parseInt(cachedTime, 10) : 0
+      const isExpired = savedTime > 0 && (Date.now() - savedTime > 30 * 60 * 1000)
+      if (isExpired) {
+        localStorage.removeItem('forge_creator_data')
+        localStorage.removeItem('forge_creator_timestamp')
+        localStorage.removeItem('forge_onboarding_step')
+        return 'creator-link'
+      }
       if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
         return savedStep
       }
@@ -353,8 +373,32 @@ export default function App() {
           if (updated) {
             localStorage.setItem('forge_user_profile', JSON.stringify(u))
           }
+          return u
         }
-        return u
+      }
+
+      // If no explicit userProfile, but creatorData exists from onboarding, auto-derive active creator profile
+      const cachedCreator = localStorage.getItem('forge_creator_data')
+      if (cachedCreator) {
+        const cd = JSON.parse(cachedCreator)
+        if (cd && (cd.handle || cd.url || cd.name)) {
+          const rawH = cd.handle || cd.name || 'creator'
+          const cleanH = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+          const derivedProf = {
+            username: cleanH,
+            name: cd.name || cd.display_name || cleanH,
+            email: cd.email || `${cleanH}@colaunch.app`,
+            avatar: cd.avatarUrl || cd.avatar || '',
+            created_at: new Date().toISOString(),
+            isCreator: true,
+            fromOnboarding: true,
+          }
+          try {
+            localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
+            localStorage.setItem('forge_active_session', 'true')
+          } catch {}
+          return derivedProf
+        }
       }
       return null
     } catch {
@@ -522,7 +566,30 @@ export default function App() {
   const [creatorData, setCreatorData] = useState(() => {
     try {
       const cached = localStorage.getItem('forge_creator_data')
+      const cachedTime = localStorage.getItem('forge_creator_timestamp')
       if (cached) {
+        const savedTime = cachedTime ? parseInt(cachedTime, 10) : 0
+        const isExpired = savedTime > 0 && (Date.now() - savedTime > 30 * 60 * 1000)
+        if (isExpired) {
+          localStorage.removeItem('forge_creator_data')
+          localStorage.removeItem('forge_creator_timestamp')
+          localStorage.removeItem('forge_onboarding_step')
+          return {
+            url: '',
+            platform: null,
+            handle: '',
+            name: '',
+            followers: 0,
+            avatar: null,
+            niche: '',
+            recentPosts: [],
+            engagementRate: 0,
+            brandColor: null,
+            blueprint: null,
+            productName: '',
+            buildItems: [],
+          }
+        }
         const parsed = JSON.parse(cached)
         if (parsed.recommendations && !areRecsValidForCreator(parsed.recommendations, parsed)) {
           parsed.recommendations = null
@@ -718,26 +785,40 @@ export default function App() {
     } else if (newStep === 'signup') {
       path = '/signup'
     } else if (newStep === 'dashboard') {
-      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      const hasSession = Boolean(
+        userProfile || 
+        (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+        (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
+      )
       if (!hasSession) {
         if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.replace('/login')
         }
         return
       }
-      const hasConn = Boolean(
-        creatorData?.youtube_connected || 
-        creatorData?.instagram_connected || 
-        creatorData?.facebook_connected ||
-        creatorData?.otherAccounts?.youtube?.connected ||
-        creatorData?.otherAccounts?.instagram?.connected
-      )
-      const cleanHandle = hasConn && creatorData?.handle && creatorData.handle !== 'default'
-        ? creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
-        : null
-      const cId = hasConn
-        ? (creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked'))
-        : 'cr_unlinked'
+
+      if (!userProfile && creatorData && (creatorData.handle || creatorData.url || creatorData.name)) {
+        const rawH = creatorData.handle || creatorData.name || 'creator'
+        const cleanH = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+        const derivedProf = {
+          username: cleanH,
+          name: creatorData.name || creatorData.display_name || cleanH,
+          email: creatorData.email || `${cleanH}@colaunch.app`,
+          avatar: creatorData.avatarUrl || creatorData.avatar || '',
+          created_at: new Date().toISOString(),
+          isCreator: true,
+          fromOnboarding: true,
+        }
+        try {
+          localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
+          localStorage.setItem('forge_active_session', 'true')
+        } catch {}
+        setUserProfile(derivedProf)
+      }
+
+      const rawH = creatorData?.handle || creatorData?.name || 'creator'
+      const cleanHandle = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_creator')
       path = cId ? `/dashboard/${cId}` : '/dashboard'
     }
 
@@ -748,27 +829,43 @@ export default function App() {
 
   useEffect(() => {
     if (step === 'dashboard' && typeof window !== 'undefined') {
-      const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+      const hasSession = Boolean(
+        userProfile || 
+        (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+        (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
+      )
       if (!hasSession) {
         window.location.replace('/login')
         return
       }
+
+      if (!userProfile && creatorData && (creatorData.handle || creatorData.url || creatorData.name)) {
+        const rawH = creatorData.handle || creatorData.name || 'creator'
+        const cleanH = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+        const derivedProf = {
+          username: cleanH,
+          name: creatorData.name || creatorData.display_name || cleanH,
+          email: creatorData.email || `${cleanH}@colaunch.app`,
+          avatar: creatorData.avatarUrl || creatorData.avatar || '',
+          created_at: new Date().toISOString(),
+          isCreator: true,
+          fromOnboarding: true,
+        }
+        try {
+          localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
+          localStorage.setItem('forge_active_session', 'true')
+        } catch {}
+        setUserProfile(derivedProf)
+      }
+
       try {
         localStorage.setItem('forge_onboarding_step', 'dashboard')
+        localStorage.setItem('forge_active_session', 'true')
       } catch {}
-      const hasConn = Boolean(
-        creatorData?.youtube_connected || 
-        creatorData?.instagram_connected || 
-        creatorData?.facebook_connected ||
-        creatorData?.otherAccounts?.youtube?.connected ||
-        creatorData?.otherAccounts?.instagram?.connected
-      )
-      const cleanHandle = hasConn && creatorData?.handle && creatorData.handle !== 'default'
-        ? creatorData.handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
-        : null
-      const cId = hasConn
-        ? (creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_unlinked'))
-        : 'cr_unlinked'
+
+      const rawH = creatorData?.handle || creatorData?.name || 'creator'
+      const cleanHandle = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+      const cId = creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_creator')
       if (cId) {
         const targetPath = `/dashboard/${cId}`
         const currentSearch = window.location.search || ''
@@ -984,6 +1081,7 @@ export default function App() {
       try {
         if (updated && (updated.handle || updated.url || updated.name)) {
           localStorage.setItem('forge_creator_data', JSON.stringify(updated))
+          localStorage.setItem('forge_creator_timestamp', String(Date.now()))
         }
       } catch (e) {
         console.warn('[Forge] Failed to persist creator data:', e)

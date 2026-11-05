@@ -349,9 +349,13 @@ export default function DashboardLayout() {
   const [diyModalOpen, setDiyModalOpen] = useState(false)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
 
-  // Security Guard: If logged out, redirect immediately to /login
+  // Security Guard: Allow access if logged in OR if active creatorData exists from onboarding
   useEffect(() => {
-    const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
+    const hasSession = Boolean(
+      userProfile || 
+      (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
+      (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
+    )
     if (!hasSession) {
       if (typeof window !== 'undefined') {
         window.location.replace('/login')
@@ -359,7 +363,7 @@ export default function DashboardLayout() {
         goTo('login')
       }
     }
-  }, [userProfile, goTo])
+  }, [userProfile, creatorData, goTo])
 
   // Listen for real-time YouTube connection events from OAuth (strictly user-isolated)
   const [ytConn, setYtConn] = useState(() => userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email))

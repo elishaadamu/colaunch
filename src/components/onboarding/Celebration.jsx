@@ -152,29 +152,18 @@ function getRichBuiltModules(blueprint, creatorData) {
 }
 
 export default function Celebration() {
-  const { next, creatorData } = useForge()
+  const { next, goTo, creatorData, userProfile, setUserProfile } = useForge()
   const [visible, setVisible] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const blueprint = creatorData.blueprint || { name: 'Creator Platform' }
-  const hasConn = Boolean(
-    creatorData?.youtube_connected || 
-    creatorData?.instagram_connected || 
-    creatorData?.facebook_connected ||
-    creatorData?.otherAccounts?.youtube?.connected ||
-    creatorData?.otherAccounts?.instagram?.connected
-  )
-  const cleanHandle = hasConn && (creatorData.handle || '')
-    ? creatorData.handle.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
-    : null
-  const handle = cleanHandle ? `@${cleanHandle}` : null
+  const blueprint = creatorData?.blueprint || { name: 'Creator Platform' }
+  const rawHandle = creatorData?.handle || creatorData?.name || 'creator'
+  const cleanHandle = rawHandle.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+  const handle = `@${cleanHandle}`
   
   const creatorId = creatorData?.id && !creatorData.id.startsWith('cr_')
     ? creatorData.id
-    : (hasConn && cleanHandle
-        ? 'cr_' + cleanHandle
-        : 'cr_unlinked'
-      )
+    : `cr_${cleanHandle}`
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app'
   const dashboardUrl = `${baseUrl}/dashboard/${creatorId}`
   
@@ -184,14 +173,41 @@ export default function Celebration() {
   const isLight = isLightColor(accent.color)
   const builtModules = getRichBuiltModules(blueprint, creatorData)
 
+  const handleEnterDashboard = () => {
+    try {
+      localStorage.setItem('forge_onboarding_step', 'dashboard')
+      localStorage.setItem('forge_active_session', 'true')
+      if (!userProfile && creatorData) {
+        const initialProfile = {
+          username: cleanHandle,
+          name: creatorData?.name || creatorData?.display_name || cleanHandle,
+          email: creatorData?.email || `${cleanHandle}@colaunch.app`,
+          avatar: creatorData?.avatarUrl || creatorData?.avatar || '',
+          created_at: new Date().toISOString(),
+          isCreator: true,
+          fromOnboarding: true,
+        }
+        localStorage.setItem('forge_user_profile', JSON.stringify(initialProfile))
+        if (setUserProfile) setUserProfile(initialProfile)
+      }
+    } catch (e) {
+      console.warn('[Celebration] Error saving session before dashboard enter:', e)
+    }
+    if (goTo) {
+      goTo('dashboard')
+    } else if (typeof window !== 'undefined') {
+      window.location.href = `/dashboard/${creatorId}`
+    }
+  }
+
   useEffect(() => {
-    if (hasConn && cleanHandle && !creatorData.id) {
+    if (cleanHandle && !creatorData?.id) {
       creatorData.id = creatorId
       try {
         localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, id: creatorId }))
       } catch {}
     }
-  }, [hasConn, cleanHandle, creatorId, creatorData])
+  }, [cleanHandle, creatorId, creatorData])
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 100)
@@ -266,9 +282,14 @@ export default function Celebration() {
           {/* Creator Dashboard URL Link Banner */}
           <div className="mt-5 inline-flex items-center gap-2.5 p-1.5 pl-4 rounded-none bg-[#12141c] border border-[#222634] max-w-full">
             <Globe className="w-4 h-4 flex-shrink-0" style={{ color: accent.color }} />
-            <span className="font-mono text-xs sm:text-sm text-slate-300 truncate select-all">
+            <button
+              type="button"
+              onClick={handleEnterDashboard}
+              className="font-mono text-xs sm:text-sm text-slate-300 hover:text-white hover:underline truncate select-all bg-transparent border-0 p-0 text-left cursor-pointer"
+              title="Click to enter your dashboard"
+            >
               {dashboardUrl}
-            </span>
+            </button>
             <button
               type="button"
               onClick={handleCopyLink}
@@ -441,12 +462,7 @@ export default function Celebration() {
             <div className="bg-[#12141c] border border-[#222634] rounded-none p-6 flex flex-col justify-between">
               <button
                 type="button"
-                onClick={() => {
-                  try {
-                    localStorage.setItem('forge_onboarding_step', 'dashboard')
-                  } catch {}
-                  goTo('dashboard')
-                }}
+                onClick={handleEnterDashboard}
                 className="w-full font-bold py-4 px-6 rounded-none text-sm transition flex items-center justify-center space-x-2.5 group cursor-pointer border border-white/10"
                 style={{
                   background: accent.color,
