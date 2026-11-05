@@ -2696,7 +2696,9 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
         <div className="flex items-center gap-2 px-4 py-3 rounded-none animate-fade-up text-white"
           style={{ background: `rgba(${accent.rgb},0.15)`, border: `1px solid rgba(${accent.rgb},0.35)`, borderRadius: '0px' }}>
           <Check size={13} className="text-white" style={{ color: '#ffffff' }} />
-          <span className="text-[13px] text-white">Added to your content calendar</span>
+          <span className="text-[13px] text-white">
+            Added to your content calendar {!isConnected ? '· Connect in Accounts when ready to auto-publish live' : ''}
+          </span>
           <button onClick={() => setScheduledToast(null)} className="ml-auto text-white/40 hover:text-white cursor-pointer"><X size={12} /></button>
         </div>
       )}

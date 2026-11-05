@@ -11,7 +11,7 @@ import {
   publishToYouTube
 } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 import {
   Trophy,
   Flame,
@@ -747,6 +747,7 @@ export function isStaleOrClashingCalendar(calendar, creatorData) {
 // Synchronizes and loads 7-day launch plan directly from Marketing Launch Calendar
 export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
   const isConnected = isChannelConnectedOrConfigured(creatorData)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
   const creatorName = creatorData?.name || (creatorData?.handle || '').replace(/^@+/, '') || 'Creator'
   const handle = creatorData?.handle || creatorName || 'creator'
@@ -757,9 +758,8 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     `forge_calendar_${rawH}_launch_w0`
   ]
 
-  // If no social account is connected, AI has not studied the creator's channel yet.
-  // Purge any lingering ungrounded dummy templates and strictly return empty list.
-  if (!isConnected) {
+  // If no social account is connected AND no onboarding profile exists, return empty list
+  if (!isConnected && !hasOnboardedData) {
     cacheKeys.forEach(k => {
       try { localStorage.removeItem(k) } catch (_) {}
     })
@@ -2126,13 +2126,14 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
   const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
   return (
     <div 
       ref={calendarContainerRef}
       className="h-full flex flex-col bg-[#090d16] text-slate-200 overflow-hidden relative"
     >
-      {!isConnected ? (
+      {!isConnected && !hasOnboardedData ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
           <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none shadow-2xl space-y-4">
             <div className="w-14 h-14 mx-auto rounded-none bg-[#c81e3c] border border-[#c81e3c] flex items-center justify-center text-white shadow-lg shadow-[#c81e3c]/20">

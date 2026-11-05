@@ -6,7 +6,7 @@ import {
   Send, ExternalLink, Zap, Search, ShieldCheck, Flame, UserPlus, Eye, TrendingUp, CheckCircle2, ArrowRight
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 import { loadSyncedCampaignPosts, getMonthCalendarGrid } from './ContentCalendar'
 
 // ─── Dynamic Community Content Templates ─────────────────────────────────────
@@ -1129,8 +1129,8 @@ export default function Community() {
       }
     } catch (_) {}
 
-    // B. Read central launch plan from Content Calendar ONLY IF channel is connected
-    const isChannelConnected = isChannelConnectedOrConfigured(creatorData)
+    // B. Read central launch plan from Content Calendar if channel is connected or onboarded
+    const isChannelConnected = isChannelConnectedOrConfigured(creatorData) || hasOnboardedSocialData(creatorData)
     if (isChannelConnected) {
       try {
         const campaignPosts = loadSyncedCampaignPosts(creatorData, productName, cleanHandle)

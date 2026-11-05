@@ -13,7 +13,7 @@ import PlatformNativeStudioPreview from './PlatformNativeStudioPreview'
 import ApiKeysModal from '../ui/ApiKeysModal'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
-import { isChannelConnectedOrConfigured } from '../../services/channelStudyService'
+import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
 
 
 // ─── CONTENT TYPES ───────────────────────────────────────────────────────────
@@ -110,8 +110,9 @@ export default function Studio() {
   const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
   const metaConn = userProfile?.meta_connection || getStoredMetaConnection(userProfile?.email)
   const isConnected = isChannelConnectedOrConfigured(creatorData, ytConn, metaConn)
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
 
-  if (!isConnected) {
+  if (!isConnected && !hasOnboardedData) {
     return (
       <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c0f17] border border-[#161b2b] rounded-none text-center space-y-4 shadow-2xl">

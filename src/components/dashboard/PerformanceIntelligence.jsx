@@ -486,8 +486,10 @@ export default function PerformanceIntelligence() {
     }
   }
 
-  // If user signed up directly and hasn't connected a channel yet, show empty state with link to Accounts
-  if (!isConnected) {
+  const hasOnboardedData = hasOnboardedSocialData(creatorData)
+
+  // Show empty state ONLY if creator has neither connected an account NOR completed onboarding
+  if (!isConnected && !hasOnboardedData) {
     return (
       <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-8 items-center justify-center">
         <div className="max-w-xl w-full p-8 bg-[#0c1017] border border-white/[0.08] rounded-none text-center space-y-4 shadow-2xl">
