@@ -372,19 +372,17 @@ export default function CreatorLink() {
           <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </a>
 
-        {/* Right: Reset Creator Button + Step Indicator Dots & Counter */}
+        {/* Right: Sign In + Reset Creator Button + Step Indicator Dots & Counter */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {!userProfile && (
-            <button
-              type="button"
-              onClick={() => goTo('login')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#111317]/80 hover:bg-[#1a1e26] border border-[#1f242c] hover:border-slate-500 rounded-none transition-all cursor-pointer shadow-sm"
-              title="Log in to existing account"
-            >
-              <LogIn className="w-3.5 h-3.5 text-slate-400" />
-              <span>Log in</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => goTo('login')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#111317]/80 hover:bg-[#1a1e26] border border-[#1f242c] hover:border-slate-500 rounded-none transition-all cursor-pointer shadow-sm"
+            title="Sign in to your account"
+          >
+            <LogIn className="w-3.5 h-3.5 text-slate-400" />
+            <span>Sign In</span>
+          </button>
 
           {(creatorData?.handle || url || showPreview) && (
             <button
@@ -572,6 +570,20 @@ export default function CreatorLink() {
                 </span>
               )}
             </button>
+
+            {/* Direct Sign In Prompt */}
+            {!isAnalyzing && (
+              <div className="text-center text-xs text-neutral-400 pt-1">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => goTo('login')}
+                  className="text-white hover:text-[#c81e3c] font-semibold underline transition cursor-pointer ml-1 bg-transparent border-0"
+                >
+                  Sign In
+                </button>
+              </div>
+            )}
 
             {/* Live Telemetry Build Process HUD */}
             {isAnalyzing && (
@@ -786,7 +798,7 @@ export default function CreatorLink() {
             onClick={() => goTo('login')}
             className="hover:text-neutral-300 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs text-neutral-400"
           >
-            Already have an account? <span className="text-[#c81e3c] font-semibold underline underline-offset-2">Log in</span>
+            Already have an account? <span className="text-[#c81e3c] font-semibold underline underline-offset-2">Sign In</span>
           </button>
           <span className="text-neutral-700">&bull;</span>
           <a href="https://co-launch.app" className="hover:text-neutral-400 transition-colors">co-launch.app</a>
