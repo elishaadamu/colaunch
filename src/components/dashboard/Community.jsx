@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge } from '../../App'
-import { 
-  Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare, 
-  Radio, ChevronRight, ChevronLeft, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail, 
+import {
+  Sparkles, RefreshCw, Copy, Check, Calendar, Plus, Users, MessageSquare,
+  Radio, ChevronRight, ChevronLeft, ChevronDown, Link2, X, Trash2, Clock, Edit, Mail,
   Send, ExternalLink, Zap, Search, ShieldCheck, Flame, UserPlus, Eye, TrendingUp, CheckCircle2, ArrowRight
 } from 'lucide-react'
 import { generateStudioContent, hasTextKey } from '../../services/ai'
@@ -96,18 +96,18 @@ function MiniCalendar({ onSelectDate, selectedDate, scheduledPosts = [], brandRe
     <div className="w-full text-white">
       {/* Month nav */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <button 
+        <button
           type="button"
-          onClick={prevMonth} 
+          onClick={prevMonth}
           className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
           style={{ borderRadius: '0px' }}
         >
           <ChevronRight size={13} className="rotate-180" />
         </button>
         <span className="text-xs font-bold text-white tracking-wide">{MONTHS[month]} {year}</span>
-        <button 
+        <button
           type="button"
-          onClick={nextMonth} 
+          onClick={nextMonth}
           className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-white bg-[#10141f] hover:bg-[#161d2d] transition border border-white/10 cursor-pointer"
           style={{ borderRadius: '0px' }}
         >
@@ -164,25 +164,25 @@ function MiniCalendar({ onSelectDate, selectedDate, scheduledPosts = [], brandRe
               style={{
                 borderRadius: '0px',
                 color: isSelected ? '#ffffff' : isToday ? '#ffffff' : hasPost ? '#ffffff' : '#94a3b8',
-                background: isSelected 
-                  ? brandRed 
-                  : isToday 
-                    ? 'rgba(200,30,60,0.18)' 
-                    : hasPost 
-                      ? 'rgba(255,255,255,0.05)' 
+                background: isSelected
+                  ? brandRed
+                  : isToday
+                    ? 'rgba(200,30,60,0.18)'
+                    : hasPost
+                      ? 'rgba(255,255,255,0.05)'
                       : 'transparent',
-                border: isSelected 
-                  ? `1px solid ${brandRed}` 
-                  : isToday 
-                    ? `1px solid ${brandRed}` 
-                    : hasPost 
-                      ? '1px solid rgba(255,255,255,0.16)' 
+                border: isSelected
+                  ? `1px solid ${brandRed}`
+                  : isToday
+                    ? `1px solid ${brandRed}`
+                    : hasPost
+                      ? '1px solid rgba(255,255,255,0.16)'
                       : '1px solid transparent',
               }}
             >
               <span>{day}</span>
               {hasPost && (
-                <span 
+                <span
                   className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-none ${isSelected ? 'bg-white' : 'bg-[#c81e3c]'}`}
                   style={{ borderRadius: '0px' }}
                 />
@@ -233,9 +233,9 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
               <p className="text-[11px] text-slate-400">Manually enroll a member into your founding circle</p>
             </div>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose} 
+          <button
+            type="button"
+            onClick={onClose}
             className="w-7 h-7 rounded-none flex items-center justify-center bg-[#10141f] border border-white/10 text-slate-400 hover:text-white cursor-pointer"
             style={{ borderRadius: '0px' }}
           >
@@ -248,8 +248,8 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
             <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Member Name
             </label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               placeholder="e.g. Maya Chen"
               value={name}
@@ -263,8 +263,8 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
             <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Email Address
             </label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               required
               placeholder="maya@example.com"
               value={email}
@@ -292,15 +292,15 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
           </div>
 
           <div className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2.5">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 rounded-none text-xs font-semibold bg-[#10141f] hover:bg-[#161d2d] text-slate-300 hover:text-white transition border border-white/10 cursor-pointer"
               style={{ borderRadius: '0px' }}
             >
               Cancel
             </button>
-            <button 
+            <button
               type="submit"
               className="px-4 py-2 rounded-none text-xs font-bold text-white transition cursor-pointer border-0 shadow-md"
               style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
@@ -316,14 +316,14 @@ function AddMemberModal({ isOpen, onClose, onAddMember, brandRed = '#c81e3c' }) 
 
 // ─── Broadcast Email & Member Messaging Modal ─────────────────────────────────
 
-function BroadcastModal({ 
-  members = [], 
-  onClose, 
-  triggerToast, 
-  creatorData, 
+function BroadcastModal({
+  members = [],
+  onClose,
+  triggerToast,
+  creatorData,
   userProfile,
-  productName, 
-  brandRed = '#c81e3c', 
+  productName,
+  brandRed = '#c81e3c',
   onScheduleToCalendar,
   initialSubject = '',
   initialMessage = '',
@@ -428,7 +428,7 @@ function BroadcastModal({
     try {
       const inputContext = `Refine this community email update. Current draft: "${message || `Update for our members in ${productName}`}". Niche: ${creatorData?.niche || 'creation'}. Tone: Confident, warm, community-first, actionable.`
       const draft = await generateStudioContent({ label: 'Community Email', platform: 'Email' }, inputContext, creatorData, 'Confident')
-      
+
       let cleanDraft = draft
       if (draft.includes('Subject:')) {
         const lines = draft.split('\n')
@@ -554,12 +554,12 @@ function BroadcastModal({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-      <div 
+      <div
         className="w-full max-w-xl rounded-none border border-white/10 p-5 sm:p-6 flex flex-col shadow-2xl relative max-h-[92vh] bg-[#0c1017] space-y-4"
         style={{ borderRadius: '0px' }}
       >
         {/* Close Button */}
-        <button 
+        <button
           type="button"
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white transition w-8 h-8 rounded-none flex items-center justify-center bg-[#10141f] border border-white/10 cursor-pointer"
@@ -570,8 +570,8 @@ function BroadcastModal({
 
         {/* Title */}
         <div className="flex items-center gap-3 pb-3 border-b border-white/[0.08]">
-          <div 
-            className="w-9 h-9 rounded-none flex items-center justify-center border border-[#c81e3c]/40 bg-[#c81e3c]/20 text-white" 
+          <div
+            className="w-9 h-9 rounded-none flex items-center justify-center border border-[#c81e3c]/40 bg-[#c81e3c]/20 text-white"
             style={{ borderRadius: '0px' }}
           >
             <Send size={15} />
@@ -709,7 +709,7 @@ function BroadcastModal({
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                 Email Subject / Title
               </label>
-              <button 
+              <button
                 type="button"
                 onClick={handleRefineTitle}
                 disabled={isRefiningTitle}
@@ -720,8 +720,8 @@ function BroadcastModal({
                 <span>{isRefiningTitle ? 'Refining...' : 'AI Refine Title'}</span>
               </button>
             </div>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               placeholder="e.g. Milestone unlocked: New resources & sprint update"
               value={subject}
@@ -736,7 +736,7 @@ function BroadcastModal({
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                 Message Body
               </label>
-              <button 
+              <button
                 type="button"
                 onClick={handleRefineBody}
                 disabled={isRefiningBody}
@@ -773,7 +773,7 @@ function BroadcastModal({
           </a>
 
           <div className="flex items-center gap-2">
-            <button 
+            <button
               type="button"
               onClick={handleCalendarDrop}
               disabled={!subject.trim() || !message.trim()}
@@ -785,7 +785,7 @@ function BroadcastModal({
               <span>Schedule to Calendar</span>
             </button>
 
-            <button 
+            <button
               type="button"
               onClick={handleSend}
               disabled={isSending || !subject.trim() || !message.trim() || recipients.length === 0}
@@ -822,7 +822,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
         if (parsed.subject) setSubject(parsed.subject)
         if (parsed.message) setMessage(parsed.message)
       }
-    } catch (_) {}
+    } catch (_) { }
   }, [cleanHandle])
 
   if (!isOpen) return null
@@ -834,7 +834,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
       const res = await generateStudioContent({ label: 'Welcome Subject', platform: 'Email' }, promptContext, creatorData, 'Confident')
       const clean = (res || '').replace(/^subject:\s*/i, '').replace(/["']/g, '').trim().split('\n')[0]
       if (clean) setSubject(clean)
-    } catch (_) {}
+    } catch (_) { }
     setIsRefiningTitle(false)
   }
 
@@ -844,7 +844,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
       const promptContext = `Write a high-converting automated welcome email for new members joining "${productName}". Creator: ${creatorData?.name || 'Creator'}. Niche: ${creatorData?.niche || 'creation'}. Tone: Warm, exciting, clear next steps.`
       const res = await generateStudioContent({ label: 'Welcome Email', platform: 'Email' }, promptContext, creatorData, 'Confident')
       if (res) setMessage(res)
-    } catch (_) {}
+    } catch (_) { }
     setIsRefiningBody(false)
   }
 
@@ -868,9 +868,9 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
               <p className="text-[11px] text-slate-400">Displayed and dispatched to anyone who joins via your invite link</p>
             </div>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose} 
+          <button
+            type="button"
+            onClick={onClose}
             className="w-7 h-7 rounded-none flex items-center justify-center bg-[#10141f] border border-white/10 text-slate-400 hover:text-white cursor-pointer"
             style={{ borderRadius: '0px' }}
           >
@@ -899,7 +899,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                 Welcome Title / Subject
               </label>
-              <button 
+              <button
                 type="button"
                 onClick={handleRefineTitle}
                 disabled={isRefiningTitle}
@@ -910,7 +910,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
                 <span>{isRefiningTitle ? 'Refining...' : 'AI Refine Title'}</span>
               </button>
             </div>
-            <input 
+            <input
               type="text"
               value={subject}
               onChange={e => setSubject(e.target.value)}
@@ -924,7 +924,7 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                 Welcome Message Body
               </label>
-              <button 
+              <button
                 type="button"
                 onClick={handleRefineBody}
                 disabled={isRefiningBody}
@@ -946,15 +946,15 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
         </div>
 
         <div className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2.5">
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-none text-xs font-semibold bg-[#10141f] hover:bg-[#161d2d] text-slate-300 hover:text-white transition border border-white/10 cursor-pointer"
             style={{ borderRadius: '0px' }}
           >
             Cancel
           </button>
-          <button 
+          <button
             type="button"
             onClick={handleSave}
             className="px-4 py-2 rounded-none text-xs font-bold text-white transition cursor-pointer border-0 shadow-md"
@@ -971,13 +971,13 @@ function WelcomeSetupModal({ isOpen, onClose, cleanHandle, creatorData, productN
 // ─── Main Community Component ─────────────────────────────────────────────────
 
 export default function Community() {
-  const { 
-    creatorData, 
-    incrementAiActions, 
-    setApiModalOpen, 
-    triggerToast, 
-    dashboardData, 
-    saveDashboardData, 
+  const {
+    creatorData,
+    incrementAiActions,
+    setApiModalOpen,
+    triggerToast,
+    dashboardData,
+    saveDashboardData,
     setActiveTab,
     userProfile
   } = useForge()
@@ -1034,7 +1034,7 @@ export default function Community() {
         }
       }
       return []
-    } catch (_) { 
+    } catch (_) {
       return []
     }
   })
@@ -1057,7 +1057,7 @@ export default function Community() {
       setMembers(prev => {
         if (prev.some(m => m.email?.toLowerCase() === newMember.email?.toLowerCase())) return prev
         const updated = [newMember, ...prev]
-        try { localStorage.setItem(getMembersKey(), JSON.stringify(updated)) } catch (_) {}
+        try { localStorage.setItem(getMembersKey(), JSON.stringify(updated)) } catch (_) { }
         return updated
       })
       setTrafficCount(prev => prev + 1)
@@ -1088,7 +1088,7 @@ export default function Community() {
     setMembers(updated)
     try {
       localStorage.setItem(getMembersKey(), JSON.stringify(updated))
-    } catch (_) {}
+    } catch (_) { }
     if (saveDashboardData) {
       saveDashboardData('community', {
         members: updated,
@@ -1105,7 +1105,7 @@ export default function Community() {
   // Helper to load all scheduled campaign posts directly synchronized with Content Calendar
   const loadReflectedCalendarPosts = () => {
     const allPosts = []
-    
+
     // A. Read direct community scheduled posts
     try {
       const cached = localStorage.getItem(getCommunityPostsKey())
@@ -1127,45 +1127,45 @@ export default function Community() {
           })
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // B. Read central launch plan from Content Calendar if channel is connected or onboarded
     const isChannelConnected = isChannelConnectedOrConfigured(creatorData) || hasOnboardedSocialData(creatorData)
     if (isChannelConnected) {
       try {
         const campaignPosts = loadSyncedCampaignPosts(creatorData, productName, cleanHandle)
-      if (Array.isArray(campaignPosts)) {
-        campaignPosts.forEach(p => {
-          const d = p.dateKey ? new Date(p.dateKey + 'T12:00:00') : (p.date ? new Date(p.date) : null)
-          allPosts.push({
-            id: p.id,
-            calendarId: p.marketingId || p.id,
-            dateKey: p.dateKey,
-            date: d,
-            day: p.dayName,
-            type: p.format || p.type || 'Campaign Drop',
-            title: p.title || p.label || 'Scheduled Campaign Post',
-            content: p.caption || p.content || '',
-            fullContent: p.caption || p.content || '',
-            platform: p.channel || p.platform || 'Social',
-            strategy: p.strategy || 'LAUNCH',
-            time: p.time || '9:00 AM',
-            dateLabel: p.fullDateStr ? `${p.dayName}, ${p.fullDateStr.split(',')[0]}` : `${p.dayName} · Active Sprint`,
-            status: p.status || 'Draft',
-            fromCalendar: true,
-            isCommunityRelated: Boolean(
-              (p.format || '').toLowerCase().includes('communit') ||
-              (p.channel || '').toLowerCase().includes('communit') ||
-              (p.channel || '').toLowerCase().includes('email') ||
-              (p.strategy || '').toLowerCase() === 'community' ||
-              (p.title || '').toLowerCase().includes('community') ||
-              (p.title || '').toLowerCase().includes('poll') ||
-              (p.title || '').toLowerCase().includes('challenge') ||
-              (p.title || '').toLowerCase().includes('member')
-            )
+        if (Array.isArray(campaignPosts)) {
+          campaignPosts.forEach(p => {
+            const d = p.dateKey ? new Date(p.dateKey + 'T12:00:00') : (p.date ? new Date(p.date) : null)
+            allPosts.push({
+              id: p.id,
+              calendarId: p.marketingId || p.id,
+              dateKey: p.dateKey,
+              date: d,
+              day: p.dayName,
+              type: p.format || p.type || 'Campaign Drop',
+              title: p.title || p.label || 'Scheduled Campaign Post',
+              content: p.caption || p.content || '',
+              fullContent: p.caption || p.content || '',
+              platform: p.channel || p.platform || 'Social',
+              strategy: p.strategy || 'LAUNCH',
+              time: p.time || '9:00 AM',
+              dateLabel: p.fullDateStr ? `${p.dayName}, ${p.fullDateStr.split(',')[0]}` : `${p.dayName} · Active Sprint`,
+              status: p.status || 'Draft',
+              fromCalendar: true,
+              isCommunityRelated: Boolean(
+                (p.format || '').toLowerCase().includes('communit') ||
+                (p.channel || '').toLowerCase().includes('communit') ||
+                (p.channel || '').toLowerCase().includes('email') ||
+                (p.strategy || '').toLowerCase() === 'community' ||
+                (p.title || '').toLowerCase().includes('community') ||
+                (p.title || '').toLowerCase().includes('poll') ||
+                (p.title || '').toLowerCase().includes('challenge') ||
+                (p.title || '').toLowerCase().includes('member')
+              )
+            })
           })
-        })
-      }
+        }
       } catch (err) {
         console.warn('[Community] Failed to sync campaign posts:', err)
       }
@@ -1231,7 +1231,7 @@ export default function Community() {
           localStorage.setItem(getCommunityPostsKey(), JSON.stringify(updated))
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Update central calendar store if originated from calendar
     try {
@@ -1257,7 +1257,7 @@ export default function Community() {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     if (triggerToast) {
       triggerToast(newStatus === 'Sent' ? 'Post marked as Sent & Delivered!' : 'Post status reset to Scheduled', 'success')
@@ -1370,7 +1370,7 @@ export default function Community() {
     setScheduledPosts(prev => [newPost, ...prev])
     try {
       localStorage.setItem(getCommunityPostsKey(), JSON.stringify(updatedCommunity))
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Synchronize directly into Content Calendar (forge_calendar_${cleanHandle}_launch_w0)
     try {
@@ -1404,7 +1404,7 @@ export default function Community() {
       localStorage.setItem(calKey, JSON.stringify(parsedCal))
       // Notify ContentCalendar and Marketing immediately
       window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Community' } }))
-    } catch (_) {}
+    } catch (_) { }
 
     if (triggerToast) {
       triggerToast(`Post scheduled for ${dateLabel} & synchronized with Content Calendar!`, 'success')
@@ -1481,7 +1481,7 @@ export default function Community() {
     try {
       const communityOnly = updated.filter(p => !p.fromCalendar)
       localStorage.setItem(getCommunityPostsKey(), JSON.stringify(communityOnly))
-    } catch (_) {}
+    } catch (_) { }
     if (triggerToast) triggerToast('Post removed from queue', 'info')
   }
 
@@ -1502,10 +1502,10 @@ export default function Community() {
   // Filtered members list
   const filteredMembers = useMemo(() => {
     return members.filter(m => {
-      const matchesSearch = !memberSearchQuery || 
+      const matchesSearch = !memberSearchQuery ||
         (m.name || '').toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
         (m.email || '').toLowerCase().includes(memberSearchQuery.toLowerCase())
-      const matchesFilter = memberFilter === 'all' || 
+      const matchesFilter = memberFilter === 'all' ||
         (memberFilter === 'vip' && m.role?.includes('VIP')) ||
         (memberFilter === 'founding' && m.role?.includes('Founding'))
       return matchesSearch && matchesFilter
@@ -1521,7 +1521,7 @@ export default function Community() {
 
   return (
     <div className="min-h-full flex flex-col bg-[#090d16] text-slate-200 p-4 sm:p-6 space-y-6">
-      
+
       {/* ── TOP HEADER ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
         <div>
@@ -1688,9 +1688,8 @@ export default function Community() {
           <button
             type="button"
             onClick={() => setActiveTabSub('hub')}
-            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${
-              activeTabSub === 'hub' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
-            }`}
+            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${activeTabSub === 'hub' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
+              }`}
             style={{
               borderRadius: '0px',
               ...(activeTabSub === 'hub' ? { background: brandRed, color: '#ffffff' } : {})
@@ -1702,9 +1701,8 @@ export default function Community() {
           <button
             type="button"
             onClick={() => setActiveTabSub('members')}
-            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${
-              activeTabSub === 'members' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
-            }`}
+            className={`px-4 py-2 text-xs font-bold rounded-none transition cursor-pointer border-0 ${activeTabSub === 'members' ? 'text-white' : 'text-slate-400 hover:text-white bg-transparent'
+              }`}
             style={{
               borderRadius: '0px',
               ...(activeTabSub === 'members' ? { background: brandRed, color: '#ffffff' } : {})
@@ -1743,14 +1741,13 @@ export default function Community() {
                       key={type.id}
                       type="button"
                       onClick={() => handleSelectType(type)}
-                      className={`w-full text-left p-2.5 rounded-none border transition cursor-pointer flex items-center gap-2.5 ${
-                        isSelected 
-                          ? 'border-[#c81e3c]/60 bg-[#c81e3c]/15 text-white' 
-                          : 'border-white/[0.06] bg-[#10141f] text-slate-300 hover:bg-[#151b2a] hover:text-white'
-                      }`}
+                      className={`w-full text-left p-2.5 rounded-none border transition cursor-pointer flex items-center gap-2.5 ${isSelected
+                        ? 'border-[#c81e3c]/60 bg-[#c81e3c]/15 text-white'
+                        : 'border-white/[0.06] bg-[#10141f] text-slate-300 hover:bg-[#151b2a] hover:text-white'
+                        }`}
                       style={{ borderRadius: '0px' }}
                     >
-                      <div 
+                      <div
                         className={`w-6 h-6 rounded-none flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#c81e3c] text-white' : 'bg-white/[0.05] text-slate-400'}`}
                         style={{ borderRadius: '0px' }}
                       >
@@ -1838,9 +1835,9 @@ export default function Community() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     type="button"
-                    onClick={handleCopy} 
+                    onClick={handleCopy}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#10141f] hover:bg-[#161d2d] border border-white/10 rounded-none transition cursor-pointer"
                     style={{ borderRadius: '0px' }}
                   >
@@ -1929,11 +1926,10 @@ export default function Community() {
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('all')}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
-                      pipelineChannelFilter === 'all'
-                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
-                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${pipelineChannelFilter === 'all'
+                      ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                      : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     All ({scheduledPosts.filter(p => postMatchesDate(p, selectedCalendarDate)).length})
@@ -1942,11 +1938,10 @@ export default function Community() {
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('community')}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
-                      pipelineChannelFilter === 'community'
-                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
-                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${pipelineChannelFilter === 'community'
+                      ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                      : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     Community ({communityPostsCount})
@@ -1955,11 +1950,10 @@ export default function Community() {
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('email')}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
-                      pipelineChannelFilter === 'email'
-                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
-                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${pipelineChannelFilter === 'email'
+                      ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                      : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     Email ({emailPostsCount})
@@ -1968,11 +1962,10 @@ export default function Community() {
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('youtube')}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
-                      pipelineChannelFilter === 'youtube'
-                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
-                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${pipelineChannelFilter === 'youtube'
+                      ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                      : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     YouTube ({ytPostsCount})
@@ -1981,11 +1974,10 @@ export default function Community() {
                   <button
                     type="button"
                     onClick={() => setPipelineChannelFilter('social')}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${
-                      pipelineChannelFilter === 'social'
-                        ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
-                        : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-none border transition cursor-pointer ${pipelineChannelFilter === 'social'
+                      ? 'border-[#c81e3c]/50 bg-[#c81e3c]/20 text-white'
+                      : 'border-white/10 bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     Social ({socialPostsCount})
@@ -2025,41 +2017,40 @@ export default function Community() {
                     return (
                       <div
                         key={post.id}
-                        className={`p-3.5 bg-[#10141f] border transition rounded-none space-y-2.5 ${
-                          isDelivered 
-                            ? 'border-emerald-500/30' 
-                            : isScheduled 
-                              ? 'border-sky-500/30' 
-                              : 'border-white/[0.08] hover:border-white/20'
-                        }`}
+                        className={`p-3.5 bg-[#10141f] border transition rounded-none space-y-2.5 ${isDelivered
+                          ? 'border-emerald-500/30'
+                          : isScheduled
+                            ? 'border-sky-500/30'
+                            : 'border-white/[0.08] hover:border-white/20'
+                          }`}
                         style={{ borderRadius: '0px' }}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span 
+                            <span
                               className="px-2 py-0.5 rounded-none text-[9px] font-mono font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white"
                               style={{ borderRadius: '0px' }}
                             >
                               {post.platform || 'YouTube'}
                             </span>
-                            <span 
+                            <span
                               className="px-2 py-0.5 rounded-none text-[9px] font-mono font-bold uppercase tracking-wider"
                               style={{
                                 borderRadius: '0px',
-                                background: isDelivered 
-                                  ? 'rgba(52, 211, 153, 0.15)' 
-                                  : isScheduled 
-                                    ? 'rgba(56, 189, 248, 0.15)' 
+                                background: isDelivered
+                                  ? 'rgba(52, 211, 153, 0.15)'
+                                  : isScheduled
+                                    ? 'rgba(56, 189, 248, 0.15)'
                                     : 'rgba(200, 30, 60, 0.18)',
-                                color: isDelivered 
-                                  ? '#34d399' 
-                                  : isScheduled 
-                                    ? '#38bdf8' 
+                                color: isDelivered
+                                  ? '#34d399'
+                                  : isScheduled
+                                    ? '#38bdf8'
                                     : '#ff8093',
-                                border: isDelivered 
-                                  ? '1px solid rgba(52, 211, 153, 0.3)' 
-                                  : isScheduled 
-                                    ? '1px solid rgba(56, 189, 248, 0.3)' 
+                                border: isDelivered
+                                  ? '1px solid rgba(52, 211, 153, 0.3)'
+                                  : isScheduled
+                                    ? '1px solid rgba(56, 189, 248, 0.3)'
                                     : '1px solid rgba(200, 30, 60, 0.3)'
                               }}
                             >
@@ -2177,9 +2168,8 @@ export default function Community() {
                     key={f}
                     type="button"
                     onClick={() => setMemberFilter(f)}
-                    className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-none transition cursor-pointer border-0 ${
-                      memberFilter === f ? 'bg-[#c81e3c] text-white' : 'bg-[#10141f] text-slate-400 hover:text-white'
-                    }`}
+                    className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-none transition cursor-pointer border-0 ${memberFilter === f ? 'bg-[#c81e3c] text-white' : 'bg-[#10141f] text-slate-400 hover:text-white'
+                      }`}
                     style={{ borderRadius: '0px' }}
                   >
                     {f}
@@ -2250,7 +2240,7 @@ export default function Community() {
                   style={{ borderRadius: '0px' }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-none bg-[#c81e3c]/20 border border-[#c81e3c]/40 text-white font-bold flex items-center justify-center text-xs shrink-0"
                       style={{ borderRadius: '0px' }}
                     >
@@ -2259,7 +2249,7 @@ export default function Community() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-white truncate">{m.name || 'Member'}</span>
-                        <span 
+                        <span
                           className="px-1.5 py-0.2 rounded-none text-[9px] font-bold uppercase bg-[#c81e3c]/20 text-white border border-[#c81e3c]/40"
                           style={{ borderRadius: '0px' }}
                         >

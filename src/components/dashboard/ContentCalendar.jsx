@@ -257,8 +257,12 @@ export function getMonthCalendarGrid(year, monthIndex) {
 }
 
 // Generate structured campaign posts for ANY week offset (guaranteeing week navigation is never empty)
-function generateWeekCampaignPosts(productName, offset = 0) {
+function generateWeekCampaignPosts(productName, offset = 0, creatorData = {}) {
   const weekData = calculateWeekData(offset)
+  const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+  const prod = productName || creatorData?.productName || `${name} Suite`
+  const niche = creatorData?.niche || 'Digital Content'
+
   const templates = [
     {
       dayIndex: 0,
@@ -267,10 +271,10 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'VIDEO',
       strategy: 'LAUNCH',
       time: '9:00 AM',
-      title: offset > 0 
-        ? `Masterclass: Scaling Sunday Setlists with ${productName}` 
-        : `How ${productName} Transforms Your Sunday Morning Preparation`,
-      caption: `Sunday mornings shouldn't come with panic over missing audio stems or incorrect chords.\n\nToday, we're officially unveiling the brand-new ${productName} Session Engine. See how our members prepare a full 5-song set in under 20 minutes.\n\nLink in description to start your 7-day free trial.\n\n#ChurchTech #WorshipLeader #MusicDirector`
+      title: offset > 1 
+        ? `Masterclass: Inside the High-Performance Setup of ${prod}` 
+        : `How ${prod} Elevates Your Creative Workflow in ${niche}`,
+      caption: `Unveiling our complete member system for ${prod}. Watch the full breakdown to see how members save hours and achieve elite results.\n\nLink in description.\n\n#${name.replace(/\s+/g, '')} #Productivity #Masterclass`
     },
     {
       dayIndex: 1,
@@ -279,8 +283,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'REEL',
       strategy: 'BTS',
       time: '11:30 AM',
-      title: 'Sneak Peek: Upcoming Exclusive Songs for Members!',
-      caption: `Big things are coming.\n\nWe've been working behind the scenes on something we can't wait to share with you.\n\nStay tuned. The countdown has begun.\n\n#newlaunch #staytuned #excitingnews #worshiptips`
+      title: `Behind The Scenes: Why We Built ${prod} For ${name}'s Community`,
+      caption: `Unfiltered look at what it took to engineer ${prod}. Link in bio to join early!\n\n#${name.replace(/\s+/g, '')} #BTS #CreatorEconomy`
     },
     {
       dayIndex: 2,
@@ -289,8 +293,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'SHORTS',
       strategy: 'PROOF',
       time: '1:00 PM',
-      title: `3 Reasons ${productName} is a Game Changer`,
-      caption: `Watch how our worship team cut rehearsal prep time by 50% using real-time key transposition.\n\nDrop a comment if your church needs this!\n\n#Shorts #Productivity #ChurchTech`
+      title: `3 Reasons ${prod} is a Complete Game Changer`,
+      caption: `Quick walkthrough of our favorite feature inside ${prod}. Have you tried it yet?\n\n#Shorts #${name.replace(/\s+/g, '')}`
     },
     {
       dayIndex: 3,
@@ -299,8 +303,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'STORY',
       strategy: 'COMMUNITY',
       time: '3:00 PM',
-      title: `Story Poll: Chord Transpose vs Multitracks?`,
-      caption: `Quick question for our crew: Chord transpose or audio stem isolation? Vote in our story poll!`
+      title: `Story Poll: What feature should we ship next in ${prod}?`,
+      caption: `Quick question for our community: Vote in our story poll on what you want added to ${prod}!`
     },
     {
       dayIndex: 4,
@@ -309,8 +313,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'VIDEO',
       strategy: 'CTA',
       time: '4:00 PM',
-      title: `Before and After: Elevate Your Worship Sessions`,
-      caption: `Founding member registration is live! Get full access to our complete music library and video stems for $29/mo.\n\nLink in description.`
+      title: `Live Demo: How Members Are Getting Results with ${prod}`,
+      caption: `Founding member registration is live! Get full access to ${prod} and our private builder group.\n\nLink in description.`
     },
     {
       dayIndex: 5,
@@ -319,8 +323,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'REEL',
       strategy: 'PROOF',
       time: '12:00 PM',
-      title: `User Feedback: Weekend Saved with ${productName}`,
-      caption: `"I got my Saturday nights back with my family instead of manually transposing keys." - Sarah M.\n\nJoin the platform today!`
+      title: `Member Feedback: Weekend Transformation with ${prod}`,
+      caption: `Love seeing our early adopters getting real leverage with ${prod}. Tap link in bio to join!`
     },
     {
       dayIndex: 6,
@@ -329,8 +333,8 @@ function generateWeekCampaignPosts(productName, offset = 0) {
       format: 'SHORTS',
       strategy: 'VALUE',
       time: '8:00 AM',
-      title: `Sunday Quick Tip: Quick Audio Monitoring Hacks`,
-      caption: `Happy Sunday everyone! Here are 3 quick tips for smooth audio monitoring during your service.\n\nHave a blessed morning!`
+      title: `Sunday Quick Tip: Top 3 Frameworks for Success in ${niche}`,
+      caption: `Happy Sunday! Here are 3 quick frameworks to help you level up this week.\n\n#${name.replace(/\s+/g, '')} #SundayTip`
     }
   ]
 
@@ -341,7 +345,7 @@ function generateWeekCampaignPosts(productName, offset = 0) {
     const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
     return {
-      id: `post-gen-${offset}-${idx}-${Date.now()}`,
+      id: `post-gen-${offset}-${idx}-${d.getTime()}`,
       weekOffset: offset,
       dayIndex: t.dayIndex,
       dayName: t.dayName,
@@ -753,9 +757,14 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
   const handle = creatorData?.handle || creatorName || 'creator'
   const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
   const rawH = handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  const cleanHandlePlain = handle.replace(/^@+/, '').toLowerCase()
+
   const cacheKeys = [
     `forge_calendar_${hClean}_launch_w0`,
-    `forge_calendar_${rawH}_launch_w0`
+    `forge_calendar_${rawH}_launch_w0`,
+    `forge_calendar_${cleanHandlePlain}_launch_w0`,
+    `forge_calendar_${handle}_launch_w0`,
+    `forge_calendar_${handle.toLowerCase()}_launch_w0`
   ]
 
   // If no social account is connected AND no onboarding profile exists, return empty list
@@ -767,6 +776,21 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     return []
   }
 
+  // 1. Check if we already have valid campaign posts cached for this creator
+  try {
+    const cachedPosts = localStorage.getItem(`forge_campaign_posts_${hClean}`) || localStorage.getItem(`forge_campaign_posts_${cleanHandlePlain}`)
+    if (cachedPosts) {
+      const parsed = JSON.parse(cachedPosts)
+      if (Array.isArray(parsed) && parsed.length > 0 && !isStaleOrClashingCalendar(parsed, creatorData)) {
+        const hasDateKeys = parsed.some(p => p.dateKey)
+        if (hasDateKeys) {
+          return parsed
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 2. Read raw 7-day calendar from cache keys
   let rawCalendar = null
   for (const k of cacheKeys) {
     try {
@@ -774,31 +798,15 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length > 0 && !isStaleOrClashingCalendar(parsed, creatorData)) {
-          // If no account is connected, reject and purge ungrounded dummy template posts
-          const hasUngroundedDummy = parsed.some(d => (d.posts || []).some(p => 
-            (p.title || '').includes('Official Reveal: Inside the New') ||
-            (p.title || '').includes('The Biggest Announcement of the Year') ||
-            (p.title || '').includes('3 Things You Can Do Today Inside')
-          ))
-          if (!isConnected && hasUngroundedDummy) {
-            localStorage.removeItem(k)
-            try { localStorage.removeItem(`forge_campaign_posts_${hClean}`) } catch (_) {}
-            continue
-          }
           rawCalendar = parsed
           break
-        } else if (parsed && isStaleOrClashingCalendar(parsed, creatorData)) {
-          localStorage.removeItem(k)
         }
       }
     } catch (_) {}
   }
 
-  // If no calendar in localStorage and NO channel connected, do NOT fabricate ungrounded dummy posts
+  // 3. If no calendar found, build tailored 7-day launch plan from onboarding data
   if (!rawCalendar) {
-    if (!isConnected) {
-      return []
-    }
     rawCalendar = buildTailoredFallbackWeek(creatorData)
     cacheKeys.forEach(k => {
       try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}
@@ -866,12 +874,33 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     })
   })
 
-  // Get surrounding weeks for navigation (-1 and +1) — un-connected channels are strictly Drafts
+  // Get surrounding weeks with valid calendar dates for navigation (-1 and +1)
   const surrounding = getDefaultCampaignPosts(productName, creatorData).map(p => {
-    const isConn = isChannelConnected(p.channel, null, creatorData)
-    return isConn ? p : { ...p, status: 'Draft', scheduledAt: null }
+    const postMon = new Date(monday)
+    postMon.setDate(monday.getDate() + ((p.weekOffset || 0) * 7))
+    const d = new Date(postMon)
+    d.setDate(postMon.getDate() + (p.dayIndex || 0))
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const fullDateStr = `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+
+    return {
+      ...p,
+      dateKey,
+      fullDateStr,
+      status: 'Draft'
+    }
   })
-  return [...week0Posts, ...surrounding]
+
+  // Populate subsequent weeks across the month (+2 and +3)
+  const week2Posts = generateWeekCampaignPosts(productName, 2, creatorData).map(p => ({ ...p, status: 'Draft' }))
+  const week3Posts = generateWeekCampaignPosts(productName, 3, creatorData).map(p => ({ ...p, status: 'Draft' }))
+
+  const allPosts = [...week0Posts, ...surrounding, ...week2Posts, ...week3Posts]
+  try {
+    localStorage.setItem(`forge_campaign_posts_${hClean}`, JSON.stringify(allPosts))
+    localStorage.setItem(`forge_campaign_posts_${cleanHandlePlain}`, JSON.stringify(allPosts))
+  } catch (_) {}
+  return allPosts
 }
 
 export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
@@ -1013,7 +1042,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
   // AI Modal Inputs
   const [aiProductName, setAiProductName] = useState(productName)
-  const [aiProductUsp, setAiProductUsp] = useState(`Save 4 hours every week planning church gatherings with instant chord charts and stems. $29/mo with 7-day free trial.`)
+  const [aiProductUsp, setAiProductUsp] = useState(() => {
+    return creatorData?.blueprint?.hook || creatorData?.blueprint?.description || `High-converting launch campaign for ${productName} in the ${creatorData?.niche || 'digital'} space.`
+  })
   const [aiCampaignGoal, setAiCampaignGoal] = useState('LaunchUrgency')
 
   // New Draft Modal Inputs
@@ -1026,26 +1057,29 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   // 7-Day Campaign Post Dataset - dynamically synced 1:1 with Marketing Launch Plan
   const [posts, setPosts] = useState(() => {
     const initial = loadSyncedCampaignPosts(creatorData, productName, handleClean)
-    const ytConn = userProfile?.youtube_connection || getStoredYouTubeConnection(userProfile?.email)
-    return initial.map(p => {
-      const isConn = isChannelConnected(p.channel, ytConn, creatorData)
-      if (!isConn && p.status !== 'Draft') {
-        return { ...p, status: 'Draft', scheduledAt: null }
-      }
-      return p
-    })
+    return initial
   })
 
-  // Whenever social channel connection changes, enforce that un-connected channels stay as Drafts
+  // Self-heal: Ensure calendar posts are populated for onboarded creators
+  useEffect(() => {
+    if ((!posts || posts.length === 0) && hasOnboardedData) {
+      const fresh = loadSyncedCampaignPosts(creatorData, productName, handleClean)
+      if (fresh && fresh.length > 0) {
+        setPosts(fresh)
+      }
+    }
+  }, [posts?.length, hasOnboardedData, creatorData, productName, handleClean])
+
+  // Whenever social channel connection changes, enforce that un-connected channels stay as Drafts unless onboarded
   useEffect(() => {
     setPosts(prev => prev.map(p => {
-      const isConn = isChannelConnected(p.channel, youtubeConnection, creatorData)
+      const isConn = isChannelConnected(p.channel, youtubeConnection, creatorData) || hasOnboardedData
       if (!isConn && p.status !== 'Draft') {
         return { ...p, status: 'Draft', scheduledAt: null }
       }
       return p
     }))
-  }, [youtubeConnection?.connected, creatorData?.youtube_connected])
+  }, [youtubeConnection?.connected, creatorData?.youtube_connected, hasOnboardedData])
 
   // Dynamic XP computation derived from real creator actions, database posts, and connected accounts
   // Pre-generated templates do NOT award passive XP — XP is only earned through genuine creator actions.
