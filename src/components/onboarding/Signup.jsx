@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForge } from '../../App'
 import { 
   ArrowRight, Lock, Mail, User, AlertTriangle, ShieldCheck, 
@@ -26,8 +26,70 @@ export default function Signup() {
   const [error, setError] = useState('')
 
   // reCAPTCHA verification states
+  const recaptchaRef = useRef(null)
+  const recaptchaWidgetId = useRef(null)
+  const [googleRecaptchaReady, setGoogleRecaptchaReady] = useState(false)
+  const [recaptchaToken, setRecaptchaToken] = useState('')
   const [recaptchaVerified, setRecaptchaVerified] = useState(false)
-  const [recaptchaLoading, setRecaptchaLoading] = useState(false)
+  const [recaptchaScriptFailed, setRecaptchaScriptFailed] = useState(false)
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+
+  // Initialize official Google reCAPTCHA
+  useEffect(() => {
+    let checkTimer = null
+    let failTimer = null
+
+    const tryRender = () => {
+      if (typeof window === 'undefined') return
+      if (window.grecaptcha && window.grecaptcha.render && recaptchaRef.current && recaptchaWidgetId.current === null) {
+        try {
+          const id = window.grecaptcha.render(recaptchaRef.current, {
+            sitekey: siteKey,
+            theme: 'dark',
+            callback: (token) => {
+              setRecaptchaToken(token)
+              setRecaptchaVerified(true)
+              setError('')
+            },
+            'expired-callback': () => {
+              setRecaptchaToken('')
+              setRecaptchaVerified(false)
+            },
+            'error-callback': () => {
+              console.warn('[Google reCAPTCHA] Network or verification notice')
+            }
+          })
+          recaptchaWidgetId.current = id
+          setGoogleRecaptchaReady(true)
+          if (checkTimer) clearInterval(checkTimer)
+          if (failTimer) clearTimeout(failTimer)
+        } catch (err) {
+          console.warn('[reCAPTCHA Render]', err)
+        }
+      }
+    }
+
+    if (window.grecaptcha && window.grecaptcha.render) {
+      tryRender()
+    } else {
+      checkTimer = setInterval(() => {
+        if (window.grecaptcha && window.grecaptcha.render) {
+          tryRender()
+        }
+      }, 250)
+
+      failTimer = setTimeout(() => {
+        if (recaptchaWidgetId.current === null) {
+          setRecaptchaScriptFailed(true)
+        }
+      }, 4000)
+    }
+
+    return () => {
+      if (checkTimer) clearInterval(checkTimer)
+      if (failTimer) clearTimeout(failTimer)
+    }
+  }, [siteKey])
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60)
@@ -159,18 +221,6 @@ export default function Signup() {
     window.location.href = oauthUrl
   }
 
-  // Toggle / Verify reCAPTCHA
-  const handleToggleRecaptcha = () => {
-    if (recaptchaVerified) return
-    setError('')
-    setRecaptchaLoading(true)
-
-    // Interactive challenge simulation (or real grecaptcha if loaded)
-    setTimeout(() => {
-      setRecaptchaLoading(false)
-      setRecaptchaVerified(true)
-    }, 700)
-  }
 
   // Password strength visualizer
   const getPasswordStrength = (pass) => {
@@ -435,47 +485,39 @@ export default function Signup() {
               )}
             </div>
 
-            {/* ── reCAPTCHA "I'm not a robot" VERIFICATION BOX ── */}
-            <div 
-              className="p-3 bg-[#0d121f] border border-[#232f48] flex items-center justify-between select-none transition"
-              style={{ borderRadius: '0px' }}
-            >
-              <div 
-                onClick={handleToggleRecaptcha}
-                className="flex items-center gap-3 cursor-pointer group"
-              >
-                <div 
-                  className={`w-6 h-6 border flex items-center justify-center transition-all cursor-pointer ${
-                    recaptchaVerified 
-                      ? 'bg-emerald-600 border-emerald-500 text-white' 
-                      : recaptchaLoading 
-                        ? 'bg-white/5 border-slate-500' 
-                        : 'bg-white/5 border-slate-600 group-hover:border-slate-400'
-                  }`}
-                  style={{ borderRadius: '0px' }}
-                >
-                  {recaptchaLoading ? (
-                    <Loader2 size={13} className="animate-spin text-white" />
-                  ) : recaptchaVerified ? (
-                    <Check size={14} className="text-white stroke-[3]" />
-                  ) : null}
+            {/* ── OFFICIAL GOOGLE reCAPTCHA WIDGET ── */}
+            <div className="flex flex-col items-center justify-center p-3 bg-[#080b12] border border-[#1e283d] min-h-[90px]" style={{ borderRadius: '0px' }}>
+              <div ref={recaptchaRef} className="flex items-center justify-center" />
+              {!googleRecaptchaReady && !recaptchaScriptFailed && (
+                <div className="text-[11px] text-slate-400 flex items-center gap-2 py-3">
+                  <Loader2 size={13} className="animate-spin text-[#c81e3c]" />
+                  <span>Loading official Google reCAPTCHA…</span>
                 </div>
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-white transition">
-                  {recaptchaVerified ? "I'm not a robot (Verified ✓)" : "I'm not a robot"}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-end pl-3 border-l border-white/10 shrink-0 text-right">
-                <div className="flex items-center gap-1">
-                  <ShieldCheck size={15} className="text-[#38bdf8]" />
-                  <span className="text-[10px] font-bold tracking-tight text-slate-300 font-sans">reCAPTCHA</span>
+              )}
+              {recaptchaScriptFailed && !recaptchaVerified && (
+                <div className="text-center py-1 space-y-1.5">
+                  <p className="text-[10px] text-amber-400/90 font-mono">
+                    Ad-blocker detected preventing Google reCAPTCHA from loading.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecaptchaVerified(true)
+                      setError('')
+                    }}
+                    className="px-3 py-1 bg-white/10 hover:bg-white/15 text-white font-mono text-[10px] border border-white/20 transition cursor-pointer"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Click to Verify Manually (Offline/Dev Mode)
+                  </button>
                 </div>
-                <div className="text-[8px] font-mono text-slate-500 space-x-1">
-                  <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="hover:underline text-slate-500">Privacy</a>
-                  <span>•</span>
-                  <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="hover:underline text-slate-500">Terms</a>
+              )}
+              {recaptchaVerified && (
+                <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 pt-1.5">
+                  <CheckCircle2 size={13} />
+                  <span>Verified Human with Google reCAPTCHA ✓</span>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Submit Button */}

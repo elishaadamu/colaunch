@@ -1733,6 +1733,7 @@ export default function AiDoesItPanel({ onClose }) {
   const [imageError, setImageError] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [regenning, setRegenning] = useState({})
+  const [apiKeysModalOpen, setApiKeysModalOpen] = useState(false)
 
   // Persist pack and image
   useEffect(() => {
@@ -2646,14 +2647,24 @@ export default function AiDoesItPanel({ onClose }) {
                         </div>
 
                         {imageError && (
-                          <div className="rounded-none p-3 border flex items-center justify-between flex-wrap gap-2"
-                            style={{ background: 'rgba(200, 30, 60, 0.1)', borderColor: 'rgba(200, 30, 60, 0.3)', borderRadius: '0px' }}>
-                            <div className="text-[11px] text-white/90 font-mono">
+                          <div className="rounded-none p-3 border flex items-center justify-between flex-wrap gap-2.5"
+                            style={{ background: 'rgba(200, 30, 60, 0.12)', borderColor: 'rgba(200, 30, 60, 0.35)', borderRadius: '0px' }}>
+                            <div className="text-[11px] text-white/90">
                               <span className="font-bold text-white">Notice: </span>
                               {imageError.includes('Expired') || imageError.includes('401')
-                                ? 'Displaying channel-calibrated dark commercial hero visual for your product.'
+                                ? 'Your OpenAI API key has expired. Please enter an active OpenAI key to generate new custom DALL-E assets.'
                                 : imageError.slice(0, 160)}
                             </div>
+                            {(imageError.includes('Expired') || imageError.includes('401') || imageError.includes('Key')) && (
+                              <button
+                                type="button"
+                                onClick={() => setApiKeysModalOpen(true)}
+                                className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-none cursor-pointer shadow-md transition hover:opacity-95"
+                                style={{ background: '#c81e3c', color: '#ffffff', borderRadius: '0px' }}
+                              >
+                                🔑 Update OpenAI Key
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2854,6 +2865,10 @@ export default function AiDoesItPanel({ onClose }) {
           </div>
         )}
       </div>
+
+      {apiKeysModalOpen && (
+        <ApiKeysModal onClose={() => setApiKeysModalOpen(false)} defaultTab="ai" />
+      )}
     </div>
   )
 }
