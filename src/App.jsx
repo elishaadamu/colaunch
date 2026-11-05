@@ -13,6 +13,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout'
 import OpsLayout from './components/ops/OpsLayout'
 import OpsAuth from './components/ops/OpsAuth'
 import CommunityJoin from './components/public/CommunityJoin'
+import MemberPortalPage from './components/public/MemberPortalPage'
 import CreatorLaunchLayout from './components/launch/CreatorLaunchLayout'
 import CreatorPortal from './components/launch/CreatorPortal'
 import PreorderLandingPage from './components/launch/PreorderLandingPage'
@@ -305,7 +306,7 @@ export default function App() {
         'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
         'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
         'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
-        'dashboard', 'login', 'signup', 'api', 'static'
+        'dashboard', 'login', 'signup', 'api', 'static', 'member'
       ]
       if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
         const hasSession = localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')
@@ -1135,7 +1136,8 @@ export default function App() {
           path.startsWith('/admin-error-log') ||
           path.startsWith('/error-log') ||
           path.startsWith('/errors') ||
-          path.startsWith('/join/')
+          path.startsWith('/join/') ||
+          path.startsWith('/member')
         ) {
           return
         }
@@ -1146,7 +1148,7 @@ export default function App() {
           'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
           'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
           'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
-          'dashboard', 'login', 'signup', 'api', 'static'
+          'dashboard', 'login', 'signup', 'api', 'static', 'member'
         ]
         if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
           const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
@@ -1532,7 +1534,7 @@ export default function App() {
       'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
       'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
       'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
-      'dashboard', 'login', 'signup', 'api', 'static'
+      'dashboard', 'login', 'signup', 'api', 'static', 'member'
     ]
     if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
       const hasSession = Boolean(userProfile || (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')))
@@ -1571,6 +1573,13 @@ export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/join/')) {
     const joinHandle = window.location.pathname.replace('/join/', '').replace(/\/$/, '')
     return <CommunityJoin handle={joinHandle} />
+  }
+
+  // /member/:handle or /member route — public live Member Platform Dashboard for any creator
+  if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/member') || window.location.pathname.startsWith('/app/'))) {
+    const raw = window.location.pathname.replace(/^\/member\/?/, '').replace(/^\/app\/?/, '').replace(/\/$/, '')
+    const memberHandle = raw || (creatorData?.handle || 'creator')
+    return <MemberPortalPage handle={memberHandle} />
   }
 
   // /portal/:portalId route — dedicated Creator Co-Founder Portal (magic link with ID)

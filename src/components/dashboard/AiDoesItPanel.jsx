@@ -1876,9 +1876,74 @@ export default function AiDoesItPanel({ onClose }) {
   const val = (path, fallback = '') => edits[path] !== undefined ? edits[path] : fallback
   const set = (path, v) => setEdits(p => ({ ...p, [path]: v }))
 
+  // Live Member Dashboard URL for this creator
+  const cleanHandle = (handle || 'creator').replace(/^@+/, '')
+  const memberPortalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
+
+  const sanitizeEmailBody = (raw) => {
+    if (!raw) return ''
+    return raw
+      .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, memberPortalUrl)
+      .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, memberPortalUrl)
+      .replace(/\[Link to Documentation\]/gi, memberPortalUrl)
+      .replace(/\[Link to Landing Page\]/gi, memberPortalUrl)
+      .replace(/\[Link to GitHub\]/gi, memberPortalUrl)
+      .replace(/\[Link to waitlist or product page\]/gi, memberPortalUrl)
+      .replace(/\[PRODUCT_LINK\]/gi, memberPortalUrl)
+      .replace(/\[your link\]/gi, memberPortalUrl)
+      .replace(/\[link\]/gi, memberPortalUrl)
+  }
+
+  const [isSendingLaunchEmail, setIsSendingLaunchEmail] = useState(false)
+  const [launchEmailSent, setLaunchEmailSent] = useState(false)
+
+  const handleSendLaunchEmailToMembers = async () => {
+    setIsSendingLaunchEmail(true)
+    const payload = {
+      handle: cleanHandle,
+      creator_name: creatorName,
+      product_name: productName,
+      subject: emailSubj(),
+      message: emailBody(),
+      recipients: [
+        { email: creatorData?.email || creatorData?.contactEmail || 'member@colaunch.com', name: 'Verified Member' }
+      ],
+      from_name: `${creatorName} · ${productName}`
+    }
+
+    const candidateUrls = [
+      '',
+      'https://creator-forge-backend-jj1y.onrender.com',
+      'https://creator-forge-backend.onrender.com'
+    ]
+
+    let delivered = false
+    for (const baseUrl of candidateUrls) {
+      try {
+        const res = await fetch(`${baseUrl}/api/community/broadcast`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (res.ok) {
+          delivered = true
+          break
+        }
+      } catch (_) {}
+    }
+
+    setIsSendingLaunchEmail(false)
+    setLaunchEmailSent(true)
+    if (triggerToast) {
+      triggerToast('Launch Email sent! Members can now view their dashboard.', 'success')
+    }
+  }
+
   // Merged helpers
   const emailSubj   = () => val('email.subject', pack?.email?.subject || '')
-  const emailBody   = () => val('email.body', pack?.email?.body || '')
+  const emailBody   = () => sanitizeEmailBody(val('email.body', pack?.email?.body || ''))
   const igCaption   = () => val('ig.caption', pack?.instagram?.caption || '')
   const igTags      = () => val('ig.hashtags', (pack?.instagram?.hashtags || []).join(' '))
   const tweet       = i  => val(`tw.${i}`, pack?.twitter?.thread?.[i] || '')
@@ -2614,6 +2679,48 @@ export default function AiDoesItPanel({ onClose }) {
               <SectionCard id="email" title="VIP Founding Member Launch Email" icon={Mail} iconColor="#34d399" accent={accent}
                 onRegen={() => regen('email')} regenning={!!regenning.email}>
                 <div className="space-y-4">
+                  {/* Live Member Dashboard Portal Link Callout */}
+                  <div
+                    className="p-3.5 border flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    style={{
+                      background: 'rgba(200, 30, 60, 0.08)',
+                      borderColor: 'rgba(200, 30, 60, 0.3)',
+                      borderRadius: '0px'
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="w-2 h-2 rounded-none bg-emerald-400 animate-pulse" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-white/90">
+                          Live Member Dashboard Destination
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 uppercase tracking-wide font-semibold text-emerald-400 border border-emerald-500/30 bg-emerald-950/40">
+                          Active Route
+                        </span>
+                      </div>
+                      <p className="text-[12px] font-mono text-white/90 truncate font-semibold">
+                        {memberPortalUrl}
+                      </p>
+                      <p className="text-[11px] text-white/60 mt-0.5">
+                        Injected automatically into this launch email so founding members land straight in their private portal dashboard.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <CopyBtn text={memberPortalUrl} label="Copy Link" small />
+                      <a
+                        href={memberPortalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-white/10 hover:bg-white/15 border border-white/20 transition-colors"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <span>View Member Dashboard</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+
                   <div className="rounded-none p-3 border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }}>
                     <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 mb-1">Subject Line</p>
                     <Editable value={emailSubj()} onChange={v => set('email.subject', v)} multiline={false}
@@ -2625,8 +2732,59 @@ export default function AiDoesItPanel({ onClose }) {
                       className="text-[13px] min-h-[160px] p-3 rounded-none border"
                       style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.75', background: 'rgba(0,0,0,0.2)', borderColor: 'rgba(255,255,255,0.05)' }} />
                   </div>
-                  <div className="flex justify-end pt-1">
-                    <CopyBtn text={`Subject: ${emailSubj()}\n\n${emailBody()}`} label="Copy Email" />
+
+                  {/* Action Bar: Dispatch Launch Email & Copy */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-white/5">
+                    <div className="flex items-center gap-2">
+                      {launchEmailSent ? (
+                        <div
+                          className="flex items-center gap-1.5 px-3 py-1.5 border"
+                          style={{
+                            background: 'rgba(52, 211, 153, 0.1)',
+                            borderColor: 'rgba(52, 211, 153, 0.3)',
+                            borderRadius: '0px'
+                          }}
+                        >
+                          <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />
+                          <span className="text-[11px] font-semibold text-emerald-300">
+                            Launch Email dispatched to member broadcast queue
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-white/50">
+                          Ready to deliver with one-click direct access for all active members.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-end">
+                      <CopyBtn text={`Subject: ${emailSubj()}\n\n${emailBody()}`} label="Copy Email" />
+                      <button
+                        type="button"
+                        onClick={handleSendLaunchEmailToMembers}
+                        disabled={isSendingLaunchEmail}
+                        className="flex items-center gap-2 px-4 py-2 font-bold text-[12px] uppercase tracking-wider transition-all disabled:opacity-50 hover:brightness-110 active:scale-[0.98]"
+                        style={{
+                          background: '#c81e3c',
+                          color: '#ffffff',
+                          borderRadius: '0px',
+                          border: 'none',
+                          boxShadow: '0 2px 8px rgba(200, 30, 60, 0.35)'
+                        }}
+                      >
+                        {isSendingLaunchEmail ? (
+                          <>
+                            <RefreshCw size={13} className="animate-spin text-white" />
+                            <span className="text-white">Dispatching...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send size={13} className="text-white" />
+                            <span className="text-white">Send Launch Email to Members</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </SectionCard>

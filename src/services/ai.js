@@ -743,10 +743,16 @@ export function buildChannelNativeMarketingPack(creatorData) {
   const isFitness = niche.includes('fit') || niche.includes('workout') || niche.includes('train') || niche.includes('gym')
   const isGaming = niche.includes('game') || niche.includes('gaming') || niche.includes('play') || niche.includes('stream')
 
+  // Live Member Dashboard Portal Link for this creator
+  const cleanHandle = (creatorData?.handle || 'creator').replace(/^@+/, '')
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
+
   // Channel-specific email
   const emailSubject = `Why I spent 6 months building "${productName}" (and what it means for you)`
   const emailPreview = `No more guessing. Here is the full platform I've been secretly building.`
-  const emailBody = `Hey everyone,\n\nFor the past few months, my DMs and ${platform} comments have been filled with the exact same question:\n\n"How do I take what you teach on the channel and turn it into real-world results?"\n\nWatching videos gives you the theory. But when you sit down to execute on your own, you get stuck in tutorial loops and friction.\n\nThat's why today, I am officially opening doors to "${productName}".\n\nHere is what we engineered for you:\n${features.map(f => `• ${f}`).join('\n')}\n\nWe are keeping the founding cohort intentionally limited so I can work directly with early members and dial in your progress.\n\nAs a loyal viewer, you get access to the founding tier before public doors open.\n\nClaim your founding access here:\n[PRODUCT_LINK]\n\nLet's build something great together,\n${name}`
+  const emailBody = `Hey everyone,\n\nFor the past few months, my DMs and ${platform} comments have been filled with the exact same question:\n\n"How do I take what you teach on the channel and turn it into real-world results?"\n\nWatching videos gives you the theory. But when you sit down to execute on your own, you get stuck in tutorial loops and friction.\n\nThat's why today, I am officially opening doors to "${productName}".\n\nHere is what we engineered for you:\n${features.map(f => `• ${f}`).join('\n')}\n\nWe are keeping the founding cohort intentionally limited so I can work directly with early members and dial in your progress.\n\nAs a loyal viewer, you get access to the founding tier before public doors open.\n\n👉 Explore the ${productName} here:\n${portalUrl}\n\nLet's build something great together,\n${name}`
 
   // Channel-specific Instagram caption
   const igCaption = `Today is the day. Over ${followers} of you have watched our videos, asked questions, and pushed for something bigger. Introducing ${productName} — your direct pipeline to mastering ${niche}. Link in bio to join the founding cohort! 🚀`
@@ -761,7 +767,7 @@ export function buildChannelNativeMarketingPack(creatorData) {
     `1/ Most people who watch ${niche} tutorials make one fatal mistake: they consume passive content instead of building in an active feedback loop.\n\nToday, I'm fixing that with the launch of "${productName}". 🧵👇`,
     `2/ The problem with traditional tutorials:\n• Zero interactive verification\n• Stale generic examples\n• No direct path to real outcomes\n\n"${productName}" is built from the ground up around active hands-on execution.`,
     `3/ Inside "${productName}":\n${features.slice(0, 3).map(f => `✅ ${f}`).join('\n')}\n\nBuilt specifically for our ${followers} ${platform} community.`,
-    `4/ Doors are officially unlocked for our VIP founding members.\n\nLock in your founding rate and bonus access now:\n[PRODUCT_LINK]\n\nSee you inside!`
+    `4/ Doors are officially unlocked for our VIP founding members.\n\nLock in your founding rate and bonus access now:\n${portalUrl}\n\nSee you inside!`
   ]
 
   // Channel-specific TikTok hook & script
@@ -926,6 +932,11 @@ export async function generateMarketingPack(creatorData, signal = undefined) {
 
   const fallbackPack = buildChannelNativeMarketingPack(creatorData);
 
+  const cleanHandle = (handle || 'creator').replace(/^@+/, '')
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
+
   const system = `You are an elite creator economy marketing strategist and pitch deck designer. Write copy that sounds exactly like this creator — authentic, platform-native, never generic. Return ONLY valid JSON.`;
 
   const prompt = `Generate a complete, high-converting product launch marketing pack and an 8-slide executive pitch deck for:
@@ -935,6 +946,7 @@ Platform: ${platform} — ${followers} followers, ${engRate} engagement
 Niche: ${niche}${bio}
 Launching: "${productName}" — ${productDesc}
 Features: ${features.join(', ') || 'Interactive curriculum, Sandbox, Live Reviews, Certifications'}
+Live Member Dashboard URL: ${portalUrl}
 
 Return this exact JSON (be specific, personal, creator-native — not generic):
 
@@ -942,14 +954,14 @@ Return this exact JSON (be specific, personal, creator-native — not generic):
   "email": {
     "subject": "subject line under 60 chars — curiosity-driven",
     "preview": "preview text under 80 chars",
-    "body": "full launch email 220-280 words — first person, conversational, ends with CTA and [PRODUCT_LINK]"
+    "body": "full launch email 220-280 words — first person, conversational, ending strictly with this exact call to action line: 👉 Explore the ${productName} here: ${portalUrl}"
   },
   "instagram": {
     "caption": "150-200 char caption — hook first, story, CTA. Use line breaks.",
     "hashtags": ["6 relevant hashtags without #"]
   },
   "twitter": {
-    "thread": ["tweet 1 hook <240 chars", "tweet 2 value <240 chars", "tweet 3 social proof <240 chars", "tweet 4 CTA with [PRODUCT_LINK] <240 chars"]
+    "thread": ["tweet 1 hook <240 chars", "tweet 2 value <240 chars", "tweet 3 social proof <240 chars", "tweet 4 CTA with link ${portalUrl} <240 chars"]
   },
   "tiktok": {
     "hook": "opening line — first 3 seconds, under 9 words",
@@ -1035,15 +1047,40 @@ Return this exact JSON (be specific, personal, creator-native — not generic):
   }
 }`;
 
+  const sanitizeResult = (res) => {
+    if (!res) return res;
+    const copy = { ...res };
+    if (copy.email && copy.email.body) {
+      copy.email.body = copy.email.body
+        .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+        .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+        .replace(/\[Link to Documentation\]/gi, portalUrl)
+        .replace(/\[Link to Landing Page\]/gi, portalUrl)
+        .replace(/\[Link to GitHub\]/gi, portalUrl)
+        .replace(/\[Link to waitlist or product page\]/gi, portalUrl)
+        .replace(/\[PRODUCT_LINK\]/gi, portalUrl)
+        .replace(/\[your link\]/gi, portalUrl)
+        .replace(/\[link\]/gi, portalUrl);
+    }
+    if (copy.twitter && Array.isArray(copy.twitter.thread)) {
+      copy.twitter.thread = copy.twitter.thread.map(t =>
+        typeof t === 'string'
+          ? t.replace(/\[PRODUCT_LINK\]/gi, portalUrl).replace(/\[link\]/gi, portalUrl)
+          : t
+      );
+    }
+    return copy;
+  };
+
   try {
     const aiResult = await aiTextCall(prompt, system, 8192, signal, true);
     if (aiResult && aiResult.pitchDeck && Array.isArray(aiResult.pitchDeck.slides)) {
-      return aiResult;
+      return sanitizeResult(aiResult);
     }
-    return { ...fallbackPack, ...aiResult };
+    return sanitizeResult({ ...fallbackPack, ...aiResult });
   } catch (err) {
     console.warn('[Forge] AI Marketing Pack generation failed or no key, using channel-native fallback:', err);
-    return fallbackPack;
+    return sanitizeResult(fallbackPack);
   }
 }
 
@@ -1154,11 +1191,15 @@ export async function regenerateSection(section, creatorData) {
     creatorData.name || creatorData.handle?.replace("@", "") || "this creator";
   const productName = creatorData.productName || "Creator Academy";
   const niche = creatorData.niche || "content creation";
+  const cleanHandle = (creatorData?.handle || 'creator').replace(/^@+/, '')
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/member/${cleanHandle}`
+    : `https://app.co-launch.app/member/${cleanHandle}`
 
   const prompts = {
-    email: `Write a completely different launch email for "${productName}" by ${name}. New angle, same authenticity. Return JSON: { "subject": "...", "preview": "...", "body": "..." }`,
+    email: `Write a completely different launch email for "${productName}" by ${name}. New angle, same authenticity. End strictly with this exact CTA line: 👉 Explore the ${productName} here: ${portalUrl}. Return JSON: { "subject": "...", "preview": "...", "body": "..." }`,
     instagram: `Write a fresh Instagram launch caption for "${productName}" by ${name}. Different hook. Return JSON: { "caption": "...", "hashtags": ["..."] }`,
-    twitter: `Write a new 4-tweet launch thread for "${productName}" by ${name}. Fresh angle. Return JSON: { "thread": ["t1","t2","t3","t4"] }`,
+    twitter: `Write a new 4-tweet launch thread for "${productName}" by ${name}. Fresh angle. Include link ${portalUrl} in tweet 4. Return JSON: { "thread": ["t1","t2","t3","t4"] }`,
     tiktok: `Write a new 30-second TikTok script for "${productName}" by ${name}. New hook. Return JSON: { "hook": "...", "script": "..." }`,
     pitchDeck: `Create a fresh 8-slide executive pitch deck for "${productName}" by ${name} in ${niche}. Return JSON: { "headline": "...", "tagline": "...", "slides": [{ "slideNumber": 1, "category": "...", "title": "...", "subtitle": "...", "bullets": ["..."], "metricBadge": "...", "takeaway": "..." }] }`,
   };
@@ -1171,7 +1212,21 @@ export async function regenerateSection(section, creatorData) {
       undefined,
       true,
     );
-    if (res) return res;
+    if (res) {
+      if (section === 'email' && res.body) {
+        res.body = res.body
+          .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+          .replace(/\[Link to Documentation\/GitHub\/Landing Page\]/gi, portalUrl)
+          .replace(/\[Link to Documentation\]/gi, portalUrl)
+          .replace(/\[Link to Landing Page\]/gi, portalUrl)
+          .replace(/\[Link to GitHub\]/gi, portalUrl)
+          .replace(/\[Link to waitlist or product page\]/gi, portalUrl)
+          .replace(/\[PRODUCT_LINK\]/gi, portalUrl)
+          .replace(/\[your link\]/gi, portalUrl)
+          .replace(/\[link\]/gi, portalUrl);
+      }
+      return res;
+    }
     return fallbackPack[section];
   } catch (err) {
     console.warn(`[Forge] Failed to regenerate ${section} with AI, using channel fallback:`, err);
