@@ -273,16 +273,36 @@ async function _doScrape(url, platform) {
     engagementRate: extractDynamicEngagementRate(scraped, parsedFollowers),
     comments: channelComments,
     channelComments,
-    recentPosts: (rawPosts || []).map(p => ({
-      title: p.title || '',
-      thumbnail: p.thumbnail || p.thumbnailUrl || '',
-      videoId: p.videoId || p.id || '',
-      url: p.url || (p.videoId ? `https://www.youtube.com/watch?v=${p.videoId}` : ''),
-      views: typeof p.views === 'number' ? fmt(p.views) : String(p.views || ''),
-      likes: typeof p.likes === 'number' ? fmt(p.likes) : String(p.likes || ''),
-      comments: typeof p.comments === 'number' ? fmt(p.comments) : String(p.comments || ''),
-      hue: platform === 'youtube' ? 0 : platform === 'instagram' ? 330 : platform === 'tiktok' ? 180 : 210
-    }))
+    recentPosts: (rawPosts || []).map(p => {
+      const pPlatform = (scraped.platform || platform || 'youtube').toLowerCase();
+      let postUrl = p.url || '';
+      if (!postUrl && p.videoId) {
+        if (pPlatform === 'instagram') postUrl = `https://www.instagram.com/p/${p.videoId}/`;
+        else if (pPlatform === 'tiktok') postUrl = `https://www.tiktok.com/@${(scraped.handle || handle || '').replace('@','')}/video/${p.videoId}`;
+        else postUrl = `https://www.youtube.com/watch?v=${p.videoId}`;
+      }
+      const rawViews = p.views;
+      const parsedViews = typeof rawViews === 'number' ? rawViews : parseBigNum(rawViews);
+      const parsedLikes = typeof p.likes === 'number' ? p.likes : parseBigNum(p.likes);
+      let formattedViews = '';
+      if (parsedViews > 0) {
+        formattedViews = fmt(parsedViews);
+      } else if (parsedLikes > 0 && pPlatform === 'instagram') {
+        formattedViews = fmt(parsedLikes * 6);
+      }
+
+      return {
+        title: p.title || p.caption || '',
+        thumbnail: p.thumbnail || p.thumbnailUrl || p.displayUrl || '',
+        videoId: p.videoId || p.id || '',
+        videoUrl: p.videoUrl || p.video_url || '',
+        url: postUrl,
+        views: formattedViews,
+        likes: typeof p.likes === 'number' ? fmt(p.likes) : String(p.likes || ''),
+        comments: typeof p.comments === 'number' ? fmt(p.comments) : String(p.comments || ''),
+        hue: pPlatform === 'youtube' ? 0 : pPlatform === 'instagram' ? 330 : pPlatform === 'tiktok' ? 180 : 210
+      };
+    })
   }
 }
 
@@ -549,14 +569,23 @@ export async function scrapeInstagram(url) {
     description:    biography,
     niche:          inferNicheFromDescription(biography),
     engagementRate: isNaN(engagementRate) ? 3.5 : engagementRate,
-    recentPosts: posts.map(post => ({
-      url:       post.url || (post.shortcode ? `https://www.instagram.com/p/${post.shortcode}/` : ''),
-      thumbnail: post.displayUrl || post.display_url || post.thumbnailUrl || post.thumbnail_src || '',
-      views:     fmt(post.videoViewCount || post.video_view_count || (post.likesCount || post.like_count || 0) * 8),
-      likes:     fmt(post.likesCount     || post.like_count       || post.edge_liked_by?.count || 0),
-      comments:  fmt(post.commentsCount  || post.comment_count    || post.edge_media_to_comment?.count || 0),
-      hue:       330,
-    })),
+    recentPosts: posts.map(post => {
+      const shortcode = post.shortCode || post.shortcode || post.code || '';
+      const postUrl = post.url || (shortcode ? `https://www.instagram.com/p/${shortcode}/` : '');
+      const likesCnt = post.likesCount || post.like_count || post.edge_liked_by?.count || 0;
+      const viewsCnt = post.videoViewCount || post.video_view_count || (likesCnt ? likesCnt * 6 : 0);
+      return {
+        title: post.caption || '',
+        url: postUrl,
+        videoId: shortcode,
+        videoUrl: post.videoUrl || post.video_url || '',
+        thumbnail: post.displayUrl || post.display_url || post.thumbnailUrl || post.thumbnail_src || '',
+        views: viewsCnt ? fmt(viewsCnt) : '',
+        likes: likesCnt ? fmt(likesCnt) : '',
+        comments: fmt(post.commentsCount || post.comment_count || post.edge_media_to_comment?.count || 0),
+        hue: 330,
+      };
+    }),
   }
 }
 

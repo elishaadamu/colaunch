@@ -7,7 +7,7 @@ import {
   Heart, MessageCircle, Share2, MoreHorizontal, Maximize2, Minimize2, Globe, Sparkles,
   Layers, Video, Star, CheckCircle2, ShieldCheck, Rocket, CheckCircle,
   Megaphone, Pin, Clock, Headphones, Pause, FastForward, Rewind, Paperclip, Smile,
-  ChevronRight, ThumbsUp, Flame, Music, Eye, ExternalLink, Plus, X
+  ChevronRight, ThumbsUp, Flame, Music, Eye, ExternalLink, Plus, X, Instagram
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { parseFollowerCount } from '../../services/ai'
@@ -36,13 +36,89 @@ function fmt(n) {
   return String(n)
 }
 
+export function getPlatformInfo(platform) {
+  const p = (platform || 'youtube').toLowerCase()
+  if (p === 'instagram') {
+    return {
+      name: 'Instagram',
+      exploreLabel: 'Explore Profile on Instagram',
+      watchLabel: 'Watch on Instagram',
+      viewLabel: 'View on Instagram',
+      openLabel: 'Open in Instagram',
+      feedLabel: 'Feed Vault & Curated Archive',
+      releasesLabel: 'Latest Releases from',
+      sourceComment: 'Instagram Comment',
+      accent: '#E1306C'
+    }
+  }
+  if (p === 'tiktok') {
+    return {
+      name: 'TikTok',
+      exploreLabel: 'Explore Profile on TikTok',
+      watchLabel: 'Watch on TikTok',
+      viewLabel: 'View on TikTok',
+      openLabel: 'Open in TikTok',
+      feedLabel: 'TikTok Vault & Curated Feed',
+      releasesLabel: 'Latest Releases from',
+      sourceComment: 'TikTok Comment',
+      accent: '#00F2FE'
+    }
+  }
+  if (p === 'twitter' || p === 'x') {
+    return {
+      name: 'X (Twitter)',
+      exploreLabel: 'Explore Profile on X',
+      watchLabel: 'View on X',
+      viewLabel: 'View on X',
+      openLabel: 'Open in X',
+      feedLabel: 'Posts & Discussion Archive',
+      releasesLabel: 'Latest Releases from',
+      sourceComment: 'X Reply',
+      accent: '#1DA1F2'
+    }
+  }
+  return {
+    name: 'YouTube',
+    exploreLabel: 'Explore Channel on YouTube',
+    watchLabel: 'Watch on YouTube',
+    viewLabel: 'View on YouTube',
+    openLabel: 'Open in YouTube',
+    feedLabel: 'Video Vault & Curated Archive',
+    releasesLabel: 'Latest Releases from',
+    sourceComment: 'YouTube Comment',
+    accent: '#c81e3c'
+  }
+}
+
+export function getCreatorChannelUrl(creatorData) {
+  if (creatorData?.url && typeof creatorData.url === 'string' && creatorData.url.startsWith('http')) {
+    return creatorData.url
+  }
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const rawH = creatorData?.handle || creatorData?.name || 'creator'
+  const clean = rawH.replace(/^@+/, '').trim()
+
+  if (platform === 'instagram') {
+    return `https://www.instagram.com/${clean}/`
+  }
+  if (platform === 'tiktok') {
+    return `https://www.tiktok.com/@${clean}`
+  }
+  if (platform === 'twitter' || platform === 'x') {
+    return `https://x.com/${clean}`
+  }
+  return `https://www.youtube.com/@${clean}`
+}
+
 function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelComments = []) {
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const creatorDisplayName = (creatorData?.name || '').toLowerCase()
   const videos = creatorData?.recentPosts || creatorData?.videos || []
   const creatorUrl = getCreatorChannelUrl(creatorData)
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const platformInfo = getPlatformInfo(platform)
 
-  // Use strictly genuine audience comments scraped from Apify / YouTube (no handcoded announcements)
+  // Use strictly genuine audience comments scraped from Apify / social platform (no handcoded announcements)
   if (Array.isArray(channelComments) && channelComments.length > 0) {
     return channelComments.map((c, idx) => {
       const matchedVid = videos.find(v =>
@@ -51,7 +127,10 @@ function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelCo
       ) || (videos.length > 0 ? videos[idx % videos.length] : null)
 
       const vidTitle = c.videoTitle || matchedVid?.title || ''
-      const vidUrl = c.videoUrl || c.url || (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : null) || matchedVid?.url || (matchedVid?.videoId ? `https://www.youtube.com/watch?v=${matchedVid.videoId}` : null) || creatorUrl
+      const defaultVidUrl = platform === 'instagram'
+        ? (c.videoId ? `https://www.instagram.com/p/${c.videoId}/` : null)
+        : (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : null)
+      const vidUrl = c.videoUrl || c.url || defaultVidUrl || matchedVid?.url || creatorUrl
 
       const authorRaw = c.author || c.user || 'viewer'
       const authorClean = authorRaw.replace(/^@/, '')
@@ -65,8 +144,8 @@ function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelCo
         id: c.id || `comm_${idx}`,
         user: `@${authorClean}`,
         text: (c.text || c.quote || '').trim(),
-        time: c.published || c.time || 'YouTube Comment',
-        source: 'YouTube Comment',
+        time: c.published || c.time || platformInfo.sourceComment,
+        source: platformInfo.sourceComment,
         videoTitle: vidTitle,
         videoUrl: vidUrl,
         isCreator
@@ -162,19 +241,7 @@ function getDynamicProducts(blueprint, creatorData) {
   ]
 }
 
-export function getCreatorChannelUrl(creatorData) {
-  if (creatorData?.url && typeof creatorData.url === 'string' && creatorData.url.startsWith('http')) {
-    return creatorData.url
-  }
-  if (creatorData?.handle) {
-    const clean = creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`
-    return `https://www.youtube.com/${clean}`
-  }
-  if (creatorData?.name) {
-    return `https://www.youtube.com/@${creatorData.name.replace(/[^a-zA-Z0-9]/g, '')}`
-  }
-  return 'https://www.youtube.com'
-}
+
 
 export function isEducationalCreator(creatorData) {
   const videos = creatorData?.recentPosts || creatorData?.videos || []
@@ -532,14 +599,15 @@ function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicA
   )
 }
 
-function formatViewsString(val) {
+export function formatViewsString(val) {
   if (!val) return '';
   const s = String(val).trim();
+  if (s === '0' || s === '0 views' || s === '0 view' || s === '0.0' || s === '0k' || s === '0M') return '';
   if (/views?$/i.test(s)) return s;
   return `${s} views`;
 }
 
-function extractYouTubeId(video) {
+export function extractYouTubeId(video) {
   if (!video) return null;
   if (video.videoId && typeof video.videoId === 'string' && video.videoId.trim().length === 11) {
     return video.videoId.trim();
@@ -554,14 +622,37 @@ function extractYouTubeId(video) {
   return null;
 }
 
+export function extractInstagramCode(video) {
+  if (!video) return null;
+  const candidates = [video.url, video.link, video.videoId, video.id, video.shortcode, video.shortCode, video.code];
+  for (const c of candidates) {
+    if (typeof c === 'string') {
+      const match = c.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) return match[1];
+      if (/^[a-zA-Z0-9_-]{9,16}$/.test(c.trim()) && !['undefined', 'null', 'default', 'creator'].includes(c.trim())) {
+        return c.trim();
+      }
+    }
+  }
+  return null;
+}
+
 export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight }) {
   if (!video) return null;
 
-  const videoId = extractYouTubeId(video);
-  const videoTitle = video.title || 'Official Channel Video';
+  const platform = (creatorData?.platform || 'youtube').toLowerCase();
+  const platformInfo = getPlatformInfo(platform);
+  const videoId = platform === 'youtube' ? extractYouTubeId(video) : null;
+  const igShortcode = platform === 'instagram' ? extractInstagramCode(video) : null;
+  const directVideoUrl = video.videoUrl || video.video_url || video.mediaUrl || (video.url && String(video.url).match(/\.(mp4|webm|mov)(\?|$)/i) ? video.url : null);
+  const videoTitle = video.title || (platform === 'instagram' ? 'Instagram Post & Reel' : 'Official Channel Video');
   const creatorUrl = getCreatorChannelUrl(creatorData);
-  const videoUrl = video.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : creatorUrl);
-  const thumbUrl = video.thumbnail || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
+  const postUrl = video.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : (igShortcode ? `https://www.instagram.com/p/${igShortcode}/` : creatorUrl));
+  const thumbUrl = video.thumbnail || video.thumbnailUrl || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
+
+  const [useEmbed, setUseEmbed] = useState(Boolean(igShortcode));
+  const [embedError, setEmbedError] = useState(false);
+  const [showFullCaption, setShowFullCaption] = useState(false);
 
   return (
     <div
@@ -569,7 +660,7 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden"
+        className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden max-h-[92vh]"
         style={{ borderRadius: '0px' }}
         onClick={e => e.stopPropagation()}
       >
@@ -578,7 +669,7 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
           <div className="flex items-center gap-2.5 min-w-0 pr-4">
             <span className="w-2 h-2 shrink-0 animate-pulse" style={{ backgroundColor: dynamicAccent }} />
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
-              Live Preview Player · @{(creatorData?.handle || 'creator').replace('@', '')}
+              Live Preview · @{(creatorData?.handle || 'creator').replace('@', '')} on {platformInfo.name}
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-xs font-bold text-white truncate">
@@ -586,19 +677,39 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer shrink-0"
-            style={{ borderRadius: '0px' }}
-            title="Close video player (Esc)"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {igShortcode && !directVideoUrl && (
+              <div className="hidden sm:flex items-center bg-[#181c28] border border-[#252c40] p-0.5 text-[10px] font-mono">
+                <button
+                  type="button"
+                  onClick={() => { setUseEmbed(true); setEmbedError(false); }}
+                  className={`px-2 py-0.5 transition cursor-pointer ${useEmbed && !embedError ? 'bg-[#22283a] text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Embed Player
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUseEmbed(false)}
+                  className={`px-2 py-0.5 transition cursor-pointer ${!useEmbed || embedError ? 'bg-[#22283a] text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Media View
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              style={{ borderRadius: '0px' }}
+              title="Close viewer (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Video Player Frame */}
-        <div className="relative aspect-video w-full bg-black flex items-center justify-center">
+        {/* Video Player Frame / Media Stage */}
+        <div className="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
           {videoId ? (
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
@@ -607,26 +718,81 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
+          ) : directVideoUrl ? (
+            <video
+              src={directVideoUrl}
+              poster={thumbUrl}
+              controls
+              autoPlay
+              playsInline
+              className="w-full h-full object-contain bg-black"
+            />
+          ) : (igShortcode && useEmbed && !embedError) ? (
+            <div className="w-full h-full relative bg-black flex items-center justify-center">
+              <iframe
+                src={`https://www.instagram.com/p/${igShortcode}/embed/`}
+                title={videoTitle}
+                className="w-full h-full border-0 bg-black"
+                allowFullScreen
+                scrolling="no"
+                onError={() => setEmbedError(true)}
+              />
+            </div>
           ) : (
-            <div className="w-full h-full relative flex items-center justify-center bg-[#111420]">
-              {thumbUrl && (
-                <img src={thumbUrl} alt="" className="w-full h-full object-cover opacity-40" />
+            <div className="w-full h-full relative flex items-center justify-center bg-[#07090e]">
+              {thumbUrl ? (
+                <img
+                  src={thumbUrl}
+                  alt={videoTitle}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-contain select-none"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-500 gap-2">
+                  <Video className="w-12 h-12" />
+                  <span className="text-xs font-mono">{platformInfo.name} Media</span>
+                </div>
               )}
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3">
-                <Video className="w-12 h-12 text-slate-400" />
-                <p className="text-sm font-semibold text-white max-w-md">{videoTitle}</p>
-                {videoUrl && (
-                  <a
-                    href={videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition flex items-center gap-2"
-                    style={{ background: dynamicAccent, borderRadius: '0px' }}
-                  >
-                    <span>Watch Directly on YouTube</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
+
+              {/* Bottom Transparent Caption Bar — Clean, readable, does not obscure the media */}
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/95 via-black/75 to-transparent flex flex-col justify-end">
+                <div className="max-w-3xl space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span 
+                      className="text-[10px] font-bold font-mono px-2 py-0.5 uppercase tracking-wider text-white"
+                      style={{ background: platformInfo.accent || dynamicAccent }}
+                    >
+                      {platformInfo.name}
+                    </span>
+                    {formatViewsString(video.views) && (
+                      <span className="text-[11px] font-mono text-slate-300">
+                        {formatViewsString(video.views)}
+                      </span>
+                    )}
+                    {video.likes && (
+                      <span className="text-[11px] font-mono text-slate-300">
+                        · {String(video.likes).includes('like') ? video.likes : `${video.likes} likes`}
+                      </span>
+                    )}
+                    {video.comments && (
+                      <span className="text-[11px] font-mono text-slate-300">
+                        · {String(video.comments).includes('comment') ? video.comments : `${video.comments} comments`}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-xs text-slate-200 leading-relaxed font-normal ${showFullCaption ? '' : 'line-clamp-2'}`}>
+                    {videoTitle}
+                  </p>
+                  {videoTitle.length > 120 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFullCaption(!showFullCaption)}
+                      className="text-[11px] font-semibold text-white/80 hover:text-white underline cursor-pointer"
+                    >
+                      {showFullCaption ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -634,12 +800,16 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
 
         {/* Bottom Modal Metadata & Actions */}
         <div className="bg-[#10131d] px-4 py-3 border-t border-[#1f2433] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
-          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
-            {video.views && <span>{formatViewsString(video.views)}</span>}
-            {video.likes && (
+          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400 flex-wrap">
+            {formatViewsString(video.views) ? (
+              <span>{formatViewsString(video.views)}</span>
+            ) : video.likes ? (
+              <span>{String(video.likes).includes('like') ? video.likes : `${video.likes} likes`}</span>
+            ) : null}
+            {video.comments && (
               <>
                 <span>·</span>
-                <span>{video.likes} likes</span>
+                <span>{String(video.comments).includes('comment') ? video.comments : `${video.comments} comments`}</span>
               </>
             )}
             {video.published && (
@@ -651,23 +821,24 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            {videoUrl && (
+            {postUrl && (
               <a
-                href={videoUrl}
+                href={postUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 text-xs font-mono text-slate-300 hover:text-white bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] transition flex items-center gap-1.5"
-                style={{ borderRadius: '0px' }}
+                className="px-3.5 py-1.5 text-xs font-semibold text-white transition flex items-center gap-1.5 hover:brightness-110"
+                style={{ background: platformInfo.accent || dynamicAccent, borderRadius: '0px' }}
               >
-                <span>Open in YouTube</span>
-                <ExternalLink className="w-3 h-3" />
+                {platform === 'instagram' && <Instagram className="w-3.5 h-3.5" />}
+                <span>{platformInfo.watchLabel}</span>
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer"
-              style={{ background: dynamicAccent, borderRadius: '0px' }}
+              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] transition cursor-pointer"
+              style={{ borderRadius: '0px' }}
             >
               Done Playing
             </button>
@@ -698,12 +869,14 @@ function ProductLandingPage({
   const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const niche = creatorData?.niche || 'Digital Content'
   const productName = blueprint?.name || `${creatorName}'s Resource Hub`
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const platformInfo = getPlatformInfo(platform)
   const creatorUrl = getCreatorChannelUrl(creatorData)
 
   const scrollContainerRef = useRef(null)
   const navRef = useRef(null)
 
-  // Real Scraped YouTube Videos
+  // Real Scraped Videos / Posts
   const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
     ? creatorData.recentPosts
     : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
@@ -712,8 +885,8 @@ function ProductLandingPage({
 
   const topVideo = recentVideoList[0] || null
   const topVideoTitle = topVideo?.title || `${creatorName} Masterclass & Foundations`
-  const topVideoThumb = topVideo?.thumbnail || (topVideo?.videoId ? `https://i.ytimg.com/vi/${topVideo.videoId}/hqdefault.jpg` : '')
-  const topVideoUrl = topVideo?.url || (topVideo?.videoId ? `https://www.youtube.com/watch?v=${topVideo.videoId}` : creatorUrl)
+  const topVideoThumb = topVideo?.thumbnail || (topVideo?.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${topVideo.videoId}/hqdefault.jpg` : '') : '')
+  const topVideoUrl = topVideo?.url || (topVideo?.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${topVideo.videoId}/` : `https://www.youtube.com/watch?v=${topVideo.videoId}`) : creatorUrl)
 
   // Real Scraped Comments from Channel (Strictly Genuine — Zero Fake Comments)
   const communityComments = (Array.isArray(channelComments) && channelComments.length > 0)
@@ -974,7 +1147,7 @@ function ProductLandingPage({
                     rel="noopener noreferrer"
                     className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0"
                   >
-                    <span>Open on YouTube</span>
+                    <span>{platformInfo.watchLabel}</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
@@ -1010,8 +1183,12 @@ function ProductLandingPage({
                 {/* Bottom Video Meta Bar */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
                   <div className="flex items-center gap-3 font-mono">
-                    {topVideo.views && <span>{formatViewsString(topVideo.views)}</span>}
-                    {topVideo.likes && (
+                    {formatViewsString(topVideo.views) ? (
+                      <span>{formatViewsString(topVideo.views)}</span>
+                    ) : topVideo.likes ? (
+                      <span>{String(topVideo.likes).includes('like') ? topVideo.likes : `${topVideo.likes} likes`}</span>
+                    ) : null}
+                    {topVideo.likes && formatViewsString(topVideo.views) && (
                       <>
                         <span>·</span>
                         <span>{topVideo.likes} likes</span>
@@ -1044,7 +1221,7 @@ function ProductLandingPage({
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                    Video Vault & Curated Archive
+                    {platformInfo.feedLabel}
                   </span>
                   <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
                     Latest Releases from @{handleClean}
@@ -1061,7 +1238,7 @@ function ProductLandingPage({
                     className="text-xs font-mono hover:underline flex items-center gap-1.5 self-start sm:self-auto"
                     style={{ color: dynamicAccent }}
                   >
-                    <span>Explore Channel on YouTube</span>
+                    <span>{platformInfo.exploreLabel}</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
@@ -1069,8 +1246,8 @@ function ProductLandingPage({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {recentVideoList.slice(0, 6).map((v, idx) => {
-                  const vidThumb = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
-                  const vidLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
+                  const vidThumb = v.thumbnail || (v.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '') : '')
+                  const vidLink = v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)
                   return (
                     <div
                       key={idx}
@@ -1112,7 +1289,17 @@ function ProductLandingPage({
                             {v.title}
                           </h5>
                           <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
-                            {v.views && <span>{formatViewsString(v.views)}</span>}
+                            {formatViewsString(v.views) ? (
+                              <span>{formatViewsString(v.views)}</span>
+                            ) : v.likes ? (
+                              <span>{String(v.likes).includes('like') ? v.likes : `${v.likes} likes`}</span>
+                            ) : null}
+                            {v.comments && (
+                              <>
+                                <span>·</span>
+                                <span>{String(v.comments).includes('comment') ? v.comments : `${v.comments} comments`}</span>
+                              </>
+                            )}
                             {v.published && (
                               <>
                                 <span>·</span>
@@ -1137,7 +1324,7 @@ function ProductLandingPage({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1.5 bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-400 hover:text-white transition"
-                          title="Watch on YouTube"
+                          title={platformInfo.watchLabel}
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
@@ -1490,18 +1677,20 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
   }
 
   const allTabs = getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs)
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const platformInfo = getPlatformInfo(platform)
   const creatorUrl = getCreatorChannelUrl(creatorData)
   const cleanCreatorUrlDisplay = creatorUrl.replace(/^https?:\/\/(www\.)?/, '')
 
   const renderTabContent = () => {
     const tabLower = activeTab.toLowerCase()
 
-    // 1. VIDEOS TAB (Real Scraped YouTube Videos from Apify)
-    if (tabLower.includes('video') || tabLower.includes('archive') || tabLower.includes('watch') || tabLower.includes('upload')) {
+    // 1. VIDEOS / POSTS TAB (Real Scraped Videos from Apify / Social)
+    if (tabLower.includes('video') || tabLower.includes('archive') || tabLower.includes('watch') || tabLower.includes('upload') || tabLower.includes('feed') || tabLower.includes('post')) {
       if (recentVideoList.length === 0) {
         return (
           <div className="p-8 text-center text-slate-400 space-y-2">
-            <p className="text-xs">No video archive loaded for this creator.</p>
+            <p className="text-xs">No media archive loaded for this creator.</p>
             {creatorUrl && (
               <a
                 href={creatorUrl}
@@ -1510,7 +1699,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 className="inline-flex items-center gap-1 text-xs hover:underline"
                 style={{ color: styles.accent }}
               >
-                <span>Browse channel on YouTube</span>
+                <span>Browse profile on {platformInfo.name}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
@@ -1522,8 +1711,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
         <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
           <div className="flex items-center justify-between pb-2 border-b border-[#222634]">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Latest YouTube Releases & Archive</h4>
-              <p className="text-[11px] text-slate-400">{recentVideoList.length} videos from official channel</p>
+              <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Latest {platformInfo.name} Releases & Archive</h4>
+              <p className="text-[11px] text-slate-400">{recentVideoList.length} {platform === 'instagram' ? 'posts & reels' : 'videos'} from official channel</p>
             </div>
             {creatorUrl && (
               <a
@@ -1533,7 +1722,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 className="text-xs hover:underline flex items-center gap-1 font-mono"
                 style={{ color: styles.accent }}
               >
-                <span>YouTube</span>
+                <span>{platformInfo.name}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
@@ -1541,8 +1730,8 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
 
           <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"}>
             {recentVideoList.map((v, i) => {
-              const videoLink = v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)
-              const thumbUrl = v.thumbnail || (v.videoId ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '')
+              const videoLink = v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)
+              const thumbUrl = v.thumbnail || (v.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '') : '')
 
               return (
                 <div
@@ -1581,8 +1770,12 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                         {v.title}
                       </h5>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 font-mono flex-wrap">
-                        {v.views && <span>{v.views} views</span>}
-                        {v.likes && (
+                        {formatViewsString(v.views) ? (
+                          <span>{formatViewsString(v.views)}</span>
+                        ) : v.likes ? (
+                          <span>{String(v.likes).includes('like') ? v.likes : `${v.likes} likes`}</span>
+                        ) : null}
+                        {v.likes && formatViewsString(v.views) && (
                           <>
                             <span>·</span>
                             <span>{v.likes} likes</span>
@@ -1615,7 +1808,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                       rel="noopener noreferrer"
                       className="py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
                       style={{ borderRadius: '0px' }}
-                      title="Watch on YouTube"
+                      title={platformInfo.watchLabel}
                     >
                       <ExternalLink className="w-3 h-3" />
                     </a>
@@ -1704,7 +1897,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   className="inline-flex items-center gap-1.5 text-xs hover:underline font-mono"
                   style={{ color: styles.accent }}
                 >
-                  <span>Explore discussions on official YouTube channel</span>
+                  <span>Explore discussions on official {platformInfo.name} profile</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}
@@ -1751,7 +1944,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                       {p.text}
                     </p>
 
-                    {/* Direct Link to the Video on YouTube */}
+                    {/* Direct Link to the Video / Post */}
                     {p.videoUrl && (
                       <div className="mt-3 pt-2.5 border-t border-[#222634]/60 flex items-center justify-between gap-2 flex-wrap">
                         <a
@@ -1765,11 +1958,11 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                             borderColor: styles.accentBorder,
                             borderRadius: '0px'
                           }}
-                          title={`Watch "${p.videoTitle || 'YouTube Video'}" on YouTube`}
+                          title={`Watch "${p.videoTitle || `${platformInfo.name} Post`}" on ${platformInfo.name}`}
                         >
                           <Play className="w-2.5 h-2.5 fill-current shrink-0" />
                           <span className="truncate group-hover/vlink:underline font-mono text-[11px]">
-                            {p.videoTitle || 'Watch on YouTube'}
+                            {p.videoTitle || platformInfo.watchLabel}
                           </span>
                           <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover/vlink:opacity-100" />
                         </a>
@@ -1837,7 +2030,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   className="inline-flex items-center gap-1.5 text-xs hover:underline"
                   style={{ color: styles.accent }}
                 >
-                  <span>Visit @{handleClean} on YouTube</span>
+                  <span>Visit @{handleClean} on {platformInfo.name}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -1865,10 +2058,10 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   )}
                 </div>
                 <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{v.title}</h5>
-                <span className="text-[10px] text-slate-400 font-mono mt-1 block">{v.views || 'Tutorial Video'}</span>
+                <span className="text-[10px] text-slate-400 font-mono mt-1 block">{formatViewsString(v.views) || (v.likes ? `${v.likes} likes` : 'Lesson Video')}</span>
               </div>
               <a
-                href={v.url || (v.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : creatorUrl)}
+                href={v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] border-[#222634]"
@@ -1893,7 +2086,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             <h4 className="text-xs sm:text-sm font-bold text-white">Podcast Episodes</h4>
             {creatorUrl && (
               <a href={creatorUrl} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline flex items-center gap-1" style={{ color: styles.accent }}>
-                <span>View on YouTube</span>
+                <span>View on {platformInfo.name}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
@@ -1907,11 +2100,11 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                   </div>
                   <div className="min-w-0">
                     <h5 className="text-xs sm:text-sm font-bold text-white truncate">{ep.title}</h5>
-                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{ep.views || ''} {ep.published ? `· ${ep.published}` : ''}</span>
+                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{formatViewsString(ep.views) || (ep.likes ? `${ep.likes} likes` : '')} {ep.published ? `· ${ep.published}` : ''}</span>
                   </div>
                 </div>
                 <a
-                  href={ep.url || (ep.videoId ? `https://www.youtube.com/watch?v=${ep.videoId}` : creatorUrl)}
+                  href={ep.url || (ep.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${ep.videoId}/` : `https://www.youtube.com/watch?v=${ep.videoId}`) : creatorUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 text-slate-300 hover:text-white bg-[#161922] border-[#222634] flex-shrink-0"
@@ -1939,7 +2132,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
               {topVideoTitle ? `Live Stream: ${topVideoTitle}` : `${creatorName} Live Community Broadcast`}
             </h4>
             <p className="text-xs text-slate-300">
-              Join the live stream on YouTube and connect with fellow viewers in real time.
+              Join the live stream on {platformInfo.name} and connect with fellow viewers in real time.
             </p>
             {creatorUrl && (
               <a
@@ -1948,7 +2141,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition text-white bg-red-600 hover:bg-red-500"
               >
-                <span>Open YouTube Live</span>
+                <span>Open {platformInfo.name} Live</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
@@ -1961,7 +2154,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
     return (
       <div className="p-8 text-center text-slate-400 space-y-2">
         <p className="text-xs font-medium text-white">{activeTab}</p>
-        <p className="text-xs text-slate-400">Content directly connected to {creatorName}'s channel.</p>
+        <p className="text-xs text-slate-400">Content directly connected to {creatorName}'s profile.</p>
         {creatorUrl && (
           <a
             href={creatorUrl}
@@ -1970,7 +2163,7 @@ export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorDa
             className="inline-flex items-center gap-1 text-xs hover:underline mt-2"
             style={{ color: styles.accent }}
           >
-            <span>Visit channel on YouTube</span>
+            <span>Visit profile on {platformInfo.name}</span>
             <ExternalLink className="w-3 h-3" />
           </a>
         )}
