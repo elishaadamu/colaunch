@@ -329,7 +329,7 @@ export default function Signup() {
         >
           {/* Header text */}
           <div className="text-center space-y-1">
-            <span className="inline-block px-2 py-0.5 text-[9.5px] font-mono uppercase tracking-widest font-bold text-[#c81e3c] bg-[#c81e3c]/10 border border-[#c81e3c]/25">
+            <span className="inline-block px-2 py-0.5 text-[9.5px] font-mono uppercase tracking-widest font-bold text-white bg-white/10 border border-white/20">
               Creator Onboarding Gateway
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -463,30 +463,12 @@ export default function Signup() {
               )}
             </div>
 
-            {/* ── OFFICIAL GOOGLE reCAPTCHA v3 BADGE ── */}
-            <div className="p-3 bg-[#080b12] border border-[#1e283d] rounded-none flex items-center justify-between gap-3 text-xs" style={{ borderRadius: '0px' }}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 bg-[#c81e3c]/20 border border-[#c81e3c]/40 text-[#ff8093] flex items-center justify-center shrink-0" style={{ borderRadius: '0px' }}>
-                  <ShieldCheck size={14} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-white text-[11px]">Protected by Google reCAPTCHA v3</span>
-                    <span className="px-1.5 py-0.2 rounded-none text-[8.5px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" style={{ borderRadius: '0px' }}>
-                      Active
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 leading-tight">
-                    Seamless score-based bot &amp; abuse protection. No puzzles or checkboxes.
-                  </p>
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="text-[9px] font-mono text-slate-500 block">
-                  <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline">Privacy</a> · <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline">Terms</a>
-                </span>
-              </div>
-            </div>
+            {/* Google reCAPTCHA v3 notice */}
+            <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+              This site is protected by reCAPTCHA and the Google{' '}
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-white">Privacy Policy</a> and{' '}
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-white">Terms of Service</a> apply.
+            </p>
 
             {/* Submit Button */}
             <button
