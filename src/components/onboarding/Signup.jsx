@@ -25,69 +25,40 @@ export default function Signup() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // reCAPTCHA verification states
-  const recaptchaRef = useRef(null)
-  const recaptchaWidgetId = useRef(null)
+  // reCAPTCHA v3 verification states
   const [googleRecaptchaReady, setGoogleRecaptchaReady] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
-  const [recaptchaVerified, setRecaptchaVerified] = useState(false)
-  const [recaptchaScriptFailed, setRecaptchaScriptFailed] = useState(false)
-  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6Ldo3xEuAAAAAJJQyF4Ro2fdv-WlZfdra7NatG0X'
 
-  // Initialize official Google reCAPTCHA
+  // Initialize official Google reCAPTCHA v3
   useEffect(() => {
     let checkTimer = null
-    let failTimer = null
-
-    const tryRender = () => {
-      if (typeof window === 'undefined') return
-      if (window.grecaptcha && window.grecaptcha.render && recaptchaRef.current && recaptchaWidgetId.current === null) {
-        try {
-          const id = window.grecaptcha.render(recaptchaRef.current, {
-            sitekey: siteKey,
-            theme: 'dark',
-            callback: (token) => {
-              setRecaptchaToken(token)
-              setRecaptchaVerified(true)
-              setError('')
-            },
-            'expired-callback': () => {
-              setRecaptchaToken('')
-              setRecaptchaVerified(false)
-            },
-            'error-callback': () => {
-              console.warn('[Google reCAPTCHA] Network or verification notice')
-            }
+    const initV3 = () => {
+      if (typeof window !== 'undefined' && window.grecaptcha) {
+        if (window.grecaptcha.ready) {
+          window.grecaptcha.ready(() => {
+            setGoogleRecaptchaReady(true)
+            try {
+              window.grecaptcha.execute(siteKey, { action: 'signup_init' }).then(tok => {
+                if (tok) setRecaptchaToken(tok)
+              }).catch(() => {})
+            } catch (_) {}
           })
-          recaptchaWidgetId.current = id
-          setGoogleRecaptchaReady(true)
-          if (checkTimer) clearInterval(checkTimer)
-          if (failTimer) clearTimeout(failTimer)
-        } catch (err) {
-          console.warn('[reCAPTCHA Render]', err)
         }
+        if (checkTimer) clearInterval(checkTimer)
       }
     }
 
-    if (window.grecaptcha && window.grecaptcha.render) {
-      tryRender()
-    } else {
-      checkTimer = setInterval(() => {
-        if (window.grecaptcha && window.grecaptcha.render) {
-          tryRender()
-        }
-      }, 250)
-
-      failTimer = setTimeout(() => {
-        if (recaptchaWidgetId.current === null) {
-          setRecaptchaScriptFailed(true)
-        }
-      }, 4000)
-    }
+    initV3()
+    checkTimer = setInterval(initV3, 300)
+    const fallbackTimer = setTimeout(() => {
+      if (checkTimer) clearInterval(checkTimer)
+      setGoogleRecaptchaReady(true)
+    }, 3000)
 
     return () => {
       if (checkTimer) clearInterval(checkTimer)
-      if (failTimer) clearTimeout(failTimer)
+      clearTimeout(fallbackTimer)
     }
   }, [siteKey])
 
@@ -260,12 +231,18 @@ export default function Signup() {
       return
     }
 
-    if (!recaptchaVerified) {
-      setError('Please check the "I\'m not a robot" box to verify you are human.')
-      return
-    }
-
     setLoading(true)
+
+    // Execute Google reCAPTCHA v3
+    let token = recaptchaToken
+    if (typeof window !== 'undefined' && window.grecaptcha && window.grecaptcha.execute) {
+      try {
+        const fresh = await window.grecaptcha.execute(siteKey, { action: 'signup' })
+        if (fresh) token = fresh
+      } catch (err) {
+        console.warn('[reCAPTCHA v3 Execution Notice]', err)
+      }
+    }
 
     const profile = {
       username: cleanUser,
@@ -274,7 +251,7 @@ export default function Signup() {
     }
 
     try {
-      // 1. Persist to backend database
+      // 1. Persist to backend database with reCAPTCHA v3 token
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,6 +259,7 @@ export default function Signup() {
           username: cleanUser,
           email: cleanEmail,
           password: password,
+          recaptcha_token: token,
           creator_data: creatorData || {}
         })
       })
@@ -485,45 +463,35 @@ export default function Signup() {
               )}
             </div>
 
-            {/* ── OFFICIAL GOOGLE reCAPTCHA WIDGET ── */}
-            <div className="flex flex-col items-center justify-center p-3 bg-[#080b12] border border-[#1e283d] min-h-[90px]" style={{ borderRadius: '0px' }}>
-              <div ref={recaptchaRef} className="flex items-center justify-center" />
-              {!googleRecaptchaReady && !recaptchaScriptFailed && (
-                <div className="text-[11px] text-slate-400 flex items-center gap-2 py-3">
-                  <Loader2 size={13} className="animate-spin text-[#c81e3c]" />
-                  <span>Loading official Google reCAPTCHA…</span>
+            {/* ── OFFICIAL GOOGLE reCAPTCHA v3 BADGE ── */}
+            <div className="p-3 bg-[#080b12] border border-[#1e283d] rounded-none flex items-center justify-between gap-3 text-xs" style={{ borderRadius: '0px' }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 bg-[#c81e3c]/20 border border-[#c81e3c]/40 text-[#ff8093] flex items-center justify-center shrink-0" style={{ borderRadius: '0px' }}>
+                  <ShieldCheck size={14} />
                 </div>
-              )}
-              {recaptchaScriptFailed && !recaptchaVerified && (
-                <div className="text-center py-1 space-y-1.5">
-                  <p className="text-[10px] text-amber-400/90 font-mono">
-                    Ad-blocker detected preventing Google reCAPTCHA from loading.
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white text-[11px]">Protected by Google reCAPTCHA v3</span>
+                    <span className="px-1.5 py-0.2 rounded-none text-[8.5px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" style={{ borderRadius: '0px' }}>
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Seamless score-based bot &amp; abuse protection. No puzzles or checkboxes.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRecaptchaVerified(true)
-                      setError('')
-                    }}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/15 text-white font-mono text-[10px] border border-white/20 transition cursor-pointer"
-                    style={{ borderRadius: '0px' }}
-                  >
-                    Click to Verify Manually (Offline/Dev Mode)
-                  </button>
                 </div>
-              )}
-              {recaptchaVerified && (
-                <div className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 pt-1.5">
-                  <CheckCircle2 size={13} />
-                  <span>Verified Human with Google reCAPTCHA ✓</span>
-                </div>
-              )}
+              </div>
+              <div className="shrink-0 text-right">
+                <span className="text-[9px] font-mono text-slate-500 block">
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline">Privacy</a> · <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="hover:text-slate-300 underline">Terms</a>
+                </span>
+              </div>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || !email || !password || !recaptchaVerified}
+              disabled={loading || !email || !password}
               className="w-full py-2.5 px-4 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               style={{
                 background: '#c81e3c',
