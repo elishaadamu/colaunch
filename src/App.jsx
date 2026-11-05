@@ -570,7 +570,8 @@ export default function App() {
       if (cached) {
         const savedTime = cachedTime ? parseInt(cachedTime, 10) : 0
         const isExpired = savedTime > 0 && (Date.now() - savedTime > 30 * 60 * 1000)
-        if (isExpired) {
+        const hasActiveDashboard = localStorage.getItem('forge_active_session') === 'true' || localStorage.getItem('forge_user_profile')
+        if (isExpired && !hasActiveDashboard) {
           localStorage.removeItem('forge_creator_data')
           localStorage.removeItem('forge_creator_timestamp')
           localStorage.removeItem('forge_onboarding_step')

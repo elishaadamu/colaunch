@@ -3973,18 +3973,16 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 <button
                   type="button"
                   onClick={handleSchedulePost}
-                  disabled={isPublishingDirect || !isChannelConnected(activePost?.channel, youtubeConnection, creatorData)}
+                  disabled={isPublishingDirect || (!isChannelConnected(activePost?.channel, youtubeConnection, creatorData) && !hasOnboardedSocialData(creatorData))}
                   className="w-full py-3 px-4 rounded-none font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-md hover:opacity-95 border-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? brandRed : '#242b3d', color: '#ffffff', borderRadius: '0px' }}
-                  title={isChannelConnected(activePost?.channel, youtubeConnection, creatorData) ? 'Schedule in campaign' : `Connect ${activePost?.channel || 'channel'} to schedule`}
+                  style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+                  title="Schedule in launch campaign"
                 >
                   <Clock size={14} className="text-white" />
                   <span className="text-white font-bold">
                     {isPublishingDirect
                       ? 'Scheduling...'
-                      : isChannelConnected(activePost?.channel, youtubeConnection, creatorData)
-                        ? `Schedule for ${activePost?.fullDateStr || 'Selected Date'} (+50 XP)`
-                        : `Connect ${activePost?.channel || 'Channel'} to Schedule`}
+                      : `Schedule for ${activePost?.fullDateStr || 'Selected Date'} (+50 XP)`}
                   </span>
                 </button>
 

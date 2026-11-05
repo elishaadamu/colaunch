@@ -1869,6 +1869,113 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
     }
   }
 
+  const handleCreateNewCampaignAI = async () => {
+    if (isPrioritiesGenerating) return
+    setIsPrioritiesGenerating(true)
+    if (incrementAiActions) incrementAiActions()
+    try {
+      const h = creatorData?.handle || 'default'
+      const newCampaignId = `campaign_ai_${Date.now()}`
+      const prompt = `Based on this creator's onboarding data:
+Creator: ${displayName} (${handle})
+Niche: ${niche}
+Product: ${productName}
+Blueprint Hook: ${creatorData?.blueprint?.hook || creatorData?.blueprint?.tagline || 'Exclusive launch'}
+Recent Content Topics: ${(creatorData?.recentPosts || creatorData?.videos || []).slice(0, 3).map(p => p.title || p.caption).filter(Boolean).join(', ')}
+
+Create 1 brand new, high-converting launch marketing campaign action for TODAY.
+Return a JSON object matching this structure:
+{
+  "id": "${newCampaignId}",
+  "priority": "High",
+  "label": "Action title (e.g. Host a 20-min Live Q&A breaking down...)",
+  "rationale": "Why this converts for their specific audience",
+  "cta": "Generate copy",
+  "contentType": "Launch Campaign Action",
+  "icon": "Sparkles",
+  "platforms": ["Instagram", "Email"],
+  "body": "Complete, ready-to-use marketing copy with compelling hook, body, and CTA"
+}`
+      const res = await askForgeChat(prompt, [], creatorData)
+      let parsed = null
+      try {
+        const jsonMatch = res.match(/\{[\s\S]*\}/)
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
+      } catch (_) {}
+
+      if (parsed && parsed.label && parsed.body) {
+        const actionObj = {
+          id: newCampaignId,
+          priority: parsed.priority || 'High',
+          label: parsed.label,
+          rationale: parsed.rationale || 'High-leverage launch marketing campaign engineered by Forge AI.',
+          cta: parsed.cta || 'View campaign copy',
+          contentType: parsed.contentType || 'Launch Campaign Action',
+          icon: Sparkles
+        }
+
+        setDynamicPriorities(prev => {
+          const current = Array.isArray(prev) ? prev : fallbackActions
+          const next = [actionObj, ...current]
+          localStorage.setItem(`forge_${h}_dynamic_priorities`, JSON.stringify(next))
+          return next
+        })
+
+        setGeneratedContents(prev => {
+          const updated = {
+            ...prev,
+            [newCampaignId]: {
+              title: parsed.label,
+              platforms: parsed.platforms || ['All platforms'],
+              body: parsed.body
+            }
+          }
+          localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
+          return updated
+        })
+
+        setOpenOutputId(newCampaignId)
+        if (triggerToast) triggerToast(`New AI campaign created: "${parsed.label.slice(0, 32)}…"`, 'success')
+        setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+      } else {
+        const fallbackId = `campaign_ai_${Date.now()}`
+        const fallbackObj = {
+          id: fallbackId,
+          priority: 'High',
+          label: `Announce 48-Hour Early Access Window for "${productName}"`,
+          rationale: `Scarcity triggers immediate action from warm followers in ${niche}.`,
+          cta: 'View campaign copy',
+          contentType: 'Early Access Announcement',
+          icon: Sparkles
+        }
+        const fallbackCopy = {
+          title: `48-Hour Early Access Window for ${productName}`,
+          platforms: ['Instagram', 'Email', 'X'],
+          body: `Doors are officially opening in 48 hours.\n\nI built ${productName} for anyone in the ${niche} space who has been following my journey and wants real, actionable results.\n\nFounding members will get direct access, locked-in lifetime pricing, and private community access.\n\nTap the link in bio or comment "ACCESS" below to get on the priority list before public checkout opens.\n\n— ${displayName}`
+        }
+
+        setDynamicPriorities(prev => {
+          const current = Array.isArray(prev) ? prev : fallbackActions
+          const next = [fallbackObj, ...current]
+          localStorage.setItem(`forge_${h}_dynamic_priorities`, JSON.stringify(next))
+          return next
+        })
+        setGeneratedContents(prev => {
+          const updated = { ...prev, [fallbackId]: fallbackCopy }
+          localStorage.setItem(`forge_${h}_launch_pack_contents`, JSON.stringify(updated))
+          return updated
+        })
+        setOpenOutputId(fallbackId)
+        if (triggerToast) triggerToast('New AI campaign created from onboarding data!', 'success')
+      }
+    } catch (err) {
+      console.warn('[Forge Marketing] Error generating new campaign with AI:', err)
+      if (triggerToast) triggerToast('Failed to generate campaign. Please try again.', 'error')
+    } finally {
+      setIsPrioritiesGenerating(false)
+    }
+  }
+
   // Load or generate dynamic priorities on mount if not already cached
   useEffect(() => {
     const h = creatorData?.handle
@@ -2066,12 +2173,20 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
 
     const ACTION_POST_MAP = {
       teaser: teaserPostShape,
+      vip_offer: { type: p === 'youtube' ? 'Shorts' : 'Post', label: `VIP Founding Offer`, platform: p === 'youtube' ? 'YT' : p === 'twitter' || p === 'x' ? 'X' : p === 'tiktok' ? 'TT' : 'IG', color: 'rgba(255,255,255,0.2)', theme: 'launch' },
       email: { type: 'email', label: 'Launch announcement email', platform: 'Email', color: 'rgba(255,255,255,0.12)', theme: 'launch' },
       bts: btsPostShape,
       calendar: calendarPostShape,
     }
 
-    const postShape = ACTION_POST_MAP[id]
+    const postShape = ACTION_POST_MAP[id] || {
+      type: 'Post',
+      label: content?.title || 'Launch Campaign Post',
+      platform: content?.platforms?.[0] ? reverseMapPlatform(content.platforms[0]) : (p === 'youtube' ? 'YT' : p === 'twitter' || p === 'x' ? 'X' : p === 'tiktok' ? 'TT' : 'IG'),
+      color: 'rgba(200,30,60,0.25)',
+      theme: 'launch'
+    }
+
     if (postShape) {
       const newPost = {
         id: Date.now().toString(),
@@ -2533,7 +2648,24 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
             )}
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={handleCreateNewCampaignAI}
+              disabled={isPrioritiesGenerating}
+              className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-none transition-all cursor-pointer disabled:opacity-50 text-white shadow-xs"
+              style={{
+                color: '#ffffff',
+                background: '#c81e3c',
+                border: '1px solid #c81e3c',
+                borderRadius: '0px'
+              }}
+              title="Generate a brand new launch marketing campaign from your onboarding blueprint and recent content topics"
+            >
+              <Sparkles size={11} className={`text-white ${isPrioritiesGenerating ? "animate-spin" : ""}`} />
+              <span>+ Create Campaign with AI</span>
+            </button>
+
             <button
               type="button"
               onClick={handleRegeneratePriorities}
