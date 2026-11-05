@@ -611,7 +611,8 @@ export default function CreatorFollowUpCRM({
       }
 
       // 2. Inbound replies from creator (or outbound follow-ups) in t.replies
-      (t.replies || []).forEach((r) => {
+      const replyList = t.replies || [];
+      replyList.forEach((r) => {
         const fromAddr = (r.from_address || "").toLowerCase().trim();
         const isAdmin = fromAddr.includes("partnerships@colaunch.com") || fromAddr.includes("admin") || r.direction === "outbound";
         

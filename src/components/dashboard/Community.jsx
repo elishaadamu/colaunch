@@ -337,10 +337,11 @@ function BroadcastModal({
   // Build the live recipient list
   const [recipients, setRecipients] = useState(() => {
     const list = []
-    const seen = new Set()
+    const seen = new Set();
 
     // 1. Add valid member emails
-    (members || []).forEach(m => {
+    const memberList = members || [];
+    memberList.forEach(m => {
       const email = (m.email || '').trim().toLowerCase()
       if (email && email.includes('@') && !email.endsWith('@example.com') && !seen.has(email)) {
         seen.add(email)
