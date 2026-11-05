@@ -215,7 +215,7 @@ export default function PlatformNativeStudioPreview({
           {activePlatform === 'instagram' && (
             <div className="flex flex-col flex-1 bg-black">
               {/* Instagram Top Navigation */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-[#262626]">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[#1c1c1c]">
                 <span className="text-lg font-serif italic font-bold tracking-tight text-white">Instagram</span>
                 <div className="flex items-center gap-4">
                   <div className="relative cursor-pointer">
@@ -226,44 +226,15 @@ export default function PlatformNativeStudioPreview({
                 </div>
               </div>
 
-              {/* Instagram Stories Carousel Tray */}
-              <div className="flex items-center gap-3 px-3 py-2.5 border-b border-[#1f1f1f] overflow-x-auto no-scrollbar">
-                <div className="flex flex-col items-center gap-1 shrink-0">
-                  <div className="w-13 h-13 rounded-full p-[2px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt={creatorName} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[11px] font-bold text-white uppercase">{cleanHandle.slice(0, 2)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-white/80 font-medium">Your story</span>
-                </div>
-
-                {['alex_dev', 'sarah_ui', 'david_builds'].map(user => (
-                  <div key={user} className="flex flex-col items-center gap-1 shrink-0 opacity-60">
-                    <div className="w-13 h-13 rounded-full p-[2px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center">
-                      <div className="w-full h-full rounded-full bg-[#1a1a1a] flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                        {user.slice(0, 2)}
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-white/60 truncate max-w-[50px]">{user}</span>
-                  </div>
-                ))}
-              </div>
-
               {/* Instagram Feed Post Header */}
-              <div className="flex items-center justify-between p-3">
+              <div className="flex items-center justify-between p-3 border-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full p-[1.5px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt={creatorName} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[10px] font-bold text-white uppercase">{cleanHandle.slice(0, 2)}</span>
-                      )}
-                    </div>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1a1a1a] flex items-center justify-center shrink-0">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={creatorName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] font-bold text-white uppercase">{cleanHandle.slice(0, 2)}</span>
+                    )}
                   </div>
                   <div className="leading-tight">
                     <div className="flex items-center gap-1">
@@ -276,11 +247,11 @@ export default function PlatformNativeStudioPreview({
                 <MoreHorizontal size={16} className="text-white/60 cursor-pointer" />
               </div>
 
-              {/* Instagram Post Image / Canvas */}
-              <div className="relative aspect-square w-full bg-[#0a0d16] flex flex-col items-center justify-center p-6 border-y border-[#262626] overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#c81e3c]/25 via-transparent to-black pointer-events-none" />
+              {/* Instagram Post Image / Canvas (Edge-to-Edge Pure Clean, Zero Borders) */}
+              <div className="relative aspect-square w-full bg-[#0a0d16] flex flex-col items-center justify-center p-6 border-0 outline-none overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#c81e3c]/20 via-black to-[#050811] pointer-events-none" />
                 <div className="relative z-10 text-center max-w-xs space-y-2.5">
-                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 border border-[#c81e3c]/40 bg-[#c81e3c]/20 text-[#ff8093] text-[9px] font-mono uppercase tracking-wider font-bold">
+                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-white text-[9px] font-mono uppercase tracking-wider font-bold">
                     ● FOUNDING COHORT
                   </div>
                   <h3 className="text-base font-extrabold text-white tracking-tight leading-tight">

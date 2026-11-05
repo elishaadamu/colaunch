@@ -55,8 +55,8 @@ export function useBgJob(jobId) {
 }
 
 const STEPS = [
-  'welcome', 'creator-link', 'analyzing', 'blueprint',
-  'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
+  'signup', 'welcome', 'creator-link', 'analyzing', 'blueprint',
+  'preview', 'building', 'pre-finish', 'celebration', 'login', 'dashboard',
 ]
 
 // Unified CoLaunch brand red color from co-launch.app/#apply
@@ -1040,17 +1040,18 @@ export default function App() {
                 setCreatorData(prev => {
                   const updated = {
                     ...(prev || {}),
-                    name: channel.title || prev?.name,
-                    creator_name: channel.title || prev?.creator_name,
+                    // Retain existing creator branding and avatar untouched
+                    name: prev?.name || channel.title,
+                    creator_name: prev?.creator_name || channel.title,
                     channel_title: channel.title,
-                    handle: channel.customUrl || prev?.handle,
+                    handle: prev?.handle || channel.customUrl,
                     youtube_handle: channel.customUrl || prev?.youtube_handle,
-                    avatar: channel.thumbnail || prev?.avatar,
-                    avatarUrl: channel.thumbnail || prev?.avatarUrl,
+                    avatar: prev?.avatar || prev?.avatarUrl,
+                    avatarUrl: prev?.avatarUrl || prev?.avatar,
                     subscribers: channel.subscriberCount !== undefined ? String(channel.subscriberCount) : prev?.subscribers,
                     video_count: channel.videoCount !== undefined ? String(channel.videoCount) : prev?.video_count,
                     youtube_channel_id: channel.id || prev?.youtube_channel_id,
-                    email: channel.email || prev?.email,
+                    email: prev?.email || channel.email,
                     youtube_connected: true
                   }
                   try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
@@ -1082,15 +1083,20 @@ export default function App() {
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
-        // Base URL app.co-launch.app always routes to onboarding page /portal (no login page)
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
-        if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          setStep(savedStep)
+        if (hasSession) {
+          if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+            setStep(savedStep)
+          } else {
+            setStep('creator-link')
+          }
         } else {
-          setStep('creator-link')
+          // Signup before onboarding
+          setStep('signup')
         }
-        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
-          window.history.replaceState(null, '', '/portal')
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
+          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
         }
       } else if (path === '/login') {
         setStep('login')
@@ -1168,16 +1174,21 @@ export default function App() {
           return
         }
 
-        // Base URL / or unrecognized path: Go to onboarding page (no login page)
+        // Base URL / or unrecognized path: show signup before onboarding unless session exists
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
-        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          setStep(savedStep)
+        if (hasSession) {
+          if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+            setStep(savedStep)
+          } else {
+            setStep('creator-link')
+          }
         } else {
-          setStep('creator-link')
+          setStep('signup')
         }
-        if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
-          window.history.replaceState(null, '', '/portal')
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
+          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
         }
       }
     }

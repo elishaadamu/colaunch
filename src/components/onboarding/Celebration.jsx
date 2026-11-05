@@ -436,7 +436,7 @@ export default function Celebration() {
                   try {
                     localStorage.setItem('forge_onboarding_step', 'dashboard')
                   } catch {}
-                  next()
+                  goTo('dashboard')
                 }}
                 className="w-full font-bold py-4 px-6 rounded-none text-sm transition flex items-center justify-center space-x-2.5 group cursor-pointer border border-white/10"
                 style={{

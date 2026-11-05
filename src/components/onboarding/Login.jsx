@@ -251,9 +251,9 @@ export default function Login() {
     setLoading(false)
     setLoadingText('')
 
-    // If logged in via email code or has no password set in dashboard, offer customer care opportunity!
-    if (data.logged_in_via_code || !hasPwd) {
-      setShowCareOpportunity(true)
+    // If user has not completed onboarding yet, take them to the onboarding page
+    if (!data.creator_data?.handle && !localStorage.getItem('forge_creator_data')) {
+      goTo('creator-link')
     } else {
       goTo('dashboard')
     }
@@ -615,53 +615,10 @@ export default function Login() {
               </button>
 
               {/* Divider: OR */}
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-[1px] bg-[#1a2337]" />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">OR</span>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">OR SIGN IN WITH PASSWORD</span>
                 <div className="flex-1 h-[1px] bg-[#1a2337]" />
-              </div>
-
-              {/* Segmented Auth Mode Selector: Password vs Email */}
-              <div 
-                className="grid grid-cols-2 p-1 bg-[#070a12] border border-[#1b253b] mb-4"
-                style={{ borderRadius: '0px' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('password')
-                    setError('')
-                    setInfoNotice('')
-                  }}
-                  className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    authMode === 'password'
-                      ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
-                  }`}
-                  style={{ borderRadius: '0px', color: authMode === 'password' ? '#ffffff' : undefined }}
-                >
-                  <Lock size={13} className={authMode === 'password' ? 'text-white' : ''} />
-                  <span>Password</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('code')
-                    setError('')
-                    setInfoNotice('')
-                    if (identifier.includes('@')) setCodeEmail(identifier.trim())
-                  }}
-                  className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                    authMode === 'code'
-                      ? 'bg-[#151f33] text-white border border-[#263757] shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 border border-transparent'
-                  }`}
-                  style={{ borderRadius: '0px', color: authMode === 'code' ? '#ffffff' : undefined }}
-                >
-                  <Mail size={13} className={authMode === 'code' ? 'text-white' : ''} />
-                  <span>Email</span>
-                </button>
               </div>
 
               {/* Error Alert */}
@@ -686,211 +643,70 @@ export default function Login() {
                 </div>
               )}
 
-              {/* ── MODE A: PASSWORD LOGIN ── */}
-              {authMode === 'password' && (
-                <form onSubmit={handlePasswordLogin} className="space-y-3.5">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                      Username or Email
-                    </label>
-                    <div className="relative">
-                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="e.g. elishadamu97@gmail.com"
-                        required
-                        autoComplete="username"
-                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
-                        style={{ borderRadius: '0px' }}
-                      />
-                    </div>
+              {/* Password Login Form */}
+              <form onSubmit={handlePasswordLogin} className="space-y-3.5">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                    Username or Email
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="e.g. yourname@gmail.com"
+                      required
+                      autoComplete="username"
+                      className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
+                      style={{ borderRadius: '0px' }}
+                    />
                   </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your dashboard password"
-                        required
-                        autoComplete="current-password"
-                        className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-9 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
-                        style={{ borderRadius: '0px' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-
-                    <div className="flex justify-end mt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthMode('code')
-                          setError('')
-                          if (identifier.includes('@')) {
-                            setCodeEmail(identifier.trim())
-                          }
-                        }}
-                        className="text-[11px] text-white hover:underline font-semibold cursor-pointer"
-                      >
-                        No password set? Sign in with email code →
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading || !identifier.trim() || !password}
-                    className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-                    style={{ borderRadius: '0px', color: '#ffffff' }}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 size={13} className="animate-spin text-white" />
-                        <span className="text-white">Signing In…</span>
-                      </>
-                    ) : (
-                      <span className="text-white">Sign In</span>
-                    )}
-                  </button>
-                </form>
-              )}
-
-              {/* ── MODE B: EMAIL CODE LOGIN ── */}
-              {authMode === 'code' && (
-                <div className="space-y-3.5">
-                  {!codeSent ? (
-                    <form onSubmit={handleSendCode} className="space-y-3.5">
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                          Account Email Address
-                        </label>
-                        <div className="relative">
-                          <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                          <input
-                            type="email"
-                            value={codeEmail || identifier}
-                            onChange={(e) => {
-                              setCodeEmail(e.target.value)
-                              setIdentifier(e.target.value)
-                            }}
-                            placeholder="e.g. elishadamu97@gmail.com"
-                            required
-                            autoComplete="email"
-                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
-                            style={{ borderRadius: '0px' }}
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading || !(codeEmail || identifier).includes('@')}
-                        className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ borderRadius: '0px', color: '#ffffff' }}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 size={13} className="animate-spin text-white" />
-                            <span className="text-white">Sending code…</span>
-                          </>
-                        ) : (
-                          <span className="text-white">Continue</span>
-                        )}
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleVerifyCode} className="space-y-3.5">
-                      <div className="p-2.5 bg-[#0d1424] border border-[#1e2a42] flex items-center justify-between text-xs" style={{ borderRadius: '0px' }}>
-                        <div>
-                          <span className="text-slate-400 block text-[10px] font-mono">TARGET EMAIL</span>
-                          <span className="text-white font-bold">{codeEmail}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCodeSent(false)
-                            setCode('')
-                            setError('')
-                            setInfoNotice('')
-                          }}
-                          className="text-[11px] text-white hover:underline font-semibold cursor-pointer"
-                        >
-                          Change
-                        </button>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                          6-Digit Verification Code
-                        </label>
-                        <div className="relative">
-                          <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={6}
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                            placeholder="123456"
-                            required
-                            autoFocus
-                            className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-base tracking-[0.35em] font-mono text-center py-2 outline-none font-bold placeholder:text-slate-700 transition"
-                            style={{ borderRadius: '0px' }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] pt-0.5">
-                        <span className="text-slate-500">Didn't receive it?</span>
-                        {codeTimer > 0 ? (
-                          <span className="text-slate-400 font-mono">Resend in {codeTimer}s</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleSendCode}
-                            disabled={loading}
-                            className="text-white hover:underline font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                          >
-                            <RefreshCw size={12} className={loading ? 'animate-spin text-white' : 'text-white'} />
-                            <span className="text-white">Resend Code</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={loading || code.trim().length !== 6}
-                        className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ borderRadius: '0px', color: '#ffffff' }}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 size={13} className="animate-spin text-white" />
-                            <span className="text-white">Signing in…</span>
-                          </>
-                        ) : (
-                          <span className="text-white">Sign In</span>
-                        )}
-                      </button>
-                    </form>
-                  )}
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your dashboard password"
+                      required
+                      autoComplete="current-password"
+                      className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-9 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
+                      style={{ borderRadius: '0px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !identifier.trim() || !password}
+                  className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                  style={{ borderRadius: '0px', color: '#ffffff' }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin text-white" />
+                      <span className="text-white">Signing In…</span>
+                    </>
+                  ) : (
+                    <span className="text-white">Sign In</span>
+                  )}
+                </button>
+              </form>
             </>
           )}
 
@@ -900,14 +716,14 @@ export default function Login() {
             <button
               type="button"
               onClick={() => {
-                if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
-                  window.history.pushState(null, '', '/portal')
+                if (typeof window !== 'undefined' && window.location.pathname !== '/signup') {
+                  window.history.pushState(null, '', '/signup')
                 }
-                goTo('creator-link')
+                goTo('signup')
               }}
               className="text-white hover:text-[#c81e3c] font-bold underline transition cursor-pointer ml-1"
             >
-              Start onboarding
+              Sign up
             </button>
           </div>
         </div>

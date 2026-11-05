@@ -378,8 +378,9 @@ export default function DashboardLayout() {
     }
   }, [])
 
-  const resolvedAvatar = ytConn?.channel?.thumbnail || creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const resolvedCreatorName = ytConn?.channel?.title || creatorData?.name || creatorData?.creator_name || creatorData?.handle || 'Creator'
+  // Creator avatar and branding must NEVER be replaced by connected YouTube channel
+  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+  const resolvedCreatorName = creatorData?.name || creatorData?.creator_name || creatorData?.handle || 'Creator'
 
   // Unified single brand color across the entire application (co-launch.app brand red)
   const creatorBrandColor = '#c81e3c'
