@@ -55,8 +55,8 @@ export function useBgJob(jobId) {
 }
 
 const STEPS = [
-  'welcome', 'creator-link', 'analyzing', 'blueprint',
-  'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
+  'signup', 'welcome', 'creator-link', 'analyzing', 'blueprint',
+  'preview', 'building', 'pre-finish', 'celebration', 'login', 'dashboard',
 ]
 
 // Unified CoLaunch brand red color from co-launch.app/#apply
@@ -266,6 +266,7 @@ export default function App() {
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
         const cachedTime = localStorage.getItem('forge_creator_timestamp')
@@ -275,12 +276,15 @@ export default function App() {
           localStorage.removeItem('forge_creator_data')
           localStorage.removeItem('forge_creator_timestamp')
           localStorage.removeItem('forge_onboarding_step')
+          return 'signup'
+        }
+        if (hasSession) {
+          if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+            return savedStep
+          }
           return 'creator-link'
         }
-        if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          return savedStep
-        }
-        return 'creator-link'
+        return 'signup'
       }
       if (path === '/dashboard' || path.startsWith('/dashboard/')) {
         const hasSession = (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
@@ -1198,11 +1202,19 @@ export default function App() {
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
-        if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          setStep(savedStep)
+        if (hasSession) {
+          if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+            setStep(savedStep)
+          } else {
+            setStep('creator-link')
+          }
         } else {
-          setStep('creator-link')
+          setStep('signup')
+        }
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
+          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
         }
       } else if (path === '/login') {
         setStep('login')
@@ -1286,7 +1298,8 @@ export default function App() {
           return
         }
 
-        // Base URL / or unrecognized path: route to onboarding flow
+        // Base URL / or unrecognized path: show signup before onboarding unless session exists
+        const hasSession = Boolean(localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile'))
         const savedStep = localStorage.getItem('forge_onboarding_step')
         const savedCreator = localStorage.getItem('forge_creator_data')
         const cachedTime = localStorage.getItem('forge_creator_timestamp')
@@ -1296,11 +1309,18 @@ export default function App() {
           localStorage.removeItem('forge_creator_data')
           localStorage.removeItem('forge_creator_timestamp')
           localStorage.removeItem('forge_onboarding_step')
-          setStep('creator-link')
-        } else if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
-          setStep(savedStep)
+          setStep('signup')
+        } else if (hasSession) {
+          if (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
+            setStep(savedStep)
+          } else {
+            setStep('creator-link')
+          }
         } else {
-          setStep('creator-link')
+          setStep('signup')
+        }
+        if (typeof window !== 'undefined' && window.location.pathname !== '/portal' && window.location.pathname !== '/signup') {
+          window.history.replaceState(null, '', hasSession ? '/portal' : '/signup')
         }
       }
     }
