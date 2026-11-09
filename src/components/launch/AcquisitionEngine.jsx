@@ -7442,16 +7442,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Follow-up Rule</span>
-                  <span className="font-mono font-medium text-slate-700">Auto-follow up (7d)</span>
-                </div>
-
-                <div className="py-2.5 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Response Handling</span>
-                  <span className="font-mono text-xs font-semibold text-rose-600">Stop Sequence</span>
-                </div>
-
-                <div className="py-2.5 flex items-center justify-between text-xs">
                   <span className="text-slate-500">Estimated Match Pool</span>
                   <span className={`font-mono font-bold ${niches.length > 0 ? "text-emerald-600" : "text-amber-600"}`}>
                     {niches.length > 0
