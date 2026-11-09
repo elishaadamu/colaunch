@@ -387,7 +387,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               <span>{m.label}</span>
               <span 
                 className={`text-[9px] px-1 py-0.5 rounded-none font-mono ${
-                  isActive ? 'bg-black/30 text-white' : 'bg-[#1a2236] text-slate-300'
+                  isActive ? 'bg-black/20 text-white font-bold' : 'bg-[#1a2236] text-slate-300'
                 }`}
                 style={{ borderRadius: '0px' }}
               >
@@ -407,7 +407,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Activity size={15} className="text-rose-400" />
+                  <Activity size={15} className="text-emerald-400" />
                   <span>Channel Telemetry &amp; Engagement Velocity</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">Public platform statistics extracted via channel telemetry.</p>
@@ -462,12 +462,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Flame size={15} className="text-rose-500" />
+                  <Flame size={15} className="text-amber-400" />
                   <span>Audience Pain Points &amp; Unmet Needs</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">Inferred from channel content and audience comments for @{handleClean}.</p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 bg-rose-500/15 text-rose-400 rounded-none font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-none font-bold">
                 Estimated Need
               </span>
             </div>
@@ -477,17 +477,17 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                 <div key={idx} className="p-4 bg-[#111624] rounded-none border-0 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <AlertCircle size={14} className={idx === 0 ? 'text-rose-400' : idx === 1 ? 'text-amber-400' : 'text-sky-400'} />
+                      <AlertCircle size={14} className={idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-emerald-400' : 'text-sky-400'} />
                       {p.title}
                     </span>
-                    <span className="text-[10px] font-mono text-rose-400 font-bold">{p.percentage}% of comments</span>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold">{p.percentage}% of comments</span>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     {p.description}
                   </p>
                   <div className="w-full bg-[#181f33] h-1.5 rounded-none overflow-hidden">
                     <div 
-                      className={`h-full rounded-none ${idx === 0 ? 'bg-rose-500' : idx === 1 ? 'bg-amber-400' : 'bg-sky-400'}`} 
+                      className={`h-full rounded-none ${idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-emerald-400' : 'bg-sky-400'}`} 
                       style={{ width: `${p.percentage}%` }} 
                     />
                   </div>
@@ -764,14 +764,14 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Search size={15} className="text-rose-400" />
+                  <Search size={15} className="text-emerald-400" />
                   <span>Competitor Landscape &amp; Market Gaps</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Verified public market intelligence &amp; competitor search indexing.
                 </p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 bg-rose-500/15 text-rose-300 rounded-none font-bold shrink-0">
+              <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-none font-bold shrink-0">
                 Market Index Active
               </span>
             </div>
@@ -900,7 +900,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Target size={15} className="text-rose-400" />
+                  <Target size={15} className="text-emerald-400" />
                   <span>Product-Market Fit (PMF) Indicators &amp; Selection Rationale</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">Why this specific software was chosen over courses, merch, or ebooks.</p>
@@ -996,7 +996,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Database size={15} className="text-rose-400" />
+                  <Database size={15} className="text-emerald-400" />
                   <span>Supporting Statistics, Real Examples &amp; Source Links</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">Clickable provenance backing the software recommendation.</p>
@@ -1010,7 +1010,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               {intel.evidence.map((post, idx) => (
                 <div key={idx} className="p-3.5 bg-[#111624] rounded-none border-0 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-none bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-none bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
                       <Play size={12} className="fill-current" />
                     </div>
                     <div className="min-w-0">

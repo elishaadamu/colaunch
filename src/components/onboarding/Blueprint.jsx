@@ -627,13 +627,15 @@ function DashboardPreview({ accent, primary, creatorData }) {
   const monthlyPrice = primary?.monthly_price || 19
 
   return (
-    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#09090b' }}>
+    <div className="w-full h-full flex flex-col p-2 gap-1.5 select-none rounded-none" style={{ background: '#09090b' }}>
       {/* Dashboard Top Header */}
       <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 relative"
-            style={{ background: `rgba(${accent.rgb}, 0.18)`, border: `1px solid rgba(${accent.rgb}, 0.3)` }}>
-            <span className="text-[7px] font-black select-none" style={{ color: accent.color }}>
+          <div 
+            className="w-4 h-4 rounded-none overflow-hidden flex items-center justify-center flex-shrink-0 relative"
+            style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)' }}
+          >
+            <span className="text-[7px] font-black select-none text-[#c81e3c]">
               {creatorName.charAt(0).toUpperCase()}
             </span>
             {avatar && (
@@ -665,25 +667,25 @@ function DashboardPreview({ accent, primary, creatorData }) {
 
       {/* 2 Metric Tiles */}
       <div className="grid grid-cols-2 gap-1.5">
-        <div className="rounded-lg p-1.5 border"
+        <div className="rounded-none p-1.5 border"
           style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
           <div className="flex items-center justify-between mb-0.5">
             <span className="text-[6.5px] text-white/40 uppercase">Monthly MRR</span>
-            <span className="text-[6px] font-bold px-1 rounded text-emerald-400 bg-emerald-500/10">Active</span>
+            <span className="text-[6px] font-bold px-1 rounded-none text-emerald-400 bg-emerald-500/10">Active</span>
           </div>
-          <div className="text-[11px] font-bold text-white font-mono leading-tight">
+          <div className="text-[10px] font-bold text-white font-mono leading-tight">
             {primary?.revenue || '$1.2K / mo'}
           </div>
           <div className="text-[6.5px] text-white/30">Gross recurring</div>
         </div>
 
-        <div className="rounded-lg p-1.5 border"
+        <div className="rounded-none p-1.5 border"
           style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
           <div className="flex items-center justify-between mb-0.5">
             <span className="text-[6.5px] text-white/40 uppercase">Subscribers</span>
             <span className="text-[6px] text-white/50 font-bold">~0.5%</span>
           </div>
-          <div className="text-[11px] font-bold text-white font-mono leading-tight">
+          <div className="text-[10px] font-bold text-white font-mono leading-tight">
             {primary?.subscribers || '60'}
           </div>
           <div className="text-[6.5px] text-white/30">Active accounts</div>
@@ -691,26 +693,29 @@ function DashboardPreview({ accent, primary, creatorData }) {
       </div>
 
       {/* Active Software Tool Engine Row */}
-      <div className="rounded-lg p-1.5 border flex-1 flex flex-col justify-between"
+      <div className="rounded-none p-1.5 border flex-1 flex flex-col justify-between"
         style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center justify-between pb-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
           <span className="text-[7.5px] font-bold text-white">Software Engine Core</span>
-          <span className="text-[6.5px] px-1 py-0.2 rounded font-mono" style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>
+          <span 
+            className="text-[6.5px] px-1 py-0.2 rounded-none font-mono"
+            style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)', color: '#c81e3c' }}
+          >
             v1.0 Live
           </span>
         </div>
         <div className="space-y-1 my-1">
           <div className="flex items-center justify-between text-[7px]">
-            <span className="text-white/80 truncate max-w-[120px]">Tool Calculations & Benchmarks</span>
+            <span className="text-white/80 truncate max-w-[120px]">Tool Calculations &amp; Benchmarks</span>
             <span className="font-mono text-emerald-400">Ready</span>
           </div>
-          <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
-            <div className="h-full rounded-full" style={{ width: '100%', background: accent.color }} />
+          <div className="h-1 w-full rounded-none bg-white/5 overflow-hidden">
+            <div className="h-full rounded-none" style={{ width: '100%', background: '#c81e3c' }} />
           </div>
         </div>
         <div className="flex items-center justify-between pt-1 border-t text-[6.5px] text-white/40" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          <span>Monthly subscription billing</span>
-          <span style={{ color: accent.color }}>CoLaunch Platform</span>
+          <span>Billing: Monthly recurring</span>
+          <span style={{ color: '#c81e3c' }}>CoLaunch Platform</span>
         </div>
       </div>
     </div>
@@ -1472,22 +1477,23 @@ export default function Blueprint() {
             </div>
 
             {/* Recommendation Section Header */}
-            <div className="pt-0 space-y-1.5" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
+            <div className="pt-0 space-y-1" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
               <div 
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider"
                 style={{
-                  background: `rgba(${accent.rgb}, 0.1)`,
-                  borderColor: `rgba(${accent.rgb}, 0.2)`,
-                  color: accent.color
+                  background: 'rgba(200, 30, 60, 0.12)',
+                  borderColor: 'rgba(200, 30, 60, 0.25)',
+                  borderWidth: '1px',
+                  color: '#c81e3c'
                 }}
               >
-                <Hammer className="w-3.5 h-3.5" />
+                <Hammer className="w-3 h-3" />
                 <span>Software Product Candidates</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-tight">
                 Product ideas for {creatorName}
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-xs text-slate-400">
                 Subscription software solving recurring problems your audience keeps asking about. Validated before building.
               </p>
             </div>
@@ -1495,10 +1501,10 @@ export default function Blueprint() {
             {/* Audience Scale Notice (< 20K followers) */}
             {followersCount > 0 && followersCount < 20_000 && (
               <div 
-                className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-none flex items-start gap-2.5 text-xs text-amber-200"
+                className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-none flex items-start gap-2 text-xs text-amber-200"
                 style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.18s' }}
               >
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-amber-300">Audience Scale Notice: </span>
                   <span>
@@ -1510,88 +1516,89 @@ export default function Blueprint() {
 
             {/* Product Options Matrix */}
             <div 
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start"
               style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.2s' }}
             >
               {/* Primary Recommended Product (Featured) */}
               <div 
-                className="lg:col-span-8 rounded-none bg-[#0f1117] border border-[#1f2433] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
+                className="lg:col-span-8 rounded-none bg-[#0f1117] border border-[#1f2433] p-3.5 sm:p-4 relative overflow-hidden transition-all duration-300 shadow-xl"
               >
                 {/* Header Tag & Match Indicator */}
-                <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center justify-between gap-2 mb-2.5">
                   <div 
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-none font-semibold text-xs tracking-wide border"
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-none font-bold text-[10px] tracking-wide"
                     style={{
-                      background: `rgba(${accent.rgb}, 0.1)`,
-                      borderColor: `rgba(${accent.rgb}, 0.2)`,
-                      color: accent.color
+                      background: 'rgba(200, 30, 60, 0.15)',
+                      borderColor: 'rgba(200, 30, 60, 0.3)',
+                      borderWidth: '1px',
+                      color: '#c81e3c'
                     }}
                   >
-                    <ActiveIcon className="w-3.5 h-3.5" />
+                    <ActiveIcon className="w-3 h-3" />
                     <span>{activeBlueprint.type.toUpperCase()}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-slate-400">
+                    <span className="text-[11px] font-mono text-slate-400 truncate max-w-[240px]">
                       Target Audience: {activeBlueprint.targetAudience || 'Subscribers'}
                     </span>
-                    <div className="px-2.5 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                      {activeBlueprint.fit}% Estimated Fit
+                    <div className="px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold shrink-0">
+                      {activeBlueprint.fit}% Match
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-start">
                   
                   {/* Left Specs Column */}
-                  <div className="md:col-span-7 space-y-4">
+                  <div className="md:col-span-7 space-y-2.5">
                     <div>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
                         {activeBlueprint.name}
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1">
+                      <p className="text-xs font-medium text-slate-300 mt-0.5">
                         {activeBlueprint.tagline}
                       </p>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
                       {activeBlueprint.toolSummary || activeBlueprint.description}
                     </p>
 
                     {/* Feature Pills */}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {activeBlueprint.features.map(f => (
-                        <span 
+                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                      {activeBlueprint.features.slice(0, 4).map(f => (
+                        <div 
                           key={f} 
-                          className="px-2.5 py-1 text-xs font-medium rounded-none bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1"
+                          className="px-2 py-1 text-[11px] font-medium rounded-none bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1.5 truncate"
                         >
-                          <Check className="w-3 h-3" style={{ color: accent.color }} />
-                          {f}
-                        </span>
+                          <Check className="w-3 h-3 shrink-0 text-[#c81e3c]" />
+                          <span className="truncate">{f}</span>
+                        </div>
                       ))}
                     </div>
 
                     {/* Who Pays & Why */}
                     {activeBlueprint.whoPaysAndWhy && (
-                      <div className="p-3 rounded-none bg-[#141822] border border-[#1f2433] space-y-1">
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
+                      <div className="p-2 rounded-none bg-[#141822] border border-[#1f2433] space-y-0.5">
+                        <div className="text-[9px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
                           <Users className="w-3 h-3" />
                           <span>Who Pays &amp; Why</span>
                         </div>
-                        <p className="text-xs text-slate-300 leading-relaxed">
+                        <p className="text-[11px] text-slate-300 leading-tight">
                           {activeBlueprint.whoPaysAndWhy}
                         </p>
                       </div>
                     )}
 
                     {/* Interactive Monthly Price Selector */}
-                    <div className="pt-3 border-t border-[#1f2433] space-y-2.5">
+                    <div className="pt-2 border-t border-[#1f2433] space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                           <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Monthly Price</span>
                         </label>
-                        <span className="text-sm font-extrabold text-white font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <span className="text-xs font-extrabold text-white font-mono px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                           ${activePrice} / mo per subscriber
                         </span>
                       </div>
@@ -1604,19 +1611,19 @@ export default function Blueprint() {
                           step="1"
                           value={activePrice}
                           onChange={(e) => handlePriceChange(Number(e.target.value))}
-                          className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg appearance-none"
+                          className="w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-800 rounded-none appearance-none"
                         />
                       </div>
 
                       {/* Quick Preset Buttons */}
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex items-center gap-1.5 pt-0.5">
                         <span className="text-[10px] uppercase font-mono text-slate-400">Presets:</span>
                         {[9, 15, 19, 24, 29].map((p) => (
                           <button
                             key={p}
                             type="button"
                             onClick={() => handlePriceChange(p)}
-                            className={`px-2 py-0.5 text-xs font-mono font-bold transition-all cursor-pointer ${
+                            className={`px-2 py-0.5 text-[10px] font-mono font-bold transition-all cursor-pointer rounded-none ${
                               activePrice === p
                                 ? 'bg-emerald-400 text-black shadow-sm'
                                 : 'bg-[#151822] border border-[#1f2433] text-slate-300 hover:text-white hover:bg-[#1a202c]'
@@ -1629,23 +1636,23 @@ export default function Blueprint() {
                     </div>
 
                     {/* Why this fits & Audience Evidence */}
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <button
                         type="button"
                         onClick={() => setShowReasons(!showReasons)}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
-                        <HelpCircle className="w-3.5 h-3.5" style={{ color: accent.color }} />
+                        <HelpCircle className="w-3 h-3 text-[#c81e3c]" />
                         <span>Audience Demand Evidence ({reasons.length} signals)</span>
                         <ChevronDown 
-                          className="w-3.5 h-3.5 transition-transform duration-200" 
+                          className="w-3 h-3 transition-transform duration-200" 
                           style={{ transform: showReasons ? 'rotate(180deg)' : 'none' }} 
                         />
                       </button>
                       {showReasons && (
-                        <div className="mt-2.5 p-3 rounded-none bg-[#141822] border border-[#1f2433] space-y-2">
+                        <div className="mt-1.5 p-2 rounded-none bg-[#141822] border border-[#1f2433] space-y-1">
                           {reasons.map((r, i) => (
-                            <div key={i} className="flex items-start gap-2">
+                            <div key={i} className="flex items-start gap-1.5">
                               <span className="text-[10px] mt-0.5 flex-shrink-0 font-bold text-emerald-400">✓</span>
                               <p className="text-[11px] leading-relaxed text-slate-300">{r}</p>
                             </div>
@@ -1655,16 +1662,16 @@ export default function Blueprint() {
                     </div>
 
                     {/* Projected Gross Subscription Revenue */}
-                    <div className="pt-3 border-t border-[#1f2433] space-y-1">
-                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                        <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap shrink-0">
+                    <div className="pt-2 border-t border-[#1f2433] space-y-0.5">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight whitespace-nowrap shrink-0">
                           {activeRevenue.formattedRange}
                         </span>
-                        <span className="text-xs text-slate-400 whitespace-nowrap">
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">
                           ({activeRevenue.formattedSubscribers} subscribers at ~0.5% conversion)
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 italic">
+                      <p className="text-[10px] text-slate-400 italic">
                         {activeRevenue.disclaimer}
                       </p>
                     </div>
@@ -1672,13 +1679,13 @@ export default function Blueprint() {
 
                   {/* Right Column: Interactive App Preview Window */}
                   <div className="md:col-span-5">
-                    <div className="rounded-none bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[250px]">
+                    <div className="rounded-none bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[190px]">
                       {/* Window Bar */}
-                      <div className="px-3 py-2 bg-[#151822]/80 border-b border-[#1f2433] flex items-center justify-between">
+                      <div className="px-2.5 py-1.5 bg-[#151822]/80 border-b border-[#1f2433] flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-none bg-red-500/80 inline-block"></span>
-                          <span className="w-2.5 h-2.5 rounded-none bg-amber-500/80 inline-block"></span>
-                          <span className="w-2.5 h-2.5 rounded-none bg-emerald-500/80 inline-block"></span>
+                          <span className="w-2 h-2 rounded-none bg-red-500/80 inline-block"></span>
+                          <span className="w-2 h-2 rounded-none bg-amber-500/80 inline-block"></span>
+                          <span className="w-2 h-2 rounded-none bg-emerald-500/80 inline-block"></span>
                         </div>
                         <span className="text-[9px] font-mono text-slate-500 truncate">
                           {activeBlueprint.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'app'}.app
@@ -1705,8 +1712,8 @@ export default function Blueprint() {
               </div>
 
               {/* Right Column: Secondary / Alternate Options */}
-              <div className="lg:col-span-4 space-y-4">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              <div className="lg:col-span-4 space-y-2.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
                   Other options
                 </div>
 
@@ -1724,45 +1731,45 @@ export default function Blueprint() {
                     <div
                       key={blueprint.id}
                       onClick={() => setSelected(blueprint.id)}
-                      className="group p-5 rounded-none bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
+                      className="group p-3 sm:p-3.5 rounded-none bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
                     >
                       <div className="w-full flex items-start justify-between gap-2 min-w-0">
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="p-2.5 rounded-none bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
-                            <AltIcon className="w-5 h-5 text-slate-300" />
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="p-2 rounded-none bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
+                            <AltIcon className="w-4 h-4 text-slate-300" />
                           </div>
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <h4 className="text-sm font-bold text-white transition-colors leading-snug line-clamp-2 break-words">
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <h4 className="text-xs sm:text-sm font-bold text-white transition-colors leading-snug line-clamp-1 break-words">
                               {blueprint.name}
                             </h4>
-                            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
                               {blueprint.toolSummary || blueprint.tagline}
                             </p>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-none text-[11px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
+                        <span className="px-1.5 py-0.5 rounded-none text-[10px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
                           {blueprint.fit}%
                         </span>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-[#1f2433]/70 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white whitespace-nowrap">
+                      <div className="mt-2.5 pt-2 border-t border-[#1f2433]/70 flex items-center justify-between text-xs">
+                        <span className="font-bold text-white whitespace-nowrap text-xs">
                           {altRev.formattedRange}
                         </span>
-                        <span className="text-emerald-400 text-[11px] font-mono truncate ml-2">
+                        <span className="text-emerald-400 text-[10px] font-mono truncate ml-2">
                           ${altPrice}/mo subscription
                         </span>
                       </div>
 
                       {altReasons[0] && (
-                        <div className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">
+                        <div className="mt-2 flex items-start gap-1.5 text-[10px] text-slate-400">
                           <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
                           <span className="line-clamp-2">{altReasons[0]}</span>
                         </div>
                       )}
 
                       {blueprint.whoPaysAndWhy && (
-                        <div className="mt-2.5 text-[11px] text-slate-400 line-clamp-2">
+                        <div className="mt-1.5 text-[10px] text-slate-400 line-clamp-1">
                           <span className="text-slate-500 font-medium">Buyer: </span>
                           <span>{blueprint.whoPaysAndWhy}</span>
                         </div>
@@ -1775,11 +1782,11 @@ export default function Blueprint() {
                 {showCustomModal ? (
                   <form 
                     onSubmit={handleCreateCustomProduct}
-                    className="p-5 rounded-none bg-[#10141f] border border-brand-500/40 space-y-3"
+                    className="p-3.5 rounded-none bg-[#10141f] border border-brand-500/40 space-y-2.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                        <Sparkles className="w-3 h-3 text-[#c81e3c]" />
                         <span>Custom Software Idea</span>
                       </span>
                       <button
@@ -1796,7 +1803,7 @@ export default function Blueprint() {
                     )}
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-0.5">
                         Software Product Name
                       </label>
                       <input
@@ -1804,12 +1811,12 @@ export default function Blueprint() {
                         placeholder="e.g. Creator Performance Hub"
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
-                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2.5 py-2 text-white outline-none focus:border-brand-500"
+                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2 py-1.5 text-white outline-none focus:border-[#c81e3c] rounded-none"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-0.5">
                         Tool Summary (What recurring problem does it solve?)
                       </label>
                       <textarea
@@ -1817,7 +1824,7 @@ export default function Blueprint() {
                         placeholder="e.g. Real-time preset manager & automated calculator answering repetitive setup questions."
                         value={customSummary}
                         onChange={(e) => setCustomSummary(e.target.value)}
-                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2.5 py-1.5 text-white outline-none focus:border-brand-500 resize-none"
+                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2 py-1 text-white outline-none focus:border-[#c81e3c] resize-none rounded-none"
                       />
                     </div>
 
@@ -1832,12 +1839,12 @@ export default function Blueprint() {
                           max="29"
                           value={customPrice}
                           onChange={(e) => setCustomPrice(Number(e.target.value))}
-                          className="w-28 accent-emerald-400"
+                          className="w-24 accent-emerald-400 rounded-none"
                         />
                       </div>
                       <button
                         type="submit"
-                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs cursor-pointer"
+                        className="px-3 py-1 bg-[#c81e3c] hover:bg-[#a61730] text-white font-bold text-xs cursor-pointer rounded-none"
                       >
                         Add & Select
                       </button>
@@ -1846,13 +1853,13 @@ export default function Blueprint() {
                 ) : (
                   <div 
                     onClick={() => setShowCustomModal(true)}
-                    className="p-4 rounded-none border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer group"
+                    className="p-3 rounded-none border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer group"
                   >
                     <p className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center justify-center gap-1.5">
                       <Plus className="w-3.5 h-3.5" />
                       <span>Something else?</span>
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[10px] text-slate-400 mt-0.5">
                       Specify a custom subscription software app for your audience
                     </p>
                   </div>
@@ -1865,8 +1872,8 @@ export default function Blueprint() {
       </main>
 
       {/* Sticky Bottom CTA Action Bar */}
-      <aside className="fixed bottom-0 left-0 right-0 z-50 bg-[#08090c] border-t border-[#1f2433] py-4 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <aside className="fixed bottom-0 left-0 right-0 z-50 bg-[#08090c]/95 backdrop-blur-md border-t border-[#1f2433] py-2.5 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           
           {/* Primary Dynamic Action Button (Keep id="dynamic-cta-button" intact) */}
           <div className="w-full sm:w-auto">
@@ -1874,16 +1881,16 @@ export default function Blueprint() {
               id="dynamic-cta-button" 
               onClick={handleContinue}
               disabled={isScraping || isGenerating}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-none font-bold text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-none font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group shadow-md"
               style={{
-                background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : accent.color,
+                background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : '#c81e3c',
                 color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : '#ffffff',
                 border: '1px solid rgba(255,255,255,0.1)'
               }}
             >
               {(isScraping || isGenerating) ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
@@ -1892,15 +1899,15 @@ export default function Blueprint() {
               ) : (
                 <>
                   <span>Preview landing page for {activeBlueprint?.name}</span>
-                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </>
               )}
             </button>
           </div>
 
           {/* Supporting Status Copy */}
-          <div className="text-xs text-slate-400 flex items-center gap-2 text-center sm:text-right">
-            <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 text-center sm:text-right">
+            <Info className="w-3 h-3 text-slate-400 shrink-0" />
             <span>Customize live landing page layout and test demand in next steps</span>
           </div>
 
