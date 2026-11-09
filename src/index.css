@@ -1571,3 +1571,51 @@ dialog,
   color: #ffffff !important;
 }
 
+/* ── STRICT BORDERLESS RANGE SLIDERS ── */
+input[type="range"],
+input[type="range"]:focus,
+input[type="range"]:active,
+input[type="range"]:hover {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+input[type="range"]::-webkit-slider-container {
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+input[type="range"]::-moz-focus-outer {
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+input[type="range"]::-webkit-slider-runnable-track,
+input[type="range"]::-moz-range-track {
+  border: 0 !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+}
+
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-moz-range-thumb {
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+}
+
+

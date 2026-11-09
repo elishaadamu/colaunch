@@ -7315,17 +7315,19 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                             {/* BEGIN: ProfessionalSignature */}
                             <div className="mt-8 pt-6 border-t border-slate-200/80" data-purpose="corporate-signature-block">
                               <div className="flex items-start space-x-3.5">
-                                {/* 4-tile CoLaunch geometric logo */}
-                                <div aria-label="CoLaunch Logo" className="w-9 h-9 grid grid-cols-2 gap-1 p-1 bg-white rounded-lg border border-slate-200 shadow-xs flex-shrink-0">
-                                  <div className="bg-slate-800 rounded-sm"></div>
-                                  <div className="bg-indigo-600 rounded-sm"></div>
-                                  <div className="bg-emerald-500 rounded-sm"></div>
-                                  <div className="bg-slate-900 rounded-sm"></div>
-                                </div>
+                                {/* Official CoLaunch Rocket circular mark */}
+                                <img
+                                  src="/images/colaunch_logo.png"
+                                  alt="CoLaunch Logo"
+                                  className="w-10 h-10 object-contain rounded-full bg-white p-0.5 border border-slate-200 shadow-xs flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
                                 {/* Representative Credentials */}
                                 <div className="text-xs min-w-0">
-                                  <div className="font-bold text-slate-900 text-sm tracking-tight">CoLaunch Venture Partnerships</div>
-                                  <div className="text-slate-500 font-medium mt-0.5">Venture Partnerships • CoLaunch</div>
+                                  <div className="font-bold text-slate-900 text-sm tracking-tight font-serif">CoLaunch Venture Partnerships</div>
+                                  <div className="text-slate-500 font-medium mt-0.5">Venture Partnerships • CoLaunch Studio</div>
                                   <div className="mt-2 text-slate-600 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                                     <a className="font-medium text-slate-900 hover:text-indigo-600 underline decoration-slate-300" href={`mailto:${PARTNERSHIP_EMAIL}`}>
                                       {PARTNERSHIP_EMAIL}
@@ -7334,12 +7336,6 @@ Ref: [CF-STAGE:PROJECT_KICKOFF | CF-CID:${selectedCreator.id} | Handle:@${handle
                                     <a className="hover:text-indigo-600" href="https://colaunch.app" target="_blank" rel="noreferrer">colaunch.app</a>
                                     <span className="text-slate-300">•</span>
                                     <span className="text-slate-500">San Francisco, CA</span>
-                                  </div>
-                                  <div className="mt-4 pt-3 border-t border-slate-100 font-mono text-[11px] text-slate-400 flex flex-wrap items-center gap-1.5">
-                                    <span className="text-slate-500">Studio Reference:</span>
-                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono text-[10px]">CF-CID:2efa13e9-d908-4b08-97c8-c21aa96a7561</span>
-                                    <span>|</span>
-                                    <span>Handle:@{previewHandle}</span>
                                   </div>
                                 </div>
                               </div>
