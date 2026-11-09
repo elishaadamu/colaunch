@@ -475,142 +475,92 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#07090e] text-slate-100 flex flex-col justify-between items-center relative overflow-hidden select-none">
-      
-      {/* Background Matrix Dots */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-25"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
-          backgroundSize: '24px 24px'
-        }}
-      />
+    <div className="login-split-page">
 
-      {/* Ambient Radial Mesh Glow */}
-      <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[360px] pointer-events-none opacity-20 blur-[130px]"
-        style={{
-          background: 'radial-gradient(circle, #c81e3c 0%, #1e1b4b 60%, transparent 80%)'
-        }}
-      />
-
-      {/* ── TOP NAV BAR ── */}
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-5 flex items-center justify-between z-10">
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== 'undefined' && window.location.pathname !== '/portal') {
-              window.history.pushState(null, '', '/portal')
-            }
-            goTo('creator-link')
+      {/* ── LEFT: FULL-BLEED IMAGE ── */}
+      <div className="login-split-image">
+        <img
+          src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=80"
+          onError={(e) => {
+            e.currentTarget.onerror = null
+            e.currentTarget.src = '/images/hero_saas_macbook.jpg'
           }}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 bg-[#0e1320] hover:bg-[#151c2e] border border-[#1e293b] cursor-pointer"
-          style={{ borderRadius: '0px' }}
-        >
-          <Sparkles size={13} className="text-[#c81e3c]" />
-          <span>Start Onboarding</span>
-        </button>
+          alt="Engineering team collaborating in modern workspace"
+          loading="eager"
+        />
+        {/* Dark overlay with soft gradient */}
+        <div className="login-image-overlay" />
 
-        <div className="flex items-center gap-2">
-          <CoLaunchLogo size={22} theme="dark" showWordmark={true} />
+        {/* CoLaunch branding */}
+        <div className="login-image-brand">
+          <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem('forge_dashboard_active_tab', 'support')
-            goTo('dashboard')
-          }}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition px-3 py-1.5 bg-[#0e1320] hover:bg-[#151c2e] border border-[#1e293b] cursor-pointer"
-          style={{ borderRadius: '0px' }}
-        >
-          <Headphones size={13} className="text-[#c81e3c]" />
-          <span className="hidden sm:inline">Support</span>
-        </button>
-      </header>
+        {/* Caption text */}
+        <div className="login-image-caption">
+          <span className="login-caption-tag">STUDIO</span>
+          <h2>Build Products.<br />Share Ownership.</h2>
+          <p>50/50 co-founder partnerships powered by AI sprint workflows.</p>
+        </div>
+      </div>
 
-      {/* ── MAIN AUTHENTICATION CONTAINER ── */}
-      <main className="w-full max-w-md mx-auto my-auto px-4 py-4 sm:py-6 z-10">
-        <div 
-          className="bg-[#0b0f19] border border-[#1e293b] p-5 sm:p-6 shadow-2xl relative"
-          style={{ borderRadius: '0px' }}
-        >
+      {/* ── RIGHT: LOGIN FORM ── */}
+      <div className="login-split-form">
+        <div className="login-bottom-gradient" />
+
+        {/* Top bar with back link */}
+        <div className="login-form-topbar">
+          <button type="button" onClick={() => goTo('welcome')} className="login-back-link">
+            <ArrowLeft size={15} />
+            <span>Back</span>
+          </button>
+        </div>
+
+        {/* Form inner (centered vertically) */}
+        <div className="login-form-inner">
+
           {/* Heading */}
-          <div className="mb-4">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Sign In</h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Sign in to your CoLaunch account.
-            </p>
+          <div className="login-form-heading">
+            <h1>Welcome back</h1>
+            <p>Sign in to your CoLaunch workspace</p>
           </div>
 
-          {/* Customer Care Opportunity Card (Shown when authenticated via code & no password configured) */}
+          {/* Customer Care Opportunity (if applicable) */}
           {showCareOpportunity ? (
-            <div 
-              className="p-3.5 sm:p-4 bg-[#070a12] border border-[#1e293b] space-y-3"
-              style={{ borderRadius: '0px' }}
-            >
-              <div className="flex items-center gap-2 text-emerald-400">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-emerald-600">
                 <CheckCircle2 size={18} className="shrink-0" />
                 <div>
-                  <h2 className="text-xs font-extrabold text-white">Identity Verified</h2>
-                  <p className="text-[10px] text-emerald-400 font-mono">Authenticated via Single-Use Email Code</p>
+                  <h2 className="text-xs font-bold text-slate-900">Identity Verified</h2>
+                  <p className="text-[10px] text-emerald-600 font-mono">Authenticated</p>
                 </div>
               </div>
-
-              <p className="text-[11.5px] text-slate-300 leading-snug">
-                Welcome back! Because your account currently does not have a password configured in the dashboard, we invite you to connect with Customer Care if you would like to set a password or change your email address.
+              <p className="text-xs text-slate-600 leading-snug">
+                Welcome back! If you would like to set a password or update your account details, our team is here to help.
               </p>
-
-              <div className="p-2.5 bg-[#0d1322] border border-[#1b263b] text-xs text-slate-300 space-y-1.5" style={{ borderRadius: '0px' }}>
-                <div className="flex items-center gap-1.5 text-white font-bold text-[11.5px]">
-                  <Headphones size={13} className="text-white" />
-                  <span className="text-white">Customer Care &amp; Account Assistance</span>
-                </div>
-                <ul className="text-[10.5px] text-slate-400 space-y-0.5 pl-4 list-disc leading-relaxed">
-                  <li>Configure or update your dashboard password</li>
-                  <li>Verify or migrate your primary email address</li>
-                  <li>1-on-1 launch onboarding and technical assistance</li>
-                </ul>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    localStorage.setItem('forge_dashboard_active_tab', 'support')
-                    goTo('dashboard')
-                  }}
-                  className="py-2.5 px-3 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition cursor-pointer border-0 shadow-md whitespace-nowrap"
-                  style={{ borderRadius: '0px', color: '#ffffff' }}
-                >
-                  <Headphones size={13} className="text-white shrink-0" />
-                  <span className="text-white">Contact Customer Care</span>
-                </button>
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => goTo('dashboard')}
-                  className="py-2.5 px-3 bg-[#141b2b] hover:bg-[#1a2338] text-white font-bold text-[11.5px] flex items-center justify-center gap-1.5 transition cursor-pointer border border-[#232f48] whitespace-nowrap"
-                  style={{ borderRadius: '0px', color: '#ffffff' }}
+                  className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition"
                 >
-                  <span className="text-white">Continue to Dashboard</span>
-                  <ArrowRight size={13} className="text-white shrink-0" />
+                  Continue to Dashboard
                 </button>
               </div>
             </div>
           ) : (
             <>
-              {/* ── GOOGLE SIGN-IN BUTTON ── */}
+              {/* Google Sign-in */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading || loading}
-                className="w-full py-2.5 px-4 bg-[#101524] hover:bg-[#161d30] border border-[#232f48] hover:border-slate-500 text-white font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-3"
-                style={{ borderRadius: '0px', color: '#ffffff' }}
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs disabled:opacity-50 rounded-xl mb-3"
               >
                 {googleLoading ? (
                   <>
-                    <Loader2 size={14} className="animate-spin text-white" />
-                    <span className="text-white">Connecting to Google…</span>
+                    <Loader2 size={14} className="animate-spin text-slate-600" />
+                    <span>Connecting to Google…</span>
                   </>
                 ) : (
                   <>
@@ -620,110 +570,101 @@ export default function Login() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span className="text-white">Continue with Google</span>
+                    <span>Continue with Google</span>
                   </>
                 )}
               </button>
 
-              {/* Divider: OR */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-[1px] bg-[#1a2337]" />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">OR SIGN IN WITH PASSWORD</span>
-                <div className="flex-1 h-[1px] bg-[#1a2337]" />
+                <div className="flex-1 h-[1px] bg-slate-200" />
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  OR SIGN IN WITH PASSWORD
+                </span>
+                <div className="flex-1 h-[1px] bg-slate-200" />
               </div>
 
-              {/* Error Alert */}
+              {/* Error */}
               {error && (
-                <div 
-                  className="p-2.5 mb-3.5 bg-rose-950/40 border border-rose-500/50 text-white text-xs flex items-start gap-2"
-                  style={{ borderRadius: '0px', color: '#ffffff' }}
-                >
-                  <AlertTriangle size={14} className="text-white shrink-0 mt-0.5" />
-                  <span className="leading-relaxed text-white">{error}</span>
+                <div className="login-error">
+                  <AlertTriangle size={15} />
+                  <span>{error}</span>
                 </div>
               )}
 
-              {/* Informational Notice */}
+              {/* Informational notice */}
               {infoNotice && (
-                <div 
-                  className="p-2.5 mb-3.5 bg-sky-950/40 border border-sky-500/50 text-white text-xs flex items-start gap-2"
-                  style={{ borderRadius: '0px', color: '#ffffff' }}
-                >
-                  <Sparkles size={14} className="text-white shrink-0 mt-0.5" />
-                  <span className="leading-relaxed text-white">{infoNotice}</span>
+                <div className="p-2.5 mb-3.5 bg-sky-50 border border-sky-200 text-sky-800 text-xs flex items-start gap-2 rounded-lg">
+                  <Sparkles size={14} className="text-sky-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{infoNotice}</span>
                 </div>
               )}
 
-              {/* Password Login Form */}
-              <form onSubmit={handlePasswordLogin} className="space-y-3.5">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                    Username or Email
-                  </label>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. yourname@gmail.com"
-                      required
-                      autoComplete="username"
-                      className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-3.5 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
-                      style={{ borderRadius: '0px' }}
-                    />
-                  </div>
+              {/* Form */}
+              <form onSubmit={handlePasswordLogin} className="login-fields">
+                <label className="login-label">Username or Email</label>
+                <div className="login-input-wrap">
+                  <User size={16} className="login-input-icon" />
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Enter your username or email"
+                    autoComplete="username"
+                    required
+                  />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your dashboard password"
-                      required
-                      autoComplete="current-password"
-                      className="w-full bg-[#070a12] border border-[#1f2b42] focus:border-[#c81e3c] text-white text-xs pl-9 pr-9 py-2.5 outline-none font-medium placeholder:text-slate-600 transition"
-                      style={{ borderRadius: '0px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer p-1"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
+                <label className="login-label">Password</label>
+                <div className="login-input-wrap">
+                  <Lock size={16} className="login-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="login-eye-btn"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
 
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading || !identifier.trim() || !password}
-                  className="w-full py-2.5 bg-[#c81e3c] hover:bg-[#b01a35] text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border-0 shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-                  style={{ borderRadius: '0px', color: '#ffffff' }}
+                  className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                   {loading ? (
                     <>
-                      <Loader2 size={13} className="animate-spin text-white" />
-                      <span className="text-white">Signing In…</span>
+                      <Loader2 size={16} className="animate-spin text-white" />
+                      <span>Signing in…</span>
                     </>
                   ) : (
-                    <span className="text-white">Sign In</span>
+                    <>
+                      <span>Sign In</span>
+                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                    </>
                   )}
+                  {/* Signature Beacon Accent Dot */}
+                  <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none items-center justify-center z-10">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-1 ring-slate-900/10" />
+                  </span>
                 </button>
               </form>
             </>
           )}
 
-          {/* Bottom Card Footer */}
-          <div className="mt-4 pt-3.5 border-t border-[#162033] text-center text-xs text-slate-400">
-            Don't have an account yet?{' '}
+          {/* Bottom text */}
+          <p className="login-bottom-text">
+            Don't have an account?{' '}
             <button
               type="button"
               onClick={() => {
@@ -732,22 +673,20 @@ export default function Login() {
                 }
                 goTo('signup')
               }}
-              className="text-white hover:text-[#c81e3c] font-bold underline transition cursor-pointer ml-1"
+              className="login-signup-link"
             >
               Sign up
             </button>
-          </div>
-        </div>
-      </main>
+          </p>
 
-      {/* ── SECURITY FOOTER ── */}
-      <footer className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-5 text-[11px] font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 z-10 border-t border-[#121927]">
-        <span>© 2026 CoLaunch Inc. · Creator OS</span>
-        <span className="flex items-center gap-1.5 text-slate-400">
-          <ShieldCheck size={13} className="text-[#c81e3c]" />
-          <span>256-Bit TLS · Zero-Knowledge Storage</span>
-        </span>
-      </footer>
+        </div>
+
+        {/* Footer */}
+        <div className="login-form-footer">
+          <span>© 2026 CoLaunch</span>
+        </div>
+
+      </div>
 
     </div>
   )

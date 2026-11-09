@@ -320,7 +320,7 @@ export default function LaunchAuth({ children }) {
 
         {/* Footer */}
         <div className="login-form-footer">
-          <span>© 2026 CoLaunch · 256-Bit Encrypted</span>
+          <span>© 2026 CoLaunch</span>
         </div>
 
       </div>
