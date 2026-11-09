@@ -13,7 +13,11 @@ import {
   areRecsValidForCreator, 
   getFallbackCleanRecommendations,
   calculateFollowerRevenueRange,
-  parseFollowerCount
+  parseFollowerCount,
+  deriveFeaturesFromToolSummary,
+  deriveWhoPaysAndWhy,
+  sanitizeTargetAudience,
+  cleanEvidenceList
 } from '../../services/ai'
 import {
   calculateSubscriptionRevenue,
@@ -106,12 +110,17 @@ function buildCreatorBlurb(creator) {
 // ── Why-this-fits reasons (dynamic per blueprint × creator) ──────────────────
 
 function buildReasons(blueprint, creator) {
-  // If recommendation has grounded evidence from audience intelligence, prioritize it
+  // If recommendation has grounded evidence from audience intelligence, clean and prioritize it
   if (blueprint?.evidence && Array.isArray(blueprint.evidence) && blueprint.evidence.length > 0) {
-    return blueprint.evidence.filter(Boolean)
+    const cleaned = cleanEvidenceList(
+      blueprint.evidence.filter(Boolean),
+      creator?.comments || [],
+      creator?.recentPosts || []
+    )
+    if (cleaned.length > 0) return cleaned
   }
 
-  const { platform, followers, engagementRate, niche } = creator
+  const { platform, followers, engagementRate, niche } = creator || {}
   const eng = parseFloat(engagementRate) || 0
   const subs = parseFollowerCount(followers)
   const nicheL = (niche || 'creator').toLowerCase()
@@ -126,7 +135,7 @@ function buildReasons(blueprint, creator) {
         ? `${eng}% engagement signals strong commitment to daily tracking and habit logging`
         : `Tracking software builds daily utility and monthly retention into the subscriber relationship`,
       `Monthly recurring pricing ($9–$29/mo) turns one-time questions into ongoing software utility`,
-      `Verified community benchmarks give your subscribers a clear reason to remain subscribed month after month`
+      `Curated community benchmarks give your subscribers a clear reason to remain subscribed month after month`
     ]
   }
 
@@ -700,8 +709,8 @@ function DashboardPreview({ accent, primary, creatorData }) {
           </div>
         </div>
         <div className="flex items-center justify-between pt-1 border-t text-[6.5px] text-white/40" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          <span>Billing: Monthly recurring</span>
-          <span style={{ color: accent.color }}>CoLaunch Hosted</span>
+          <span>Monthly subscription billing</span>
+          <span style={{ color: accent.color }}>CoLaunch Platform</span>
         </div>
       </div>
     </div>
@@ -728,6 +737,7 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
     0
   )
   const eng = parseFloat(creatorData?.engagementRate) || 3.5
+  const niche = creatorData?.niche || 'Software & Workflow'
 
   const defaultPrices = [19, 24, 15, 29]
 
@@ -741,6 +751,9 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
         engagementRate: eng
       })
 
+      const targetAud = sanitizeTargetAudience(b.targetAudience, niche)
+      const whoPays = deriveWhoPaysAndWhy({ ...b, target_audience: targetAud, monthly_price: price }, niche)
+
       return {
         ...b,
         monthly_price: price,
@@ -749,6 +762,11 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
         revenueEstimate: rev,
         subscribers: rev.formattedSubscribers,
         revenueModel: `$${price}/mo recurring subscription`,
+        targetAudience: targetAud,
+        whoPaysAndWhy: whoPays,
+        features: (Array.isArray(b.features) && b.features.length >= 3)
+          ? b.features
+          : deriveFeaturesFromToolSummary(b.toolSummary || b.description, b.name, b.type)
       }
     })
   }
@@ -762,17 +780,6 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
     app:         { type: 'Mobile App', icon: Smartphone, preview: 'mobile' },
     saas:        { type: 'Software App', icon: Globe, preview: 'webapp' },
     other:       { type: 'Software App', icon: Globe, preview: 'webapp' },
-  }
-
-  const featuresMap = {
-    tool: ['Interactive workspace', 'Automated workflows', 'Saved user projects', 'Cloud data sync'],
-    tracker: ['Daily progress logging', 'Community benchmarks', 'Goal milestones', 'Automated reports'],
-    calculator: ['Instant formula solver', 'Scenario comparison', 'Exportable summary reports', 'Saved user profiles'],
-    community: ['Member software tools', 'Discussion boards', 'Live monthly sessions', 'Member directory'],
-    dashboard: ['Real-time telemetry', 'Custom metrics', 'Workflow status', 'Data export'],
-    app: ['Push alerts', 'Mobile offline tools', 'Quick capture', 'In-app account'],
-    saas: ['Custom domain', 'API access', 'Billing integration', 'Analytics dashboard'],
-    other: ['Interactive workspace', 'Member accounts', 'Cloud data sync', 'Workflow engine']
   }
 
   return recs.slice(0, 4).map((r, index) => {
@@ -803,14 +810,29 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
     }
 
     const finalFit = Math.min(98, Math.max(65, fitVal))
+    const toolSummary = r.tool_summary || r.description || ''
+    const targetAud = sanitizeTargetAudience(r.target_audience, niche)
+    const whoPays = r.who_pays_and_why || deriveWhoPaysAndWhy({ ...r, target_audience: targetAud, monthly_price: price }, niche)
+
+    // Dynamic feature pills strictly from tool_summary or AI key_features
+    const features = (Array.isArray(r.key_features) && r.key_features.length >= 3)
+      ? r.key_features.slice(0, 4)
+      : deriveFeaturesFromToolSummary(toolSummary, r.product_name, cat)
+
+    // Clean evidence to remove fabricated quotes
+    const cleanedEvidence = cleanEvidenceList(
+      Array.isArray(r.evidence) ? r.evidence : [],
+      creatorData?.comments || [],
+      creatorData?.recentPosts || []
+    )
 
     return {
       id: r.id || `rec-${index}`,
       type: config.type,
       name: r.product_name,
       tagline: r.tagline || 'Custom built for your audience',
-      description: r.tool_summary || r.description || 'A tailored subscription software app designed specifically for your audience.',
-      toolSummary: r.tool_summary || r.description || '',
+      description: toolSummary || 'A tailored subscription software app designed specifically for your audience.',
+      toolSummary: toolSummary,
       monthly_price: price,
       revenue: rev.formattedRange,
       revenueEstimate: rev,
@@ -819,10 +841,11 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
       icon: config.icon,
       primary: index === 0,
       preview: config.preview,
-      features: featuresMap[cat] || featuresMap.other,
+      features: features,
       rationale: r.rationale || '',
-      targetAudience: r.target_audience || '',
-      evidence: Array.isArray(r.evidence) ? r.evidence : [],
+      targetAudience: targetAud,
+      whoPaysAndWhy: whoPays,
+      evidence: cleanedEvidence,
       revenueModel: `$${price}/mo subscription`,
       raw: r
     }
@@ -977,7 +1000,7 @@ export default function Blueprint() {
       updateCreator({ recommendations: fallbacks })
       setQuotaWarning(
         recsJob.error?.includes('429') || recsJob.error?.includes('exceeded')
-          ? "API rate limit reached. Loaded verified subscription software templates." 
+          ? "API rate limit reached. Loaded estimated subscription software templates." 
           : "Failed to load live recommendations. Loaded default software templates."
       )
     }
@@ -991,7 +1014,9 @@ export default function Blueprint() {
 
   const selectedBlueprint = blueprints.find(b => b.id === selected) || blueprints[0]
   const activeBlueprint = selectedBlueprint || blueprints[0]
-  const otherOptions = blueprints.filter(b => b.id !== activeBlueprint.id)
+  const otherOptions = blueprints
+    .filter(b => b.id !== activeBlueprint.id)
+    .sort((a, b) => (b.fit || 0) - (a.fit || 0))
 
   const dynamicEngagement = getDynamicEngagementRate(creatorData)
   const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || 0)
@@ -1057,6 +1082,10 @@ export default function Blueprint() {
       engagementRate: dynamicEngagement || 3.5
     })
 
+    const targetAud = customTargetAudience.trim() || `${creatorName}'s audience`
+    const customFeatures = deriveFeaturesFromToolSummary(customSummary.trim(), customName.trim(), 'tool')
+    const whoPays = `${targetAud} paying $${price}/mo for automated tools and ongoing software utility.`
+
     const newBp = {
       id: customId,
       type: 'Software App',
@@ -1064,7 +1093,8 @@ export default function Blueprint() {
       tagline: 'Custom subscription software',
       description: customSummary.trim(),
       toolSummary: customSummary.trim(),
-      targetAudience: customTargetAudience.trim() || `${creatorName}'s audience`,
+      targetAudience: targetAud,
+      whoPaysAndWhy: whoPays,
       monthly_price: price,
       revenue: rev.formattedRange,
       revenueEstimate: rev,
@@ -1073,15 +1103,17 @@ export default function Blueprint() {
       icon: Globe,
       primary: true,
       preview: 'webapp',
-      features: ['Interactive workspace', 'Custom tool engine', 'Saved user projects', 'Cloud data sync'],
+      features: customFeatures,
       evidence: ['Custom software idea designed for audience recurring workflow'],
       revenueModel: `$${price}/mo subscription`,
       raw: {
-        schemaVersion: 2,
+        schemaVersion: 3,
         id: customId,
         product_name: customName.trim(),
         tool_summary: customSummary.trim(),
-        target_audience: customTargetAudience.trim() || `${creatorName}'s audience`,
+        target_audience: targetAud,
+        who_pays_and_why: whoPays,
+        key_features: customFeatures,
         monthly_price: price,
         product_category: 'tool'
       }
@@ -1435,6 +1467,7 @@ export default function Blueprint() {
                 creatorData={creatorData} 
                 activeBlueprint={activeBlueprint} 
                 accent={accent} 
+                fitScore={activeBlueprint.fit}
               />
             </div>
 
@@ -1458,6 +1491,22 @@ export default function Blueprint() {
                 Subscription software solving recurring problems your audience keeps asking about. Validated before building.
               </p>
             </div>
+
+            {/* Audience Scale Notice (< 20K followers) */}
+            {followersCount > 0 && followersCount < 20_000 && (
+              <div 
+                className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-none flex items-start gap-2.5 text-xs text-amber-200"
+                style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.18s' }}
+              >
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-amber-300">Audience Scale Notice: </span>
+                  <span>
+                    @{creatorName}'s audience ({followersCount.toLocaleString()} followers) is below the typical 20,000 follower threshold for software co-launch ventures. Estimated revenue figures reflect this smaller audience scale at standard conversion benchmarks.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Product Options Matrix */}
             <div 
@@ -1487,7 +1536,7 @@ export default function Blueprint() {
                       Target Audience: {activeBlueprint.targetAudience || 'Subscribers'}
                     </span>
                     <div className="px-2.5 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                      {activeBlueprint.fit}% Match
+                      {activeBlueprint.fit}% Estimated Fit
                     </div>
                   </div>
                 </div>
@@ -1521,6 +1570,19 @@ export default function Blueprint() {
                         </span>
                       ))}
                     </div>
+
+                    {/* Who Pays & Why */}
+                    {activeBlueprint.whoPaysAndWhy && (
+                      <div className="p-3 rounded-none bg-[#141822] border border-[#1f2433] space-y-1">
+                        <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
+                          <Users className="w-3 h-3" />
+                          <span>Who Pays &amp; Why</span>
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {activeBlueprint.whoPaysAndWhy}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Interactive Monthly Price Selector */}
                     <div className="pt-3 border-t border-[#1f2433] space-y-2.5">
@@ -1696,6 +1758,13 @@ export default function Blueprint() {
                         <div className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">
                           <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
                           <span className="line-clamp-2">{altReasons[0]}</span>
+                        </div>
+                      )}
+
+                      {blueprint.whoPaysAndWhy && (
+                        <div className="mt-2.5 text-[11px] text-slate-400 line-clamp-2">
+                          <span className="text-slate-500 font-medium">Buyer: </span>
+                          <span>{blueprint.whoPaysAndWhy}</span>
                         </div>
                       )}
                     </div>

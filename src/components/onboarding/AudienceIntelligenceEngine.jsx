@@ -30,9 +30,9 @@ import {
   Youtube
 } from 'lucide-react'
 import { searchGoogleApify, fetchCreatorComments } from '../../services/scraper'
-import { generateAudienceIntelligenceAI, getDynamicAudienceIntelligence, parseFollowerCount } from '../../services/ai'
+import { generateAudienceIntelligenceAI, getDynamicAudienceIntelligence, parseFollowerCount, normalizePainPoints } from '../../services/ai'
 
-export default function AudienceIntelligenceEngine({ creatorData, activeBlueprint, accent }) {
+export default function AudienceIntelligenceEngine({ creatorData, activeBlueprint, accent, fitScore }) {
   const brandRed = '#c81e3c'
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
@@ -41,6 +41,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || creatorData?.subscriberCount || 0)
   const engagementRate = parseFloat(creatorData?.engagementRate) || null
   const productName = activeBlueprint?.name || creatorData?.productName || 'Subscription Software Tool'
+  const unifiedFit = fitScore || activeBlueprint?.fit || 92
 
   // Active Tab State (10 Distinct Modules - Module 1: Channel Telemetry is default)
   const [activeTab, setActiveTab] = useState('telemetry')
@@ -67,12 +68,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       return creatorData.audienceIntelligence
     }
 
-    // 2. Check saved localStorage cache for this creator (must match schemaVersion: 2)
+    // 2. Check saved localStorage cache for this creator (must match schemaVersion: 3)
     try {
       const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (parsed && parsed.schemaVersion === 2 && parsed.telemetry && parsed.pain_points) {
+        if (parsed && parsed.schemaVersion === 3 && parsed.telemetry && parsed.pain_points) {
           return parsed
         }
       }
@@ -122,7 +123,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
         const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
         if (cached) {
           const parsed = JSON.parse(cached)
-          if (parsed && parsed.schemaVersion === 2 && parsed.telemetry && parsed.pain_points) {
+          if (parsed && parsed.schemaVersion === 3 && parsed.telemetry && parsed.pain_points) {
             setIntelligence(parsed)
             setIsAnalyzing(false)
             return
@@ -290,13 +291,13 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   // Modules Definition (Up to 10 Modules)
   const MODULES = [
     { id: 'telemetry', label: '1. Channel Telemetry', icon: Activity, badge: 'Scraped' },
-    { id: 'pain_points', label: '2. Pain Points & Needs', icon: Flame, badge: 'Top Signal' },
+    { id: 'pain_points', label: '2. Pain Points & Needs', icon: Flame, badge: 'Key Signals' },
     { id: 'requests', label: '3. Product & Tool Requests', icon: MessageSquare, badge: 'Community' },
     { id: 'transcripts', label: '4. Transcripts & Themes', icon: FileText, badge: 'NLP Cluster' },
     { id: 'demographics', label: '5. Demographics & Sentiment', icon: Users, badge: 'Audience' },
     { id: 'competitors', label: '6. Competitors & Gaps', icon: Search, badge: 'Market Index' },
     { id: 'purchasing', label: '7. Purchasing Intent', icon: CreditCard, badge: 'Commercial' },
-    { id: 'pmf', label: '8. PMF & Rationale', icon: Target, badge: `${intelligence?.pmf?.score || 96}% Fit` },
+    { id: 'pmf', label: '8. PMF & Rationale', icon: Target, badge: `${unifiedFit}% Estimated Fit` },
     { id: 'pricing', label: '9. Pricing & MRR Potential', icon: DollarSign, badge: 'Economics' },
     { id: 'evidence', label: '10. Evidence & Sources', icon: Database, badge: 'Direct Quotes' },
   ]
@@ -329,7 +330,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             Audience Intelligence &amp; Market Feasibility Analysis
           </h3>
           <p className="text-[11px] text-slate-400 leading-tight">
-            Synthesized across verified uploads, viewer comments, and search market benchmarks for @{handleClean}.
+            Inferred from channel content, uploads, and search market benchmarks for @{handleClean}.
           </p>
         </div>
 
@@ -349,7 +350,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
           <div className="px-2.5 py-1 bg-[#141a29] border border-white/10 rounded-none text-left shrink-0" style={{ borderRadius: '0px' }}>
             <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 leading-none">Feasibility Score</div>
-            <div className="text-xs font-bold text-emerald-400 mt-0.5 leading-none">{intel.pmf?.score || 92}% Estimated Fit</div>
+            <div className="text-xs font-bold text-emerald-400 mt-0.5 leading-none">{unifiedFit}% Estimated Fit</div>
           </div>
         </div>
       </div>
@@ -409,7 +410,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   <Activity size={15} className="text-rose-400" />
                   <span>Channel Telemetry &amp; Engagement Velocity</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">Verified public platform statistics extracted via channel telemetry.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Public platform statistics extracted via channel telemetry.</p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-none font-bold">
                 Telemetry Live
@@ -464,15 +465,15 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   <Flame size={15} className="text-rose-500" />
                   <span>Audience Pain Points &amp; Unmet Needs</span>
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">Synthesized via NLP clustering across verified audience comments for @{handleClean}.</p>
+                <p className="text-xs text-slate-400 mt-0.5">Inferred from channel content and audience comments for @{handleClean}.</p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-rose-500/15 text-rose-400 rounded-none font-bold">
-                High Commercial Urgency
+                Estimated Need
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {intel.pain_points.map((p, idx) => (
+              {normalizePainPoints(intel.pain_points || []).map((p, idx) => (
                 <div key={idx} className="p-4 bg-[#111624] rounded-none border-0 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -492,6 +493,10 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="text-[11px] text-slate-400 italic pt-1">
+              * Share of comments &amp; content signals mentioning each topic (signals may overlap).
             </div>
           </div>
         )}
@@ -872,7 +877,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                 </p>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] font-mono text-emerald-400 font-bold block">
-                    Verified Buying Intent
+                    Estimated Buying Intent
                   </span>
                   <a
                     href={`https://www.youtube.com/@${handleClean}`}
@@ -901,7 +906,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                 <p className="text-xs text-slate-400 mt-0.5">Why this specific software was chosen over courses, merch, or ebooks.</p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-none font-bold">
-                {intel.pmf.score}% Match Index
+                {unifiedFit}% Estimated Fit
               </span>
             </div>
 
@@ -1032,7 +1037,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             <div className="p-3.5 bg-[#0e131f] rounded-none border-0 flex items-center justify-between text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-emerald-400" />
-                <span>Audience provenance grounded in live channel metadata and verified telemetry.</span>
+                <span>Audience provenance grounded in channel metadata and platform telemetry.</span>
               </span>
               <span className="font-mono text-[11px] text-slate-500">v3.8 Provenance Protocol</span>
             </div>

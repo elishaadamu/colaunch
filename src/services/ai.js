@@ -7,8 +7,8 @@
  * Keys stored in localStorage — never sent to Forge servers.
  */
 
-import { getProjectAudienceGrounding, enrichTasksWithGrounding } from "../utils/audienceGrounding";
-import { parseConceptPricing } from "../utils/pricing";
+import { getProjectAudienceGrounding, enrichTasksWithGrounding } from "../utils/audienceGrounding.js";
+import { parseConceptPricing } from "../utils/pricing.js";
 import {
   calculateSubscriptionRevenue,
   clampPrice,
@@ -80,8 +80,8 @@ export async function ensureServerAiKeysLoaded(force = false) {
 
 // Auto-trigger loading of backend keys immediately on boot
 try {
-  ensureServerAiKeysLoaded().catch(() => {});
-} catch (_) {}
+  ensureServerAiKeysLoaded().catch(() => { });
+} catch (_) { }
 
 export function resetFailedAiKeys() {
   failedKeys.clear();
@@ -734,14 +734,14 @@ export function buildChannelNativeMarketingPack(creatorData) {
   const productName = creatorData?.productName || blueprint?.name || `${name} Pro Suite`
   const tagline = blueprint?.tagline || `The ultimate system built specifically for ${name}'s community`
   const productDesc = blueprint?.description || `A dedicated, high-tier platform engineered for ${name}'s audience in ${niche}`
-  const features = Array.isArray(blueprint?.features) && blueprint.features.length > 0 
-    ? blueprint.features 
+  const features = Array.isArray(blueprint?.features) && blueprint.features.length > 0
+    ? blueprint.features
     : [
-        'Interactive mastery curriculum & real-time feedback sandbox',
-        'Direct creator access & weekly live office hours',
-        'Production-ready templates & downloadable resource bundles',
-        'Exclusive private community & verified member certification'
-      ]
+      'Interactive mastery curriculum & real-time feedback sandbox',
+      'Direct creator access & weekly live office hours',
+      'Production-ready templates & downloadable resource bundles',
+      'Exclusive private community & verified member certification'
+    ]
   const revenueEst = blueprint?.revenue || '$45K–$120K / mo'
 
   const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('bro code')
@@ -763,10 +763,10 @@ export function buildChannelNativeMarketingPack(creatorData) {
   // Channel-specific Instagram caption
   const igCaption = `Today is the day. Over ${followers} of you have watched our videos, asked questions, and pushed for something bigger. Introducing ${productName} — your direct pipeline to mastering ${niche}. Link in bio to join the founding cohort! 🚀`
   const igHashtags = isCoding ? ['coding', 'developer', 'webdevelopment', 'learnprogramming', 'softwareengineer', 'code'] :
-                     isCooking ? ['culinary', 'recipes', 'homechef', 'cookingchallenge', 'mealkit', 'foodie'] :
-                     isGaming ? ['gaming', 'gamercommunity', 'esports', 'twitchstreamer', 'gamersunite', 'gameplay'] :
-                     isFitness ? ['fitnessjourney', 'training', 'workoutmotivation', 'athlete', 'fitfam', 'coaching'] :
-                     ['creator', 'entrepreneur', 'masterclass', 'community', 'growth', 'launch']
+    isCooking ? ['culinary', 'recipes', 'homechef', 'cookingchallenge', 'mealkit', 'foodie'] :
+      isGaming ? ['gaming', 'gamercommunity', 'esports', 'twitchstreamer', 'gamersunite', 'gameplay'] :
+        isFitness ? ['fitnessjourney', 'training', 'workoutmotivation', 'athlete', 'fitfam', 'coaching'] :
+          ['creator', 'entrepreneur', 'masterclass', 'community', 'growth', 'launch']
 
   // Channel-specific Twitter thread
   const tweets = [
@@ -778,9 +778,9 @@ export function buildChannelNativeMarketingPack(creatorData) {
 
   // Channel-specific TikTok hook & script
   const ttHook = isCoding ? "Stop watching tutorials if you want to get hired as a developer." :
-                 isCooking ? "Stop buying grocery store ingredients that go bad in 3 days." :
-                 isFitness ? "Stop switching workout routines every 2 weeks." :
-                 `The biggest mistake ${followers} viewers make in ${niche}.`
+    isCooking ? "Stop buying grocery store ingredients that go bad in 3 days." :
+      isFitness ? "Stop switching workout routines every 2 weeks." :
+        `The biggest mistake ${followers} viewers make in ${niche}.`
   const ttScript = `[HOOK — CAMERA ZOOM IN]\n${ttHook}\n\n[CUT TO WORKSPACE / PRODUCT DEMO]\nI've seen thousands of comments asking the same thing. You watch the video, feel inspired, but when it's time to execute, you're on your own.\n\n[HIGHLIGHT SCREEN]\nThat's why I built "${productName}". Instead of generic advice, you get ${features[0] || 'an interactive sandbox'}.\n\n[POINT TO BIO]\nFounding access just went live. Check the link in my bio to get in before spots fill up!`
 
   // 8-Slide Executive Pitch Deck
@@ -1102,7 +1102,7 @@ export async function generateTodayPrioritiesAI(creatorData, signal = undefined)
   const productName = creatorData.productName || "Creator Academy";
   const blueprint = creatorData.blueprint;
   const productDesc = blueprint?.description || `a premium ${niche} product`;
-  
+
   // Recent videos / posts context from onboarding
   const postList = (creatorData.recentPosts || creatorData.recentVideos || creatorData.videos || [])
   const recentVids = postList
@@ -1428,7 +1428,7 @@ export async function generateProductImageWithOpenAI(
       try {
         const errText = await res.text();
         if (errText) errMsg = errText.slice(0, 200);
-      } catch (__) {}
+      } catch (__) { }
     }
 
     console.warn(`[Forge] DALL-E 3 API returned status ${res.status}:`, errMsg);
@@ -1444,7 +1444,7 @@ export async function generateProductImageWithOpenAI(
           if (inMemoryAiKeys.openaiKey === openaiKey) {
             inMemoryAiKeys.openaiKey = "";
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       throw new Error(`OpenAI Key Expired: ${errMsg}`);
     }
@@ -1473,7 +1473,7 @@ export async function generateProductImageWithOpenAI(
           if (data2?.data?.[0]?.url) return data2.data[0].url;
           if (data2?.data?.[0]?.b64_json) return `data:image/png;base64,${data2.data[0].b64_json}`;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     throw new Error(`OpenAI DALL-E Error (${res.status}): ${errMsg}`);
@@ -1517,7 +1517,7 @@ async function saveImageToBackendMedia(imageResult) {
 export async function generateProductImage(creatorData, optionsOrSignal = {}) {
   try {
     await ensureServerAiKeysLoaded();
-  } catch (_) {}
+  } catch (_) { }
 
   const isSignal = optionsOrSignal && typeof optionsOrSignal === 'object' && 'aborted' in optionsOrSignal;
   const options = isSignal ? {} : (optionsOrSignal || {});
@@ -1809,6 +1809,222 @@ Return exactly this JSON:
   }
 }
 
+// ── Quality Gate & Evidence Validation Helpers ────────────────────────────────
+
+export function normalizePainPoints(painPoints) {
+  if (!Array.isArray(painPoints) || painPoints.length === 0) return [];
+  const valid = painPoints.map(p => ({
+    ...p,
+    percentage: Math.max(1, Math.round(Number(p.percentage) || 0))
+  }));
+
+  const total = valid.reduce((acc, p) => acc + p.percentage, 0);
+  if (total > 100) {
+    let running = 0;
+    return valid.map((p, idx) => {
+      if (idx === valid.length - 1) {
+        const remaining = Math.max(5, 100 - running);
+        return { ...p, percentage: remaining };
+      }
+      const scaled = Math.max(5, Math.round((p.percentage / total) * 100));
+      running += scaled;
+      return { ...p, percentage: scaled };
+    });
+  }
+  return valid;
+}
+
+export function sanitizeTargetAudience(target, niche = 'Software & Workflow') {
+  if (!target || typeof target !== 'string') return `${niche} professionals and active practitioners`;
+  let clean = target.trim();
+
+  // Rewrite vague phrases like "followers seeking resource consolidation" or "YouTube followers"
+  if (/followers seeking resource consolidation/i.test(clean)) {
+    return 'Project coordinators, field officers, and team leads';
+  }
+  if (/followers seeking/i.test(clean)) {
+    clean = clean.replace(/^.*followers seeking\s*/i, 'Practitioners needing ');
+  }
+  clean = clean.replace(/^(youtube\s+)?followers(\s+seeking\s+.*)?$/i, '');
+  clean = clean.replace(/seeking resource consolidation/i, 'Coordinators managing distributed assets and data');
+
+  if (!clean || clean.length < 5) {
+    clean = `${niche} practitioners, coordinators, and active operators`;
+  }
+  return clean;
+}
+
+export function deriveWhoPaysAndWhy(rec, niche = 'Software & Workflow') {
+  if (rec.who_pays_and_why && typeof rec.who_pays_and_why === 'string' && rec.who_pays_and_why.trim().length > 15) {
+    return rec.who_pays_and_why.trim();
+  }
+  const price = rec.monthly_price || 19;
+  const target = sanitizeTargetAudience(rec.target_audience, niche);
+  return `${target} who face recurring manual friction, paying $${price}/mo for automated tools, verified benchmarks, and continuous updates.`;
+}
+
+export function calibrateProductPricing(rec) {
+  let price = clampPrice(rec.monthly_price || 19);
+  const name = (rec.product_name || '').toLowerCase();
+  const summary = (rec.tool_summary || rec.description || '').toLowerCase();
+
+  // Simple link hubs or directories clamped to $9/mo entry tier
+  if (name.includes('link hub') || summary.includes('all video resources, links, and mentions') || summary.includes('link directory')) {
+    price = 9;
+  }
+  return price;
+}
+
+export function deriveFeaturesFromToolSummary(summary = '', name = '', category = 'tool') {
+  const text = `${name}. ${summary}`.toLowerCase();
+  const features = [];
+
+  if (text.includes('link') || text.includes('resource') || text.includes('hub')) {
+    features.push('Centralized resource hub', 'Searchable link directory', 'Regular asset updates', 'Fast workflow shortcuts');
+  } else if (text.includes('feedback') || text.includes('inquiry') || text.includes('portal') || text.includes('q&a')) {
+    features.push('Direct subscriber Q&A', 'Priority feedback queue', 'Searchable answer archive', 'Monthly live interaction');
+  } else if (text.includes('calc') || text.includes('formula') || text.includes('scenario') || text.includes('estimator')) {
+    features.push('Instant formula solver', 'Custom scenario modeling', 'Exportable reports', 'Saved user profiles');
+  } else if (text.includes('track') || text.includes('log') || text.includes('metric') || text.includes('benchmark')) {
+    features.push('Daily progress logging', 'Community benchmark data', 'Goal milestones', 'Automated progress reports');
+  } else if (text.includes('data') || text.includes('survey') || text.includes('field') || text.includes('monitoring') || text.includes('wash') || text.includes('water')) {
+    features.push('Field data collection', 'Indicator tracking', 'Automated data summaries', 'Exportable datasets (CSV/GeoJSON)');
+  } else if (text.includes('automation') || text.includes('workflow') || text.includes('engine')) {
+    features.push('Automated workflow engine', 'Preset task triggers', 'Custom integrations', 'Activity audit log');
+  } else {
+    const words = summary.replace(/[.,]/g, '').split(' ').filter(w => w.length > 4);
+    if (words.length >= 3) {
+      const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+      features.push(
+        `${cap(words[0])} workspace`,
+        `Automated ${words[1] || 'workflow'} tools`,
+        `Dedicated subscriber portal`,
+        `Saved user configurations`
+      );
+    } else {
+      features.push('Interactive subscriber workspace', 'Automated workflow tools', 'Member cloud sync', 'Regular software updates');
+    }
+  }
+
+  return features.slice(0, 4);
+}
+
+export function cleanEvidenceList(evidenceList, realComments = [], recentPosts = []) {
+  if (!Array.isArray(evidenceList)) return [];
+
+  const knownRealTexts = [
+    ...realComments.map(c => String(c?.text || c?.comment || c?.quote || '').toLowerCase()),
+    ...recentPosts.map(p => String(p?.title || '').toLowerCase())
+  ].filter(t => t.length > 5);
+
+  const cleaned = [];
+
+  for (const item of evidenceList) {
+    if (!item || typeof item !== 'string') continue;
+    const str = item.trim();
+
+    // Check if it has a quote in quotation marks: "..."
+    const quoteMatch = str.match(/["'“]([^"'“”]{4,})["'”]/);
+    if (quoteMatch) {
+      const quotedContent = quoteMatch[1].toLowerCase().trim();
+      const isReal = knownRealTexts.some(real => real.includes(quotedContent) || quotedContent.includes(real));
+      if (!isReal) {
+        // Drop fabricated quote, preserve topical prefix if valid
+        const prefix = str.split(/["'“]/)[0].replace(/:\s*$/, '').trim();
+        if (prefix && prefix.length > 10 && !prefix.toLowerCase().includes('recurring audience question') && !prefix.toLowerCase().includes('recurring question')) {
+          cleaned.push(prefix);
+        }
+        continue;
+      }
+    }
+
+    if (/recurring (audience )?question:\s*$/i.test(str)) continue;
+    cleaned.push(str);
+  }
+
+  return cleaned;
+}
+
+export function validateRecommendationQualityGate(item, creatorData = {}, intel = null) {
+  if (!item || typeof item !== 'object') return false;
+
+  const name = String(item.product_name || '').trim();
+  const summary = String(item.tool_summary || item.description || '').trim();
+  const cat = String(item.product_category || '').toLowerCase().trim();
+  const targetAudience = String(item.target_audience || '').trim();
+  const combined = `${name} ${summary} ${cat} ${targetAudience}`.toLowerCase();
+
+  // 1. Must have a real product name and summary
+  if (!name || name.length < 3 || name.toLowerCase().includes('placeholder')) return false;
+  if (!summary || summary.length < 10) return false;
+
+  // 2. Reject courses, content, guides, curriculums, pathways (Issue 6)
+  const CONTENT_PATTERNS = [
+    /\bguide\b/i,
+    /\bguides\b/i,
+    /\bpathway\b/i,
+    /\bpathways\b/i,
+    /\bstep-by-step\b/i,
+    /\bcurriculum\b/i,
+    /\blesson\b/i,
+    /\blessons\b/i,
+    /\bcourse\b/i,
+    /\bcourses\b/i,
+    /\bmasterclass\b/i,
+    /\bcohort\b/i,
+    /\bacademy\b/i,
+    /\bworkbook\b/i,
+    /\bebook\b/i,
+    /\bnewsletter\b/i,
+    /\bconsulting\b/i,
+    /\bcoaching\b/i,
+    /\breading material\b/i,
+    /\bvideo training\b/i,
+    /\blearning pathway\b/i
+  ];
+  for (const pat of CONTENT_PATTERNS) {
+    if (pat.test(name) || pat.test(summary)) {
+      return false;
+    }
+  }
+
+  // 3. Must describe interactive software
+  const SOFTWARE_KEYWORDS = [
+    'tool', 'tracker', 'calculator', 'dashboard', 'automation', 'app', 'platform',
+    'portal', 'engine', 'hub', 'workspace', 'database', 'system', 'software',
+    'analytics', 'generator', 'solver', 'sync', 'builder', 'manager', 'repository'
+  ];
+  const hasSoftwareConcept = SOFTWARE_KEYWORDS.some(k => combined.includes(k));
+  if (!hasSoftwareConcept) return false;
+
+  // 4. Relevance check against the creator's niche / channel content (Issue 5)
+  const creatorNiche = String(creatorData.niche || creatorData.category || '').toLowerCase();
+  const creatorBio = String(creatorData.description || '').toLowerCase();
+  const videoTitles = (creatorData.recentPosts || []).map(p => String(p.title || '')).join(' ').toLowerCase();
+  const channelContext = `${creatorNiche} ${creatorBio} ${videoTitles}`;
+
+  // If creator is Akvo / development data, reject children's learning / K-12 education based on stray spam comment
+  const isDevOrData = channelContext.includes('international development') || channelContext.includes('akvo') || channelContext.includes('water') || channelContext.includes('wash') || channelContext.includes('data');
+  if (isDevOrData) {
+    if (combined.includes('children') || combined.includes('kids') || combined.includes('engaged learning for all') || combined.includes('study purpiz') || combined.includes('childhood')) {
+      return false;
+    }
+  }
+
+  if (channelContext.length > 15) {
+    const isCrypto = combined.includes('crypto') || combined.includes('bitcoin') || combined.includes('nft');
+    if (isCrypto && !channelContext.includes('crypto') && !channelContext.includes('web3') && !channelContext.includes('finance')) {
+      return false;
+    }
+    const isFitness = combined.includes('workout') || combined.includes('macro') || combined.includes('gym');
+    if (isFitness && !channelContext.includes('fitness') && !channelContext.includes('health') && !channelContext.includes('gym')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function generateRecommendationsAI(
   creatorData,
   signal = undefined,
@@ -1832,8 +2048,13 @@ export async function generateRecommendationsAI(
   if (!intel && typeof localStorage !== 'undefined') {
     try {
       const cached = localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
-      if (cached) intel = JSON.parse(cached);
-    } catch {}
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.schemaVersion === 3) {
+          intel = parsed;
+        }
+      }
+    } catch { }
   }
 
   const painPointsList = (intel?.pain_points || [])
@@ -1846,55 +2067,66 @@ export async function generateRecommendationsAI(
     .join("\n");
   const recurringQuestions = (intel?.transcripts?.recurring_questions || [])
     .slice(0, 3)
-    .map((q) => `- "${q}"`)
+    .map((q) => `- ${q}`)
     .join("\n");
 
   const audienceSignalsContext = `
-VERIFIED AUDIENCE PAIN POINTS (from comments):
-${painPointsList || "- Repetitive community questions asking for structured workflows and tracking"}
+AUDIENCE PAIN POINTS (from comments & content):
+${painPointsList || "- Community demand for structured workflows, tracking, and automated calculation"}
 
-VERIFIED AUDIENCE TOOL REQUESTS:
+AUDIENCE TOOL REQUESTS:
 ${toolRequestsList || "- Viewers asking for interactive calculators, templates, and automated tools"}
-
-RECURRING AUDIENCE QUESTIONS:
-${recurringQuestions || "- 'What exact setup/method do you recommend and where can we access it?'"}`;
+${recurringQuestions ? `\nRECURRING AUDIENCE INQUIRIES:\n${recurringQuestions}` : ""}`;
 
   const system = `You are a world-class creator software product strategist for CoLaunch (co-launch.app).
 CoLaunch partners 50/50 with online creators to build, deploy, and operate custom subscription software apps that their audience pays a monthly fee for ($9 to $29/mo).
 A product solves ONE recurring problem the audience keeps asking the creator about.
 DO NOT recommend courses, academies, video lessons, PDF downloads, ebooks, coaching sessions, consulting, newsletters, or physical products.
-ONLY recommend subscription software tools: calculators, trackers, planners, web apps, automated dashboards, mobile apps, or workflow engines.
+DO NOT recommend step-by-step guides, pathways, curriculums, tutorials, or educational reading materials.
+ONLY recommend interactive subscription software tools: calculators, trackers, planners, web apps, automated dashboards, mobile apps, or workflow engines.
+NEVER invent or fabricate quoted viewer questions. If no real verbatim quote exists, state the demand topic without quotation marks.
+NEVER base ideas on stray or spam comments that contradict the creator's core niche (e.g. ignore random kids/children comments on an international development channel).
 Return ONLY a valid JSON object containing a "recommendations" array. Ensure all string values are properly escaped and contain no raw newlines.`;
 
-  const prompt = `Generate exactly 4 subscription software product recommendations for:
+  const prompt = `Generate subscription software product recommendations for:
 Creator: ${name} (${handle})
 Platform: ${platform} (${followers} followers, ${engRate}% engagement)
 Niche: ${niche}${bio}
 ${audienceSignalsContext}
 
 CRITICAL RULES:
-1. Every product MUST be an interactive subscription software tool or web app (not a course, ebook, coaching, or newsletter).
+1. Every product MUST be an interactive subscription software tool or web app (not a course, ebook, coaching, newsletter, guide, or pathway).
 2. Choose from categories: "tool", "calculator", "tracker", "planner", "community", "mobile_app", "dashboard", "marketplace", "automation", "creator_tool".
-3. Ground each product in the audience pain points and requests listed above.
-4. Provide a suggested monthly subscription price between 9 and 29 (e.g. 15, 19, 24, 29).
-5. Provide 1–2 specific evidence bullets matching the audience pain points or requests.
+3. Ground each product strictly in the creator's real niche and audience pain points.
+4. Provide a suggested monthly subscription price between 9 and 29:
+   - For simple link hubs or directories: price at $9/mo.
+   - For automated calculators, trackers, or workflow engines: price between $15 and $29/mo based on recurring software value.
+5. Provide a concrete buyer persona in "target_audience" (e.g. "Field M&E Officers and WASH Program Managers", NOT vague phrases like "followers seeking X").
+6. Provide a "who_pays_and_why" sentence: the specific buyer, their recurring friction, and why they pay a monthly subscription.
+7. Provide "key_features": exactly 3 to 4 specific software capabilities derived strictly from what this tool does.
+8. Provide 1–2 specific evidence bullets matching real channel topics without inventing fake quotes.
 
 Return exactly this JSON structure:
 {
   "recommendations": [
     {
-      "product_name": "Software Tool Name (creative and specific, no placeholders)",
+      "product_name": "Software Tool Name (specific and functional)",
       "product_category": "tool",
       "tool_summary": "One sentence explaining what the software application does for the user",
       "tagline": "Catchy 5-8 word tagline",
       "description": "2-sentence clear explanation of how the subscriber uses this tool to solve their recurring problem",
-      "target_audience": "Specific audience segment who pays for this tool",
+      "target_audience": "Concrete buyer persona",
+      "who_pays_and_why": "Who pays, their recurring friction, and why they pay monthly",
+      "key_features": [
+        "Feature 1 specific to this tool",
+        "Feature 2 specific to this tool",
+        "Feature 3 specific to this tool"
+      ],
       "monthly_price": 19,
       "evidence": [
-        "42% of viewer comments request an automated way to track X",
-        "Recurring question: 'How do you organize your workflow?'"
+        "38% of comments and video topics indicate demand for automated data consolidation"
       ],
-      "confidence_score": 0.94
+      "confidence_score": 0.92
     }
   ]
 }
@@ -1943,14 +2175,21 @@ Calculate distinct confidence scores between 0.70 and 0.98. Do NOT use static 0.
     if (Array.isArray(recsList) && recsList.length > 0) {
       const cleanName = creatorData.name || cleanHandle || "";
 
+      // Real scraped comments / posts for quote validation
+      const realComments = [
+        ...(Array.isArray(creatorData?.comments) ? creatorData.comments : []),
+        ...(Array.isArray(creatorData?.channelComments) ? creatorData.channelComments : []),
+      ];
+      const recentPosts = Array.isArray(creatorData?.recentPosts) ? creatorData.recentPosts : [];
+
       // Available fallback evidence items from intelligence
       const fallbackEvidence = [
         ...(intel?.pain_points || []).map(p => `${p.percentage || 35}% of comments: ${p.title}`),
-        ...(intel?.requests || []).map(r => `Community request: "${r.quote || r.title}"`),
-        `Recurring community question in ${niche}`
+        ...(intel?.requests || []).map(r => `Community request: ${r.title}`),
+        `Recurring community inquiry regarding ${niche} tools`
       ];
 
-      return recsList.map((item, idx) => {
+      const mapped = recsList.map((item, idx) => {
         let conf = parseFloat(item.confidence_score ?? item.confidenceScore ?? item.fit);
         if (!isNaN(conf) && conf > 1) conf = conf / 100;
         if (isNaN(conf) || conf < 0.5 || conf > 0.99) {
@@ -1964,43 +2203,53 @@ Calculate distinct confidence scores between 0.70 and 0.98. Do NOT use static 0.
           conf = idx === 0 ? calibratedTop : parseFloat(Math.max(0.68, calibratedTop - (idx * 0.07)).toFixed(2));
         }
 
-        const price = clampPrice(item.monthly_price || item.monthlyPrice || (idx === 0 ? 19 : idx === 1 ? 24 : idx === 2 ? 15 : 29));
+        const rawPrice = item.monthly_price || item.monthlyPrice || (idx === 0 ? 19 : idx === 1 ? 24 : idx === 2 ? 15 : 29);
+        const price = calibrateProductPricing({ ...item, monthly_price: rawPrice });
         const revEst = calculateSubscriptionRevenue({
           audience: followersCount,
           monthlyPrice: price,
           engagementRate: engRate,
         });
 
-        // Ensure sanitized category (no courses or physical goods)
+        // Ensure sanitized category (no courses, guides, or physical goods)
         let cat = String(item.product_category || 'tool').toLowerCase();
-        if (['course', 'coaching', 'consulting', 'newsletter', 'physical_product'].includes(cat)) {
+        if (['course', 'coaching', 'consulting', 'newsletter', 'physical_product', 'guide', 'pathway'].includes(cat)) {
           cat = idx === 0 ? 'tool' : idx === 1 ? 'tracker' : idx === 2 ? 'calculator' : 'community';
         }
 
-        // Validate and ensure genuine evidence
-        let itemEvidence = Array.isArray(item.evidence) && item.evidence.length > 0
-          ? item.evidence.filter(Boolean).slice(0, 2)
-          : [];
+        const toolSummary = item.tool_summary || item.description || item.tagline || `Automated subscription software solving ${niche} challenges.`;
+        const productName = item.product_name || `${name} Tool OS`;
+
+        // Clean evidence: drop fabricated quotes
+        let itemEvidence = cleanEvidenceList(item.evidence, realComments, recentPosts);
         if (itemEvidence.length === 0) {
           itemEvidence = fallbackEvidence.slice(idx % fallbackEvidence.length, (idx % fallbackEvidence.length) + 2);
           if (itemEvidence.length === 0) {
-            itemEvidence = [`Audience signal: High demand for automated ${niche} solutions`];
+            itemEvidence = [`Audience signal: Demand for automated ${niche} software tooling`];
           }
         }
 
-        const toolSummary = item.tool_summary || item.description || item.tagline || `Automated subscription software solving ${niche} challenges.`;
+        // Feature pills: derived strictly from tool_summary or AI features
+        const features = (Array.isArray(item.key_features) && item.key_features.length >= 3)
+          ? item.key_features.slice(0, 4)
+          : deriveFeaturesFromToolSummary(toolSummary, productName, cat);
+
+        const targetAudience = sanitizeTargetAudience(item.target_audience, niche);
+        const whoPaysAndWhy = deriveWhoPaysAndWhy({ ...item, monthly_price: price, target_audience: targetAudience }, niche);
 
         return {
-          schemaVersion: 2,
+          schemaVersion: 3,
           id: item.id || `rec-${idx}`,
-          product_name: item.product_name || `${name} Tool OS`,
+          product_name: productName,
           product_category: cat,
           tool_summary: toolSummary,
           tagline: item.tagline || 'Subscription software for your audience',
           description: item.description || toolSummary,
-          target_audience: item.target_audience || `${niche} practitioners and community members`,
+          target_audience: targetAudience,
+          who_pays_and_why: whoPaysAndWhy,
+          key_features: features,
           monthly_price: price,
-          evidence: itemEvidence,
+          evidence: itemEvidence.slice(0, 2),
           confidence_score: conf,
           revenue_estimate: revEst,
           revenue_potential: revEst.formattedRange,
@@ -2010,9 +2259,19 @@ Calculate distinct confidence scores between 0.70 and 0.98. Do NOT use static 0.
           forCreator: cleanName,
         };
       });
+
+      // Filter strictly through quality gate: reject off-niche and content/course ideas
+      const validRecs = mapped.filter(item => validateRecommendationQualityGate(item, creatorData, intel));
+
+      // If fewer than 4 pass, return fewer. Never pad the list!
+      if (validRecs.length > 0) {
+        return validRecs;
+      }
     }
 
-    throw new Error("AI returned unrecognisable format");
+    // If AI failed or all recommendations failed the quality gate, return clean fallbacks
+    const cleanFallbacks = getFallbackCleanRecommendations(creatorData);
+    return cleanFallbacks.filter(item => validateRecommendationQualityGate(item, creatorData, intel));
   } catch (err) {
     if (err.name === "AbortError") throw err;
     console.error("AI failed for recommendations:", err);
@@ -2075,10 +2334,10 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
   const avgViewsStr = avgViewsNum >= 1_000_000
     ? `${(avgViewsNum / 1_000_000).toFixed(1)}M views`
     : avgViewsNum >= 1_000
-    ? `${Math.round(avgViewsNum / 1_000)}K views`
-    : avgViewsNum > 0
-    ? `${avgViewsNum} views`
-    : 'Estimated from niche benchmarks';
+      ? `${Math.round(avgViewsNum / 1_000)}K views`
+      : avgViewsNum > 0
+        ? `${avgViewsNum} views`
+        : 'Estimated from niche benchmarks';
 
   // Growth rate and sentiment
   const growthRate = `+${(10 + Math.round(eng * 1.2)).toFixed(1)}% YoY Growth (est.)`;
@@ -2159,7 +2418,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
       let domain = 'Google Search Verified';
       try {
         if (s.url) domain = new URL(s.url).hostname.replace(/^www\./, '');
-      } catch {}
+      } catch { }
 
       list.push({
         title: s.title || `Market Demand: ${name}`,
@@ -2270,7 +2529,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
     ];
   } else if (isTech) {
     const isGadgetOrMkbhd = cleanHandle.includes('mkbhd') || cleanHandle.includes('marques') || name.toLowerCase().includes('marques') || rawNiche.includes('gadget') || rawNiche.includes('phone') || rawNiche.includes('hardware');
-    
+
     if (isGadgetOrMkbhd) {
       personas = [
         { role: 'Prosumers & Tech Enthusiasts', percentage: 49, description: 'Early adopters seeking unbiased hardware benchmarks, camera shootouts, and battery analytics.' },
@@ -2454,6 +2713,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
   }));
 
   return {
+    schemaVersion: 3,
     telemetry: {
       subscribers: fmtFollowers,
       avg_views: avgViewsStr,
@@ -2462,7 +2722,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
       growth_rate_yoy: growthRate,
       retention_analysis: `Videos in @${name}'s catalog demonstrate an evergreen playback tail: 64% of total views originate from searches and repeat streams, confirming sustained audience reliance.`,
     },
-    pain_points: painPoints,
+    pain_points: normalizePainPoints(painPoints),
     requests: requests,
     transcripts: {
       themes: themes,
@@ -2750,7 +3010,7 @@ Return ONLY a valid JSON object matching this exact schema:
       }
 
       if (parsed.purchasing && typeof parsed.purchasing === 'object') {
-        const isHallucinatedQuote = !parsed.purchasing.buyer_quote 
+        const isHallucinatedQuote = !parsed.purchasing.buyer_quote
           || parsed.purchasing.buyer_quote.includes('Take my money')
           || parsed.purchasing.buyer_quote.includes('Gladly pay')
           || parsed.purchasing.buyer_quote.includes('Verbatim quote');
@@ -2759,7 +3019,11 @@ Return ONLY a valid JSON object matching this exact schema:
         }
       }
 
-      parsed.schemaVersion = 2;
+      if (Array.isArray(parsed.pain_points)) {
+        parsed.pain_points = normalizePainPoints(parsed.pain_points);
+      }
+
+      parsed.schemaVersion = 3;
       return parsed;
     }
   } catch (err) {
@@ -2767,28 +3031,24 @@ Return ONLY a valid JSON object matching this exact schema:
     console.warn('[Forge] AI intelligence synthesis notice, using dynamic telemetry generator:', err?.message || err);
   }
 
-  dynamicFallback.schemaVersion = 2;
+  dynamicFallback.schemaVersion = 3;
   return dynamicFallback;
 }
 
 /**
  * Validates whether a set of recommendations genuinely belongs to the current creator,
  * rejecting stale items from prior sessions (e.g., MrBeast recommendations showing for another creator).
- */
-/**
- * Validates whether a set of recommendations genuinely belongs to the current creator
- * and conforms strictly to the v2 subscription software schema.
- * Reject stale legacy items (courses, consulting, one-time files) or older schema versions.
+ * Requires v3 subscription software schema and passes quality gate filters.
  */
 export function areRecsValidForCreator(recs, creatorData) {
   if (!recs || !Array.isArray(recs) || recs.length === 0) return false;
 
-  // Schema version requirement: must be v2 subscription software shape
-  if (!recs.every((r) => r && r.schemaVersion === 2)) {
+  // Schema version requirement: must be v3 subscription software shape
+  if (!recs.every((r) => r && r.schemaVersion === 3)) {
     return false;
   }
 
-  // Banned legacy categories: courses, coaching, newsletters, physical merchandise, one-time stores
+  // Banned legacy categories: courses, coaching, newsletters, physical merchandise, one-time stores, guides
   const BANNED_CATEGORIES = new Set([
     "course",
     "academy",
@@ -2800,15 +3060,18 @@ export function areRecsValidForCreator(recs, creatorData) {
     "digital_product",
     "store",
     "ebook",
+    "guide",
+    "pathway"
   ]);
 
-  // Reject placeholder items or items with missing required fields
+  // Reject placeholder items or items that fail the quality gate
   for (const r of recs) {
     if (!r) return false;
     const cat = String(r.product_category || "").toLowerCase();
     if (BANNED_CATEGORIES.has(cat)) return false;
     if (!r.product_name || !r.tool_summary || !r.monthly_price) return false;
     if (r.product_name.includes("[Placeholder]") || r.product_name.includes("Placeholder")) return false;
+    if (!validateRecommendationQualityGate(r, creatorData)) return false;
   }
 
   const currentHandle = (creatorData?.handle || "")
@@ -2858,7 +3121,7 @@ export function areRecsValidForCreator(recs, creatorData) {
 
 /**
  * Returns dynamic, clean fallback recommendations personalized to the active creator
- * adhering strictly to the v2 subscription software schema.
+ * adhering strictly to the v3 subscription software schema.
  */
 export function getFallbackCleanRecommendations(creatorData = {}) {
   const name = creatorData.name || creatorData.handle?.replace("@", "") || "Creator";
@@ -2878,15 +3141,18 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   if (!intel && typeof localStorage !== 'undefined') {
     try {
       const cached = localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
-      if (cached) intel = JSON.parse(cached);
-    } catch {}
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.schemaVersion === 3) intel = parsed;
+      }
+    } catch { }
   }
 
   const p1Evidence = intel?.pain_points?.[0]
-    ? `${intel.pain_points[0].percentage || 40}% of comments: ${intel.pain_points[0].title}`
+    ? `${intel.pain_points[0].percentage || 38}% of comments: ${intel.pain_points[0].title}`
     : `Audience demand for automated ${niche} workflow tooling`;
   const r1Evidence = intel?.requests?.[0]
-    ? `Community request: "${intel.requests[0].quote || intel.requests[0].title}"`
+    ? `Community request: ${intel.requests[0].title}`
     : `Recurring community inquiries regarding organized systems`;
 
   const rev1 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 19, engagementRate: eng });
@@ -2894,16 +3160,28 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   const rev3 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 15, engagementRate: eng });
   const rev4 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 29, engagementRate: eng });
 
+  const targetRole1 = `${niche} operators, coordinators, and active practitioners`;
+  const targetRole2 = `Active ${niche} community members tracking milestones`;
+  const targetRole3 = `Practitioners requiring rapid calculations and decision support`;
+  const targetRole4 = `Dedicated members requiring direct tools and community collaboration`;
+
   return [
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: "fallback-tool",
       product_name: `${name} Studio OS`,
       product_category: "tool",
       tool_summary: `A dedicated cloud workspace and interactive workflow dashboard for ${niche} practitioners.`,
       tagline: `Your complete ${niche} command center`,
       description: `A branded cloud application giving subscribers instant access to curated templates, automated calculations, and project tracking built by ${name}.`,
-      target_audience: `${niche} enthusiasts, professionals, and students`,
+      target_audience: targetRole1,
+      who_pays_and_why: `${targetRole1} paying $19/mo to automate repetitive tasks and access curated tools.`,
+      key_features: [
+        'Interactive cloud workspace',
+        'Automated workflow triggers',
+        'Saved user configurations',
+        'Continuous software updates'
+      ],
       monthly_price: 19,
       evidence: [p1Evidence, r1Evidence],
       confidence_score: topScore,
@@ -2915,16 +3193,23 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       forCreator: name,
     },
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: "fallback-tracker",
       product_name: `${name} Performance Tracker`,
       product_category: "tracker",
       tool_summary: `Interactive database and milestone logging software answering repetitive community benchmarking questions.`,
       tagline: `Real-time analytics and tracking for ${niche}`,
       description: `Subscribers log daily metrics, compare their progress against verified benchmarks, and receive personalized progress recommendations.`,
-      target_audience: `Active ${niche} community members tracking progress`,
+      target_audience: targetRole2,
+      who_pays_and_why: `${targetRole2} paying $24/mo to benchmark progress against community data and receive automated milestone reports.`,
+      key_features: [
+        'Daily progress logging',
+        'Community benchmark data',
+        'Goal milestone alerts',
+        'Automated progress reports'
+      ],
       monthly_price: 24,
-      evidence: [r1Evidence, `High audience affinity for verified benchmarking data`],
+      evidence: [r1Evidence, `Audience interest in verified benchmarking data`],
       confidence_score: score2,
       revenue_estimate: rev2,
       revenue_potential: rev2.formattedRange,
@@ -2934,14 +3219,21 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       forCreator: name,
     },
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: "fallback-calc",
       product_name: `${name} Workflow Calculator`,
       product_category: "calculator",
       tool_summary: `Specialized web utility that runs instant estimations, formulas, and asset recommendations.`,
       tagline: `Instant calculations and decision support for ${niche}`,
       description: `A fast web utility helping followers make confident buying and technical decisions in seconds without manual spreadsheets.`,
-      target_audience: `Followers seeking rapid decision support and formulas`,
+      target_audience: targetRole3,
+      who_pays_and_why: `${targetRole3} paying $15/mo to replace messy spreadsheets with instant scenario modeling and exportable reports.`,
+      key_features: [
+        'Instant formula solver',
+        'Custom scenario modeling',
+        'Exportable summary reports',
+        'Saved user parameter profiles'
+      ],
       monthly_price: 15,
       evidence: [p1Evidence, `Solves repetitive audience calculation questions`],
       confidence_score: score3,
@@ -2953,14 +3245,21 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
       forCreator: name,
     },
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: "fallback-community",
       product_name: `${name} Pro Member Platform`,
       product_category: "community",
       tool_summary: `A gated software hub offering direct tools, live stage sessions, and peer collaboration.`,
       tagline: `Interactive tools & direct member community`,
       description: `A software portal where subscribers collaborate, access monthly tool releases, and join scheduled live sessions with ${name}.`,
-      target_audience: `Dedicated audience members wanting software tools and direct access`,
+      target_audience: targetRole4,
+      who_pays_and_why: `${targetRole4} paying $29/mo for monthly software tool drops, direct Q&A access, and verified peer networking.`,
+      key_features: [
+        'Monthly software tool drops',
+        'Direct Q&A stage sessions',
+        'Searchable tool archive',
+        'Member networking directory'
+      ],
       monthly_price: 29,
       evidence: [`Community engagement rate signals strong willingness to subscribe`, r1Evidence],
       confidence_score: score4,

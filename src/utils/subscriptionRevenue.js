@@ -71,7 +71,7 @@ export function calculateSubscriptionRevenue({
       formattedLow: '$0',
       formattedHigh: '$0',
       formattedRange: '$0 / mo',
-      formattedSubscribers: '0 members',
+      formattedSubscribers: '0',
       disclaimer: REVENUE_DISCLAIMER,
       isAvailable: false,
     };
@@ -110,7 +110,7 @@ export function calculateSubscriptionRevenue({
     formattedLow,
     formattedHigh,
     formattedRange: `${formattedLow}–${formattedHigh} / mo`,
-    formattedSubscribers: `${subscribersLow.toLocaleString()}–${subscribersHigh.toLocaleString()} members`,
+    formattedSubscribers: `${subscribersLow.toLocaleString()}–${subscribersHigh.toLocaleString()}`,
     disclaimer: REVENUE_DISCLAIMER,
     isAvailable: true,
   };
