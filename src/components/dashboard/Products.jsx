@@ -157,18 +157,24 @@ export default function Products() {
       let cta = 'Manage Module'
       let items = ['Overview & Getting Started Guide', 'Core Implementation Blueprint']
 
-      if (fLower.includes('forum') || fLower.includes('community')) {
+      if (fLower.includes('tool') || fLower.includes('software') || fLower.includes('calculator') || fLower.includes('tracker')) {
+        type = 'tool'
+        icon = 'Layout'
+        desc = 'Interactive software utility solving recurring audience workflows'
+        cta = 'Configure Software Engine'
+        items = ['Interactive Estimation Engine', 'Verified Benchmark Archive', 'Scenario Modeling Solver']
+      } else if (fLower.includes('forum') || fLower.includes('community')) {
         type = 'community'
         icon = 'Users'
         desc = 'Threaded discussions, member directory & announcements'
         cta = 'Open Community Forum'
         items = ['General Discussion', 'Introductions', 'Feedback & Q&A']
       } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('vault') || fLower.includes('video')) {
-        type = 'course'
+        type = 'tool'
         icon = 'Package'
-        desc = 'Structured lessons, implementation modules, and video tutorials'
-        cta = 'View Curriculum'
-        items = ['Module 1: Foundations & Architecture', 'Module 2: Advanced Strategy', 'Module 3: Scaling & Tooling']
+        desc = 'Software application modules, guides & tool walkthroughs'
+        cta = 'Manage Tool Modules'
+        items = ['Core Architecture & Setup', 'Advanced Workflow Engine', 'Community Benchmark Database']
       } else if (fLower.includes('live') || fLower.includes('ama') || fLower.includes('event')) {
         type = 'live'
         icon = 'Radio'
@@ -259,7 +265,7 @@ export default function Products() {
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [newModTitle, setNewModTitle] = useState('')
   const [newModDesc, setNewModDesc] = useState('')
-  const [newModType, setNewModType] = useState('course')
+  const [newModType, setNewModType] = useState('tool')
 
   const [editingModule, setEditingModule] = useState(null)
   const [inspectingModule, setInspectingModule] = useState(null)
@@ -921,12 +927,11 @@ export default function Products() {
                   className="w-full text-xs bg-[#10141f] border border-white/10 px-3 py-2 text-white outline-none focus:border-[#c81e3c] rounded-none"
                   style={{ borderRadius: '0px' }}
                 >
-                  <option value="course">Structured Course / Lessons</option>
+                  <option value="tool">Interactive Software Tool / Calculator</option>
+                  <option value="tracker">Performance Tracker & Benchmarking</option>
+                  <option value="community">Subscriber Community Hub</option>
                   <option value="live">Live Stream / Workshop AMA</option>
-                  <option value="digital">Digital Download / Asset Kit</option>
-                  <option value="coaching">Private Coaching / Mentorship</option>
-                  <option value="newsletter">Subscriber Briefing / Newsletter</option>
-                  <option value="custom">Custom Module</option>
+                  <option value="custom">Custom Software Module</option>
                 </select>
               </div>
 

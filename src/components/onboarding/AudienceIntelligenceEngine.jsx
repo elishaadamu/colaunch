@@ -36,11 +36,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const brandRed = '#c81e3c'
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
-  const niche = creatorData?.niche || 'Worship & Music Production'
+  const niche = creatorData?.niche || 'Software & Digital Creation'
   const platform = creatorData?.platform || 'youtube'
-  const followersCount = parseFollowerCount(creatorData?.followers || 455000)
-  const engagementRate = parseFloat(creatorData?.engagementRate) || 4.8
-  const productName = activeBlueprint?.name || creatorData?.productName || 'WorshipLeader+ Membership'
+  const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || creatorData?.subscriberCount || 0)
+  const engagementRate = parseFloat(creatorData?.engagementRate) || null
+  const productName = activeBlueprint?.name || creatorData?.productName || 'Subscription Software Tool'
 
   // Active Tab State (10 Distinct Modules - Module 1: Channel Telemetry is default)
   const [activeTab, setActiveTab] = useState('telemetry')
@@ -67,12 +67,12 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
       return creatorData.audienceIntelligence
     }
 
-    // 2. Check saved localStorage cache for this creator
+    // 2. Check saved localStorage cache for this creator (must match schemaVersion: 2)
     try {
       const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (parsed && parsed.telemetry && parsed.pain_points) {
+        if (parsed && parsed.schemaVersion === 2 && parsed.telemetry && parsed.pain_points) {
           return parsed
         }
       }
@@ -122,7 +122,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
         const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
         if (cached) {
           const parsed = JSON.parse(cached)
-          if (parsed && parsed.telemetry && parsed.pain_points) {
+          if (parsed && parsed.schemaVersion === 2 && parsed.telemetry && parsed.pain_points) {
             setIntelligence(parsed)
             setIsAnalyzing(false)
             return
@@ -348,8 +348,8 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
           </button>
 
           <div className="px-2.5 py-1 bg-[#141a29] border border-white/10 rounded-none text-left shrink-0" style={{ borderRadius: '0px' }}>
-            <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 leading-none">Confidence Score</div>
-            <div className="text-xs font-bold text-emerald-400 mt-0.5 leading-none">{intel.pmf.score}% PMF Index</div>
+            <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 leading-none">Feasibility Score</div>
+            <div className="text-xs font-bold text-emerald-400 mt-0.5 leading-none">{intel.pmf?.score || 92}% Estimated Fit</div>
           </div>
         </div>
       </div>
@@ -432,9 +432,11 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               </div>
 
               <div className="p-3.5 bg-[#111624] rounded-none border-0">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Verified Engagement Rate</span>
-                <span className="text-xl font-extrabold text-emerald-400 mt-1 block">{intel.telemetry.engagement_rate}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Top 8% in {niche}</span>
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Engagement Rate</span>
+                <span className="text-xl font-extrabold text-emerald-400 mt-1 block">
+                  {engagementRate ? `${engagementRate}%` : (intel.telemetry.engagement_rate || 'Estimated')}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Calculated from recent viewer activity</span>
               </div>
 
               <div className="p-3.5 bg-[#111624] rounded-none border-0">
@@ -995,7 +997,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
                 <p className="text-xs text-slate-400 mt-0.5">Clickable provenance backing the software recommendation.</p>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-none font-bold">
-                100% Verified
+                Audience Signals
               </span>
             </div>
 

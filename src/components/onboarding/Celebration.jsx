@@ -120,12 +120,12 @@ function getRichBuiltModules(blueprint, creatorData) {
         description: 'Verified creator updates, release alerts & push notifications',
         status: 'Active',
       })
-    } else if (fLower.includes('course') || fLower.includes('curriculum')) {
+    } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('tool') || fLower.includes('software')) {
       modules.push({
-        id: `course-${idx}`,
+        id: `software-${idx}`,
         icon: Layers,
-        title: 'Structured Course Builder',
-        description: 'Video lesson curriculum, module tracking & milestone certificates',
+        title: 'Interactive Software Tool Engine',
+        description: 'Interactive calculators, automated workflows & member data sync',
         status: 'Built',
       })
     } else {

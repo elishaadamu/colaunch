@@ -206,43 +206,30 @@ const FEATURES = [
 
 function getDynamicProducts(blueprint, creatorData) {
   const name = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
-  const bpName = blueprint?.name || 'Platform'
-  const bpNameL = bpName.toLowerCase()
-  const category = (blueprint?.raw?.product_category || '').toLowerCase()
-  const followers = parseFollowerCount(creatorData.followers)
-
-  if (bpNameL.includes('philanthrop') || bpNameL.includes('impact') || bpNameL.includes('charity')) {
-    return [
-      { title: 'Community Impact Pass', price: '$9.99 / mo', type: 'Monthly Membership' },
-      { title: 'Project Founding Partner', price: '$49.00', type: 'Impact Tier' },
-      { title: 'Executive Impact Brief & Strategy', price: '$299.00', type: 'Annual Report' },
-      { title: 'Transparency Ledger & Asset Pack', price: 'Free', type: 'Public Access' }
-    ]
-  }
-
-  if (bpNameL.includes('challenge') || bpNameL.includes('drop') || bpNameL.includes('box') || category === 'app') {
-    return [
-      { title: `${name}'s Seasonal Challenge Pass`, price: '$4.99 / mo', type: 'Digital Pass' },
-      { title: 'VIP Exclusive Drop Bundle', price: '$29.99', type: 'Limited Edition' },
-      { title: 'Golden Ticket Entry & Live Session', price: '$99.00', type: 'Exclusive Access' },
-      { title: 'Fan Starter Toolkit & Wallpapers', price: 'Free', type: 'Starter Pack' }
-    ]
-  }
-
-  if (category === 'course' || category === 'membership' || bpNameL.includes('academy') || bpNameL.includes('circle')) {
-    return [
-      { title: 'All-Access Inner Circle Pass', price: '$19.00 / mo', type: 'Monthly Membership' },
-      { title: 'Masterclass Direct Vault', price: '$89.00', type: 'Complete Course' },
-      { title: 'Annual VIP Pass & Private Calls', price: '$180.00 / yr', type: 'Annual Tier' },
-      { title: 'Essential Starter Blueprint', price: 'Free', type: 'Starter Guide' }
-    ]
-  }
+  const bpName = blueprint?.name || 'Software Tool'
+  const monthlyPrice = Number(blueprint?.monthly_price || creatorData?.monthly_price || 19)
 
   return [
-    { title: 'Core Member Access Pass', price: '$12.00 / mo', type: 'Community Tier' },
-    { title: 'The Complete Resource Archive', price: '$69.00', type: 'Digital Bundle' },
-    { title: 'Exclusive Strategy Session Pass', price: '$149.00', type: 'Live Workshop' },
-    { title: 'Community Welcome Pack', price: 'Free', type: 'Starter Pack' }
+    { 
+      title: `${bpName} Standard Pass`, 
+      price: `$${monthlyPrice} / mo`, 
+      type: 'Monthly Subscription' 
+    },
+    { 
+      title: `${bpName} Pro Tier`, 
+      price: `$${Math.min(29, monthlyPrice + 6)} / mo`, 
+      type: 'Monthly Subscription' 
+    },
+    { 
+      title: 'Interactive Software Tool Engine', 
+      price: 'Included', 
+      type: 'Core Feature' 
+    },
+    { 
+      title: 'Community Benchmark Database', 
+      price: 'Included', 
+      type: 'Subscriber Perk' 
+    }
   ]
 }
 

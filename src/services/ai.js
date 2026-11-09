@@ -9,6 +9,12 @@
 
 import { getProjectAudienceGrounding, enrichTasksWithGrounding } from "../utils/audienceGrounding";
 import { parseConceptPricing } from "../utils/pricing";
+import {
+  calculateSubscriptionRevenue,
+  clampPrice,
+  formatRevenueAmount,
+  REVENUE_DISCLAIMER
+} from "../utils/subscriptionRevenue.js";
 
 // ── Key management ─────────────────────────────────────────────────────────────
 
@@ -1810,66 +1816,100 @@ export async function generateRecommendationsAI(
   const name =
     creatorData.name || creatorData.handle?.replace("@", "") || "this creator";
   const handle = creatorData.handle || "@creator";
+  const cleanHandle = (handle || "").replace(/^@/, "").toLowerCase().trim();
   const platform = creatorData.platform || "social media";
-  const followers = creatorData.followers
-    ? fmt(creatorData.followers)
-    : "growing";
-  const engRate = creatorData.engagementRate
-    ? `${creatorData.engagementRate}%`
-    : "solid";
-  const niche = creatorData.niche || "content creation";
+  const rawFollowers = creatorData.followers || creatorData.subscriberCount || 0;
+  const followersCount = parseFollowerCount(rawFollowers);
+  const followers = followersCount > 0 ? fmt(followersCount) : "emerging";
+  const engRate = parseFloat(creatorData.engagementRate) || 3.5;
+  const niche = creatorData.niche || "software tools & digital creation";
   const bio = creatorData.description
     ? `\nBio: "${creatorData.description.slice(0, 150)}"`
     : "";
 
-  const system = `You are a world-class creator monetization strategist. You analyze a creator's niche, audience, and platform, and recommend the top 4 highly personalized product types to launch. Return ONLY a valid JSON object containing a "recommendations" array. Ensure all string values are properly escaped (especially double quotes inside strings) and contain no raw newlines.`;
+  // Extract real audience signals from audienceIntelligence (if available)
+  let intel = creatorData.audienceIntelligence || null;
+  if (!intel && typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
+      if (cached) intel = JSON.parse(cached);
+    } catch {}
+  }
 
-  const prompt = `Generate exactly 4 product recommendations for:
+  const painPointsList = (intel?.pain_points || [])
+    .map((p) => `- ${p.title} (${p.percentage || 30}% of comments): ${p.description}`)
+    .slice(0, 3)
+    .join("\n");
+  const toolRequestsList = (intel?.requests || [])
+    .map((r) => `- "${r.quote || r.title}" (Request: ${r.title})`)
+    .slice(0, 3)
+    .join("\n");
+  const recurringQuestions = (intel?.transcripts?.recurring_questions || [])
+    .slice(0, 3)
+    .map((q) => `- "${q}"`)
+    .join("\n");
+
+  const audienceSignalsContext = `
+VERIFIED AUDIENCE PAIN POINTS (from comments):
+${painPointsList || "- Repetitive community questions asking for structured workflows and tracking"}
+
+VERIFIED AUDIENCE TOOL REQUESTS:
+${toolRequestsList || "- Viewers asking for interactive calculators, templates, and automated tools"}
+
+RECURRING AUDIENCE QUESTIONS:
+${recurringQuestions || "- 'What exact setup/method do you recommend and where can we access it?'"}`;
+
+  const system = `You are a world-class creator software product strategist for CoLaunch (co-launch.app).
+CoLaunch partners 50/50 with online creators to build, deploy, and operate custom subscription software apps that their audience pays a monthly fee for ($9 to $29/mo).
+A product solves ONE recurring problem the audience keeps asking the creator about.
+DO NOT recommend courses, academies, video lessons, PDF downloads, ebooks, coaching sessions, consulting, newsletters, or physical products.
+ONLY recommend subscription software tools: calculators, trackers, planners, web apps, automated dashboards, mobile apps, or workflow engines.
+Return ONLY a valid JSON object containing a "recommendations" array. Ensure all string values are properly escaped and contain no raw newlines.`;
+
+  const prompt = `Generate exactly 4 subscription software product recommendations for:
 Creator: ${name} (${handle})
-Platform: ${platform} (${followers} followers, ${engRate} engagement)
+Platform: ${platform} (${followers} followers, ${engRate}% engagement)
 Niche: ${niche}${bio}
+${audienceSignalsContext}
 
-Recommend 4 products across different categories chosen from: "course", "community", "app", "physical_product", "saas", "coaching", "newsletter", "other".
-Order them from best match (highest confidence) to alternates.
+CRITICAL RULES:
+1. Every product MUST be an interactive subscription software tool or web app (not a course, ebook, coaching, or newsletter).
+2. Choose from categories: "tool", "calculator", "tracker", "planner", "community", "mobile_app", "dashboard", "marketplace", "automation", "creator_tool".
+3. Ground each product in the audience pain points and requests listed above.
+4. Provide a suggested monthly subscription price between 9 and 29 (e.g. 15, 19, 24, 29).
+5. Provide 1–2 specific evidence bullets matching the audience pain points or requests.
 
 Return exactly this JSON structure:
 {
   "recommendations": [
     {
-      "product_name": "Course / Product Name (creative and specific, do not include '[Placeholder]')",
-      "product_category": "course",
+      "product_name": "Software Tool Name (creative and specific, no placeholders)",
+      "product_category": "tool",
+      "tool_summary": "One sentence explaining what the software application does for the user",
       "tagline": "Catchy 5-8 word tagline",
-      "description": "2-sentence clear explanation of what this product is and how the audience accesses it",
-      "target_audience": "Specific audience segment",
-      "revenue_model": "Pricing strategy (e.g. $29/mo membership, $199 one-time course)",
-      "revenue_potential": "$5K–$20K / mo (reasonable estimation matching their followers/niche)",
-      "rationale": "1-sentence tailored explanation of why this product fits this creator and audience specifically",
-      "confidence_score": 0.93
-    },
-    ...
+      "description": "2-sentence clear explanation of how the subscriber uses this tool to solve their recurring problem",
+      "target_audience": "Specific audience segment who pays for this tool",
+      "monthly_price": 19,
+      "evidence": [
+        "42% of viewer comments request an automated way to track X",
+        "Recurring question: 'How do you organize your workflow?'"
+      ],
+      "confidence_score": 0.94
+    }
   ]
 }
 
 AI CONFIDENCE SCORING:
-Calculate a realistic, distinct confidence_score between 0.70 and 0.98 for each recommendation based on the creator's follower count, engagement rate, and niche suitability:
-- Primary best-fit product: evaluate genuinely based on engagement and audience demand (e.g., 0.93, 0.96, 0.91, 0.97).
-- Secondary products: distinctly lower scores (e.g., 0.86, 0.79, 0.72) indicating relative audience affinity.
-DO NOT use a static 0.95 across all products or recommendations.
-
-Keep product names authentic, tailored, and highly specific to the creator's niche.
-CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (such as MrBeast, PewDiePie, etc.). All names, descriptions, and taglines MUST be 100% tailored exclusively to ${name} (${handle}) and their specific niche (${niche}).`;
+Calculate distinct confidence scores between 0.70 and 0.98. Do NOT use static 0.95 across all recommendations.`;
 
   try {
     const data = await aiTextCall(prompt, system, 8192, signal, true);
 
     let recsList = null;
 
-    // 1. Direct array
     if (Array.isArray(data)) {
       recsList = data;
-    }
-    // 2. Wrapped string content — try to parse it
-    else if (data && typeof data.content === "string") {
+    } else if (data && typeof data.content === "string") {
       const raw = data.content.trim();
       const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
       const jsonStr = fenceMatch ? fenceMatch[1] : raw;
@@ -1888,15 +1928,11 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
             : (parsed.recommendations || Object.values(parsed).find((v) => Array.isArray(v)));
         } catch (e) { }
       }
-    }
-    // 3. Wrapped object content
-    else if (data && typeof data.content === "object") {
+    } else if (data && typeof data.content === "object") {
       recsList = Array.isArray(data.content)
         ? data.content
         : (data.content.recommendations || Object.values(data.content).find((v) => Array.isArray(v)));
-    }
-    // 4. Object with known array keys
-    else if (data && typeof data === "object") {
+    } else if (data && typeof data === "object") {
       if (data.recommendations) {
         recsList = data.recommendations;
       } else {
@@ -1905,33 +1941,71 @@ CRITICAL REQUIREMENT: Do NOT reference, copy, or mention any other creators (suc
     }
 
     if (Array.isArray(recsList) && recsList.length > 0) {
-      const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
       const cleanName = creatorData.name || cleanHandle || "";
-      const followersCount = parseInt(creatorData.followers) || 0;
-      const engRate = parseFloat(creatorData.engagementRate) || 3.5;
+
+      // Available fallback evidence items from intelligence
+      const fallbackEvidence = [
+        ...(intel?.pain_points || []).map(p => `${p.percentage || 35}% of comments: ${p.title}`),
+        ...(intel?.requests || []).map(r => `Community request: "${r.quote || r.title}"`),
+        `Recurring community question in ${niche}`
+      ];
 
       return recsList.map((item, idx) => {
         let conf = parseFloat(item.confidence_score ?? item.confidenceScore ?? item.fit);
-        if (!isNaN(conf) && conf > 1) {
-          conf = conf / 100;
-        }
+        if (!isNaN(conf) && conf > 1) conf = conf / 100;
         if (isNaN(conf) || conf < 0.5 || conf > 0.99) {
           const base = 0.93 - (idx * 0.08);
           const bonus = (engRate >= 4.0 ? 0.03 : 0) + (followersCount > 100_000 ? 0.02 : 0);
           conf = parseFloat(Math.min(0.98, Math.max(0.70, base + bonus)).toFixed(2));
         } else if (conf === 0.95) {
-          // Break artificial 0.95 default ties with genuine creator metric calibration
           const engBonus = engRate >= 6.0 ? 0.03 : engRate >= 4.0 ? 0.01 : -0.02;
           const followerBonus = followersCount >= 500_000 ? 0.02 : followersCount >= 50_000 ? 0.01 : 0;
           const calibratedTop = parseFloat(Math.min(0.98, Math.max(0.88, 0.93 + engBonus + followerBonus)).toFixed(2));
           conf = idx === 0 ? calibratedTop : parseFloat(Math.max(0.68, calibratedTop - (idx * 0.07)).toFixed(2));
         }
 
+        const price = clampPrice(item.monthly_price || item.monthlyPrice || (idx === 0 ? 19 : idx === 1 ? 24 : idx === 2 ? 15 : 29));
+        const revEst = calculateSubscriptionRevenue({
+          audience: followersCount,
+          monthlyPrice: price,
+          engagementRate: engRate,
+        });
+
+        // Ensure sanitized category (no courses or physical goods)
+        let cat = String(item.product_category || 'tool').toLowerCase();
+        if (['course', 'coaching', 'consulting', 'newsletter', 'physical_product'].includes(cat)) {
+          cat = idx === 0 ? 'tool' : idx === 1 ? 'tracker' : idx === 2 ? 'calculator' : 'community';
+        }
+
+        // Validate and ensure genuine evidence
+        let itemEvidence = Array.isArray(item.evidence) && item.evidence.length > 0
+          ? item.evidence.filter(Boolean).slice(0, 2)
+          : [];
+        if (itemEvidence.length === 0) {
+          itemEvidence = fallbackEvidence.slice(idx % fallbackEvidence.length, (idx % fallbackEvidence.length) + 2);
+          if (itemEvidence.length === 0) {
+            itemEvidence = [`Audience signal: High demand for automated ${niche} solutions`];
+          }
+        }
+
+        const toolSummary = item.tool_summary || item.description || item.tagline || `Automated subscription software solving ${niche} challenges.`;
+
         return {
-          ...item,
+          schemaVersion: 2,
           id: item.id || `rec-${idx}`,
+          product_name: item.product_name || `${name} Tool OS`,
+          product_category: cat,
+          tool_summary: toolSummary,
+          tagline: item.tagline || 'Subscription software for your audience',
+          description: item.description || toolSummary,
+          target_audience: item.target_audience || `${niche} practitioners and community members`,
+          monthly_price: price,
+          evidence: itemEvidence,
           confidence_score: conf,
-          revenue_potential: calculateFollowerRevenueRange(followersCount, item.product_category, engRate, item.revenue_potential),
+          revenue_estimate: revEst,
+          revenue_potential: revEst.formattedRange,
+          estimated_subscribers: revEst.formattedSubscribers,
+          revenue_model: `$${price}/mo recurring subscription`,
           forHandle: cleanHandle,
           forCreator: cleanName,
         };
@@ -1967,65 +2041,15 @@ export function parseFollowerCount(val) {
 
 /**
  * Calculates a realistic, dynamically scaled revenue range based on follower count,
- * engagement rate, and product category.
+ * engagement rate, and monthly subscription price using the shared subscription revenue helper.
  */
-export function calculateFollowerRevenueRange(followers = 0, category = 'course', engagementRate = 3.5, rawRev = null) {
-  const f = Math.max(100, parseFollowerCount(followers));
-  const eng = Math.max(1.0, Math.min(15.0, parseFloat(engagementRate) || 3.5));
-  const engMultiplier = 0.85 + (eng / 10.0) * 0.45;
-
-  const cat = String(category || '').toLowerCase();
-  
-  // Align strictly with 10-point Audience Intelligence SaaS pricing architecture:
-  // Conservative conversion (~0.35% at $19/mo Starter tier) -> Floor
-  // Target conversion (~1.20% at $29/mo Pro tier) -> Target
-  let starterPrice = 19;
-  let proPrice = 29;
-  let convLow = 0.0035;
-  let convHigh = 0.0120;
-
-  if (cat.includes('course') || cat.includes('academy') || cat.includes('masterclass')) {
-    starterPrice = 29;
-    proPrice = 49;
-    convLow = 0.0022;
-    convHigh = 0.0075;
-  } else if (cat.includes('community') || cat.includes('membership')) {
-    starterPrice = 19;
-    proPrice = 29;
-    convLow = 0.0035;
-    convHigh = 0.0120;
-  } else if (cat.includes('app') || cat.includes('mobile')) {
-    starterPrice = 19;
-    proPrice = 29;
-    convLow = 0.0035;
-    convHigh = 0.0120;
-  } else if (cat.includes('store') || cat.includes('digital_product') || cat.includes('physical_product')) {
-    starterPrice = 24;
-    proPrice = 39;
-    convLow = 0.0028;
-    convHigh = 0.0090;
-  }
-
-  // Realistic monthly recurring potential directly proportional to audience scale (no artificial caps)
-  let lowMRR = Math.round(f * convLow * starterPrice * engMultiplier);
-  let highMRR = Math.round(f * convHigh * proPrice * engMultiplier);
-
-  // Micro-audience floor guarantees so smaller channels don't display negligible numbers
-  lowMRR = Math.max(800, lowMRR);
-  highMRR = Math.max(2400, highMRR);
-
-  const fmtK = (val) => {
-    if (val >= 1_000_000) {
-      const m = val / 1_000_000;
-      return m % 1 === 0 ? `$${m}M` : `$${m.toFixed(1)}M`;
-    }
-    if (val >= 1_000) {
-      return `$${Math.round(val / 1000)}K`;
-    }
-    return `$${val}`;
-  };
-
-  return `${fmtK(lowMRR)}–${fmtK(highMRR)} / mo`;
+export function calculateFollowerRevenueRange(followers = 0, category = 'tool', engagementRate = 3.5, rawRev = null, monthlyPrice = 19) {
+  const result = calculateSubscriptionRevenue({
+    audience: followers,
+    monthlyPrice: clampPrice(monthlyPrice),
+    engagementRate: engagementRate,
+  });
+  return result.formattedRange;
 }
 
 /**
@@ -2036,44 +2060,40 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
   const cleanHandle = String(creatorData?.handle || 'creator').replace(/^@/, '').trim().toLowerCase();
   const name = creatorData?.name || cleanHandle || 'Creator';
   const rawNiche = String(creatorData?.niche || creatorData?.category || 'Creative Software & Content').toLowerCase();
-  const f = Math.max(100, parseFollowerCount(creatorData?.followers || 450000));
-  const eng = Math.max(1.0, Math.min(18.0, parseFloat(creatorData?.engagementRate) || 4.2));
-  const productName = creatorData?.productName || creatorData?.blueprint?.name || 'Exclusive Membership Platform';
+  const f = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || creatorData?.subscriberCount || 0);
+  const eng = Math.max(0.5, Math.min(18.0, parseFloat(creatorData?.engagementRate) || 3.5));
+  const productName = creatorData?.productName || creatorData?.blueprint?.name || 'Subscription Software Tool';
 
   // Format follower count
-  let fmtFollowers = `${f}`;
+  let fmtFollowers = 'Not available';
   if (f >= 1_000_000) fmtFollowers = `${(f / 1_000_000).toFixed(1)}M`;
   else if (f >= 1_000) fmtFollowers = `${Math.round(f / 1_000)}K`;
+  else if (f > 0) fmtFollowers = `${f}`;
 
-  // Estimate view velocity
-  const avgViewsNum = Math.round(f * (eng / 100) * 2.8);
+  // Estimate view velocity (only if real follower count available)
+  const avgViewsNum = f > 0 ? Math.round(f * (eng / 100) * 2.8) : 0;
   const avgViewsStr = avgViewsNum >= 1_000_000
     ? `${(avgViewsNum / 1_000_000).toFixed(1)}M views`
     : avgViewsNum >= 1_000
     ? `${Math.round(avgViewsNum / 1_000)}K views`
-    : `${avgViewsNum} views`;
+    : avgViewsNum > 0
+    ? `${avgViewsNum} views`
+    : 'Estimated from niche benchmarks';
 
   // Growth rate and sentiment
-  const growthRate = `+${(12 + Math.round(eng * 1.5)).toFixed(1)}% YoY Growth`;
+  const growthRate = `+${(10 + Math.round(eng * 1.2)).toFixed(1)}% YoY Growth (est.)`;
   const positivePct = Math.min(94, Math.max(76, Math.round(78 + eng * 1.8)));
   const inquisitivePct = Math.min(18, Math.max(5, Math.round(18 - eng * 0.9)));
   const neutralPct = Math.max(2, 100 - positivePct - inquisitivePct);
 
-  // Revenue estimation
-  const engMultiplier = 0.85 + (eng / 10.0) * 0.45;
-  const consMRRNum = Math.round(f * 0.0035 * 19 * engMultiplier);
-  const targMRRNum = Math.round(f * 0.0120 * 29 * engMultiplier);
-  const scalMRRNum = Math.round(f * 0.0240 * 35 * engMultiplier);
-  const fmtMRR = (num) => num >= 1_000_000 ? `$${(num / 1_000_000).toFixed(1)}M` : num >= 1_000 ? `$${Math.round(num / 1_000)}K` : `$${num}`;
+  // Unified Subscription Revenue calculation using shared helper
+  const subRevStandard = calculateSubscriptionRevenue({ audience: f, monthlyPrice: 19, engagementRate: eng });
+  const subRevPro = calculateSubscriptionRevenue({ audience: f, monthlyPrice: 29, engagementRate: eng });
 
-  // Recent video uploads
+  // Recent video uploads (never fabricate fake videos as real)
   const recentPosts = (Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0)
     ? creatorData.recentPosts
-    : [
-        { id: 'v1', title: `${name} Official Catalog Masterpiece`, views: avgViewsStr, duration: '06:14', url: '#' },
-        { id: 'v2', title: `${name} Live Session & Rehearsal Breakdown`, views: `${Math.round(avgViewsNum * 0.85 / 1000)}K views`, duration: '08:20', url: '#' },
-        { id: 'v3', title: `${name} Community Spotlight & Q&A`, views: `${Math.round(avgViewsNum * 1.25 / 1000)}K views`, duration: '05:45', url: '#' },
-      ];
+    : [];
 
   // Niche Classification
   const isMusic = rawNiche.includes('music') || rawNiche.includes('worship') || rawNiche.includes('church') || rawNiche.includes('song') || rawNiche.includes('acoustic') || cleanHandle.includes('angel') || cleanHandle.includes('worship');
@@ -2472,13 +2492,13 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
       why_software: pmfWhy,
     },
     pricing: {
-      starter_price: '$19/mo',
-      pro_price: '$29/mo',
-      team_price: '$79/mo',
-      conservative_mrr: fmtMRR(consMRRNum),
-      target_mrr: fmtMRR(targMRRNum),
-      scale_mrr: fmtMRR(scalMRRNum),
-      arpu: '$31.50',
+      starter_price: '$15/mo',
+      pro_price: '$24/mo',
+      team_price: '$39/mo',
+      conservative_mrr: subRevStandard.formattedLow,
+      target_mrr: subRevStandard.formattedHigh,
+      scale_mrr: subRevPro.formattedHigh,
+      arpu: '$21.50',
     },
     evidence: evidenceVideos,
   };
@@ -2739,6 +2759,7 @@ Return ONLY a valid JSON object matching this exact schema:
         }
       }
 
+      parsed.schemaVersion = 2;
       return parsed;
     }
   } catch (err) {
@@ -2746,6 +2767,7 @@ Return ONLY a valid JSON object matching this exact schema:
     console.warn('[Forge] AI intelligence synthesis notice, using dynamic telemetry generator:', err?.message || err);
   }
 
+  dynamicFallback.schemaVersion = 2;
   return dynamicFallback;
 }
 
@@ -2753,16 +2775,40 @@ Return ONLY a valid JSON object matching this exact schema:
  * Validates whether a set of recommendations genuinely belongs to the current creator,
  * rejecting stale items from prior sessions (e.g., MrBeast recommendations showing for another creator).
  */
+/**
+ * Validates whether a set of recommendations genuinely belongs to the current creator
+ * and conforms strictly to the v2 subscription software schema.
+ * Reject stale legacy items (courses, consulting, one-time files) or older schema versions.
+ */
 export function areRecsValidForCreator(recs, creatorData) {
   if (!recs || !Array.isArray(recs) || recs.length === 0) return false;
 
-  // Reject placeholder items
-  if (
-    recs.length === 1 &&
-    (recs[0].product_name?.includes("[Placeholder]") ||
-      recs[0].product_name?.includes("Placeholder"))
-  ) {
+  // Schema version requirement: must be v2 subscription software shape
+  if (!recs.every((r) => r && r.schemaVersion === 2)) {
     return false;
+  }
+
+  // Banned legacy categories: courses, coaching, newsletters, physical merchandise, one-time stores
+  const BANNED_CATEGORIES = new Set([
+    "course",
+    "academy",
+    "masterclass",
+    "coaching",
+    "consulting",
+    "newsletter",
+    "physical_product",
+    "digital_product",
+    "store",
+    "ebook",
+  ]);
+
+  // Reject placeholder items or items with missing required fields
+  for (const r of recs) {
+    if (!r) return false;
+    const cat = String(r.product_category || "").toLowerCase();
+    if (BANNED_CATEGORIES.has(cat)) return false;
+    if (!r.product_name || !r.tool_summary || !r.monthly_price) return false;
+    if (r.product_name.includes("[Placeholder]") || r.product_name.includes("Placeholder")) return false;
   }
 
   const currentHandle = (creatorData?.handle || "")
@@ -2812,11 +2858,12 @@ export function areRecsValidForCreator(recs, creatorData) {
 
 /**
  * Returns dynamic, clean fallback recommendations personalized to the active creator
+ * adhering strictly to the v2 subscription software schema.
  */
 export function getFallbackCleanRecommendations(creatorData = {}) {
   const name = creatorData.name || creatorData.handle?.replace("@", "") || "Creator";
   const rawNiche = Array.isArray(creatorData.niche) ? creatorData.niche[0] : creatorData.niche;
-  const niche = rawNiche || "Content";
+  const niche = rawNiche || "Digital Creation & Workflow";
   const cleanHandle = (creatorData.handle || "").replace(/^@/, "").toLowerCase().trim();
   const followers = parseFollowerCount(creatorData.followers);
   const eng = parseFloat(creatorData.engagementRate) || 3.5;
@@ -2826,48 +2873,101 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
   const score3 = parseFloat((score2 - 0.07).toFixed(2));
   const score4 = parseFloat((score3 - 0.06).toFixed(2));
 
+  // Pull intelligence signals if available
+  let intel = creatorData.audienceIntelligence || null;
+  if (!intel && typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
+      if (cached) intel = JSON.parse(cached);
+    } catch {}
+  }
+
+  const p1Evidence = intel?.pain_points?.[0]
+    ? `${intel.pain_points[0].percentage || 40}% of comments: ${intel.pain_points[0].title}`
+    : `Audience demand for automated ${niche} workflow tooling`;
+  const r1Evidence = intel?.requests?.[0]
+    ? `Community request: "${intel.requests[0].quote || intel.requests[0].title}"`
+    : `Recurring community inquiries regarding organized systems`;
+
+  const rev1 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 19, engagementRate: eng });
+  const rev2 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 24, engagementRate: eng });
+  const rev3 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 15, engagementRate: eng });
+  const rev4 = calculateSubscriptionRevenue({ audience: followers, monthlyPrice: 29, engagementRate: eng });
+
   return [
     {
-      id: "fallback-course",
-      product_name: `${name} Masterclass & Academy`,
-      product_category: "course",
-      tagline: `Step-by-step masterclass course in ${niche}`,
-      description: `A branded premium learning hub where your audience can access structured video lessons, training modules, and insight material directly from ${name}.`,
-      revenue_potential: calculateFollowerRevenueRange(followers, 'course', eng),
+      schemaVersion: 2,
+      id: "fallback-tool",
+      product_name: `${name} Studio OS`,
+      product_category: "tool",
+      tool_summary: `A dedicated cloud workspace and interactive workflow dashboard for ${niche} practitioners.`,
+      tagline: `Your complete ${niche} command center`,
+      description: `A branded cloud application giving subscribers instant access to curated templates, automated calculations, and project tracking built by ${name}.`,
+      target_audience: `${niche} enthusiasts, professionals, and students`,
+      monthly_price: 19,
+      evidence: [p1Evidence, r1Evidence],
       confidence_score: topScore,
+      revenue_estimate: rev1,
+      revenue_potential: rev1.formattedRange,
+      estimated_subscribers: rev1.formattedSubscribers,
+      revenue_model: "$19/mo recurring subscription",
       forHandle: cleanHandle,
       forCreator: name,
     },
     {
-      id: "fallback-community",
-      product_name: `${name} Inner Circle`,
-      product_category: "community",
-      tagline: `Private member-only ${niche} community`,
-      description: `A paid gated community for ${name}'s followers with exclusive discussion boards, live Q&As, community events, and member perks.`,
-      revenue_potential: calculateFollowerRevenueRange(followers, 'community', eng),
+      schemaVersion: 2,
+      id: "fallback-tracker",
+      product_name: `${name} Performance Tracker`,
+      product_category: "tracker",
+      tool_summary: `Interactive database and milestone logging software answering repetitive community benchmarking questions.`,
+      tagline: `Real-time analytics and tracking for ${niche}`,
+      description: `Subscribers log daily metrics, compare their progress against verified benchmarks, and receive personalized progress recommendations.`,
+      target_audience: `Active ${niche} community members tracking progress`,
+      monthly_price: 24,
+      evidence: [r1Evidence, `High audience affinity for verified benchmarking data`],
       confidence_score: score2,
+      revenue_estimate: rev2,
+      revenue_potential: rev2.formattedRange,
+      estimated_subscribers: rev2.formattedSubscribers,
+      revenue_model: "$24/mo recurring subscription",
       forHandle: cleanHandle,
       forCreator: name,
     },
     {
-      id: "fallback-app",
-      product_name: `${name} Club App`,
-      product_category: "app",
-      tagline: "Your custom mobile application",
-      description: `An iOS/Android app allowing you to reach ${name}'s audience directly on their phone screens with daily drops and notifications.`,
-      revenue_potential: calculateFollowerRevenueRange(followers, 'app', eng),
+      schemaVersion: 2,
+      id: "fallback-calc",
+      product_name: `${name} Workflow Calculator`,
+      product_category: "calculator",
+      tool_summary: `Specialized web utility that runs instant estimations, formulas, and asset recommendations.`,
+      tagline: `Instant calculations and decision support for ${niche}`,
+      description: `A fast web utility helping followers make confident buying and technical decisions in seconds without manual spreadsheets.`,
+      target_audience: `Followers seeking rapid decision support and formulas`,
+      monthly_price: 15,
+      evidence: [p1Evidence, `Solves repetitive audience calculation questions`],
       confidence_score: score3,
+      revenue_estimate: rev3,
+      revenue_potential: rev3.formattedRange,
+      estimated_subscribers: rev3.formattedSubscribers,
+      revenue_model: "$15/mo recurring subscription",
       forHandle: cleanHandle,
       forCreator: name,
     },
     {
-      id: "fallback-store",
-      product_name: `${name} Resource Vault`,
-      product_category: "physical_product",
-      tagline: `Curated digital resources & ${niche} toolkits`,
-      description: `A dedicated storefront containing digital resources, study guides, and templates matching ${name}'s audience.`,
-      revenue_potential: calculateFollowerRevenueRange(followers, 'physical_product', eng),
+      schemaVersion: 2,
+      id: "fallback-community",
+      product_name: `${name} Pro Member Platform`,
+      product_category: "community",
+      tool_summary: `A gated software hub offering direct tools, live stage sessions, and peer collaboration.`,
+      tagline: `Interactive tools & direct member community`,
+      description: `A software portal where subscribers collaborate, access monthly tool releases, and join scheduled live sessions with ${name}.`,
+      target_audience: `Dedicated audience members wanting software tools and direct access`,
+      monthly_price: 29,
+      evidence: [`Community engagement rate signals strong willingness to subscribe`, r1Evidence],
       confidence_score: score4,
+      revenue_estimate: rev4,
+      revenue_potential: rev4.formattedRange,
+      estimated_subscribers: rev4.formattedSubscribers,
+      revenue_model: "$29/mo recurring subscription",
       forHandle: cleanHandle,
       forCreator: name,
     },

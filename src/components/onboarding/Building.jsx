@@ -53,9 +53,9 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
     } else if (fLower.includes('store') || fLower.includes('product') || fLower.includes('drop')) {
       artifacts.push({
         id: `store-${i}`,
-        icon: ShoppingBag,
-        label: 'Digital Store',
-        description: 'Secure file downloads, checkout flows & product vault',
+        icon: Package,
+        label: 'Subscription Billing',
+        description: 'Monthly recurring billing, account credentials & member access',
         duration: 1200,
       })
     } else if (fLower.includes('video') || fLower.includes('vault') || fLower.includes('release')) {
@@ -90,12 +90,12 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
         description: 'Creator broadcast channel & instant push alerts',
         duration: 1000,
       })
-    } else if (fLower.includes('course') || fLower.includes('curriculum')) {
+    } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('tool') || fLower.includes('software')) {
       artifacts.push({
-        id: `curriculum-${i}`,
+        id: `software-${i}`,
         icon: Layout,
-        label: 'Course Builder',
-        description: 'Lesson modules, progress tracking & completion awards',
+        label: 'Software Engine',
+        description: 'Interactive tool calculators, workflow automations & user records',
         duration: 1200,
       })
     }

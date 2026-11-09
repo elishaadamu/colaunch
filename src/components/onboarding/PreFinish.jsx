@@ -36,13 +36,13 @@ function getDynamicBuiltItems(blueprint, creatorData) {
     ]
   }
 
-  if (type.includes('course') || type.includes('masterclass')) {
+  if (type.includes('tool') || type.includes('calculator') || type.includes('tracker') || type.includes('software') || type.includes('course') || type.includes('masterclass')) {
     return [
-      { icon: Layout, label: 'Curriculum & lesson player', detail: 'HD video hosting, modules & attachments' },
-      { icon: Users, label: 'Student community forum', detail: 'Q&A discussions, peer feedback & AMAs' },
-      { icon: BarChart2, label: 'Creator analytics center', detail: 'Completion rates, quiz grades & revenue' },
-      { icon: Package, label: 'Course sales page', detail: 'Curriculum preview & checkout enrollment' },
-      { icon: Mail, label: 'Student onboarding emails', detail: 'Welcome sequence & module unlock notices' },
+      { icon: Layout, label: 'Interactive software tool engine', detail: 'Real-time workflows, inputs & saved user records' },
+      { icon: Users, label: 'Subscriber account portal', detail: 'User authentication, member workspace & preferences' },
+      { icon: BarChart2, label: 'Subscription revenue metrics', detail: 'Active subscribers & monthly recurring revenue (MRR)' },
+      { icon: Package, label: 'Subscription landing page', detail: 'Tool overview, monthly pricing & direct signups' },
+      { icon: Mail, label: 'Subscriber email notifications', detail: 'Welcome sequence, receipts & monthly feature alerts' },
     ]
   }
 
