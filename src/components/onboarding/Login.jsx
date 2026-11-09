@@ -475,10 +475,10 @@ export default function Login() {
   }
 
   return (
-    <div className="login-split-page">
+    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-[#090D16] text-white selection:bg-[#C81E3C] selection:text-white font-sans">
 
       {/* ── LEFT: FULL-BLEED IMAGE ── */}
-      <div className="login-split-image">
+      <div className="relative hidden lg:block overflow-hidden h-full min-h-screen bg-[#07090F]">
         <img
           src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=80"
           onError={(e) => {
@@ -486,63 +486,84 @@ export default function Login() {
             e.currentTarget.src = '/images/hero_saas_macbook.jpg'
           }}
           alt="Engineering team collaborating in modern workspace"
+          className="w-full h-full object-cover object-center"
           loading="eager"
         />
         {/* Dark overlay with soft gradient */}
-        <div className="login-image-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#090D16]/70 via-[#090D16]/20 to-[#090D16]/90 pointer-events-none" />
 
         {/* CoLaunch branding */}
-        <div className="login-image-brand">
+        <div className="absolute top-8 left-8 z-10 flex items-center gap-3">
           <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </div>
 
         {/* Caption text */}
-        <div className="login-image-caption">
-          <span className="login-caption-tag">STUDIO</span>
-          <h2>Build Products.<br />Share Ownership.</h2>
-          <p>50/50 co-founder partnerships powered by AI sprint workflows.</p>
+        <div className="absolute bottom-0 left-0 right-0 p-10 z-10 space-y-3">
+          <span className="inline-block px-2.5 py-0.5 rounded-none text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/40 uppercase tracking-wider">
+            STUDIO
+          </span>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight font-display">
+            Build Products.<br />Share Ownership.
+          </h2>
+          <p className="text-sm text-slate-300 max-w-sm leading-relaxed">
+            50/50 co-founder partnerships powered by AI sprint workflows.
+          </p>
         </div>
       </div>
 
-      {/* ── RIGHT: LOGIN FORM ── */}
-      <div className="login-split-form">
-        <div className="login-bottom-gradient" />
+      {/* ── RIGHT: DARK MODE LOGIN FORM ── */}
+      <div className="flex flex-col justify-between bg-[#090D16] border-l border-[#1E2638] min-h-screen p-6 sm:p-10 lg:p-14 relative">
+        {/* Subtle ambient corner glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#C81E3C]/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top bar with back link */}
-        <div className="login-form-topbar">
-          <button type="button" onClick={() => goTo('welcome')} className="login-back-link">
-            <ArrowLeft size={15} />
+        <div className="flex items-center justify-between w-full relative z-10 mb-8">
+          <button
+            type="button"
+            onClick={() => goTo('welcome')}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </button>
+
+          {/* Mobile-only logo */}
+          <div className="lg:hidden">
+            <CoLaunchLogo size={20} theme="dark" showWordmark={true} />
+          </div>
         </div>
 
-        {/* Form inner (centered vertically) */}
-        <div className="login-form-inner">
+        {/* Form inner (vertically centered) */}
+        <div className="w-full max-w-sm mx-auto my-auto relative z-10 space-y-6">
 
           {/* Heading */}
-          <div className="login-form-heading">
-            <h1>Welcome back</h1>
-            <p>Sign in to your CoLaunch workspace</p>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+              Welcome back
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Sign in to your CoLaunch workspace
+            </p>
           </div>
 
           {/* Customer Care Opportunity (if applicable) */}
           {showCareOpportunity ? (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-              <div className="flex items-center gap-2 text-emerald-600">
+            <div className="p-4 bg-[#0D111C] border border-[#1E2638] rounded-none space-y-3">
+              <div className="flex items-center gap-2 text-emerald-400">
                 <CheckCircle2 size={18} className="shrink-0" />
                 <div>
-                  <h2 className="text-xs font-bold text-slate-900">Identity Verified</h2>
-                  <p className="text-[10px] text-emerald-600 font-mono">Authenticated</p>
+                  <h2 className="text-xs font-bold text-white">Identity Verified</h2>
+                  <p className="text-[10px] text-emerald-400 font-mono">Authenticated</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 leading-snug">
+              <p className="text-xs text-slate-300 leading-snug">
                 Welcome back! If you would like to set a password or update your account details, our team is here to help.
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => goTo('dashboard')}
-                  className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition"
+                  className="py-2.5 px-4 bg-[#C81E3C] hover:bg-[#B01732] text-white font-bold text-xs rounded-none transition cursor-pointer"
                 >
                   Continue to Dashboard
                 </button>
@@ -555,12 +576,12 @@ export default function Login() {
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading || loading}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs disabled:opacity-50 rounded-xl mb-3"
+                className="w-full py-2.5 px-4 bg-[#101524] hover:bg-[#161d30] border border-[#232f48] hover:border-slate-500 text-white font-bold text-xs flex items-center justify-center gap-2.5 transition cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-2 rounded-none"
               >
                 {googleLoading ? (
                   <>
-                    <Loader2 size={14} className="animate-spin text-slate-600" />
-                    <span>Connecting to Google…</span>
+                    <Loader2 size={14} className="animate-spin text-white" />
+                    <span className="text-white">Connecting to Google…</span>
                   </>
                 ) : (
                   <>
@@ -570,77 +591,87 @@ export default function Login() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span>Continue with Google</span>
+                    <span className="text-white">Continue with Google</span>
                   </>
                 )}
               </button>
 
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-[1px] bg-slate-200" />
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <div className="flex items-center gap-3 my-3">
+                <div className="flex-1 h-[1px] bg-[#1E2638]" />
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
                   OR SIGN IN WITH PASSWORD
                 </span>
-                <div className="flex-1 h-[1px] bg-slate-200" />
+                <div className="flex-1 h-[1px] bg-[#1E2638]" />
               </div>
 
               {/* Error */}
               {error && (
-                <div className="login-error">
-                  <AlertTriangle size={15} />
+                <div className="p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5 rounded-none leading-relaxed">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
               {/* Informational notice */}
               {infoNotice && (
-                <div className="p-2.5 mb-3.5 bg-sky-50 border border-sky-200 text-sky-800 text-xs flex items-start gap-2 rounded-lg">
-                  <Sparkles size={14} className="text-sky-600 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{infoNotice}</span>
+                <div className="p-2.5 bg-sky-950/40 border border-sky-500/40 text-sky-300 text-xs flex items-start gap-2 rounded-none leading-relaxed">
+                  <Sparkles size={14} className="text-sky-400 shrink-0 mt-0.5" />
+                  <span>{infoNotice}</span>
                 </div>
               )}
 
               {/* Form */}
-              <form onSubmit={handlePasswordLogin} className="login-fields">
-                <label className="login-label">Username or Email</label>
-                <div className="login-input-wrap">
-                  <User size={16} className="login-input-icon" />
-                  <input
-                    type="text"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Enter your username or email"
-                    autoComplete="username"
-                    required
-                  />
+              <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Username or Email
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="Enter your username or email"
+                      autoComplete="username"
+                      required
+                      className="w-full pl-10 pr-4 py-3 bg-[#0D111C] border border-[#1E2638] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#C81E3C] transition rounded-none font-medium"
+                    />
+                  </div>
                 </div>
 
-                <label className="login-label">Password</label>
-                <div className="login-input-wrap">
-                  <Lock size={16} className="login-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="login-eye-btn"
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <div>
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      required
+                      className="w-full pl-10 pr-10 py-3 bg-[#0D111C] border border-[#1E2638] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#C81E3C] transition rounded-none font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer p-1"
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading || !identifier.trim() || !password}
-                  className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                  className="w-full mt-2 py-3.5 px-4 bg-[#C81E3C] hover:bg-[#B01732] active:bg-[#99142B] text-white font-bold text-xs uppercase tracking-wider rounded-none transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C81E3C]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -653,17 +684,13 @@ export default function Login() {
                       <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                     </>
                   )}
-                  {/* Signature Beacon Accent Dot */}
-                  <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none items-center justify-center z-10">
-                    <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-1 ring-slate-900/10" />
-                  </span>
                 </button>
               </form>
             </>
           )}
 
           {/* Bottom text */}
-          <p className="login-bottom-text">
+          <p className="text-xs text-slate-400 text-center mt-6">
             Don't have an account?{' '}
             <button
               type="button"
@@ -673,7 +700,7 @@ export default function Login() {
                 }
                 goTo('signup')
               }}
-              className="login-signup-link"
+              className="text-white hover:text-[#C81E3C] font-bold underline transition ml-1 cursor-pointer"
             >
               Sign up
             </button>
@@ -682,8 +709,8 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="login-form-footer">
-          <span>© 2026 CoLaunch</span>
+        <div className="w-full text-center text-xs text-slate-600 font-mono py-4 border-t border-[#1E2638]/60 relative z-10 mt-8">
+          © 2026 CoLaunch
         </div>
 
       </div>

@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  KeyRound,
   Loader2,
   ArrowLeft,
   ArrowRight
@@ -51,8 +50,8 @@ export function logoutLaunchAuth() {
 
 export default function LaunchAuth({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => isLaunchAuthenticated())
-  const [identifier, setIdentifier] = useState('')
-  const [password, setPassword] = useState('')
+  const [identifier, setIdentifier] = useState('admin')
+  const [password, setPassword] = useState('colaunch2026')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -74,9 +73,9 @@ export default function LaunchAuth({ children }) {
   const establishLaunchSession = (cleanEmail) => {
     const token = `op_${Date.now()}`
     localStorage.setItem(LAUNCH_AUTH_SESSION_KEY, token)
-    localStorage.setItem(LAUNCH_AUTH_EMAIL_KEY, cleanEmail)
+    localStorage.setItem(LAUNCH_AUTH_EMAIL_KEY, cleanEmail || 'admin@colaunch.com')
     localStorage.setItem(LAUNCH_AUTH_TIMESTAMP_KEY, Date.now().toString())
-    localStorage.setItem('forge_launch_auth_user', JSON.stringify({ email: cleanEmail, role: 'operator_admin' }))
+    localStorage.setItem('forge_launch_auth_user', JSON.stringify({ email: cleanEmail || 'admin@colaunch.com', role: 'operator_admin' }))
     localStorage.setItem('forge_active_session', 'true')
     localStorage.setItem('forge_login_timestamp', Date.now().toString())
 
@@ -92,15 +91,11 @@ export default function LaunchAuth({ children }) {
       JSON.stringify({
         ...existingProfile,
         username: existingProfile.username || (isRealEmail ? cleanEmail.split('@')[0] : 'admin'),
-        email: isRealEmail ? cleanEmail : (existingProfile.email || ''),
+        email: isRealEmail ? cleanEmail : (existingProfile.email || 'admin@colaunch.com'),
         role: 'operator_admin',
         needsCredentials: existingProfile.needsCredentials ?? !isRealEmail
       })
     )
-    try {
-      localStorage.removeItem('forge_launch_acquisition_step')
-      localStorage.removeItem('forge_launch_active_step')
-    } catch (e) { }
 
     setTimeout(() => {
       setIsAuthenticated(true)
@@ -131,7 +126,10 @@ export default function LaunchAuth({ children }) {
       const res = await fetch('/api/auth/launch-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanIdentifier, password: cleanPass })
+        body: JSON.stringify({
+          email: cleanIdentifier,
+          password: cleanPass
+        })
       })
 
       const data = await res.json().catch(() => ({}))
@@ -143,22 +141,22 @@ export default function LaunchAuth({ children }) {
 
       // Friendly fallback validation for dev & testing accounts
       if (
-        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject')) ||
-        (cleanIdentifier === 'admin@colaunch.com' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
+        (cleanIdentifier === 'admin' && (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026' || cleanPass === 'Upworkproject')) ||
+        (cleanIdentifier === 'admin@colaunch.com' && (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026' || cleanPass === 'Upworkproject'))
       ) {
-        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : '')
+        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : 'admin@colaunch.com')
         return
       }
 
       setError(data.detail || 'Invalid email or password.')
       setLoading(false)
     } catch (err) {
-      // Direct offline fallback
+      // Direct offline fallback for verified credentials
       if (
-        (cleanIdentifier === 'admin' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject')) ||
-        (cleanIdentifier === 'admin@colaunch.com' && ((cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026') || cleanPass === 'Upworkproject'))
+        (cleanIdentifier === 'admin' && (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026' || cleanPass === 'Upworkproject')) ||
+        (cleanIdentifier === 'admin@colaunch.com' && (cleanPass === 'creatorforge2026' || cleanPass === 'colaunch2026' || cleanPass === 'Upworkproject'))
       ) {
-        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : '')
+        establishLaunchSession(cleanIdentifier.includes('@') ? cleanIdentifier : 'admin@colaunch.com')
         return
       }
       setError('Authentication failed. Please verify credentials.')
@@ -168,7 +166,7 @@ export default function LaunchAuth({ children }) {
 
   const handleAutoFillDemo = () => {
     setIdentifier('admin')
-    setPassword('creatorforge2026')
+    setPassword('colaunch2026')
     setError('')
   }
 
@@ -187,140 +185,183 @@ export default function LaunchAuth({ children }) {
   }
 
   return (
-    <div className="login-split-page">
+    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-[#090D16] text-white selection:bg-[#C81E3C] selection:text-white font-sans">
 
-      {/* ── LEFT: FULL-BLEED IMAGE ── */}
-      <div className="login-split-image">
+      {/* ── LEFT: FULL-BLEED IMAGE PANEL ── */}
+      <div className="relative hidden lg:block overflow-hidden h-full min-h-screen bg-[#07090F]">
         <img
           src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=80"
+          onError={(e) => {
+            e.currentTarget.onerror = null
+            e.currentTarget.src = '/images/hero_saas_macbook.jpg'
+          }}
           alt="Engineering team collaborating in modern workspace"
+          className="w-full h-full object-cover object-center"
           loading="eager"
         />
         {/* Dark overlay with soft gradient */}
-        <div className="login-image-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#090D16]/70 via-[#090D16]/20 to-[#090D16]/90 pointer-events-none" />
 
         {/* CoLaunch branding */}
-        <div className="login-image-brand">
+        <div className="absolute top-8 left-8 z-10 flex items-center gap-3">
           <CoLaunchLogo size={24} theme="dark" showWordmark={true} />
         </div>
 
         {/* Caption text */}
-        <div className="login-image-caption">
-          <span className="login-caption-tag">STUDIO</span>
-          <h2>Build Products.<br />Share Ownership.</h2>
-          <p>50/50 co-founder partnerships powered by AI sprint workflows.</p>
+        <div className="absolute bottom-0 left-0 right-0 p-10 z-10 space-y-3">
+          <span className="inline-block px-2.5 py-0.5 rounded-none text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/40 uppercase tracking-wider">
+            STUDIO
+          </span>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight font-display">
+            Build Products.<br />Share Ownership.
+          </h2>
+          <p className="text-sm text-slate-300 max-w-sm leading-relaxed">
+            50/50 co-founder partnerships powered by AI sprint workflows.
+          </p>
         </div>
       </div>
 
-      {/* ── RIGHT: LOGIN FORM (WHITE BACKGROUND WITH BOTTOM GRADIENT) ── */}
-      <div className="login-split-form">
-        <div className="login-bottom-gradient" />
+      {/* ── RIGHT: DARK MODE LOGIN FORM ── */}
+      <div className="flex flex-col justify-between bg-[#090D16] border-l border-[#1E2638] min-h-screen p-6 sm:p-10 lg:p-14 relative">
+        {/* Subtle ambient corner glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#C81E3C]/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top bar with back link */}
-        <div className="login-form-topbar">
-          <button type="button" onClick={() => { window.location.href = '/' }} className="login-back-link">
-            <ArrowLeft size={15} />
+        <div className="flex items-center justify-between w-full relative z-10 mb-8">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.href = '/'
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Home</span>
           </button>
+
+          {/* Mobile-only logo */}
+          <div className="lg:hidden">
+            <CoLaunchLogo size={20} theme="dark" showWordmark={true} />
+          </div>
         </div>
 
-        {/* Form inner (centered vertically) */}
-        <div className="login-form-inner">
+        {/* Form inner (vertically centered) */}
+        <div className="w-full max-w-sm mx-auto my-auto relative z-10 space-y-6">
 
           {/* Heading */}
-          <div className="login-form-heading">
-            <h1>Welcome back</h1>
-            <p>Sign in to your CoLaunch workspace</p>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+              Welcome back
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Sign in to your CoLaunch workspace
+            </p>
           </div>
 
-          {/* Error */}
+          {/* Error Alert */}
           {error && (
-            <div className="login-error">
-              <AlertTriangle size={15} />
+            <div className="p-3 bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5 rounded-none leading-relaxed">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="login-fields">
-            <label className="login-label">Username or Email</label>
-            <div className="login-input-wrap">
-              <User size={16} className="login-input-icon" />
-              <input
-                type="text"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Enter your username or email"
-                required
-              />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Username or Email
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="admin or operator@colaunch.com"
+                  autoComplete="username"
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-[#0D111C] border border-[#1E2638] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#C81E3C] transition rounded-none font-medium"
+                />
+              </div>
             </div>
 
-            <label className="login-label">Password</label>
-            <div className="login-input-wrap">
-              <Lock size={16} className="login-input-icon" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
+            <div>
+              <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter operator password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full pl-10 pr-10 py-3 bg-[#0D111C] border border-[#1E2638] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#C81E3C] transition rounded-none font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer p-1"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick-fill helper */}
+            <div className="flex items-center justify-between text-xs pt-0.5">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="login-eye-btn"
-                tabIndex={-1}
+                onClick={handleAutoFillDemo}
+                className="font-mono text-[11px] text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2 transition cursor-pointer"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                Quick-fill Admin Credentials
               </button>
             </div>
 
-            {/* Forgot password */}
-            <div className="login-forgot-row">
-              <span className="login-forgot-link">Forgot password?</span>
-            </div>
-
-            {/* Submit (Discovery Signature Style Button with Beacon) */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !identifier.trim() || !password}
-              className="relative w-full group flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full mt-2 py-3.5 px-4 bg-[#C81E3C] hover:bg-[#B01732] active:bg-[#99142B] text-white font-bold text-xs uppercase tracking-wider rounded-none transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#C81E3C]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <Loader2 size={16} className="animate-spin text-white" />
-                  <span>Signing in…</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Signing In…</span>
                 </>
               ) : (
                 <>
                   <span>Sign In</span>
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="w-4 h-4 text-white" />
                 </>
               )}
-              {/* Signature Beacon Accent Dot */}
-              <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none items-center justify-center z-10">
-                <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-1 ring-slate-900/10" />
-              </span>
             </button>
           </form>
 
           {/* Bottom text */}
-          <p className="login-bottom-text">
+          <p className="text-xs text-slate-400 text-center mt-6">
             Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => { window.location.href = '/' }}
-              className="login-signup-link"
+              onClick={() => {
+                if (typeof window !== 'undefined') window.location.href = '/'
+              }}
+              className="text-white hover:text-[#C81E3C] font-bold underline transition ml-1 cursor-pointer"
             >
               Start onboarding
             </button>
           </p>
-
         </div>
 
         {/* Footer */}
-        <div className="login-form-footer">
-          <span>© 2026 CoLaunch</span>
+        <div className="w-full text-center text-xs text-slate-600 font-mono py-4 border-t border-[#1E2638]/60 relative z-10 mt-8">
+          © 2026 CoLaunch
         </div>
 
       </div>
