@@ -80,8 +80,8 @@ export async function ensureServerAiKeysLoaded(force = false) {
 
 // Auto-trigger loading of backend keys immediately on boot
 try {
-  ensureServerAiKeysLoaded().catch(() => { });
-} catch (_) { }
+  ensureServerAiKeysLoaded().catch(() => {});
+} catch (_) {}
 
 export function resetFailedAiKeys() {
   failedKeys.clear();
@@ -734,14 +734,14 @@ export function buildChannelNativeMarketingPack(creatorData) {
   const productName = creatorData?.productName || blueprint?.name || `${name} Pro Suite`
   const tagline = blueprint?.tagline || `The ultimate system built specifically for ${name}'s community`
   const productDesc = blueprint?.description || `A dedicated, high-tier platform engineered for ${name}'s audience in ${niche}`
-  const features = Array.isArray(blueprint?.features) && blueprint.features.length > 0
-    ? blueprint.features
+  const features = Array.isArray(blueprint?.features) && blueprint.features.length > 0 
+    ? blueprint.features 
     : [
-      'Interactive mastery curriculum & real-time feedback sandbox',
-      'Direct creator access & weekly live office hours',
-      'Production-ready templates & downloadable resource bundles',
-      'Exclusive private community & verified member certification'
-    ]
+        'Interactive mastery curriculum & real-time feedback sandbox',
+        'Direct creator access & weekly live office hours',
+        'Production-ready templates & downloadable resource bundles',
+        'Exclusive private community & verified member certification'
+      ]
   const revenueEst = blueprint?.revenue || '$45K–$120K / mo'
 
   const isCoding = niche.includes('code') || niche.includes('program') || niche.includes('dev') || niche.includes('software') || niche.includes('tech') || name.toLowerCase().includes('bro code')
@@ -763,10 +763,10 @@ export function buildChannelNativeMarketingPack(creatorData) {
   // Channel-specific Instagram caption
   const igCaption = `Today is the day. Over ${followers} of you have watched our videos, asked questions, and pushed for something bigger. Introducing ${productName} — your direct pipeline to mastering ${niche}. Link in bio to join the founding cohort! 🚀`
   const igHashtags = isCoding ? ['coding', 'developer', 'webdevelopment', 'learnprogramming', 'softwareengineer', 'code'] :
-    isCooking ? ['culinary', 'recipes', 'homechef', 'cookingchallenge', 'mealkit', 'foodie'] :
-      isGaming ? ['gaming', 'gamercommunity', 'esports', 'twitchstreamer', 'gamersunite', 'gameplay'] :
-        isFitness ? ['fitnessjourney', 'training', 'workoutmotivation', 'athlete', 'fitfam', 'coaching'] :
-          ['creator', 'entrepreneur', 'masterclass', 'community', 'growth', 'launch']
+                     isCooking ? ['culinary', 'recipes', 'homechef', 'cookingchallenge', 'mealkit', 'foodie'] :
+                     isGaming ? ['gaming', 'gamercommunity', 'esports', 'twitchstreamer', 'gamersunite', 'gameplay'] :
+                     isFitness ? ['fitnessjourney', 'training', 'workoutmotivation', 'athlete', 'fitfam', 'coaching'] :
+                     ['creator', 'entrepreneur', 'masterclass', 'community', 'growth', 'launch']
 
   // Channel-specific Twitter thread
   const tweets = [
@@ -778,9 +778,9 @@ export function buildChannelNativeMarketingPack(creatorData) {
 
   // Channel-specific TikTok hook & script
   const ttHook = isCoding ? "Stop watching tutorials if you want to get hired as a developer." :
-    isCooking ? "Stop buying grocery store ingredients that go bad in 3 days." :
-      isFitness ? "Stop switching workout routines every 2 weeks." :
-        `The biggest mistake ${followers} viewers make in ${niche}.`
+                 isCooking ? "Stop buying grocery store ingredients that go bad in 3 days." :
+                 isFitness ? "Stop switching workout routines every 2 weeks." :
+                 `The biggest mistake ${followers} viewers make in ${niche}.`
   const ttScript = `[HOOK — CAMERA ZOOM IN]\n${ttHook}\n\n[CUT TO WORKSPACE / PRODUCT DEMO]\nI've seen thousands of comments asking the same thing. You watch the video, feel inspired, but when it's time to execute, you're on your own.\n\n[HIGHLIGHT SCREEN]\nThat's why I built "${productName}". Instead of generic advice, you get ${features[0] || 'an interactive sandbox'}.\n\n[POINT TO BIO]\nFounding access just went live. Check the link in my bio to get in before spots fill up!`
 
   // 8-Slide Executive Pitch Deck
@@ -1102,7 +1102,7 @@ export async function generateTodayPrioritiesAI(creatorData, signal = undefined)
   const productName = creatorData.productName || "Creator Academy";
   const blueprint = creatorData.blueprint;
   const productDesc = blueprint?.description || `a premium ${niche} product`;
-
+  
   // Recent videos / posts context from onboarding
   const postList = (creatorData.recentPosts || creatorData.recentVideos || creatorData.videos || [])
   const recentVids = postList
@@ -1428,7 +1428,7 @@ export async function generateProductImageWithOpenAI(
       try {
         const errText = await res.text();
         if (errText) errMsg = errText.slice(0, 200);
-      } catch (__) { }
+      } catch (__) {}
     }
 
     console.warn(`[Forge] DALL-E 3 API returned status ${res.status}:`, errMsg);
@@ -1444,7 +1444,7 @@ export async function generateProductImageWithOpenAI(
           if (inMemoryAiKeys.openaiKey === openaiKey) {
             inMemoryAiKeys.openaiKey = "";
           }
-        } catch (_) { }
+        } catch (_) {}
       }
       throw new Error(`OpenAI Key Expired: ${errMsg}`);
     }
@@ -1473,7 +1473,7 @@ export async function generateProductImageWithOpenAI(
           if (data2?.data?.[0]?.url) return data2.data[0].url;
           if (data2?.data?.[0]?.b64_json) return `data:image/png;base64,${data2.data[0].b64_json}`;
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     throw new Error(`OpenAI DALL-E Error (${res.status}): ${errMsg}`);
@@ -1517,7 +1517,7 @@ async function saveImageToBackendMedia(imageResult) {
 export async function generateProductImage(creatorData, optionsOrSignal = {}) {
   try {
     await ensureServerAiKeysLoaded();
-  } catch (_) { }
+  } catch (_) {}
 
   const isSignal = optionsOrSignal && typeof optionsOrSignal === 'object' && 'aborted' in optionsOrSignal;
   const options = isSignal ? {} : (optionsOrSignal || {});
@@ -2054,7 +2054,7 @@ export async function generateRecommendationsAI(
           intel = parsed;
         }
       }
-    } catch { }
+    } catch {}
   }
 
   const painPointsList = (intel?.pain_points || [])
@@ -2334,10 +2334,10 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
   const avgViewsStr = avgViewsNum >= 1_000_000
     ? `${(avgViewsNum / 1_000_000).toFixed(1)}M views`
     : avgViewsNum >= 1_000
-      ? `${Math.round(avgViewsNum / 1_000)}K views`
-      : avgViewsNum > 0
-        ? `${avgViewsNum} views`
-        : 'Estimated from niche benchmarks';
+    ? `${Math.round(avgViewsNum / 1_000)}K views`
+    : avgViewsNum > 0
+    ? `${avgViewsNum} views`
+    : 'Estimated from niche benchmarks';
 
   // Growth rate and sentiment
   const growthRate = `+${(10 + Math.round(eng * 1.2)).toFixed(1)}% YoY Growth (est.)`;
@@ -2418,7 +2418,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
       let domain = 'Google Search Verified';
       try {
         if (s.url) domain = new URL(s.url).hostname.replace(/^www\./, '');
-      } catch { }
+      } catch {}
 
       list.push({
         title: s.title || `Market Demand: ${name}`,
@@ -2529,7 +2529,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
     ];
   } else if (isTech) {
     const isGadgetOrMkbhd = cleanHandle.includes('mkbhd') || cleanHandle.includes('marques') || name.toLowerCase().includes('marques') || rawNiche.includes('gadget') || rawNiche.includes('phone') || rawNiche.includes('hardware');
-
+    
     if (isGadgetOrMkbhd) {
       personas = [
         { role: 'Prosumers & Tech Enthusiasts', percentage: 49, description: 'Early adopters seeking unbiased hardware benchmarks, camera shootouts, and battery analytics.' },
@@ -3010,7 +3010,7 @@ Return ONLY a valid JSON object matching this exact schema:
       }
 
       if (parsed.purchasing && typeof parsed.purchasing === 'object') {
-        const isHallucinatedQuote = !parsed.purchasing.buyer_quote
+        const isHallucinatedQuote = !parsed.purchasing.buyer_quote 
           || parsed.purchasing.buyer_quote.includes('Take my money')
           || parsed.purchasing.buyer_quote.includes('Gladly pay')
           || parsed.purchasing.buyer_quote.includes('Verbatim quote');
@@ -3145,7 +3145,7 @@ export function getFallbackCleanRecommendations(creatorData = {}) {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.schemaVersion === 3) intel = parsed;
       }
-    } catch { }
+    } catch {}
   }
 
   const p1Evidence = intel?.pain_points?.[0]
