@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
 import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
 import {
@@ -1193,16 +1194,12 @@ export default function Blueprint() {
               <span>Back</span>
             </button>
             <div className="h-4 w-[1px] bg-[#1f2433]"></div>
-            <a href="https://co-launch.app" className="flex items-center gap-2 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
-              {/* CoLaunch 4-square Logo */}
-              <div className="grid grid-cols-2 gap-1 w-4 h-4">
-                <span className="w-1.5 h-1.5 rounded-sm" style={{ background: accent.color }}></span>
-                <span className="w-1.5 h-1.5 rounded-sm bg-emerald-400"></span>
-                <span className="w-1.5 h-1.5 rounded-sm bg-amber-400"></span>
-                <span className="w-1.5 h-1.5 rounded-sm bg-purple-400"></span>
-              </div>
-              <span className="font-bold tracking-tight text-white text-sm">CoLaunch</span>
-            </a>
+            <CoLaunchLogo
+              size={18}
+              href="https://co-launch.app"
+              showWordmark={true}
+              className="hover:opacity-85 transition-opacity"
+            />
           </div>
 
           {/* Action Menus & Step Indicator */}

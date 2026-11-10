@@ -1362,7 +1362,7 @@ export default function Preview() {
           </button>
           <div className="h-4 w-[1px] bg-[#1f2433]" />
 
-          {/* CoLaunch 4-Square Brand Mark & Link */}
+          {/* Official CoLaunch Brand Mark & Link */}
           <CoLaunchLogo
             size={18}
             href="https://co-launch.app"
