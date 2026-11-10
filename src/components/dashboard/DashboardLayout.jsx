@@ -10,7 +10,7 @@ import Revenue from './Revenue'
 import Accounts from './Accounts'
 import ForgeChat from './ForgeChat'
 import SupportChatPage from './SupportChatPage'
-import { useForge, getAccent } from '../../App'
+import { useForge, getAccent, useBgJob } from '../../App'
 import {
   Sparkles, Laptop, Smartphone, Tablet, Menu, LogOut, Zap,
   Globe, Layers, RotateCcw, Copy, Check, ExternalLink, Lock, Eye, Monitor,
@@ -408,6 +408,39 @@ export default function DashboardLayout() {
     window.addEventListener('forge_open_pricing', handleOpenPricing)
     return () => window.removeEventListener('forge_open_pricing', handleOpenPricing)
   }, [])
+
+  // Global listener for weekly launch plan & content calendar AI generation
+  const autofillJob = useBgJob('autofill-week')
+  const { clearBgJob, syncSessionToDb } = useForge()
+
+  useEffect(() => {
+    if (autofillJob.status === 'done' && autofillJob.result) {
+      const h = creatorData?.handle || 'default'
+      const hClean = h.replace(/^@+/, '')
+      const keys = [
+        `forge_calendar_${h}_launch_w0`,
+        `forge_calendar_${h.toLowerCase()}_launch_w0`,
+        `forge_calendar_${hClean}_launch_w0`,
+        `forge_calendar_${hClean.toLowerCase()}_launch_w0`,
+        `forge_calendar_@${hClean}_launch_w0`,
+        `forge_calendar_@${hClean.toLowerCase()}_launch_w0`
+      ]
+      keys.forEach(k => {
+        try { localStorage.setItem(k, JSON.stringify(autofillJob.result)) } catch (_) {}
+      })
+      try {
+        localStorage.removeItem(`forge_campaign_posts_${hClean}`)
+        localStorage.removeItem(`forge_campaign_posts_${hClean.toLowerCase()}`)
+      } catch (_) {}
+
+      window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'GlobalAutofill' } }))
+      clearBgJob('autofill-week')
+      if (triggerToast) {
+        triggerToast('Launch plan & content calendar are ready!', 'success')
+      }
+      setTimeout(() => { if (syncSessionToDb) syncSessionToDb() }, 50)
+    }
+  }, [autofillJob.status, autofillJob.result, creatorData?.handle, clearBgJob, triggerToast, syncSessionToDb])
 
   // Check if user logged in via single-use email code without a password set in dashboard
   const [showCodeLoginBanner, setShowCodeLoginBanner] = useState(() => {

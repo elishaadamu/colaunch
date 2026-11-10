@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { useForge } from '../../App'
-import { loadAiKeys } from '../../services/ai'
+import { useForge, useBgJob } from '../../App'
+import { loadAiKeys, hasTextKey, generateContentCalendar } from '../../services/ai'
 import {
   getYouTubeAuthUrl,
   startYouTubeOAuth,
@@ -905,8 +905,23 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
 }
 
 export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
-  const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab, dashboardData, saveDashboardData } = useForge()
+  const { creatorData, userProfile, triggerToast, setActiveTab: contextSetActiveTab, dashboardData, saveDashboardData, startBgJob } = useForge()
   const setActiveTab = propSetActiveTab || contextSetActiveTab
+  const autofillJob = useBgJob('autofill-week')
+  const isPlanLoading = autofillJob.status === 'running'
+
+  // If opening Content Calendar for the first time without a cached launch plan, trigger the shared AI generation
+  useEffect(() => {
+    const h = creatorData?.handle
+    if (!h || h === 'default') return
+    const hClean = h.replace(/^@+/, '')
+    const cached = localStorage.getItem(`forge_calendar_${h}_launch_w0`) || localStorage.getItem(`forge_calendar_${hClean}_launch_w0`)
+    if (!cached && hasTextKey() && autofillJob.status === 'idle') {
+      if (typeof startBgJob === 'function') {
+        startBgJob('autofill-week', (sig) => generateContentCalendar(creatorData, 'launch', sig))
+      }
+    }
+  }, [creatorData?.handle, autofillJob.status, startBgJob])
 
   const currentCreatorEmail = (userProfile?.email || creatorData?.email || '').trim().toLowerCase()
   const isEmailConfigured = Boolean(
@@ -2463,6 +2478,14 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
             <span className="hidden sm:inline">Jump to Scheduled</span>
           </button>
 
+          {isPlanLoading && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-cyan-950/70 border border-cyan-500/40 text-cyan-200 text-xs font-bold rounded-none animate-pulse">
+              <Sparkles size={12} className="animate-spin text-cyan-400" />
+              <span className="hidden sm:inline">AI tailoring launch plan & calendar...</span>
+              <span className="sm:hidden">Generating...</span>
+            </div>
+          )}
+
           <div className="flex items-center bg-[#111522] p-0.5 rounded-none text-xs font-bold border-0">
             <button
               type="button"
@@ -2673,8 +2696,48 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
           {/* VIEW A: 7-DAY SPRINT BOARD (GAMIFIED DAY CARDS) */}
           {viewMode === 'sprint' && (
             <div>
-              {/* Optional Empty Week Banner */}
-              {filteredPosts.length === 0 && (
+              {isPlanLoading ? (
+                <div>
+                  <div className="mb-3.5 p-4 bg-[#111522] rounded-none border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-none bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                        <Sparkles size={16} className="animate-spin text-cyan-400" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-bold text-white">AI is tailoring your 7-day launch plan</h5>
+                        <p className="text-[11px] text-slate-400">Architecting day-by-day video hooks, community updates, and conversion strategies...</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
+                      GENERATING CAMPAIGN...
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dName) => (
+                      <div key={dName} className="flex flex-col bg-[#0c0f17] rounded-none p-3.5 border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                          <span className="font-extrabold text-xs text-slate-400">{dName}</span>
+                          <span className="w-12 h-3 bg-white/5 rounded-none animate-pulse" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-20 bg-[#111522] rounded-none border border-cyan-500/20 p-2.5 flex flex-col justify-between animate-pulse">
+                            <div className="w-3/4 h-3 bg-cyan-500/20 rounded-none" />
+                            <div className="w-1/2 h-2.5 bg-white/5 rounded-none" />
+                          </div>
+                          <div className="h-20 bg-[#111522] rounded-none border border-white/5 p-2.5 flex flex-col justify-between animate-pulse">
+                            <div className="w-2/3 h-3 bg-white/10 rounded-none" />
+                            <div className="w-1/3 h-2.5 bg-white/5 rounded-none" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                {/* Optional Empty Week Banner */}
+                {filteredPosts.length === 0 && (
                 <div className="mb-3 p-4 bg-[#111522] rounded-none flex flex-col sm:flex-row items-center justify-between gap-3 border-0">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-none bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
@@ -2836,12 +2899,23 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                 )
               })}
               </div>
+              </>
+            )}
             </div>
           )}
 
           {/* VIEW B: MONTHLY CALENDAR VIEW (Direct from user reference Image 4) */}
           {viewMode === 'calendar' && (
             <div className="flex-1 bg-[#0c0f17] rounded-none p-4 flex flex-col border-0">
+              {isPlanLoading && (
+                <div className="mb-3 p-3 bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-between gap-2.5 animate-pulse text-xs text-cyan-200 font-bold rounded-none">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={14} className="animate-spin text-cyan-400" />
+                    <span>AI is tailoring the launch plan & content calendar...</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-cyan-300">UPDATING</span>
+                </div>
+              )}
               {/* Day Name Headers matching Image 4: Mon, Tue, Wed, Thu, Fri, Sat, Sun */}
               <div className="grid grid-cols-7 pb-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider bg-[#111522] py-2.5 rounded-none border-0">
                 <div>Mon</div>
@@ -2964,7 +3038,22 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
         {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine - 15% Tighter Width) ── */}
         <aside className="w-[320px] lg:w-[375px] xl:w-[410px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-l border-[#161b2b] p-3.5 sm:p-4 space-y-3.5 h-full">
-          {viewMode === 'calendar' && (!activePost || !posts.some(p => p.dateKey === selectedCalendarDateKey)) ? (
+          {isPlanLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 my-auto">
+              <div className="w-12 h-12 rounded-none bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 animate-pulse">
+                <Sparkles size={22} className="animate-spin text-cyan-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Synthesizing Launch Strategy</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-[240px]">
+                  Drafting distribution hooks, video scripts, and platform formats...
+                </p>
+              </div>
+              <div className="w-32 h-1.5 bg-white/5 overflow-hidden rounded-none">
+                <div className="w-full h-full bg-cyan-400 animate-pulse" />
+              </div>
+            </div>
+          ) : viewMode === 'calendar' && (!activePost || !posts.some(p => p.dateKey === selectedCalendarDateKey)) ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 my-auto">
               <div className="w-12 h-12 rounded-none bg-[#111522] border border-[#202738] flex items-center justify-center text-slate-400">
                 <Calendar size={22} className="text-slate-400" />
