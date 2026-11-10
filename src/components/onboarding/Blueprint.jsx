@@ -789,7 +789,27 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
     other: { type: 'Software App', icon: Globe, preview: 'webapp' },
   }
 
-  return recs.slice(0, 4).map((r, index) => {
+  // Ensure at least 3 candidate recommendations exist so "Other options" is always populated
+  let effectiveRecs = Array.isArray(recs) ? [...recs] : []
+  if (effectiveRecs.length > 0 && effectiveRecs.length < 3) {
+    const fallbacks = getFallbackCleanRecommendations(creatorData)
+    for (const fb of fallbacks) {
+      if (effectiveRecs.length >= 3) break
+      const exists = effectiveRecs.some(r =>
+        (r.product_name || r.name || '').toLowerCase() === (fb.product_name || fb.name || '').toLowerCase() ||
+        (r.product_category || r.category || '').toLowerCase() === (fb.product_category || fb.category || '').toLowerCase()
+      )
+      if (!exists) {
+        effectiveRecs.push({
+          ...fb,
+          id: fb.id || `rec-fallback-${effectiveRecs.length}`,
+          confidence_score: parseFloat(Math.max(0.68, (effectiveRecs[0]?.confidence_score || 0.92) - (effectiveRecs.length * 0.07)).toFixed(2))
+        })
+      }
+    }
+  }
+
+  return effectiveRecs.slice(0, 4).map((r, index) => {
     const cat = (r.product_category || 'tool').toLowerCase()
     const config = CATEGORY_MAP[cat] || CATEGORY_MAP.other
     const price = clampPrice(r.monthly_price || defaultPrices[index % 4])
@@ -1707,9 +1727,11 @@ export default function Blueprint() {
 
               {/* Right Column: Secondary / Alternate Options */}
               <div className="lg:col-span-4 space-y-2.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
-                  Other options
-                </div>
+                {otherOptions.length > 0 && (
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
+                    Other options
+                  </div>
+                )}
 
                 {otherOptions.map(blueprint => {
                   const altPrice = clampPrice(customPrices[blueprint.id] || blueprint.monthly_price || 19)

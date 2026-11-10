@@ -2092,31 +2092,36 @@ DO NOT recommend step-by-step guides, pathways, curriculums, tutorials, or educa
 ONLY recommend interactive subscription software tools: calculators, trackers, planners, web apps, automated dashboards, mobile apps, or workflow engines.
 NEVER invent or fabricate quoted viewer questions. If no real verbatim quote exists, state the demand topic without quotation marks.
 NEVER base ideas on stray or spam comments that contradict the creator's core niche (e.g. ignore random kids/children comments on an international development channel).
-Return ONLY a valid JSON object containing a "recommendations" array. Ensure all string values are properly escaped and contain no raw newlines.`;
+You MUST generate exactly 3 diverse, distinct, and high-confidence software recommendations in the "recommendations" array (1 primary flagship product, and 2 distinct alternative software applications).
+Return ONLY a valid JSON object containing the "recommendations" array with 3 distinct products. Ensure all string values are properly escaped and contain no raw newlines.`;
 
-  const prompt = `Generate subscription software product recommendations for:
+  const prompt = `Generate exactly 3 diverse, high-confidence subscription software product recommendations for:
 Creator: ${name} (${handle})
 Platform: ${platform} (${followers} followers, ${engRate}% engagement)
 Niche: ${niche}${bio}
 ${audienceSignalsContext}
 
 CRITICAL RULES:
-1. Every product MUST be an interactive subscription software tool or web app (not a course, ebook, coaching, newsletter, guide, or pathway).
-2. Choose from categories: "tool", "calculator", "tracker", "planner", "community", "mobile_app", "dashboard", "marketplace", "automation", "creator_tool".
-3. Ground each product strictly in the creator's real niche and audience pain points.
-4. Provide a suggested monthly subscription price between 9 and 29:
+1. Return exactly 3 distinct software product recommendations in the "recommendations" array.
+   - Recommendation 1: Flagship interactive software tool addressing the #1 biggest recurring audience friction.
+   - Recommendation 2: Distinct alternative software tool (different category, e.g. tracker, calculator, or dashboard).
+   - Recommendation 3: Distinct secondary software utility or community workspace addressing another audience need.
+2. Every product MUST be an interactive subscription software tool or web app (not a course, ebook, coaching, newsletter, guide, or pathway).
+3. Choose from categories: "tool", "calculator", "tracker", "planner", "community", "mobile_app", "dashboard", "marketplace", "automation", "creator_tool".
+4. Ground each product strictly in the creator's real niche and audience pain points.
+5. Provide a suggested monthly subscription price between 9 and 29:
    - For simple link hubs or directories: price at $9/mo.
    - For automated calculators, trackers, or workflow engines: price between $15 and $29/mo based on recurring software value.
-5. Provide a concrete buyer persona in "target_audience" (e.g. "Field M&E Officers and WASH Program Managers", NOT vague phrases like "followers seeking X").
-6. Provide a "who_pays_and_why" sentence: the specific buyer, their recurring friction, and why they pay a monthly subscription.
-7. Provide "key_features": exactly 3 to 4 specific software capabilities derived strictly from what this tool does.
-8. Provide 1–2 specific evidence bullets matching real channel topics without inventing fake quotes.
+6. Provide a concrete buyer persona in "target_audience" (e.g. "React developers and engineering leads", NOT vague phrases like "followers seeking X").
+7. Provide a "who_pays_and_why" sentence: the specific buyer, their recurring friction, and why they pay a monthly subscription.
+8. Provide "key_features": exactly 3 to 4 specific software capabilities derived strictly from what this tool does.
+9. Provide 1–2 specific evidence bullets matching real channel topics without inventing fake quotes.
 
-Return exactly this JSON structure:
+Return exactly this JSON structure with 3 distinct recommendations:
 {
   "recommendations": [
     {
-      "product_name": "Software Tool Name (specific and functional)",
+      "product_name": "Primary Flagship Tool Name",
       "product_category": "tool",
       "tool_summary": "One sentence explaining what the software application does for the user",
       "tagline": "Catchy 5-8 word tagline",
@@ -2130,9 +2135,47 @@ Return exactly this JSON structure:
       ],
       "monthly_price": 19,
       "evidence": [
-        "38% of comments and video topics indicate demand for automated data consolidation"
+        "Specific audience demand signal from comments or channel topics"
       ],
-      "confidence_score": 0.92
+      "confidence_score": 0.94
+    },
+    {
+      "product_name": "Alternative Tool 2 Name",
+      "product_category": "tracker",
+      "tool_summary": "One sentence explaining what this second application does",
+      "tagline": "Catchy 5-8 word tagline",
+      "description": "2-sentence clear explanation of how this second application solves a distinct problem",
+      "target_audience": "Distinct buyer persona",
+      "who_pays_and_why": "Who pays, their friction, and why they pay monthly",
+      "key_features": [
+        "Feature 1 specific to this second tool",
+        "Feature 2 specific to this second tool",
+        "Feature 3 specific to this second tool"
+      ],
+      "monthly_price": 24,
+      "evidence": [
+        "Specific audience demand signal for this second tool"
+      ],
+      "confidence_score": 0.88
+    },
+    {
+      "product_name": "Alternative Tool 3 Name",
+      "product_category": "calculator",
+      "tool_summary": "One sentence explaining what this third application does",
+      "tagline": "Catchy 5-8 word tagline",
+      "description": "2-sentence clear explanation of how this third tool operates",
+      "target_audience": "Distinct buyer persona",
+      "who_pays_and_why": "Who pays, their friction, and why they pay monthly",
+      "key_features": [
+        "Feature 1 specific to this third tool",
+        "Feature 2 specific to this third tool",
+        "Feature 3 specific to this third tool"
+      ],
+      "monthly_price": 15,
+      "evidence": [
+        "Specific audience demand signal for this third tool"
+      ],
+      "confidence_score": 0.82
     }
   ]
 }
@@ -2267,9 +2310,27 @@ Calculate distinct confidence scores between 0.70 and 0.98. Do NOT use static 0.
       });
 
       // Filter strictly through quality gate: reject off-niche and content/course ideas
-      const validRecs = mapped.filter(item => validateRecommendationQualityGate(item, creatorData, intel));
+      let validRecs = mapped.filter(item => validateRecommendationQualityGate(item, creatorData, intel));
 
-      // If fewer than 4 pass, return fewer. Never pad the list!
+      // Guarantee at least 3 distinct candidates so "Other options" is always populated
+      if (validRecs.length < 3) {
+        const cleanFallbacks = getFallbackCleanRecommendations(creatorData);
+        for (const fb of cleanFallbacks) {
+          if (validRecs.length >= 3) break;
+          const alreadyExists = validRecs.some(v =>
+            (v.product_name || '').toLowerCase() === (fb.product_name || '').toLowerCase() ||
+            (v.product_category || '').toLowerCase() === (fb.product_category || '').toLowerCase()
+          );
+          if (!alreadyExists && validateRecommendationQualityGate(fb, creatorData, intel)) {
+            validRecs.push({
+              ...fb,
+              id: `rec-${validRecs.length}`,
+              confidence_score: parseFloat(Math.max(0.68, (validRecs[0]?.confidence_score || 0.92) - (validRecs.length * 0.07)).toFixed(2))
+            });
+          }
+        }
+      }
+
       if (validRecs.length > 0) {
         return validRecs;
       }
