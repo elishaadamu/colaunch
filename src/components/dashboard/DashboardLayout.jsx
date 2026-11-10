@@ -47,11 +47,11 @@ function DashboardAppPreview({ setActiveTab: propSetActiveTab }) {
   const previewType = blueprint.preview || 'webapp'
 
   const [mockupActiveTab, setMockupActiveTab] = useState(() => {
-    if (previewType === 'webapp') return 'Courses'
-    if (previewType === 'mobile') return 'Home Feed'
-    if (previewType === 'community') return 'Announcements'
-    if (previewType === 'store') return 'All Products'
-    return 'Courses'
+    if (previewType === 'webapp') return 'Workspace'
+    if (previewType === 'mobile') return 'Workspace'
+    if (previewType === 'community') return 'Portal'
+    if (previewType === 'store') return 'Workspace'
+    return 'Workspace'
   })
 
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'

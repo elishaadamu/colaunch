@@ -53,88 +53,48 @@ function Confetti({ accentColor }) {
 }
 
 function getRichBuiltModules(blueprint, creatorData) {
-  const name = blueprint?.name || 'Creator Platform'
+  const name = blueprint?.name || 'Software Application'
   const features = Array.isArray(creatorData?.features) && creatorData.features.length > 0
     ? creatorData.features
     : Array.isArray(blueprint?.features) && blueprint.features.length > 0
       ? blueprint.features
-      : ['Community Forum', 'Member Discussions', 'Video Releases', 'Official Announcements']
+      : ['Interactive Workspace', 'Automated Workflows', 'Saved User Projects', 'Cloud Sync']
 
   const modules = []
 
   features.forEach((feat, idx) => {
     const fLower = feat.toLowerCase()
-    if (fLower.includes('podcast')) {
+    if (fLower.includes('telemetry') || fLower.includes('analytic') || fLower.includes('metric')) {
       modules.push({
-        id: `podcast-${idx}`,
-        icon: Volume2,
-        title: 'Podcast Engine & Audio Player',
-        description: 'Audio syndication, show notes feed & web streaming player',
+        id: `telemetry-${idx}`,
+        icon: BarChart2,
+        title: feat,
+        description: 'Real-time performance indicators, usage metrics & audit logs',
         status: 'Active',
       })
-    } else if (fLower.includes('live') || fLower.includes('ama') || fLower.includes('event')) {
-      modules.push({
-        id: `live-${idx}`,
-        icon: Radio,
-        title: 'Live Stage & Event Hosting',
-        description: 'Scheduled broadcast rooms, live Q&A queue & recording archive',
-        status: 'Active',
-      })
-    } else if (fLower.includes('store') || fLower.includes('product') || fLower.includes('drop')) {
-      modules.push({
-        id: `store-${idx}`,
-        icon: ShoppingBag,
-        title: 'Digital Storefront & Vault',
-        description: 'Stripe checkout flow, downloadable assets & product vault',
-        status: 'Configured',
-      })
-    } else if (fLower.includes('video') || fLower.includes('vault') || fLower.includes('release')) {
-      modules.push({
-        id: `videos-${idx}`,
-        icon: Play,
-        title: 'Video Vault & YouTube Sync',
-        description: 'Curated video releases, playlist indexing & adaptive playback',
-        status: 'Synced',
-      })
-    } else if (fLower.includes('forum') || fLower.includes('community') || fLower.includes('discussion')) {
-      modules.push({
-        id: `community-${idx}`,
-        icon: Users,
-        title: 'Member Community & Feed',
-        description: 'Real audience comments, threaded discussions & creator announcements',
-        status: 'Live',
-      })
-    } else if (fLower.includes('tier') || fLower.includes('perk') || fLower.includes('membership')) {
+    } else if (fLower.includes('billing') || fLower.includes('stripe') || fLower.includes('tier') || fLower.includes('price')) {
       modules.push({
         id: `billing-${idx}`,
         icon: BarChart2,
-        title: 'Stripe Membership & Paywalls',
-        description: 'Recurring subscription tiers, member perks & access control',
+        title: 'Monthly Recurring Billing Engine',
+        description: 'Subscription billing, member access keys & automated renewals',
         status: 'Ready',
       })
-    } else if (fLower.includes('announcement')) {
+    } else if (fLower.includes('export') || fLower.includes('sync') || fLower.includes('cloud')) {
       modules.push({
-        id: `announcements-${idx}`,
-        icon: Sparkles,
-        title: 'Official Channel Broadcasts',
-        description: 'Verified creator updates, release alerts & push notifications',
-        status: 'Active',
-      })
-    } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('tool') || fLower.includes('software')) {
-      modules.push({
-        id: `software-${idx}`,
-        icon: Layers,
-        title: 'Interactive Software Tool Engine',
-        description: 'Interactive calculators, automated workflows & member data sync',
-        status: 'Built',
+        id: `sync-${idx}`,
+        icon: Globe,
+        title: feat,
+        description: 'Cloud record persistence, cross-device sync & data export pipelines',
+        status: 'Configured',
       })
     } else {
       modules.push({
-        id: `custom-${idx}`,
-        icon: Package,
+        id: `module-${idx}`,
+        icon: Layers,
         title: feat,
-        description: `Dedicated ${feat.toLowerCase()} pipeline configured for ${name}`,
-        status: 'Active',
+        description: `Dedicated ${feat.toLowerCase()} capability configured for ${name}`,
+        status: 'Built',
       })
     }
   })
@@ -143,8 +103,8 @@ function getRichBuiltModules(blueprint, creatorData) {
   modules.push({
     id: 'analytics-core',
     icon: BarChart2,
-    title: 'Creator Studio Telemetry',
-    description: 'Real-time subscriber tracking, revenue analytics & member management',
+    title: 'Subscriber & MRR Telemetry',
+    description: 'Real-time waitlist tracking, conversion analytics & subscriber metrics',
     status: 'Ready',
   })
 
@@ -413,7 +373,7 @@ export default function Celebration() {
                   <div>
                     <span className="text-xs font-bold text-white block">1. Announce to your audience</span>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Post your launch link on your YouTube community tab and video descriptions.
+                      Post your demand-test waitlist link to your audience to validate subscriber interest.
                     </p>
                   </div>
                 </div>

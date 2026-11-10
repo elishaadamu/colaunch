@@ -172,7 +172,20 @@ export function getRouteSEO(pathname, step, creatorData) {
     },
   }
 
-  return stepTitles[step] || {
+  const cleanPath = (path || '').replace(/\/$/, '') || '/'
+  const pathToStep = {
+    '/analyzing': 'analyzing',
+    '/blueprint': 'blueprint',
+    '/preview': 'preview',
+    '/building': 'building',
+    '/pre-finish': 'pre-finish',
+    '/celebration': 'celebration',
+    '/creator-link': 'creator-link',
+    '/portal': 'creator-link',
+  }
+  const resolvedStep = step || pathToStep[cleanPath]
+
+  return (resolvedStep && stepTitles[resolvedStep]) || stepTitles[step] || {
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
   }

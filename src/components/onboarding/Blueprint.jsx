@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
-import { 
-  ArrowRight, ArrowLeft, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, 
+import {
+  ArrowRight, ArrowLeft, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram,
   CheckCircle, CheckCircle2, Play, Lock, Check, ChevronDown, HelpCircle, Info, Video, Camera, Compass, MoreHorizontal,
   Hammer, Trash2, MessageSquare, Heart, Sparkles, Layers, Sliders, DollarSign, Plus
 } from 'lucide-react'
 import { XLogo } from '../launch/PostVisualMockup'
 import WingLogo from '../ui/WingLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
-import { 
-  generateRecommendationsAI, 
-  areRecsValidForCreator, 
+import {
+  generateRecommendationsAI,
+  areRecsValidForCreator,
   getFallbackCleanRecommendations,
   calculateFollowerRevenueRange,
   parseFollowerCount,
@@ -54,17 +55,17 @@ function isLightColor(hex) {
 }
 
 const PLATFORM_ICONS = {
-  youtube:   Youtube,
+  youtube: Youtube,
   instagram: Instagram,
-  twitter:   XLogo,
-  tiktok:    Globe,
+  twitter: XLogo,
+  tiktok: Globe,
 }
 
 const PLATFORM_LABELS = {
-  youtube:   'YouTube',
+  youtube: 'YouTube',
   instagram: 'Instagram',
-  twitter:   'X',
-  tiktok:    'TikTok',
+  twitter: 'X',
+  tiktok: 'TikTok',
 }
 
 // ── Creator blurb from scraped signals ───────────────────────────────────────
@@ -251,19 +252,19 @@ function WebAppPreview({ accent, primary, creatorData }) {
               {creatorName.charAt(0).toUpperCase()}
             </span>
             {avatar && (
-              <img 
-                src={avatar} 
-                alt="" 
+              <img
+                src={avatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
-                onError={e => { 
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={e => {
                   if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
                     e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
                   } else {
-                    e.currentTarget.style.display = 'none'; 
+                    e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             )}
           </div>
@@ -279,9 +280,9 @@ function WebAppPreview({ accent, primary, creatorData }) {
           <span className="text-white/40 whitespace-nowrap hidden sm:inline">Calculators</span>
           <span className="text-white/40 whitespace-nowrap">Benchmarks</span>
           <div className="px-2 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0 leading-tight"
-            style={{ 
-              background: accent.color, 
-              color: '#ffffff' 
+            style={{
+              background: accent.color,
+              color: '#ffffff'
             }}>
             ${monthlyPrice}/mo
           </div>
@@ -365,7 +366,7 @@ function MobilePreview({ accent, primary, creatorData }) {
     <div className="w-full h-full flex items-center justify-center p-2 select-none">
       <div className="relative rounded-2xl border-2 overflow-hidden flex flex-col"
         style={{ width: '135px', height: '200px', borderColor: 'rgba(255,255,255,0.18)', background: '#08080a' }}>
-        
+
         {/* Phone Speaker Notch */}
         <div className="w-10 h-1.5 bg-black rounded-b-md mx-auto z-10 flex-shrink-0" />
 
@@ -376,19 +377,19 @@ function MobilePreview({ accent, primary, creatorData }) {
               style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
               <span className="text-[6px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
               {avatar && (
-                <img 
-                  src={avatar} 
-                  alt="" 
+                <img
+                  src={avatar}
+                  alt=""
                   referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover" 
-                  onError={e => { 
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={e => {
                     if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
                       e.currentTarget.dataset.proxied = 'true';
                       e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
                     } else {
-                      e.currentTarget.style.display = 'none'; 
+                      e.currentTarget.style.display = 'none';
                     }
-                  }} 
+                  }}
                 />
               )}
             </div>
@@ -455,25 +456,25 @@ function CommunityPreview({ accent, primary, creatorData }) {
       {/* Channel Title in Mock */}
       <div className="flex items-center justify-between pb-2 border-b border-[#1f2433]/70">
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white overflow-hidden shrink-0 relative"
             style={{ background: accent.color }}
           >
             <span className="select-none">{creatorName.charAt(0).toUpperCase()}</span>
             {avatar && (
-              <img 
-                src={avatar} 
-                alt="" 
+              <img
+                src={avatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
-                onError={e => { 
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={e => {
                   if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
                     e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
                   } else {
-                    e.currentTarget.style.display = 'none'; 
+                    e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             )}
           </div>
@@ -489,7 +490,7 @@ function CommunityPreview({ accent, primary, creatorData }) {
       {/* Channel Sidebar + Feed simulation */}
       <div className="grid grid-cols-12 gap-2 text-[10px]">
         <div className="col-span-4 space-y-1.5 text-slate-400 border-r border-[#1f2433]/50 pr-1">
-          <div 
+          <div
             className="font-medium px-1.5 py-1 rounded truncate text-[9.5px]"
             style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
           >
@@ -551,19 +552,19 @@ function SoftwareToolPreview({ accent, primary, creatorData }) {
             style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
             <span className="text-[7px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
             {avatar && (
-              <img 
-                src={avatar} 
-                alt="" 
+              <img
+                src={avatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
-                onError={e => { 
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={e => {
                   if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
                     e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
                   } else {
-                    e.currentTarget.style.display = 'none'; 
+                    e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             )}
           </div>
@@ -631,7 +632,7 @@ function DashboardPreview({ accent, primary, creatorData }) {
       {/* Dashboard Top Header */}
       <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <div 
+          <div
             className="w-4 h-4 rounded-none overflow-hidden flex items-center justify-center flex-shrink-0 relative"
             style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)' }}
           >
@@ -639,19 +640,19 @@ function DashboardPreview({ accent, primary, creatorData }) {
               {creatorName.charAt(0).toUpperCase()}
             </span>
             {avatar && (
-              <img 
-                src={avatar} 
-                alt="" 
+              <img
+                src={avatar}
+                alt=""
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover" 
-                onError={e => { 
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={e => {
                   if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
                     e.currentTarget.dataset.proxied = 'true';
                     e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
                   } else {
-                    e.currentTarget.style.display = 'none'; 
+                    e.currentTarget.style.display = 'none';
                   }
-                }} 
+                }}
               />
             )}
           </div>
@@ -697,7 +698,7 @@ function DashboardPreview({ accent, primary, creatorData }) {
         style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center justify-between pb-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
           <span className="text-[7.5px] font-bold text-white">Software Engine Core</span>
-          <span 
+          <span
             className="text-[6.5px] px-1 py-0.2 rounded-none font-mono"
             style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)', color: '#c81e3c' }}
           >
@@ -722,12 +723,12 @@ function DashboardPreview({ accent, primary, creatorData }) {
   )
 }
 
-const PREVIEW_COMPONENTS = { 
-  webapp: WebAppPreview, 
-  mobile: MobilePreview, 
-  community: CommunityPreview, 
-  store: SoftwareToolPreview, 
-  dashboard: DashboardPreview 
+const PREVIEW_COMPONENTS = {
+  webapp: WebAppPreview,
+  mobile: MobilePreview,
+  community: CommunityPreview,
+  store: SoftwareToolPreview,
+  dashboard: DashboardPreview
 }
 
 // ── Mapping Recommendations ──────────────────────────────────────────────────
@@ -777,14 +778,14 @@ function mapRecommendationsToBlueprints(recs, creatorData = {}) {
   }
 
   const CATEGORY_MAP = {
-    tool:        { type: 'Software App', icon: Globe, preview: 'webapp' },
-    tracker:     { type: 'Tracker App', icon: Smartphone, preview: 'dashboard' },
-    calculator:  { type: 'Web Utility', icon: Globe, preview: 'webapp' },
-    community:   { type: 'Member Platform', icon: Users, preview: 'community' },
-    dashboard:   { type: 'Dashboard', icon: Globe, preview: 'dashboard' },
-    app:         { type: 'Mobile App', icon: Smartphone, preview: 'mobile' },
-    saas:        { type: 'Software App', icon: Globe, preview: 'webapp' },
-    other:       { type: 'Software App', icon: Globe, preview: 'webapp' },
+    tool: { type: 'Software App', icon: Globe, preview: 'webapp' },
+    tracker: { type: 'Tracker App', icon: Smartphone, preview: 'dashboard' },
+    calculator: { type: 'Web Utility', icon: Globe, preview: 'webapp' },
+    community: { type: 'Member Platform', icon: Users, preview: 'community' },
+    dashboard: { type: 'Dashboard', icon: Globe, preview: 'dashboard' },
+    app: { type: 'Mobile App', icon: Smartphone, preview: 'mobile' },
+    saas: { type: 'Software App', icon: Globe, preview: 'webapp' },
+    other: { type: 'Software App', icon: Globe, preview: 'webapp' },
   }
 
   return recs.slice(0, 4).map((r, index) => {
@@ -910,14 +911,14 @@ function calculateAudienceFit(creator, blueprint) {
 
 export default function Blueprint() {
   const { next, creatorData, updateCreator, startBgJob, prev, goTo, requestWipeCreator } = useForge()
-  const accent  = getAccent(creatorData)
-  
+  const accent = getAccent(creatorData)
+
   const recsJob = useBgJob('onboarding-recs')
   const rawRecs = creatorData.recommendations
   const isValidRecs = areRecsValidForCreator(rawRecs, creatorData)
   const validRecs = isValidRecs ? rawRecs : null
   const generatedBlueprints = mapRecommendationsToBlueprints(validRecs, creatorData)
-  
+
   const [customPrices, setCustomPrices] = useState({})
   const [customBlueprints, setCustomBlueprints] = useState([])
   const [showCustomModal, setShowCustomModal] = useState(false)
@@ -929,7 +930,7 @@ export default function Blueprint() {
 
   const blueprints = [...customBlueprints, ...generatedBlueprints]
   const [selected, setSelected] = useState(blueprints[0]?.id)
-  const [visible,  setVisible]  = useState(false)
+  const [visible, setVisible] = useState(false)
   const [showReasons, setShowReasons] = useState(true)
   const [isScraping, setIsScraping] = useState(false)
   const [quotaWarning, setQuotaWarning] = useState(null)
@@ -1005,7 +1006,7 @@ export default function Blueprint() {
       updateCreator({ recommendations: fallbacks })
       setQuotaWarning(
         recsJob.error?.includes('429') || recsJob.error?.includes('exceeded')
-          ? "API rate limit reached. Loaded estimated subscription software templates." 
+          ? "API rate limit reached. Loaded estimated subscription software templates."
           : "Failed to load live recommendations. Loaded default software templates."
       )
     }
@@ -1025,7 +1026,7 @@ export default function Blueprint() {
 
   const dynamicEngagement = getDynamicEngagementRate(creatorData)
   const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || 0)
-  
+
   // Interactive chosen price for the active blueprint (clamps $9–$29)
   const activePrice = clampPrice(customPrices[activeBlueprint?.id] || activeBlueprint?.monthly_price || 19)
 
@@ -1144,8 +1145,8 @@ export default function Blueprint() {
       subscribers: activeRevenue.formattedSubscribers,
     }
 
-    updateCreator({ 
-      blueprint: updatedBlueprint, 
+    updateCreator({
+      blueprint: updatedBlueprint,
       productName: activeBlueprint.name,
       monthly_price: chosenPrice,
       tool_summary: activeBlueprint.toolSummary || activeBlueprint.description,
@@ -1173,7 +1174,7 @@ export default function Blueprint() {
   ]
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col text-slate-200 font-sans antialiased selection:bg-brand-500 selection:text-white pb-36 sm:pb-44"
       style={{
         background: `radial-gradient(circle at 50% 0%, rgba(${accent.rgb}, 0.08) 0%, transparent 60%), radial-gradient(circle at 10% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 40%), #08090c`
@@ -1216,26 +1217,7 @@ export default function Blueprint() {
               <span className="hidden sm:inline">Reset Creator</span>
             </button>
 
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === 4 ? '18px' : '5px',
-                    height: '5px',
-                    background: i === 4 ? accent.color : i < 4 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)',
-                  }}
-                />
-              ))}
-            </div>
-            <button 
-              type="button"
-              aria-label="Options"
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-[#0f1117] border border-transparent hover:border-[#1f2433] transition-colors cursor-pointer"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+            <OnboardingStepIndicator currentStep="blueprint" showOptions={true} />
           </div>
         </div>
       </header>
@@ -1260,7 +1242,7 @@ export default function Blueprint() {
         {(isScraping || isGenerating) ? (
           <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }} className="space-y-8">
             <div className="space-y-2">
-              <div 
+              <div
                 className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
                 style={{ background: `rgba(${accent.rgb}, 0.1)`, borderColor: `rgba(${accent.rgb}, 0.25)`, color: accent.color }}
               >
@@ -1306,12 +1288,12 @@ export default function Blueprint() {
           /* ═══════════════ REAL CONTENT ═══════════════ */
           <>
             {/* Creator Profile Header Card */}
-            <div 
+            <div
               className="relative overflow-hidden rounded-2xl bg-[#0f1117] border border-[#1f2433]/80 p-5 sm:p-6 backdrop-blur-sm transition-all"
               style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                
+
                 {/* Creator Identity */}
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="relative shrink-0">
@@ -1336,7 +1318,7 @@ export default function Blueprint() {
                         />
                       )}
                     </div>
-                    <div 
+                    <div
                       className="absolute -bottom-1 -right-1 text-white rounded-full p-1 border-2 border-[#0f1117] flex items-center justify-center"
                       style={{ background: platformColor }}
                       title={`${PLATFORM_LABELS[creatorData.platform] || 'Creator'} Verified`}
@@ -1350,23 +1332,23 @@ export default function Blueprint() {
                       <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
                         {creatorData.handle ? (creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`) : (creatorData.name || '@creator')}
                       </h1>
-                      <span 
+                      <span
                         className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none text-[11px] font-bold uppercase tracking-wider font-mono"
                         style={{
                           background: creatorData.platform === 'youtube'
                             ? 'rgba(239,68,68, 0.12)'
                             : creatorData.platform === 'instagram'
-                            ? 'rgba(225,48,108, 0.15)'
-                            : creatorData.platform === 'tiktok'
-                            ? 'rgba(20,184,166, 0.12)'
-                            : `rgba(${accent.rgb}, 0.12)`,
+                              ? 'rgba(225,48,108, 0.15)'
+                              : creatorData.platform === 'tiktok'
+                                ? 'rgba(20,184,166, 0.12)'
+                                : `rgba(${accent.rgb}, 0.12)`,
                           color: creatorData.platform === 'youtube'
                             ? '#f87171'
                             : creatorData.platform === 'instagram'
-                            ? '#f472b6'
-                            : creatorData.platform === 'tiktok'
-                            ? '#2dd4bf'
-                            : accent.color,
+                              ? '#f472b6'
+                              : creatorData.platform === 'tiktok'
+                                ? '#2dd4bf'
+                                : accent.color,
                           border: `1px solid ${creatorData.platform === 'youtube' ? 'rgba(239,68,68, 0.25)' : creatorData.platform === 'instagram' ? 'rgba(225,48,108, 0.3)' : 'rgba(255,255,255,0.1)'}`
                         }}
                       >
@@ -1433,8 +1415,8 @@ export default function Blueprint() {
                     let postUrl = post.url || '#'
 
                     return (
-                      <div 
-                        key={i} 
+                      <div
+                        key={i}
                         onClick={() => {
                           if (postUrl && postUrl !== '#') window.open(postUrl, '_blank', 'noopener,noreferrer')
                         }}
@@ -1442,9 +1424,9 @@ export default function Blueprint() {
                       >
                         <div className={`aspect-video w-full bg-gradient-to-br ${grad.bg} relative overflow-hidden flex flex-col justify-between p-2`}>
                           {post.thumbnail ? (
-                            <img 
-                              src={post.thumbnail} 
-                              alt={post.title || ''} 
+                            <img
+                              src={post.thumbnail}
+                              alt={post.title || ''}
                               referrerPolicy="no-referrer"
                               className="absolute inset-0 w-full h-full object-cover"
                               onError={e => {
@@ -1454,7 +1436,7 @@ export default function Blueprint() {
                                 } else {
                                   e.currentTarget.style.display = 'none';
                                 }
-                              }} 
+                              }}
                             />
                           ) : null}
 
@@ -1484,17 +1466,17 @@ export default function Blueprint() {
 
             {/* 10-MODULE AUDIENCE INTELLIGENCE ENGINE */}
             <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.12s' }}>
-              <AudienceIntelligenceEngine 
-                creatorData={creatorData} 
-                activeBlueprint={activeBlueprint} 
-                accent={accent} 
+              <AudienceIntelligenceEngine
+                creatorData={creatorData}
+                activeBlueprint={activeBlueprint}
+                accent={accent}
                 fitScore={activeBlueprint.fit}
               />
             </div>
 
             {/* Recommendation Section Header */}
             <div className="pt-0 space-y-1" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
-              <div 
+              <div
                 className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider"
                 style={{
                   background: 'rgba(200, 30, 60, 0.12)',
@@ -1516,7 +1498,7 @@ export default function Blueprint() {
 
             {/* Audience Scale Notice (< 20K followers) */}
             {followersCount > 0 && followersCount < 20_000 && (
-              <div 
+              <div
                 className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-none flex items-start gap-2 text-xs text-amber-200"
                 style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.18s' }}
               >
@@ -1531,17 +1513,17 @@ export default function Blueprint() {
             )}
 
             {/* Product Options Matrix */}
-            <div 
+            <div
               className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start"
               style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.2s' }}
             >
               {/* Primary Recommended Product (Featured) */}
-              <div 
+              <div
                 className="lg:col-span-8 rounded-none bg-[#0f1117] border border-[#1f2433] p-3.5 sm:p-4 relative overflow-hidden transition-all duration-300 shadow-xl"
               >
                 {/* Header Tag & Match Indicator */}
                 <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div 
+                  <div
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-none font-bold text-[10px] tracking-wide"
                     style={{
                       background: 'rgba(200, 30, 60, 0.15)',
@@ -1565,7 +1547,7 @@ export default function Blueprint() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-start">
-                  
+
                   {/* Left Specs Column */}
                   <div className="md:col-span-7 space-y-2.5">
                     <div>
@@ -1584,8 +1566,8 @@ export default function Blueprint() {
                     {/* Feature Pills */}
                     <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                       {activeBlueprint.features.slice(0, 4).map(f => (
-                        <div 
-                          key={f} 
+                        <div
+                          key={f}
                           className="px-2 py-1 text-[11px] font-medium rounded-none bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1.5 truncate"
                         >
                           <Check className="w-3 h-3 shrink-0 text-[#c81e3c]" />
@@ -1639,11 +1621,10 @@ export default function Blueprint() {
                             key={p}
                             type="button"
                             onClick={() => handlePriceChange(p)}
-                            className={`px-2 py-0.5 text-[10px] font-mono font-bold transition-all cursor-pointer rounded-none ${
-                              activePrice === p
-                                ? 'bg-emerald-400 text-black shadow-sm'
-                                : 'bg-[#151822] border border-[#1f2433] text-slate-300 hover:text-white hover:bg-[#1a202c]'
-                            }`}
+                            className={`px-2 py-0.5 text-[10px] font-mono font-bold transition-all cursor-pointer rounded-none ${activePrice === p
+                              ? 'bg-emerald-400 text-black shadow-sm'
+                              : 'bg-[#151822] border border-[#1f2433] text-slate-300 hover:text-white hover:bg-[#1a202c]'
+                              }`}
                           >
                             ${p}
                           </button>
@@ -1660,9 +1641,9 @@ export default function Blueprint() {
                       >
                         <HelpCircle className="w-3 h-3 text-[#c81e3c]" />
                         <span>Audience Demand Evidence ({reasons.length} signals)</span>
-                        <ChevronDown 
-                          className="w-3 h-3 transition-transform duration-200" 
-                          style={{ transform: showReasons ? 'rotate(180deg)' : 'none' }} 
+                        <ChevronDown
+                          className="w-3 h-3 transition-transform duration-200"
+                          style={{ transform: showReasons ? 'rotate(180deg)' : 'none' }}
                         />
                       </button>
                       {showReasons && (
@@ -1710,15 +1691,15 @@ export default function Blueprint() {
 
                       {/* Inside Mock UI */}
                       <div className="flex-1 overflow-hidden">
-                        <PreviewComp 
-                          accent={accent} 
+                        <PreviewComp
+                          accent={accent}
                           primary={{
                             ...activeBlueprint,
                             monthly_price: activePrice,
                             revenue: activeRevenue.formattedRange,
                             subscribers: activeRevenue.formattedSubscribers
-                          }} 
-                          creatorData={creatorData} 
+                          }}
+                          creatorData={creatorData}
                         />
                       </div>
                     </div>
@@ -1796,7 +1777,7 @@ export default function Blueprint() {
 
                 {/* Something Else / Custom Software Product Form */}
                 {showCustomModal ? (
-                  <form 
+                  <form
                     onSubmit={handleCreateCustomProduct}
                     className="p-3.5 rounded-none bg-[#10141f] border border-brand-500/40 space-y-2.5"
                   >
@@ -1867,7 +1848,7 @@ export default function Blueprint() {
                     </div>
                   </form>
                 ) : (
-                  <div 
+                  <div
                     onClick={() => setShowCustomModal(true)}
                     className="p-3 rounded-none border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer group"
                   >
@@ -1890,11 +1871,11 @@ export default function Blueprint() {
       {/* Sticky Bottom CTA Action Bar */}
       <aside className="fixed bottom-0 left-0 right-0 z-50 bg-[#08090c]/95 backdrop-blur-md border-t border-[#1f2433] py-2.5 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          
+
           {/* Primary Dynamic Action Button (Keep id="dynamic-cta-button" intact) */}
           <div className="w-full sm:w-auto">
-            <button 
-              id="dynamic-cta-button" 
+            <button
+              id="dynamic-cta-button"
               onClick={handleContinue}
               disabled={isScraping || isGenerating}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-none font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group shadow-md"

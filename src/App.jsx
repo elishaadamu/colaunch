@@ -31,12 +31,12 @@ import { updatePageSEO, getRouteSEO } from './utils/seo'
 import { clearInMemoryKeys, loadKeys, saveKeys } from './services/scraper'
 import { clearInMemoryAiKeys, restoreAiKeysFromLoginData, loadAiKeys, saveAiKeys, areRecsValidForCreator } from './services/ai'
 import { Check, CheckCircle, AlertCircle, X, XCircle, Trash2, RefreshCw, Info } from 'lucide-react'
-import { 
-  hexToRgb, 
-  extractBrandColorFromAvatar, 
+import {
+  hexToRgb,
+  extractBrandColorFromAvatar,
   getDeterministicBrandColor,
   getContrastTextColor,
-  isLightColor 
+  isLightColor
 } from './utils/avatarColorExtractor'
 
 export { getContrastTextColor, isLightColor }
@@ -54,10 +54,7 @@ export function useBgJob(jobId) {
   return bgJobs[jobId] || { status: 'idle', result: null, error: null }
 }
 
-const STEPS = [
-  'welcome', 'creator-link', 'analyzing', 'blueprint',
-  'preview', 'building', 'pre-finish', 'celebration', 'signup', 'login', 'dashboard',
-]
+import { STEPS, STEP_TO_PATH, PATH_TO_STEP, RESERVED_ROUTES } from './utils/routes'
 
 // Unified CoLaunch brand red color from co-launch.app/#apply
 const SINGLE_BRAND_COLOR = '#c81e3c'
@@ -88,30 +85,30 @@ function GlobalToast({ toast, onClose }) {
   // Clean light theme matching reference image: 4px left accent stripe, soft tinted surface, solid circular icon badge
   const theme = isSuccess
     ? {
-        borderLeft: '#16a34a',
-        bg: '#dcfce7',
-        titleColor: '#166534',
-        msgColor: '#15803d',
-        closeColor: 'text-emerald-700 hover:text-emerald-950',
-        title: toast.title || 'Message sent',
-      }
+      borderLeft: '#16a34a',
+      bg: '#dcfce7',
+      titleColor: '#166534',
+      msgColor: '#15803d',
+      closeColor: 'text-emerald-700 hover:text-emerald-950',
+      title: toast.title || 'Message sent',
+    }
     : isError
       ? {
-          borderLeft: '#ef4444',
-          bg: '#fee2e2',
-          titleColor: '#991b1b',
-          msgColor: '#b91c1c',
-          closeColor: 'text-rose-700 hover:text-rose-950',
-          title: toast.title || 'Something has wrong',
-        }
+        borderLeft: '#ef4444',
+        bg: '#fee2e2',
+        titleColor: '#991b1b',
+        msgColor: '#b91c1c',
+        closeColor: 'text-rose-700 hover:text-rose-950',
+        title: toast.title || 'Something has wrong',
+      }
       : {
-          borderLeft: '#f59e0b',
-          bg: '#fef9c3',
-          titleColor: '#854d0e',
-          msgColor: '#a16207',
-          closeColor: 'text-amber-700 hover:text-amber-950',
-          title: toast.title || 'Keep in mind information',
-        }
+        borderLeft: '#f59e0b',
+        bg: '#fef9c3',
+        titleColor: '#854d0e',
+        msgColor: '#a16207',
+        closeColor: 'text-amber-700 hover:text-amber-950',
+        title: toast.title || 'Keep in mind information',
+      }
 
   return (
     <div
@@ -161,20 +158,20 @@ function GlobalToast({ toast, onClose }) {
 
           {/* Text content matching reference typography */}
           <div className="flex-1 min-w-0 pr-1">
-            <h5 
+            <h5
               className="text-[13px] font-bold tracking-tight leading-snug truncate"
               style={{ color: theme.titleColor }}
             >
               {theme.title}
             </h5>
-            <p 
+            <p
               className="text-[12px] font-medium leading-snug mt-0.5"
               style={{ color: theme.msgColor }}
             >
               {toast.message}
             </p>
             {toast.subtitle && (
-              <p 
+              <p
                 className="text-[11px] opacity-85 mt-0.5"
                 style={{ color: theme.msgColor }}
               >
@@ -260,9 +257,17 @@ export default function App() {
 
       // OAuth callback detection: If returned from Google OAuth with code= or error=
       if (search && (search.includes('code=') || search.includes('error='))) {
-        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
-        try { localStorage.setItem('forge_dashboard_active_tab', 'accounts') } catch {}
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
+        try { localStorage.setItem('forge_dashboard_active_tab', 'accounts') } catch { }
         return 'dashboard'
+      }
+
+      // Direct route mapping for dedicated onboarding page URLs (/blueprint, /preview, /analyzing, etc.)
+      const rawPath = (path || '').replace(/\/$/, '') || '/'
+      if (PATH_TO_STEP[rawPath]) {
+        const directStep = PATH_TO_STEP[rawPath]
+        try { localStorage.setItem('forge_onboarding_step', directStep) } catch { }
+        return directStep
       }
 
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
@@ -291,7 +296,7 @@ export default function App() {
           }
           return 'login'
         }
-        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
         return 'dashboard'
       }
       if (path.startsWith('/ops')) return 'ops'
@@ -308,14 +313,7 @@ export default function App() {
       if (path === '/signup') return 'signup'
 
       const rawParts = path.split('/').filter(Boolean)
-      const reservedRoutes = [
-        'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
-        'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
-        'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
-        'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
-        'dashboard', 'login', 'signup', 'api', 'static', 'member'
-      ]
-      if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+      if (rawParts.length === 2 && !RESERVED_ROUTES.includes(rawParts[0])) {
         const hasSession = (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
           Boolean(localStorage.getItem('forge_creator_data'))
         if (!hasSession) {
@@ -324,7 +322,7 @@ export default function App() {
           }
           return 'login'
         }
-        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
         return 'dashboard'
       }
 
@@ -396,7 +394,7 @@ export default function App() {
           try {
             localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
             localStorage.setItem('forge_active_session', 'true')
-          } catch {}
+          } catch { }
           return derivedProf
         }
       }
@@ -652,11 +650,11 @@ export default function App() {
     setDashboardData(prev => ({
       ...prev,
       [section === 'calendar' ? 'calendar_data' :
-       section === 'studio' ? 'studio_data' :
-       section === 'community' ? 'community_data' :
-       section === 'marketing' ? 'marketing_data' :
-       section === 'products' ? 'products_data' :
-       section === 'accounts' ? 'accounts_platforms' : `${section}_data`]: data
+        section === 'studio' ? 'studio_data' :
+          section === 'community' ? 'community_data' :
+            section === 'marketing' ? 'marketing_data' :
+              section === 'products' ? 'products_data' :
+                section === 'accounts' ? 'accounts_platforms' : `${section}_data`]: data
     }))
     const uname = userProfile?.username || ''
     const handle = creatorData?.handle || 'default'
@@ -716,29 +714,29 @@ export default function App() {
     try {
       const activeEmail = userProfile?.email || activeUser
       const clean = activeEmail ? activeEmail.toLowerCase().replace(/[^a-z0-9_]/g, '_') : null
-      const userYt = (clean && localStorage.getItem(`forge_youtube_connection_${clean}`)) || 
-                     (dashboardData?.youtube_connection?.connected ? JSON.stringify(dashboardData.youtube_connection) : null)
+      const userYt = (clean && localStorage.getItem(`forge_youtube_connection_${clean}`)) ||
+        (dashboardData?.youtube_connection?.connected ? JSON.stringify(dashboardData.youtube_connection) : null)
       if (userYt) {
         payload.youtube_connection = typeof userYt === 'string' ? JSON.parse(userYt) : userYt
       }
-    } catch (_) {}
+    } catch (_) { }
     try {
       const activeEmail = userProfile?.email || activeUser
       const clean = activeEmail ? activeEmail.toLowerCase().replace(/[^a-z0-9_]/g, '_') : null
       const userMeta = (clean && localStorage.getItem(`forge_meta_connection_${clean}`)) ||
-                       (dashboardData?.meta_connection?.facebook?.connected ? JSON.stringify(dashboardData.meta_connection) : null)
+        (dashboardData?.meta_connection?.facebook?.connected ? JSON.stringify(dashboardData.meta_connection) : null)
       if (userMeta) {
         payload.meta_connection = typeof userMeta === 'string' ? JSON.parse(userMeta) : userMeta
       }
-    } catch (_) {}
+    } catch (_) { }
     try {
       const activeEmail = userProfile?.email || activeUser
       const clean = activeEmail ? activeEmail.toLowerCase().replace(/[^a-z0-9_]/g, '_') : null
       const userPlatforms = (clean && localStorage.getItem(`forge_accounts_platforms_${clean}`)) ||
-                            (dashboardData?.accounts_platforms ? JSON.stringify(dashboardData.accounts_platforms) : null) ||
-                            localStorage.getItem('forge_accounts_platforms')
+        (dashboardData?.accounts_platforms ? JSON.stringify(dashboardData.accounts_platforms) : null) ||
+        localStorage.getItem('forge_accounts_platforms')
       if (userPlatforms) payload.accounts_platforms = typeof userPlatforms === 'string' ? JSON.parse(userPlatforms) : userPlatforms
-    } catch (_) {}
+    } catch (_) { }
 
     fetch('/api/auth/sync', {
       method: 'POST',
@@ -772,24 +770,18 @@ export default function App() {
       } else if (newStep === 'welcome') {
         localStorage.removeItem('forge_onboarding_step')
       }
-    } catch {}
-    let path = (typeof window !== 'undefined' && (window.location.pathname === '/' || window.location.pathname === '')) ? '/' : '/portal'
+    } catch { }
+    let path = '/portal'
     if (newStep === 'welcome') {
       const savedStep = localStorage.getItem('forge_onboarding_step')
       const savedCreator = localStorage.getItem('forge_creator_data')
       newStep = (savedStep && savedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) ? savedStep : 'creator-link'
-      path = (typeof window !== 'undefined' && (window.location.pathname === '/' || window.location.pathname === '')) ? '/' : '/portal'
+      path = STEP_TO_PATH[newStep] || ((typeof window !== 'undefined' && window.location.pathname === '/') ? '/' : '/portal')
     } else if (newStep === 'creator-link') {
-      path = (typeof window !== 'undefined' && (window.location.pathname === '/' || window.location.pathname === '')) ? '/' : '/portal'
-    } else if (['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(newStep)) {
-      path = '/portal'
-    } else if (newStep === 'login') {
-      path = '/login'
-    } else if (newStep === 'signup') {
-      path = '/signup'
+      path = (typeof window !== 'undefined' && window.location.pathname === '/') ? '/' : '/portal'
     } else if (newStep === 'dashboard') {
       const hasSession = Boolean(
-        userProfile || 
+        userProfile ||
         (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
         (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
       )
@@ -815,7 +807,7 @@ export default function App() {
         try {
           localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
           localStorage.setItem('forge_active_session', 'true')
-        } catch {}
+        } catch { }
         setUserProfile(derivedProf)
       }
 
@@ -823,6 +815,8 @@ export default function App() {
       const cleanHandle = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
       const cId = creatorData?.channelId || (cleanHandle ? ('cr_' + cleanHandle) : 'cr_creator')
       path = cId ? `/dashboard/${cId}` : '/dashboard'
+    } else if (STEP_TO_PATH[newStep]) {
+      path = STEP_TO_PATH[newStep]
     }
 
     if (window.location.pathname !== path) {
@@ -833,7 +827,7 @@ export default function App() {
   useEffect(() => {
     if (step === 'dashboard' && typeof window !== 'undefined') {
       const hasSession = Boolean(
-        userProfile || 
+        userProfile ||
         (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
         (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
       )
@@ -857,14 +851,14 @@ export default function App() {
         try {
           localStorage.setItem('forge_user_profile', JSON.stringify(derivedProf))
           localStorage.setItem('forge_active_session', 'true')
-        } catch {}
+        } catch { }
         setUserProfile(derivedProf)
       }
 
       try {
         localStorage.setItem('forge_onboarding_step', 'dashboard')
         localStorage.setItem('forge_active_session', 'true')
-      } catch {}
+      } catch { }
 
       const rawH = creatorData?.handle || creatorData?.name || 'creator'
       const cleanHandle = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
@@ -878,6 +872,17 @@ export default function App() {
       }
     }
   }, [step, userProfile, creatorData?.id, creatorData?.channelId, creatorData?._id, creatorData?.handle, creatorData?.name])
+
+  // Synchronize onboarding step routes into the browser address bar (/blueprint, /preview, etc.)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const targetPath = STEP_TO_PATH[step]
+    if (targetPath && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(step)) {
+      if (window.location.pathname !== targetPath) {
+        window.history.replaceState(null, '', targetPath)
+      }
+    }
+  }, [step])
 
   const next = () => {
     if (step === 'celebration') {
@@ -1064,7 +1069,7 @@ export default function App() {
               localStorage.removeItem(k)
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       const base = isDifferentCreator ? {
@@ -1129,20 +1134,20 @@ export default function App() {
           if (!returnPath) {
             returnPath = sessionStorage.getItem('forge_oauth_return_path') || localStorage.getItem('forge_oauth_return_path')
           }
-        } catch (_) {}
+        } catch (_) { }
 
         if (!returnPath && cachedCreator) {
           try {
             const parsed = JSON.parse(cachedCreator)
             if (parsed?.id) returnPath = `/dashboard/${parsed.id}`
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!returnPath) returnPath = '/dashboard'
 
         setStep('dashboard')
         setActiveTab(targetTab)
-        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
-        try { localStorage.setItem('forge_dashboard_active_tab', targetTab) } catch {}
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
+        try { localStorage.setItem('forge_dashboard_active_tab', targetTab) } catch { }
 
         const pathParts = returnPath.split('?')[0].split('/').filter(Boolean)
         if (pathParts[0] === 'dashboard' && pathParts[1]) {
@@ -1150,7 +1155,7 @@ export default function App() {
           setCreatorData(prev => {
             if (prev?.id === routeCreatorId) return prev
             const updated = { ...(prev || {}), id: routeCreatorId }
-            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch { }
             return updated
           })
         }
@@ -1181,7 +1186,7 @@ export default function App() {
                     email: prev?.email || channel.email,
                     youtube_connected: true
                   }
-                  try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+                  try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch { }
                   return updated
                 })
 
@@ -1209,10 +1214,24 @@ export default function App() {
         return
       }
 
+      const rawPath = (path || '').replace(/\/$/, '') || '/'
+
+      // Direct route matching for individual onboarding pages on popstate or URL navigation
+      if (PATH_TO_STEP[rawPath]) {
+        const directStep = PATH_TO_STEP[rawPath]
+        setStep(directStep)
+        try { localStorage.setItem('forge_onboarding_step', directStep) } catch { }
+        return
+      }
+
       if (path === '/' || path === '' || path === '/portal' || path === '/portal/') {
         const savedStep = localStorage.getItem('forge_onboarding_step')
         if (savedStep && cachedCreator && ['analyzing', 'blueprint', 'preview', 'building', 'pre-finish', 'celebration'].includes(savedStep)) {
           setStep(savedStep)
+          const targetUrl = STEP_TO_PATH[savedStep]
+          if (targetUrl && window.location.pathname !== targetUrl) {
+            window.history.replaceState(null, '', targetUrl)
+          }
         } else {
           setStep('creator-link')
         }
@@ -1230,14 +1249,14 @@ export default function App() {
           return
         }
         setStep('dashboard')
-        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+        try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
         const pathParts = path.split('/').filter(Boolean)
         if (pathParts[0] === 'dashboard' && pathParts[1]) {
           const routeCreatorId = pathParts[1]
           setCreatorData(prev => {
             if (prev && prev.id === routeCreatorId) return prev
             const updated = { ...(prev || {}), id: routeCreatorId }
-            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch { }
             return updated
           })
         }
@@ -1270,14 +1289,7 @@ export default function App() {
         }
 
         const rawParts = path.split('/').filter(Boolean)
-        const reservedRoutes = [
-          'join', 'portal', 'co-launch', 'preorder', 'beta', 'survey', 'research',
-          'follow-up-crm', 'crm', 'admin-error-log', 'error-log', 'errors',
-          'project-os', 'projects', 'project', 'participation-manager', 'co-builders',
-          'cobuilder-admin', 'participation', 'launch', 'creator-launch', 'ops',
-          'dashboard', 'login', 'signup', 'api', 'static', 'member'
-        ]
-        if (rawParts.length === 2 && !reservedRoutes.includes(rawParts[0])) {
+        if (rawParts.length === 2 && !RESERVED_ROUTES.includes(rawParts[0])) {
           const hasSession = Boolean(
             (localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
             Boolean(localStorage.getItem('forge_creator_data'))
@@ -1288,10 +1300,10 @@ export default function App() {
           }
           const routeCreatorId = rawParts[1]
           setStep('dashboard')
-          try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch {}
+          try { localStorage.setItem('forge_onboarding_step', 'dashboard') } catch { }
           setCreatorData(prev => {
             const updated = { ...(prev || {}), id: routeCreatorId }
-            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch {}
+            try { localStorage.setItem('forge_creator_data', JSON.stringify(updated)) } catch { }
             return updated
           })
           window.history.replaceState(null, '', `/dashboard/${routeCreatorId}`)
@@ -1574,9 +1586,9 @@ export default function App() {
         }
       }
       keysToRemove.forEach(k => localStorage.removeItem(k))
-    } catch (_) {}
+    } catch (_) { }
 
-    try { sessionStorage.clear() } catch {}
+    try { sessionStorage.clear() } catch { }
     setUserProfile(null)
 
     // Notify all components that channels are disconnected
@@ -1690,11 +1702,11 @@ export default function App() {
       return (
         <ForgeContext.Provider value={ctx}>
           <DashboardLayout />
-          <WipeCreatorModal 
-            isOpen={wipeModalOpen} 
-            onClose={() => setWipeModalOpen(false)} 
-            onConfirm={confirmWipeCreator} 
-            creatorData={creatorData} 
+          <WipeCreatorModal
+            isOpen={wipeModalOpen}
+            onClose={() => setWipeModalOpen(false)}
+            onConfirm={confirmWipeCreator}
+            creatorData={creatorData}
           />
           {globalToast && (
             <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
@@ -1817,7 +1829,7 @@ export default function App() {
 
   if (step === 'dashboard') {
     const hasSession = Boolean(
-      userProfile || 
+      userProfile ||
       (typeof localStorage !== 'undefined' && localStorage.getItem('forge_active_session') === 'true' && localStorage.getItem('forge_user_profile')) ||
       (creatorData && (creatorData.handle || creatorData.url || creatorData.name))
     )
@@ -1834,11 +1846,11 @@ export default function App() {
     return (
       <ForgeContext.Provider value={ctx}>
         <DashboardLayout />
-        <WipeCreatorModal 
-          isOpen={wipeModalOpen} 
-          onClose={() => setWipeModalOpen(false)} 
-          onConfirm={confirmWipeCreator} 
-          creatorData={creatorData} 
+        <WipeCreatorModal
+          isOpen={wipeModalOpen}
+          onClose={() => setWipeModalOpen(false)}
+          onConfirm={confirmWipeCreator}
+          creatorData={creatorData}
         />
         {globalToast && (
           <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />
@@ -1866,11 +1878,11 @@ export default function App() {
         {screens[step] || <CreatorLink key={`creator-link-${resetKey}`} />}
       </div>
       <SupportWidget currentStage={step} />
-      <WipeCreatorModal 
-        isOpen={wipeModalOpen} 
-        onClose={() => setWipeModalOpen(false)} 
-        onConfirm={confirmWipeCreator} 
-        creatorData={creatorData} 
+      <WipeCreatorModal
+        isOpen={wipeModalOpen}
+        onClose={() => setWipeModalOpen(false)}
+        onConfirm={confirmWipeCreator}
+        creatorData={creatorData}
       />
       {globalToast && (
         <GlobalToast toast={globalToast} onClose={() => setGlobalToast(null)} />

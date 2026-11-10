@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useForge, getAccent } from '../../App'
 import { ArrowRight, Check, Layout, Users, BarChart2, Package, Mail, SlidersHorizontal, RefreshCw } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 
 function isLightColor(hex) {
   if (!hex || typeof hex !== 'string') return false
@@ -13,45 +15,14 @@ function isLightColor(hex) {
 }
 
 function getDynamicBuiltItems(blueprint, creatorData) {
-  const type = (blueprint?.type || '').toLowerCase()
-  const name = blueprint?.name || 'Your platform'
-
-  if (type.includes('member') || type.includes('community')) {
-    return [
-      { icon: Users, label: 'Community forum & discussions', detail: 'Private threads, member directory & AMAs' },
-      { icon: Layout, label: 'Member portal architecture', detail: 'Member feeds, resource library & announcements' },
-      { icon: BarChart2, label: 'Stripe subscription billing', detail: 'Monthly & annual recurring billing live' },
-      { icon: Package, label: 'Landing & offer page', detail: 'Conversion-optimized member sales funnel' },
-      { icon: Mail, label: 'Email onboarding sequences', detail: 'Automated welcome & activation workflows' },
-    ]
-  }
-
-  if (type.includes('product') || type.includes('store') || type.includes('supplement')) {
-    return [
-      { icon: Package, label: 'Product catalog & checkout', detail: 'SKUs, inventory & variant configurations' },
-      { icon: Layout, label: 'E-commerce storefront', detail: 'Fast checkout & mobile shopping flow' },
-      { icon: BarChart2, label: 'Revenue & order analytics', detail: 'Sales tracking & fulfillment pipelines' },
-      { icon: Users, label: 'Customer account portal', detail: 'Order history, subscriptions & support' },
-      { icon: Mail, label: 'Order confirmation & marketing', detail: 'Automated receipts & abandoned cart recovery' },
-    ]
-  }
-
-  if (type.includes('tool') || type.includes('calculator') || type.includes('tracker') || type.includes('software') || type.includes('course') || type.includes('masterclass')) {
-    return [
-      { icon: Layout, label: 'Interactive software tool engine', detail: 'Real-time workflows, inputs & saved user records' },
-      { icon: Users, label: 'Subscriber account portal', detail: 'User authentication, member workspace & preferences' },
-      { icon: BarChart2, label: 'Subscription revenue metrics', detail: 'Active subscribers & monthly recurring revenue (MRR)' },
-      { icon: Package, label: 'Subscription landing page', detail: 'Tool overview, monthly pricing & direct signups' },
-      { icon: Mail, label: 'Subscriber email notifications', detail: 'Welcome sequence, receipts & monthly feature alerts' },
-    ]
-  }
+  const name = blueprint?.name || creatorData?.productName || 'Software Application'
 
   return [
-    { icon: Layout, label: `${name} architecture`, detail: 'Core routing & responsive layout' },
-    { icon: Users, label: 'Member management system', detail: 'User auth, roles & permissions' },
-    { icon: BarChart2, label: 'Creator control dashboard', detail: 'Live metrics, MRR tracking & telemetry' },
-    { icon: Package, label: 'Offer & launch page', detail: 'Direct purchase & signup flows' },
-    { icon: Mail, label: 'Notification pipeline', detail: 'Transactional & promotional emails' },
+    { icon: Layout, label: 'Interactive software tool engine', detail: 'Real-time workflows, inputs & saved user records' },
+    { icon: Users, label: 'Subscriber account portal', detail: 'User authentication, member workspace & preferences' },
+    { icon: BarChart2, label: 'Subscription revenue metrics', detail: 'Active subscribers & monthly recurring revenue (MRR)' },
+    { icon: Package, label: 'Priced waitlist landing page', detail: 'Tool overview, monthly pricing & direct signups' },
+    { icon: Mail, label: 'Subscriber email notifications', detail: 'Welcome sequence, receipts & monthly feature alerts' },
   ]
 }
 
@@ -96,22 +67,14 @@ export default function PreFinish() {
           >
             ← Back
           </button>
-          <div className="flex items-center gap-2.5">
-            <WingLogo size={22} />
-            <span className="text-white font-semibold text-[15px] tracking-tight">CoLaunch</span>
-          </div>
+          <CoLaunchLogo
+            size={20}
+            href="https://co-launch.app"
+            color={accent.color}
+            showWordmark={true}
+          />
         </div>
-        <div className="flex items-center gap-1.5">
-          {[1,2,3,4,5,6,7,8].map(i => (
-            <div key={i} className="rounded-full transition-all duration-300"
-              style={{
-                width: i === 7 ? '20px' : '6px',
-                height: '6px',
-                background: i === 7 ? 'white' : i < 7 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)',
-              }}
-            />
-          ))}
-        </div>
+        <OnboardingStepIndicator currentStep="pre-finish" showOptions={true} />
       </header>
 
       <main

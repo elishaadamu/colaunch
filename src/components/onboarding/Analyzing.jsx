@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import { Check, Play, Eye, Heart, Clock, Trash2 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 import { getScrapePromise, fetchCreatorComments, searchGoogleApify } from '../../services/scraper'
 import { saveCreator, recommendCreator } from '../../services/opsApi'
 import { generateRecommendationsAI, hasTextKey, areRecsValidForCreator, parseFollowerCount, generateAudienceIntelligenceAI, getDynamicAudienceIntelligence } from '../../services/ai'
@@ -70,7 +72,7 @@ const ANALYSIS_STEPS = [
 function fmt(n) {
   n = parseFollowerCount(n)
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
   return String(n)
 }
 
@@ -83,9 +85,9 @@ function PostGrid({ posts, accentColor, revealCount }) {
           key={i}
           className="relative rounded-lg overflow-hidden transition-all duration-500"
           style={{
-            height:    '72px',
+            height: '72px',
             background: `hsl(${p.hue || 220},18%,14%)`,
-            opacity:   i < revealCount ? 1 : 0.15,
+            opacity: i < revealCount ? 1 : 0.15,
             transform: i < revealCount ? 'scale(1)' : 'scale(0.95)',
           }}
         >
@@ -140,11 +142,11 @@ function PostGrid({ posts, accentColor, revealCount }) {
 
 function IdentityPalette({ hue, visible }) {
   const swatches = [
-    { l: 8,  s: 12 },
+    { l: 8, s: 12 },
     { l: 15, s: 18 },
     { l: 22, s: 15 },
-    { l: 85, s: 0  },
-    { l: 95, s: 0  },
+    { l: 85, s: 0 },
+    { l: 95, s: 0 },
   ]
   return (
     <div className="flex items-center gap-1.5">
@@ -154,9 +156,9 @@ function IdentityPalette({ hue, visible }) {
           key={i}
           className="w-5 h-5 rounded-full transition-all duration-500"
           style={{
-            background:      sw.s === 0 ? `hsl(0,0%,${sw.l}%)` : `hsl(${hue},${sw.s}%,${sw.l}%)`,
-            opacity:         visible ? 1 : 0,
-            transform:       visible ? 'scale(1)' : 'scale(0.5)',
+            background: sw.s === 0 ? `hsl(0,0%,${sw.l}%)` : `hsl(${hue},${sw.s}%,${sw.l}%)`,
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'scale(1)' : 'scale(0.5)',
             transitionDelay: `${i * 80}ms`,
           }}
         />
@@ -171,31 +173,31 @@ export default function Analyzing() {
   const recsJob = useBgJob('onboarding-recs')
 
   const [completedSteps, setCompletedSteps] = useState([])
-  const [activeStep, setActiveStep]         = useState(0)
-  const [progress, setProgress]             = useState(0)
-  const [confidence, setConfidence]         = useState(0)
-  const [insight, setInsight]               = useState(null)
-  const [done, setDone]                     = useState(false)
-  const [revealedPosts, setRevealedPosts]   = useState(0)
-  const [showPalette, setShowPalette]       = useState(false)
-  const [scrapeError, setScrapeError]       = useState(null)
+  const [activeStep, setActiveStep] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const [confidence, setConfidence] = useState(0)
+  const [insight, setInsight] = useState(null)
+  const [done, setDone] = useState(false)
+  const [revealedPosts, setRevealedPosts] = useState(0)
+  const [showPalette, setShowPalette] = useState(false)
+  const [scrapeError, setScrapeError] = useState(null)
   const [scrapeErrorMsg, setScrapeErrorMsg] = useState('')
-  const [liveData, setLiveData]             = useState(null)
+  const [liveData, setLiveData] = useState(null)
   const [analysisElapsedMs, setAnalysisElapsedMs] = useState(0)
-  const [stepTimings, setStepTimings]       = useState({})
+  const [stepTimings, setStepTimings] = useState({})
   const timerRef = useRef(null)
 
   // Prefer real scraped data at every level
-  const displayName = liveData?.name      || creatorData.name      || ''
-  const handle      = liveData?.handle    || creatorData.handle    || '@creator'
-  const followers   = liveData?.followers || creatorData.followers || 0
-  const engRate     = liveData?.engagementRate || creatorData.engagementRate || 0
-  const avatarUrl   = liveData?.avatarUrl || liveData?.avatar || liveData?.avatar_url || creatorData.avatarUrl || creatorData.avatar || creatorData.avatar_url || ''
-  const niche       = liveData?.niche     || creatorData.niche     || 'Creator'
+  const displayName = liveData?.name || creatorData.name || ''
+  const handle = liveData?.handle || creatorData.handle || '@creator'
+  const followers = liveData?.followers || creatorData.followers || 0
+  const engRate = liveData?.engagementRate || creatorData.engagementRate || 0
+  const avatarUrl = liveData?.avatarUrl || liveData?.avatar || liveData?.avatar_url || creatorData.avatarUrl || creatorData.avatar || creatorData.avatar_url || ''
+  const niche = liveData?.niche || creatorData.niche || 'Creator'
   const description = liveData?.description || creatorData.description || ''
-  const videoCount  = liveData?.videoCount  || creatorData.videoCount  || 0
-  const postCount   = liveData?.postCount   || creatorData.postCount   || 0
-  const totalViews  = liveData?.totalViews  || creatorData.totalViews  || 0
+  const videoCount = liveData?.videoCount || creatorData.videoCount || 0
+  const postCount = liveData?.postCount || creatorData.postCount || 0
+  const totalViews = liveData?.totalViews || creatorData.totalViews || 0
 
   const posts = liveData?.recentPosts || creatorData.recentPosts || [
     { hue: 220, likes: '', views: '', thumbnail: '' },
@@ -274,7 +276,7 @@ export default function Analyzing() {
       if (searchItems.length > 0) {
         try {
           localStorage.setItem(`forge_apify_search_${cleanHandle}`, JSON.stringify(searchItems))
-        } catch {}
+        } catch { }
       }
 
       let synthesized = null
@@ -293,7 +295,7 @@ export default function Analyzing() {
         try {
           localStorage.setItem(`forge_audience_intel_${platform}_${cleanHandle}`, JSON.stringify(payloadToSave))
           localStorage.setItem(`forge_audience_intel_${cleanHandle}`, JSON.stringify(payloadToSave))
-        } catch {}
+        } catch { }
         updateCreator({ audienceIntelligence: payloadToSave })
       }
     } catch (e) {
@@ -309,7 +311,7 @@ export default function Analyzing() {
   // Await real scrape promise
   useEffect(() => {
     const promise = getScrapePromise()
-    
+
     if (!promise) {
       scrapeDoneRef.current = true
       updateCreator({ brandColor: '#c81e3c', brandHex: '#c81e3c' })
@@ -336,7 +338,7 @@ export default function Analyzing() {
         setLiveData(enrichedData)
         updateCreator(enrichedData)
         runTenPointsAnalysis(enrichedData)
-        
+
         // Start onboarding-recs job specifically for the newly analyzed creator
         startBgJob('onboarding-recs', async (sig) => {
           let finalRecs = null
@@ -400,7 +402,7 @@ export default function Analyzing() {
           setScrapeError('failed')
           setScrapeErrorMsg(msg)
         }
-        
+
         startBgJob('onboarding-recs', async (sig) => {
           const aiRecs = await generateRecommendationsAI(creatorData, sig)
           if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
@@ -430,9 +432,9 @@ export default function Analyzing() {
 
   // Analysis animation
   useEffect(() => {
-    let stepIdx   = 0
+    let stepIdx = 0
     const totalTime = ANALYSIS_STEPS.reduce((s, step) => s + step.duration, 0)
-    let elapsed   = 0
+    let elapsed = 0
     const startTime = Date.now()
 
     timerRef.current = setInterval(() => {
@@ -470,7 +472,7 @@ export default function Analyzing() {
       const stepStart = Date.now()
 
       if (stepIdx === 1) {
-        [0,1,2,3,4,5].forEach(i =>
+        [0, 1, 2, 3, 4, 5].forEach(i =>
           setTimeout(() => setRevealedPosts(r => Math.max(r, i + 1)), i * 180)
         )
         setTimeout(() => setShowPalette(true), 800)
@@ -526,13 +528,15 @@ export default function Analyzing() {
             >
               ← Back
             </button>
-            <div className="flex items-center gap-2">
-              <WingLogo size={20} color={accent.color} />
-              <span className="text-white/60 font-semibold text-[13px] tracking-tight">CoLaunch</span>
-            </div>
+            <CoLaunchLogo
+              size={18}
+              href="https://co-launch.app"
+              color={accent.color}
+              showWordmark={true}
+            />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-md border flex items-center gap-1.5"
               style={{ background: `rgba(${accent.rgb}, 0.1)`, borderColor: `rgba(${accent.rgb}, 0.25)`, color: accent.color }}>
               <Clock size={11} />
@@ -547,6 +551,7 @@ export default function Analyzing() {
               <Trash2 size={11} />
               <span className="hidden sm:inline">Reset</span>
             </button>
+            <OnboardingStepIndicator currentStep="analyzing" showOptions={true} />
           </div>
 
           {scrapeError && (
@@ -584,7 +589,7 @@ export default function Analyzing() {
                 }}
               >
                 <span className="text-xl font-bold text-white/70 select-none">
-                  {(displayName || handle).replace('@','').charAt(0).toUpperCase()}
+                  {(displayName || handle).replace('@', '').charAt(0).toUpperCase()}
                 </span>
                 {avatarUrl ? (
                   <img
@@ -667,7 +672,7 @@ export default function Analyzing() {
         <div className="space-y-1.5 mb-5">
           {ANALYSIS_STEPS.map((step, i) => {
             const isCompleted = completedSteps.includes(i)
-            const isActive    = activeStep === i && !isCompleted
+            const isActive = activeStep === i && !isCompleted
             return (
               <div key={step.id} className="transition-all duration-300"
                 style={{ opacity: isCompleted ? 1 : isActive ? 1 : i < activeStep ? 0.5 : 0.2 }}>
@@ -676,7 +681,7 @@ export default function Analyzing() {
                     className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
                     style={{
                       background: isCompleted ? 'white' : isActive ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-                      border:     isActive ? '1px solid rgba(255,255,255,0.25)' : 'none',
+                      border: isActive ? '1px solid rgba(255,255,255,0.25)' : 'none',
                     }}
                   >
                     {isCompleted
@@ -719,10 +724,10 @@ export default function Analyzing() {
         <div
           className="mb-5 rounded-xl px-4 py-3 border transition-all duration-500"
           style={{
-            background:  `rgba(${accent.rgb},0.06)`,
+            background: `rgba(${accent.rgb},0.06)`,
             borderColor: `rgba(${accent.rgb},0.12)`,
-            minHeight:   '44px',
-            opacity:     insight ? 1 : 0,
+            minHeight: '44px',
+            opacity: insight ? 1 : 0,
           }}
         >
           <p className="text-[13px] font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>

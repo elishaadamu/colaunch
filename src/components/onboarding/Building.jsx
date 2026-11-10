@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useForge, getAccent } from '../../App'
 import { Check, Layout, Users, BarChart2, Package, Mail, Globe, Clock, Terminal, Trash2, Volume2, Radio, Play, ShoppingBag, Megaphone } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 
 function isLightColor(hex) {
   if (!hex || typeof hex !== 'string') return false
@@ -34,68 +36,36 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
   // Feature-driven artifacts
   features.forEach((feat, i) => {
     const fLower = feat.toLowerCase()
-    if (fLower.includes('podcast')) {
+    if (fLower.includes('telemetry') || fLower.includes('metric') || fLower.includes('analytic')) {
       artifacts.push({
-        id: `podcast-${i}`,
-        icon: Volume2,
-        label: 'Podcast Player',
-        description: 'Audio syndication, show notes feed & episode player',
+        id: `telemetry-${i}`,
+        icon: BarChart2,
+        label: 'Usage Telemetry',
+        description: 'Subscriber tracking, performance telemetry & audit logging',
         duration: 1200,
       })
-    } else if (fLower.includes('live') || fLower.includes('ama') || fLower.includes('event')) {
-      artifacts.push({
-        id: `live-${i}`,
-        icon: Radio,
-        label: 'Live Stage',
-        description: 'Live broadcast rooms, event scheduling & audience Q&A',
-        duration: 1200,
-      })
-    } else if (fLower.includes('store') || fLower.includes('product') || fLower.includes('drop')) {
-      artifacts.push({
-        id: `store-${i}`,
-        icon: Package,
-        label: 'Subscription Billing',
-        description: 'Monthly recurring billing, account credentials & member access',
-        duration: 1200,
-      })
-    } else if (fLower.includes('video') || fLower.includes('vault') || fLower.includes('release')) {
-      artifacts.push({
-        id: `videos-${i}`,
-        icon: Play,
-        label: 'Video Vault',
-        description: 'YouTube channel feed sync & curated video vault',
-        duration: 1200,
-      })
-    } else if (fLower.includes('forum') || fLower.includes('community') || fLower.includes('discussion')) {
-      artifacts.push({
-        id: `community-${i}`,
-        icon: Users,
-        label: 'Community Feed',
-        description: 'Threaded discussions, real audience comments & profiles',
-        duration: 1100,
-      })
-    } else if (fLower.includes('tier') || fLower.includes('perk') || fLower.includes('membership')) {
+    } else if (fLower.includes('billing') || fLower.includes('price') || fLower.includes('subscri') || fLower.includes('stripe')) {
       artifacts.push({
         id: `billing-${i}`,
         icon: BarChart2,
-        label: 'Membership Gates',
-        description: 'Stripe subscription tiers, member perks & access keys',
+        label: 'Subscription Engine',
+        description: 'Monthly recurring billing & member credentials',
         duration: 1200,
       })
-    } else if (fLower.includes('announcement')) {
+    } else if (fLower.includes('sync') || fLower.includes('export') || fLower.includes('cloud')) {
       artifacts.push({
-        id: `announcements-${i}`,
-        icon: Megaphone,
-        label: 'Announcements',
-        description: 'Creator broadcast channel & instant push alerts',
-        duration: 1000,
+        id: `sync-${i}`,
+        icon: Globe,
+        label: 'Cloud Sync Engine',
+        description: 'Cross-device cloud persistence & report exports',
+        duration: 1100,
       })
-    } else if (fLower.includes('course') || fLower.includes('curriculum') || fLower.includes('tool') || fLower.includes('software')) {
+    } else {
       artifacts.push({
         id: `software-${i}`,
         icon: Layout,
-        label: 'Software Engine',
-        description: 'Interactive tool calculators, workflow automations & user records',
+        label: feat,
+        description: `Dedicated ${feat.toLowerCase()} module configured for ${name}`,
         duration: 1200,
       })
     }
@@ -106,7 +76,7 @@ function getDynamicBuildArtifacts(blueprint, creatorData) {
     id: 'launch-portal',
     icon: Package,
     label: 'Launch Ready',
-    description: `Configuring ${name} modules for Creator Studio`,
+    description: `Configuring ${name} demand-test modules for Creator Studio`,
     duration: 1000,
   })
 
@@ -281,10 +251,12 @@ export default function Building() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-6 flex-shrink-0">
-        <a href="https://co-launch.app" className="flex items-center gap-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
-          <WingLogo size={22} color={accent.color} />
-          <span className="text-white font-semibold text-[15px] tracking-tight">CoLaunch</span>
-        </a>
+        <CoLaunchLogo
+          size={20}
+          href="https://co-launch.app"
+          color={accent.color}
+          showWordmark={true}
+        />
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -295,19 +267,7 @@ export default function Building() {
             <Trash2 size={12} />
             <span className="hidden sm:inline">Reset Creator</span>
           </button>
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div
-                key={i}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: i === 6 ? '20px' : '6px',
-                  height: '6px',
-                  background: i === 6 ? accent.color : i < 6 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)',
-                }}
-              />
-            ))}
-          </div>
+          <OnboardingStepIndicator currentStep="building" showOptions={true} />
         </div>
       </header>
 

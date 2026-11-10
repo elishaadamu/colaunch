@@ -7,12 +7,22 @@ import {
   Heart, MessageCircle, Share2, MoreHorizontal, Maximize2, Minimize2, Globe, Sparkles,
   Layers, Video, Star, CheckCircle2, ShieldCheck, Rocket, CheckCircle,
   Megaphone, Pin, Clock, Headphones, Pause, FastForward, Rewind, Paperclip, Smile,
-  ChevronRight, ThumbsUp, Flame, Music, Eye, ExternalLink, Plus, X, Instagram
+  ChevronRight, ThumbsUp, Flame, Music, Eye, ExternalLink, Plus, X, Instagram,
+  ChevronDown, HelpCircle, AlertCircle, Terminal, Activity, Compass, Cpu
 } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
-import { parseFollowerCount } from '../../services/ai'
-import { hexToRgb, getDeterministicBrandColor } from '../../utils/avatarColorExtractor'
+import CoLaunchLogo from '../ui/CoLaunchLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
+import { parseFollowerCount, generateLandingCopyAI } from '../../services/ai'
+import { calculateSubscriptionRevenue, clampPrice, REVENUE_DISCLAIMER } from '../../utils/subscriptionRevenue'
 import { fetchCreatorComments, cleanPostTitle } from '../../services/scraper'
+import {
+  LANDING_COPY_SCHEMA_VERSION,
+  buildDeterministicLandingCopy,
+  validateLandingCopy,
+  getInitialLandingCopy
+} from '../../services/landingCopy'
+
 export { cleanPostTitle }
 
 function isLightColor(hex) {
@@ -115,536 +125,59 @@ export function getCreatorChannelUrl(creatorData) {
   return `https://www.youtube.com/@${clean}`
 }
 
-function getDynamicCommunityPosts(creatorName, blueprint, creatorData, channelComments = []) {
-  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
-  const creatorDisplayName = (creatorData?.name || '').toLowerCase()
-  const videos = creatorData?.recentPosts || creatorData?.videos || []
-  const creatorUrl = getCreatorChannelUrl(creatorData)
-  const platform = (creatorData?.platform || 'youtube').toLowerCase()
-  const platformInfo = getPlatformInfo(platform)
-
-  // Use strictly genuine audience comments scraped from Apify / social platform (no handcoded announcements)
-  if (Array.isArray(channelComments) && channelComments.length > 0) {
-    return channelComments.map((c, idx) => {
-      const matchedVid = videos.find(v =>
-        (v.title && c.videoTitle && v.title.toLowerCase().includes(c.videoTitle.toLowerCase())) ||
-        (v.videoId && c.videoId && v.videoId === c.videoId)
-      ) || (videos.length > 0 ? videos[idx % videos.length] : null)
-
-      const vidTitle = c.videoTitle || matchedVid?.title || ''
-      const defaultVidUrl = platform === 'instagram'
-        ? (c.videoId ? `https://www.instagram.com/p/${c.videoId}/` : null)
-        : (c.videoId ? `https://www.youtube.com/watch?v=${c.videoId}` : null)
-      const vidUrl = c.videoUrl || c.url || defaultVidUrl || matchedVid?.url || creatorUrl
-
-      const authorRaw = c.author || c.user || 'viewer'
-      const authorClean = authorRaw.replace(/^@/, '')
-      const isCreator = Boolean(
-        c.isCreator ||
-        authorClean.toLowerCase() === handleClean ||
-        (creatorDisplayName && authorClean.toLowerCase() === creatorDisplayName)
-      )
-
-      return {
-        id: c.id || `comm_${idx}`,
-        user: `@${authorClean}`,
-        text: (c.text || c.quote || '').trim(),
-        time: c.published || c.time || platformInfo.sourceComment,
-        source: platformInfo.sourceComment,
-        videoTitle: vidTitle,
-        videoUrl: vidUrl,
-        isCreator
-      }
-    }).filter(p => p.text && p.text.trim())
-  }
-
-  // If no comments found from Apify, return empty list (no mockup data or fake announcements)
-  return []
-}
-
-export const CAPABILITY_PRESETS = [
-  { label: 'Podcast section', icon: Volume2, tab: 'Podcast', desc: 'Audio episodes, show notes & players' },
-  { label: 'Live events & AMAs', icon: Radio, tab: 'Live AMAs', desc: 'Live stage, scheduled streams & Q&A' },
-  { label: 'Digital products & store', icon: ShoppingBag, tab: 'Products', desc: 'Downloadable assets, templates & vault' },
-  { label: 'Video archive & vault', icon: Play, tab: 'Videos', desc: 'Curated uploads & releases' },
-  { label: 'Tiered memberships', icon: Layers, tab: null, desc: 'Recurring Stripe subscription tiers' },
-  { label: 'Exclusive perks', icon: Star, tab: null, desc: 'Verified member badges & rewards' },
-]
-
-const QUICK_PROMPTS = [
-  'Focus on community',
-  'More minimalist',
-  'Mobile-first',
-  'Add a podcast section',
-  'Add live events',
-  'Add digital store',
-]
-
-const FEATURES = [
-  { icon: MessageSquare, label: 'Private forum' },
-  { icon: Layers, label: 'Tiered tiers' },
-  { icon: Layers, label: 'Tiered memberships' },
-  { icon: Video, label: 'Monthly AMAs' },
-  { icon: Radio, label: 'Live events & AMAs' },
-  { icon: Radio, label: 'Live events' },
-  { icon: Star, label: 'Exclusive perks' },
-  { icon: Layout, label: 'Course builder' },
-  { icon: Users, label: 'Community forum' },
-  { icon: MessageCircle, label: 'Member discussions' },
-  { icon: Play, label: 'Video releases' },
-  { icon: Play, label: 'Video archive' },
-  { icon: Play, label: 'Video archive & vault' },
-  { icon: Megaphone, label: 'Official announcements' },
-  { icon: Users, label: 'Verified members' },
-  { icon: Star, label: 'Direct discussions' },
-  { icon: BarChart2, label: 'Creator analytics' },
-  { icon: Settings, label: 'Member management' },
-  { icon: Volume2, label: 'Podcast section' },
-  { icon: ShoppingBag, label: 'Digital products & store' },
-  { icon: ShoppingBag, label: 'Digital products' },
-]
-
-function getDynamicProducts(blueprint, creatorData) {
-  const name = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
-  const bpName = blueprint?.name || 'Software Tool'
-  const monthlyPrice = Number(blueprint?.monthly_price || creatorData?.monthly_price || 19)
-
-  return [
-    { 
-      title: `${bpName} Standard Pass`, 
-      price: `$${monthlyPrice} / mo`, 
-      type: 'Monthly Subscription' 
-    },
-    { 
-      title: `${bpName} Pro Tier`, 
-      price: `$${Math.min(29, monthlyPrice + 6)} / mo`, 
-      type: 'Monthly Subscription' 
-    },
-    { 
-      title: 'Interactive Software Tool Engine', 
-      price: 'Included', 
-      type: 'Core Feature' 
-    },
-    { 
-      title: 'Community Benchmark Database', 
-      price: 'Included', 
-      type: 'Subscriber Perk' 
-    }
-  ]
-}
-
-
-
-export function isEducationalCreator(creatorData) {
-  const videos = creatorData?.recentPosts || creatorData?.videos || []
-  const bio = (creatorData?.description || '').toLowerCase()
-  const niche = (creatorData?.niche || '').toLowerCase()
-  const allTitles = videos.map(v => (v.title || '').toLowerCase()).join(' ')
-  const channelText = `${bio} ${niche} ${allTitles}`
-  return /\b(full course|crash course|coding tutorial|programming tutorial|beginner course|complete course|masterclass series|curriculum|bootcamp|learn python|learn javascript|learn react|step-by-step tutorial)\b/i.test(channelText)
-}
-
-export function getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs = []) {
-  const videos = creatorData?.recentPosts || creatorData?.videos || []
-  const bio = (creatorData?.description || '').toLowerCase()
-  const niche = (creatorData?.niche || '').toLowerCase()
-
-  // Real channel content strictly from Apify (bio, niche, video titles)
-  const allTitles = videos.map(v => (v.title || '').toLowerCase()).join(' ')
-  const channelText = `${bio} ${niche} ${allTitles}`
-
-  // Community is ALWAYS present and primary
-  const tabs = ['Community']
-
-  // Videos / Channel Archive (shows real Apify YouTube videos)
-  if (videos.length > 0) {
-    tabs.push('Videos')
-  }
-
-  // Courses: ONLY if channel actually teaches structured courses or programming/skill tutorials
-  const isEducational = isEducationalCreator(creatorData)
-  if (isEducational) {
-    tabs.push('Courses')
-  }
-
-  // Podcast: ONLY if channel actually has podcast episodes or an interview show
-  const isPodcast = /\b(podcast|podcast episode|the .* podcast|ep\s*\d+|audio podcast)\b/i.test(channelText)
-  if (isPodcast) {
-    tabs.push('Podcast')
-  }
-
-  // Live Streams / AMAs: ONLY if channel explicitly does live streams or live AMAs
-  const isLive = /\b(live stream|livestream|live q&a|live ama\b|ama livestream)\b/i.test(channelText)
-  if (isLive) {
-    tabs.push('Live AMAs')
-  }
-
-  // Include user extraTabs if user explicitly requested/prompted or added via sidebar
-  if (Array.isArray(extraTabs)) {
-    extraTabs.forEach(t => {
-      if (!tabs.includes(t)) tabs.push(t)
-    })
-  }
-
-  return tabs
-}
-
-function getVariationsForCreator(creatorData, extraTabs) {
-  const name = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
-  const baseTabs = extraTabs.length ? extraTabs : []
-  const isEdu = isEducationalCreator(creatorData)
-
-  if (isEdu) {
-    return [
-      {
-        id: 'academy-course',
-        name: `${name}'s Learning Academy`,
-        type: 'Course Platform',
-        preview: 'webapp',
-        description: `Structured curriculum with step-by-step video tutorials, modules, and community discussions.`,
-        features: ['Course builder', 'Community forum', 'Video vault', 'Creator analytics', ...baseTabs],
-        tagline: 'Structured learning and hands-on video tutorials'
-      },
-      {
-        id: 'community-circle',
-        name: `${name}'s Community Hub`,
-        type: 'Membership Community',
-        preview: 'community',
-        description: `Official audience community platform with member discussions, video archive, and announcements.`,
-        features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements', ...baseTabs],
-        tagline: 'Direct community access & video vault'
-      },
-      {
-        id: 'backstage-app',
-        name: `${name}'s Mobile Backstage`,
-        type: 'Mobile App',
-        preview: 'mobile',
-        description: `Dedicated mobile app with video streaming, push notifications, and member discussions.`,
-        features: ['Push notifications', 'Members feed', 'Video archive', 'Exclusive drops', ...baseTabs],
-        tagline: 'Mobile community and video updates'
-      }
-    ]
-  }
-
-  return [
-    {
-      id: 'community-hub',
-      name: `${name}'s Community Hub`,
-      type: 'Membership Community',
-      preview: 'community',
-      description: `Official audience community platform with member discussions, video archive, and announcements.`,
-      features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements', ...baseTabs],
-      tagline: 'Direct audience connection & official video archive'
-    },
-    {
-      id: 'inner-circle',
-      name: `${name}'s Inner Circle`,
-      type: 'Membership Space',
-      preview: 'community',
-      description: `Private community platform for dedicated viewers with direct discussions and channel archive.`,
-      features: ['Private forum', 'Verified members', 'Direct discussions', 'Official announcements', ...baseTabs],
-      tagline: 'Dedicated space for our most active supporters'
-    },
-    {
-      id: 'backstage-app',
-      name: `${name}'s Mobile Backstage`,
-      type: 'Mobile App',
-      preview: 'mobile',
-      description: `Dedicated mobile application for on-the-go community updates, video streaming, and member discussions.`,
-      features: ['Push notifications', 'Members feed', 'Video archive', 'Exclusive drops', ...baseTabs],
-      tagline: 'Mobile access with instant push notifications'
-    }
-  ]
-}
-
-function CreatorDashboardView({ styles, dynamicAccent, dynamicAccentBg, dynamicAccentBorder, creatorData, blueprint, channelComments = [] }) {
-  const creatorName = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
-  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const mrrVal = Math.round(parseFollowerCount(creatorData?.followers || 0) * 0.015 * 19)
-  const cleanMrr = `$${mrrVal > 0 ? mrrVal.toLocaleString() : '8,420'}`
-
-  const audienceStream = (Array.isArray(channelComments) && channelComments.length >= 1)
-    ? channelComments.slice(0, 5).map((c, i) => {
-      const cleanUser = (c.author || '@member').replace(/^@/, '')
-      const actions = [
-        { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
-        { action: 'Joined Monthly VIP Circle', amount: '+$35.00/mo' },
-        { action: 'Downloaded Strategy Pack', amount: 'Free' },
-        { action: 'Purchased Toolkit Bundle', amount: '+$79.00' },
-        { action: 'Enrolled in Core Masterclass', amount: '+$149.00' },
-      ]
-      return {
-        user: cleanUser,
-        action: actions[i % actions.length].action,
-        amount: actions[i % actions.length].amount,
-        time: c.published || c.time || `${(i + 1) * 7}m ago`
-      }
-    })
-    : []
-
-  return (
-    <div className="w-full h-full flex flex-col overflow-y-auto" style={{ background: '#0f1117' }}>
-      {/* OS Top Subheader */}
-      <div
-        className="flex items-center justify-between px-5 py-3 border-b flex-shrink-0"
-        style={{ borderColor: '#222634', background: '#12141c' }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center font-bold text-xs flex-shrink-0 relative shadow-md"
-            style={{ background: dynamicAccentBg, border: `1px solid ${dynamicAccentBorder}` }}
-          >
-            <span style={{ color: dynamicAccent }}>
-              {creatorName.charAt(0).toUpperCase()}
-            </span>
-            {resolvedAvatar ? (
-              <img
-                src={resolvedAvatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(resolvedAvatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            ) : null}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-white">
-                {creatorName} Studio OS
-              </span>
-              <span
-                className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider"
-                style={{ background: dynamicAccentBg, color: dynamicAccent, border: `1px solid ${dynamicAccentBorder}` }}
-              >
-                Verified
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Command Center · {blueprint.name}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#161922] border border-[#222634]"
-          >
-            <span className="w-2 h-2 rounded-full" style={{ background: dynamicAccent }} />
-            <span className="text-slate-300">Stripe Live Rails</span>
-          </div>
-          <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-            Live
-          </span>
-        </div>
-      </div>
-
-      {/* 4 Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-5 flex-shrink-0">
-        {[
-          { label: 'Projected MRR', val: `${cleanMrr}/mo`, badge: '+18.4% MoM', desc: 'Active subscriptions' },
-          { label: 'Subscribers', val: creatorData?.followers || 'Community Reach', badge: 'Official Audience', desc: 'Verified subscriber count' },
-          { label: 'Channel Views', val: creatorData?.totalViews || 'Verified', badge: 'Total Impact', desc: 'Cumulative video views' },
-          { label: 'Catalog Uploads', val: `${creatorData?.videoCount || recentVideoList.length || '12'} Videos`, badge: 'Official Archive', desc: 'Verified channel videos' },
-        ].map((m, i) => (
-          <div
-            key={i}
-            className="p-4 rounded-xl border flex flex-col justify-between bg-[#12141c] border-[#222634] hover:border-slate-700 transition shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{m.label}</span>
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-md"
-                style={{ background: dynamicAccentBg, color: dynamicAccent }}
-              >
-                {m.badge}
-              </span>
-            </div>
-            <div className="text-xl font-mono font-bold tracking-tight mb-1 text-white">
-              {m.val}
-            </div>
-            <p className="text-xs text-slate-500">{m.desc}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Two Column Layout: Channel Releases & Live Member Activity */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-5 pb-5 flex-1">
-        {/* Releases / Pipeline (3 cols) */}
-        <div
-          className="md:col-span-3 p-4 rounded-xl border flex flex-col bg-[#12141c] border-[#222634]"
-        >
-          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#222634]">
-            <span className="text-xs font-bold uppercase tracking-wider text-white">
-              Official Releases & Video Catalog
-            </span>
-            <span className="text-xs font-mono font-semibold" style={{ color: dynamicAccent }}>
-              {recentVideoList.length} Uploads
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {recentVideoList.slice(0, 3).map((vid, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-xl border bg-[#161922] border-[#222634] flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-white truncate">
-                      {cleanPostTitle(vid.title, 55)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    {vid.views ? `${vid.views} views` : 'Published release'} {vid.published ? `· ${vid.published}` : ''}
-                  </p>
-                </div>
-                <a
-                  href={vid.url || (vid.videoId ? `https://www.youtube.com/watch?v=${vid.videoId}` : getCreatorChannelUrl(creatorData))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border flex items-center gap-1 shrink-0"
-                  style={{ color: dynamicAccent, background: dynamicAccentBg, borderColor: dynamicAccentBorder }}
-                >
-                  <span>Watch</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Live Activity Feed (2 cols) */}
-        <div
-          className="md:col-span-2 p-4 rounded-xl border flex flex-col bg-[#12141c] border-[#222634]"
-        >
-          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#222634]">
-            <span className="text-xs font-bold uppercase tracking-wider text-white">
-              Live Sales Stream
-            </span>
-            <span className="text-xs font-mono text-emerald-400 font-semibold">
-              Real-time
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            {audienceStream.map((feed, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[#161922] border border-[#222634]/60 hover:border-slate-700 transition"
-              >
-                <div className="min-w-0 pr-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-white truncate">@{feed.user}</span>
-                    <span className="text-[10px] text-slate-500">{feed.time}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 truncate">{feed.action}</p>
-                </div>
-                <span className="text-xs font-mono font-bold flex-shrink-0" style={{ color: dynamicAccent }}>
-                  {feed.amount}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Real Channel Comments & Audience Insights */}
-          {channelComments.length > 0 && (
-            <div className="mt-3.5 pt-3 border-t border-[#222634]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: dynamicAccent }} />
-                  Channel Comments (Live)
-                </span>
-                <span className="text-[9px] font-mono text-emerald-400 font-medium">
-                  {channelComments.length} Synced
-                </span>
-              </div>
-              <div className="space-y-2">
-                {channelComments.slice(0, 3).map((c, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-[#161922] border border-[#222634]/60 text-[10px] hover:border-slate-700 transition">
-                    <div className="flex items-center justify-between text-slate-400 mb-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-semibold text-white truncate">{c.author}</span>
-                        {c.videoTitle && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 truncate max-w-[120px]" title={c.videoTitle}>
-                            {c.videoTitle}
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-mono text-[9px] text-slate-500 flex-shrink-0">{c.published || c.time}</span>
-                    </div>
-                    <p className="text-slate-300 italic line-clamp-2">"{c.text}"</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function formatViewsString(val) {
-  if (!val) return '';
-  const s = String(val).trim();
-  if (s === '0' || s === '0 views' || s === '0 view' || s === '0.0' || s === '0k' || s === '0M') return '';
-  if (/views?$/i.test(s)) return s;
-  return `${s} views`;
+  if (!val) return ''
+  const s = String(val).trim()
+  if (s === '0' || s === '0 views' || s === '0 view' || s === '0.0' || s === '0k' || s === '0M') return ''
+  if (/views?$/i.test(s)) return s
+  return `${s} views`
 }
 
 export function extractYouTubeId(video) {
-  if (!video) return null;
+  if (!video) return null
   if (video.videoId && typeof video.videoId === 'string' && video.videoId.trim().length === 11) {
-    return video.videoId.trim();
+    return video.videoId.trim()
   }
-  const candidates = [video.url, video.link, video.id, video.videoId, video.thumbnail];
+  const candidates = [video.url, video.link, video.id, video.videoId, video.thumbnail]
   for (const c of candidates) {
     if (typeof c === 'string') {
-      const match = c.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/|\/vi\/|\/vi_webp\/)([a-zA-Z0-9_-]{11})/);
-      if (match && match[1]) return match[1];
+      const match = c.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/|\/vi\/|\/vi_webp\/)([a-zA-Z0-9_-]{11})/)
+      if (match && match[1]) return match[1]
     }
   }
-  return null;
+  return null
 }
 
 export function extractInstagramCode(video) {
-  if (!video) return null;
-  const candidates = [video.url, video.link, video.videoId, video.id, video.shortcode, video.shortCode, video.code];
+  if (!video) return null
+  const candidates = [video.url, video.link, video.videoId, video.id, video.shortcode, video.shortCode, video.code]
   for (const c of candidates) {
     if (typeof c === 'string') {
-      const match = c.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
-      if (match && match[1]) return match[1];
+      const match = c.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i)
+      if (match && match[1]) return match[1]
       if (/^[a-zA-Z0-9_-]{9,16}$/.test(c.trim()) && !['undefined', 'null', 'default', 'creator'].includes(c.trim())) {
-        return c.trim();
+        return c.trim()
       }
     }
   }
-  return null;
+  return null
 }
 
 export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, isLight }) {
-  if (!video) return null;
+  if (!video) return null
 
-  const platform = (creatorData?.platform || 'youtube').toLowerCase();
-  const platformInfo = getPlatformInfo(platform);
-  const videoId = platform === 'youtube' ? extractYouTubeId(video) : null;
-  const igShortcode = platform === 'instagram' ? extractInstagramCode(video) : null;
-  const directVideoUrl = video.videoUrl || video.video_url || video.mediaUrl || (video.url && String(video.url).match(/\.(mp4|webm|mov)(\?|$)/i) ? video.url : null);
-  const videoTitle = video.title || (platform === 'instagram' ? 'Instagram Post & Reel' : 'Official Channel Video');
-  const creatorUrl = getCreatorChannelUrl(creatorData);
-  const postUrl = video.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : (igShortcode ? `https://www.instagram.com/p/${igShortcode}/` : creatorUrl));
-  const thumbUrl = video.thumbnail || video.thumbnailUrl || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const platformInfo = getPlatformInfo(platform)
+  const videoId = platform === 'youtube' ? extractYouTubeId(video) : null
+  const igShortcode = platform === 'instagram' ? extractInstagramCode(video) : null
+  const directVideoUrl = video.videoUrl || video.video_url || video.mediaUrl || (video.url && String(video.url).match(/\.(mp4|webm|mov)(\?|$)/i) ? video.url : null)
+  const videoTitle = video.title || (platform === 'instagram' ? 'Instagram Post & Reel' : 'Official Channel Video')
+  const creatorUrl = getCreatorChannelUrl(creatorData)
+  const postUrl = video.url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : (igShortcode ? `https://www.instagram.com/p/${igShortcode}/` : creatorUrl))
+  const thumbUrl = video.thumbnail || video.thumbnailUrl || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '')
 
-  const [useEmbed, setUseEmbed] = useState(Boolean(igShortcode));
-  const [embedError, setEmbedError] = useState(false);
-  const [showFullCaption, setShowFullCaption] = useState(false);
+  const [useEmbed, setUseEmbed] = useState(Boolean(igShortcode))
+  const [embedError, setEmbedError] = useState(false)
 
   return (
     <div
@@ -652,16 +185,14 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden max-h-[92vh]"
-        style={{ borderRadius: '0px' }}
+        className="relative w-full max-w-4xl bg-[#0d0f17] border border-[#232a3d] shadow-2xl flex flex-col overflow-hidden max-h-[92vh] rounded-none"
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Modal Header */}
         <div className="bg-[#131622] px-4 py-3 border-b border-[#232a3d] flex items-center justify-between select-none">
           <div className="flex items-center gap-2.5 min-w-0 pr-4">
             <span className="w-2 h-2 shrink-0 animate-pulse" style={{ backgroundColor: dynamicAccent }} />
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
-              Live Preview · @{(creatorData?.handle || 'creator').replace('@', '')} on {platformInfo.name}
+              Where this idea comes from · @{(creatorData?.handle || 'creator').replace('@', '')}
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-xs font-bold text-white truncate">
@@ -669,2788 +200,1424 @@ export function VideoPlayerModal({ video, onClose, creatorData, dynamicAccent, i
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {igShortcode && !directVideoUrl && (
-              <div className="hidden sm:flex items-center bg-[#181c28] border border-[#252c40] p-0.5 text-[10px] font-mono">
-                <button
-                  type="button"
-                  onClick={() => { setUseEmbed(true); setEmbedError(false); }}
-                  className={`px-2 py-0.5 transition cursor-pointer ${useEmbed && !embedError ? 'bg-[#22283a] text-white font-bold' : 'text-slate-400 hover:text-white'}`}
-                >
-                  Embed Player
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUseEmbed(false)}
-                  className={`px-2 py-0.5 transition cursor-pointer ${!useEmbed || embedError ? 'bg-[#22283a] text-white font-bold' : 'text-slate-400 hover:text-white'}`}
-                >
-                  Media View
-                </button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-              style={{ borderRadius: '0px' }}
-              title="Close viewer (Esc)"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-none text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+            title="Close video"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        {/* Video Player Frame / Media Stage */}
-        <div className="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
+        <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
           {videoId ? (
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
               title={videoTitle}
               className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           ) : directVideoUrl ? (
             <video
               src={directVideoUrl}
-              poster={thumbUrl}
               controls
               autoPlay
-              playsInline
-              className="w-full h-full object-contain bg-black"
+              className="w-full h-full object-contain"
             />
-          ) : (igShortcode && useEmbed && !embedError) ? (
-            <div className="w-full h-full relative bg-black flex items-center justify-center">
-              <iframe
-                src={`https://www.instagram.com/p/${igShortcode}/embed/`}
-                title={videoTitle}
-                className="w-full h-full border-0 bg-black"
-                allowFullScreen
-                scrolling="no"
-                onError={() => setEmbedError(true)}
-              />
+          ) : thumbUrl ? (
+            <div className="relative w-full h-full">
+              <img src={thumbUrl} alt="" className="w-full h-full object-cover opacity-60" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-black/40">
+                <p className="text-sm text-white font-medium mb-3">Video reference from channel catalog</p>
+                <a
+                  href={postUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition flex items-center gap-1.5"
+                  style={{ background: dynamicAccent }}
+                >
+                  <span>Open on {platformInfo.name}</span>
+                  <ExternalLink size={13} />
+                </a>
+              </div>
             </div>
           ) : (
-            <div className="w-full h-full relative flex items-center justify-center bg-[#07090e]">
-              {thumbUrl ? (
-                <img
-                  src={thumbUrl}
-                  alt={videoTitle}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-contain select-none"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-slate-500 gap-2">
-                  <Video className="w-12 h-12" />
-                  <span className="text-xs font-mono">{platformInfo.name} Media</span>
-                </div>
-              )}
-
-              {/* Bottom Transparent Caption Bar — Clean, readable, does not obscure the media */}
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/95 via-black/75 to-transparent flex flex-col justify-end">
-                <div className="max-w-3xl space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span 
-                      className="text-[10px] font-bold font-mono px-2 py-0.5 uppercase tracking-wider text-white"
-                      style={{ background: platformInfo.accent || dynamicAccent }}
-                    >
-                      {platformInfo.name}
-                    </span>
-                    {formatViewsString(video.views) && (
-                      <span className="text-[11px] font-mono text-slate-300">
-                        {formatViewsString(video.views)}
-                      </span>
-                    )}
-                    {video.likes && (
-                      <span className="text-[11px] font-mono text-slate-300">
-                        · {String(video.likes).includes('like') ? video.likes : `${video.likes} likes`}
-                      </span>
-                    )}
-                    {video.comments && (
-                      <span className="text-[11px] font-mono text-slate-300">
-                        · {String(video.comments).includes('comment') ? video.comments : `${video.comments} comments`}
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-xs text-slate-200 leading-relaxed font-normal ${showFullCaption ? '' : 'line-clamp-2'}`}>
-                    {video.caption || video.description || video.text || videoTitle}
-                  </p>
-                  {(video.caption || video.description || video.text || videoTitle).length > 120 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowFullCaption(!showFullCaption)}
-                      className="text-[11px] font-semibold text-white/80 hover:text-white underline cursor-pointer"
-                    >
-                      {showFullCaption ? 'Show less' : 'Read more'}
-                    </button>
-                  )}
-                </div>
-              </div>
+            <div className="p-8 text-center text-slate-400">
+              <p className="text-xs">No media playback available for this item.</p>
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
 
-        {/* Bottom Modal Metadata & Actions */}
-        <div className="bg-[#10131d] px-4 py-3 border-t border-[#1f2433] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
-          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400 flex-wrap">
-            {formatViewsString(video.views) ? (
-              <span>{formatViewsString(video.views)}</span>
-            ) : video.likes ? (
-              <span>{String(video.likes).includes('like') ? video.likes : `${video.likes} likes`}</span>
-            ) : null}
-            {video.comments && (
-              <>
-                <span>·</span>
-                <span>{String(video.comments).includes('comment') ? video.comments : `${video.comments} comments`}</span>
-              </>
-            )}
-            {video.published && (
-              <>
-                <span>·</span>
-                <span>{video.published}</span>
-              </>
-            )}
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. PRODUCT UI MOCKUP COMPONENT
+// Neutral, category-matched dark software interface preview
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function ProductMockupPreview({
+  category = 'tool',
+  blueprint = {},
+  creatorData = {},
+  dynamicAccent = '#c81e3c',
+  isMobileFrame = false
+}) {
+  const name = blueprint.name || creatorData.productName || 'Software Application'
+  const cat = (blueprint.raw?.product_category || blueprint.category || blueprint.type || category || 'tool').toLowerCase()
+  const features = Array.isArray(blueprint.features) && blueprint.features.length > 0
+    ? blueprint.features
+    : ['Interactive Workspace', 'Automated Calculations', 'Saved User Projects', 'Live Telemetry']
+  const price = clampPrice(blueprint.monthly_price || 19)
+
+  // Inner mockup views based on software category
+  const renderMockupCanvas = () => {
+    if (cat.includes('calc') || cat.includes('formula') || cat.includes('estimat')) {
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3 bg-[#131724] border border-[#22293d] rounded-none">
+              <span className="text-[10px] font-mono text-slate-400 block uppercase">Input Parameter A</span>
+              <span className="text-base font-bold text-white font-mono mt-0.5 block">84.50</span>
+              <span className="text-[10px] text-emerald-400 font-mono">Calibrated baseline</span>
+            </div>
+            <div className="p-3 bg-[#131724] border border-[#22293d] rounded-none">
+              <span className="text-[10px] font-mono text-slate-400 block uppercase">Variance Factor</span>
+              <span className="text-base font-bold text-white font-mono mt-0.5 block">1.28x</span>
+              <span className="text-[10px] text-sky-400 font-mono">Optimal tolerance</span>
+            </div>
+            <div className="p-3 bg-[#131724] border border-[#22293d] rounded-none" style={{ borderColor: `${dynamicAccent}66` }}>
+              <span className="text-[10px] font-mono text-slate-400 block uppercase">Projected Output</span>
+              <span className="text-base font-bold text-white font-mono mt-0.5 block" style={{ color: dynamicAccent }}>+34.2%</span>
+              <span className="text-[10px] text-slate-400 font-mono">Automated result</span>
+            </div>
           </div>
+          <div className="p-3 bg-[#10141f] border border-[#1e2538] space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span className="font-mono text-[11px]">Dynamic Variable Slider</span>
+              <span className="font-mono text-[11px] text-slate-400">72%</span>
+            </div>
+            <div className="h-1.5 w-full bg-[#1b2234]">
+              <div className="h-full" style={{ width: '72%', background: dynamicAccent }} />
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex gap-2">
+              <button type="button" className="px-3 py-1 bg-white/5 border border-white/10 text-[11px] font-mono text-slate-300">
+                Run Simulation
+              </button>
+              <button type="button" className="px-3 py-1 bg-white/5 border border-white/10 text-[11px] font-mono text-slate-400">
+                Export CSV
+              </button>
+            </div>
+            <span className="text-[10px] font-mono text-slate-500">Live computation engine</span>
+          </div>
+        </div>
+      )
+    }
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            {postUrl && (
-              <a
-                href={postUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-1.5 text-xs font-semibold text-white transition flex items-center gap-1.5 hover:brightness-110"
-                style={{ background: platformInfo.accent || dynamicAccent, borderRadius: '0px' }}
-              >
-                {platform === 'instagram' && <Instagram className="w-3.5 h-3.5" />}
-                <span>{platformInfo.watchLabel}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] transition cursor-pointer"
-              style={{ borderRadius: '0px' }}
-            >
-              Done Playing
-            </button>
+    if (cat.includes('track') || cat.includes('log') || cat.includes('milestone')) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[#20273a]">
+            <div>
+              <span className="text-xs font-bold text-white block">Execution Progress & Daily Logging</span>
+              <span className="text-[10px] text-slate-400 font-mono">4 of 5 weekly objectives completed</span>
+            </div>
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+              On Track
+            </span>
+          </div>
+          <div className="space-y-2">
+            {features.slice(0, 3).map((feat, idx) => (
+              <div key={idx} className="p-2.5 bg-[#121624] border border-[#1f273c] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-none border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center">
+                    <Check size={11} className="text-emerald-400" />
+                  </div>
+                  <span className="text-xs text-slate-200 font-medium">{feat}</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500">Day {idx + 1} logged</span>
+              </div>
+            ))}
+          </div>
+          <div className="p-2.5 bg-[#0f1320] border border-[#1b2336] flex items-center justify-between text-[11px] text-slate-400 font-mono">
+            <span>Next automated milestone audit</span>
+            <span className="text-slate-200">Tomorrow at 09:00 UTC</span>
+          </div>
+        </div>
+      )
+    }
+
+    if (cat.includes('plan') || cat.includes('roadmap') || cat.includes('sprint')) {
+      return (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2 bg-[#121624] border border-[#20283c]">
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 1</span>
+              <span className="text-xs font-bold text-emerald-400">Validated</span>
+              <div className="h-1 w-full bg-emerald-500/20 mt-1.5"><div className="h-full bg-emerald-400 w-full" /></div>
+            </div>
+            <div className="p-2 bg-[#121624] border border-[#20283c]" style={{ borderColor: `${dynamicAccent}66` }}>
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 2</span>
+              <span className="text-xs font-bold text-white">Active Sprint</span>
+              <div className="h-1 w-full bg-white/10 mt-1.5"><div className="h-full" style={{ width: '65%', background: dynamicAccent }} /></div>
+            </div>
+            <div className="p-2 bg-[#121624] border border-[#20283c]">
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 3</span>
+              <span className="text-xs font-bold text-slate-400">Rollout</span>
+              <div className="h-1 w-full bg-white/5 mt-1.5"><div className="h-full bg-white/20 w-0" /></div>
+            </div>
+          </div>
+          <div className="p-3 bg-[#10141f] border border-[#1b2336] space-y-1.5">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Priority Execution Sequence</span>
+            <p className="text-xs text-slate-200">{features[0] || 'Centralized workflow management'}</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (cat.includes('community') || cat.includes('portal') || cat.includes('feedback')) {
+      return (
+        <div className="space-y-3">
+          <div className="p-3 bg-[#131724] border border-[#222a3e] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold">Verified Member Workspace</span>
+              <span className="text-[10px] font-mono text-slate-400">$19/mo subscriber access</span>
+            </div>
+            <p className="text-xs text-slate-200">
+              Collaborative portal with direct tooling, scheduled Q&A queue, and member workspace files.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2.5 bg-[#101420] border border-[#1d2538] space-y-1">
+              <span className="text-[10px] font-mono text-slate-400 block">Workflow Channel</span>
+              <span className="text-white font-medium block truncate">#core-tooling</span>
+            </div>
+            <div className="p-2.5 bg-[#101420] border border-[#1d2538] space-y-1">
+              <span className="text-[10px] font-mono text-slate-400 block">Resource Sync</span>
+              <span className="text-emerald-400 font-medium block">All Files Ready</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Default dashboard / tool / automation / creator_tool view
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 bg-[#121624] border border-[#20273c]">
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Active Engine</span>
+            <span className="text-sm font-bold text-white font-mono mt-0.5 block">v1.2 Live</span>
+            <span className="text-[9px] text-emerald-400 font-mono">Sync healthy</span>
+          </div>
+          <div className="p-2.5 bg-[#121624] border border-[#20273c]">
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Throughput</span>
+            <span className="text-sm font-bold text-white font-mono mt-0.5 block">99.4%</span>
+            <span className="text-[9px] text-sky-400 font-mono">Automated</span>
+          </div>
+          <div className="p-2.5 bg-[#121624] border border-[#20273c]" style={{ borderColor: `${dynamicAccent}55` }}>
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Subscription</span>
+            <span className="text-sm font-bold text-white font-mono mt-0.5 block">${price}/mo</span>
+            <span className="text-[9px] text-slate-400 font-mono">Per member</span>
+          </div>
+        </div>
+
+        <div className="p-3 bg-[#101420] border border-[#1c2438] space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-300 pb-1.5 border-b border-white/5">
+            <span className="font-mono text-[10px] uppercase text-slate-400">Core Software Capabilities</span>
+            <span className="text-[10px] font-mono text-emerald-400">Active Pipeline</span>
+          </div>
+          <div className="space-y-1.5">
+            {features.slice(0, 3).map((feat, idx) => (
+              <div key={idx} className="flex items-center justify-between text-xs py-1">
+                <span className="text-slate-300 truncate max-w-[70%]">{feat}</span>
+                <span className="text-[10px] font-mono text-slate-500">Configured</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className={`w-full bg-[#0a0d16] border border-[#20273c] shadow-2xl overflow-hidden rounded-none ${isMobileFrame ? 'max-w-[340px] mx-auto' : ''}`}>
+      {/* Sleek App Window Header */}
+      <div className="bg-[#101420] px-3.5 py-2 border-b border-[#20273c] flex items-center justify-between select-none">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+          </div>
+          <span className="text-[11px] font-mono font-medium text-slate-300 ml-2 truncate max-w-[180px] sm:max-w-xs">
+            {name}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-slate-400 bg-white/5 border border-white/10">
+            Preview · Software Engine
+          </span>
+        </div>
+      </div>
+
+      {/* Main Canvas Body */}
+      <div className="p-4 sm:p-5 bg-[#0b0e18] relative">
+        {renderMockupCanvas()}
+
+        {/* Subtle Watermark Banner */}
+        <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span>CoLaunch Software Platform</span>
+          <span>PREVIEW · ILLUSTRATIVE UI</span>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. DEMAND-TEST EMAIL CAPTURE MODAL
+// Collects waitlist demand interest with honest validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DemandWaitlistModal({
+  isOpen,
+  onClose,
+  productName,
+  monthlyPrice,
+  creatorHandle,
+  dynamicAccent = '#c81e3c'
+}) {
+  const [email, setEmail] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+
+  if (!isOpen) return null
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const clean = email.trim().toLowerCase()
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)
+
+    if (!isValid) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    setError('')
+    setSubmitted(true)
+    // TODO: connect signup endpoint (e.g. POST /api/waitlist or /projects/record-preorder once project is saved)
+    // In onboarding preview, no remote project exists yet; we show the honest preview note.
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-[#0d101a] border border-[#242c42] p-6 shadow-2xl rounded-none text-slate-100"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition cursor-pointer"
+        >
+          <X size={18} />
+        </button>
+
+        {!submitted ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                Early Access Cohort
+              </span>
+              <h3 className="text-lg font-bold text-white">Join the Waitlist for {productName}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Co-created with @{creatorHandle.replace(/^@/, '')}. Reserved spots are ${monthlyPrice}/mo once live. Cancel anytime.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono text-slate-300 block">Your email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError('') }}
+                placeholder="name@work.com"
+                required
+                className="w-full bg-[#121624] border border-[#252e46] px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white/40"
+              />
+              {error && <p className="text-[11px] text-red-400 font-mono mt-1">{error}</p>}
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="w-full py-2.5 text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer"
+                style={{ background: dynamicAccent }}
+              >
+                Join Waitlist — ${monthlyPrice}/mo
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-500 text-center font-mono pt-1">
+              No immediate billing. You will be notified when early cohort spots open.
+            </p>
+          </form>
+        ) : (
+          <div className="py-6 text-center space-y-3">
+            <div className="w-10 h-10 mx-auto rounded-none bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Check size={20} />
+            </div>
+            <h4 className="text-base font-bold text-white">You're on the preview waitlist</h4>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+              We have recorded your email preview for <strong>{productName}</strong>.
+            </p>
+            <div className="p-3 bg-[#121624] border border-[#20273a] text-[11px] font-mono text-amber-300/90 leading-relaxed">
+              Preview only · Signups are not collected remotely yet until your public demand-test page is launched.
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-white/10 text-xs font-mono text-slate-200 hover:text-white transition cursor-pointer mt-2"
+            >
+              Close Window
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. PRODUCT LANDING PAGE (SaaS Demand-Test Conversion Page)
+// Strictly follows the ordered sections in the specification
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ProductLandingPage({
   styles,
   creatorData,
   blueprint,
-  onSwitchToProduct,
-  channelComments = [],
-  isMobile = false,
-  onPlayVideo
+  landingCopy,
+  isMobile,
+  onPlayVideo,
+  onOpenWaitlist
 }) {
-  const accent = getAccent(creatorData)
-  const dynamicAccent = accent.color
-  const dynamicAccentBg = `rgba(${accent.rgb}, 0.12)`
-  const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
-  const isLight = isLightColor(dynamicAccent)
-
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
-  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const niche = creatorData?.niche || 'Digital Content'
-  const productName = blueprint?.name || `${creatorName}'s Resource Hub`
-  const platform = (creatorData?.platform || 'youtube').toLowerCase()
-  const platformInfo = getPlatformInfo(platform)
-  const creatorUrl = getCreatorChannelUrl(creatorData)
-
-  const scrollContainerRef = useRef(null)
   const navRef = useRef(null)
+  const name = blueprint?.name || creatorData?.productName || 'Software Workspace'
+  const monthlyPrice = clampPrice(blueprint?.monthly_price || 19)
+  const rawFollowers = creatorData?.followers || creatorData?.subscriberCount || 0
+  const followersCount = parseFollowerCount(rawFollowers)
+  const fmtFollowers = followersCount > 0 ? fmt(followersCount) : ''
+  const creatorHandle = (creatorData?.handle || creatorData?.name || 'creator').replace(/^@/, '')
+  const creatorBio = creatorData?.description || creatorData?.bio || ''
+  const avatarUrl = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
 
-  // Real Scraped Videos / Posts
-  const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
+  const copy = landingCopy || buildDeterministicLandingCopy(creatorData, blueprint)
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    const nav = navRef.current
+    const navHeight = nav ? nav.getBoundingClientRect().height : 60
+    const top = el.getBoundingClientRect().top + window.scrollY - navHeight
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Related creator videos (at most 2 or 3) for "Where this idea comes from"
+  const rawPosts = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
     ? creatorData.recentPosts
     : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
       ? creatorData.videos
       : []
-
-  const topVideo = recentVideoList[0] || null
-  const topVideoTitle = topVideo?.title || `${creatorName} Masterclass & Foundations`
-  const topVideoThumb = topVideo?.thumbnail || (topVideo?.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${topVideo.videoId}/hqdefault.jpg` : '') : '')
-  const topVideoUrl = topVideo?.url || (topVideo?.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${topVideo.videoId}/` : `https://www.youtube.com/watch?v=${topVideo.videoId}`) : creatorUrl)
-
-  // Real Scraped Comments from Channel (Strictly Genuine — Zero Fake Comments)
-  const communityComments = (Array.isArray(channelComments) && channelComments.length > 0)
-    ? channelComments.slice(0, 6)
-    : (Array.isArray(creatorData?.comments) && creatorData.comments.length > 0)
-      ? creatorData.comments.slice(0, 6)
-      : []
-
-  // Headline & Subtitle
-  const heroHeadline = blueprint?.tagline || `The Ultimate Resource Hub for ${creatorName}'s Community`
-  const heroSubtitle = creatorData?.description
-    ? (creatorData.description.length > 180 ? creatorData.description.slice(0, 180) + '...' : creatorData.description)
-    : `Curated masterclasses, downloadable study frameworks, and a private discussion space hosted directly by ${creatorName}.`
-
-  // Controlled Section Scrolling (Pin-point accuracy without jumping window or showing prior section)
-  const scrollToSection = (sectionId) => (e) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    const cleanId = sectionId.replace('#', '')
-    const target = document.getElementById(cleanId)
-    if (!target) return
-
-    const nav = navRef.current
-    const navHeight = nav ? nav.offsetHeight : 58
-
-    // 1. Look for scrollable parent container (e.g. Dashboard Live App Preview or Onboarding preview container)
-    const scrollParent = target.closest('.overflow-y-auto') || scrollContainerRef.current
-    if (scrollParent && scrollParent !== document.body && scrollParent !== document.documentElement) {
-      const parentRect = scrollParent.getBoundingClientRect()
-      const targetRect = target.getBoundingClientRect()
-      const targetPos = scrollParent.scrollTop + (targetRect.top - parentRect.top) - navHeight
-      scrollParent.scrollTo({
-        top: Math.max(0, targetPos),
-        behavior: 'smooth'
-      })
-      return
-    }
-
-    // 2. Main window smooth scroll fallback
-    const targetDocumentTop = window.pageYOffset + target.getBoundingClientRect().top
-    const targetWindowY = targetDocumentTop - navHeight
-    window.scrollTo({
-      top: Math.max(0, targetWindowY),
-      behavior: 'smooth'
-    })
-  }
-
-  const scrollToTop = (e) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    const nav = navRef.current
-    const scrollParent = nav ? nav.closest('.overflow-y-auto') : null
-    if (scrollParent && scrollParent !== document.body && scrollParent !== document.documentElement) {
-      scrollParent.scrollTo({ top: 0, behavior: 'smooth' })
-      return
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const originVideos = rawPosts.slice(0, 3)
 
   return (
-    <div className="w-full flex flex-col bg-[#0a0c12] text-slate-100 selection:bg-rose-500/20 relative min-h-0 rounded-none">
+    <div className="w-full bg-[#08090d] text-slate-100 flex flex-col font-sans selection:bg-white/20">
 
-      {/* 1. Navbar - PERMANENTLY STICKY TO THE TOP */}
+      {/* 1. STICKY NAV */}
       <nav
         ref={navRef}
-        className={`border-b border-[#1f2433] bg-[#0c0e16]/98 backdrop-blur-md sticky top-0 z-40 flex-shrink-0 flex items-center justify-between w-full shadow-xl ${isMobile ? 'px-3 py-2.5' : 'px-6 py-3.5'
-          }`}
+        className="sticky top-0 z-40 w-full bg-[#0c0f17]/95 backdrop-blur-md border-b border-[#1b2234] px-4 sm:px-8 py-3.5 flex items-center justify-between select-none"
       >
-        <div
+        <button
+          type="button"
           onClick={scrollToTop}
-          className="flex items-center gap-3 min-w-0 cursor-pointer group"
-          title="Back to top"
+          className="flex items-center gap-2 text-left cursor-pointer group"
         >
-          <div
-            className="w-8 h-8 rounded-none flex items-center justify-center font-black text-xs border overflow-hidden relative flex-shrink-0 group-hover:scale-105 transition-transform"
-            style={{ background: dynamicAccent, borderColor: dynamicAccent, color: '#ffffff' }}
-          >
-            {resolvedAvatar ? (
-              <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-            ) : (
-              <span>{creatorName.charAt(0).toUpperCase()}</span>
-            )}
+          <div className="w-6 h-6 flex items-center justify-center font-bold text-xs rounded-none" style={{ background: styles.accent, color: '#ffffff' }}>
+            {name.charAt(0)}
           </div>
-          <div className="min-w-0">
-            <span className="font-bold text-sm text-white truncate block leading-tight group-hover:text-slate-200 transition-colors">
-              {productName}
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono block">
-              @{handleClean} · Official Platform
-            </span>
-          </div>
+          <span className="font-bold text-sm sm:text-base text-white tracking-tight group-hover:text-slate-200 transition">
+            {name}
+          </span>
+        </button>
+
+        <div className="hidden md:flex items-center gap-6 text-xs text-slate-300 font-medium">
+          <button type="button" onClick={() => scrollToSection('problem')} className="hover:text-white transition cursor-pointer">
+            The Problem
+          </button>
+          <button type="button" onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition cursor-pointer">
+            How It Works
+          </button>
+          <button type="button" onClick={() => scrollToSection('features')} className="hover:text-white transition cursor-pointer">
+            Features
+          </button>
+          <button type="button" onClick={() => scrollToSection('pricing')} className="hover:text-white transition cursor-pointer">
+            Pricing
+          </button>
+          <button type="button" onClick={() => scrollToSection('faq')} className="hover:text-white transition cursor-pointer">
+            FAQ
+          </button>
         </div>
 
-        {/* Anchor Links with Controlled Scroll */}
-        {!isMobile && (
-          <div className="hidden lg:flex items-center gap-4 xl:gap-6 text-xs font-semibold text-slate-300 shrink-0">
-            <button
-              type="button"
-              onClick={scrollToSection('#featured')}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
-            >
-              Featured Video
-            </button>
-            <button
-              type="button"
-              onClick={scrollToSection('#archive')}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
-            >
-              Video Archive
-            </button>
-            <button
-              type="button"
-              onClick={scrollToSection('#discussions')}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
-            >
-              Community Voices
-            </button>
-            <button
-              type="button"
-              onClick={scrollToSection('#resources')}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-semibold text-slate-300 whitespace-nowrap shrink-0"
-            >
-              Resources
-            </button>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div>
           <button
             type="button"
-            onClick={onSwitchToProduct}
-            className="px-3.5 py-1.5 text-xs font-bold border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2030] transition cursor-pointer rounded-none flex items-center gap-1.5"
-            title="Preview inside member area"
+            onClick={onOpenWaitlist}
+            className="px-3.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md"
+            style={{ background: styles.accent }}
           >
-            <Layers className="w-3.5 h-3.5" style={{ color: dynamicAccent }} />
-            <span>Member Area</span>
-          </button>
-          <button
-            type="button"
-            onClick={onSwitchToProduct}
-            className="px-4 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer rounded-none flex items-center gap-1 text-white"
-            style={{
-              background: dynamicAccent,
-              borderRadius: '0px'
-            }}
-          >
-            <span>Get Access</span>
-            <ArrowRight className="w-3 h-3" />
+            Join Waitlist — ${monthlyPrice}/mo
           </button>
         </div>
       </nav>
 
-      {/* 2. Scrollable Page Content Container */}
-      <div
-        ref={scrollContainerRef}
-        className="w-full relative selection:bg-rose-500/20"
-      >
-
-        {/* 2. Content-First Hero Section with Creator Identity (Solid Flat Dark, Zero Gradients) */}
-        <section className={`relative overflow-hidden border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} text-center`}
-          style={{
-            background: '#0c0e16'
-          }}
-        >
-          <div className="max-w-4xl mx-auto space-y-4 relative z-10">
-
-            {/* Creator Channel Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#141824] border border-[#232a3d] text-slate-300 text-[11px] font-mono uppercase tracking-wider rounded-none">
-              <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-              <span>Official Video & Resource Hub · @{handleClean}</span>
+      {/* 2. HERO SECTION */}
+      <section className="relative px-4 sm:px-8 lg:px-12 py-12 sm:py-16 md:py-20 border-b border-[#192032] overflow-hidden">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          <div className="lg:col-span-7 space-y-5 text-left">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/25">
+                Designed for {copy.targetAudience}
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Co-created with @{creatorHandle}
+              </span>
             </div>
 
-            {/* Headline */}
-            <h1 className={`font-black text-white tracking-tight leading-tight ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl lg:text-5xl'}`}>
-              {heroHeadline}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.15]">
+              {copy.headline}
             </h1>
 
-            {/* Subtitle */}
-            <p className={`text-slate-300 leading-relaxed max-w-2xl mx-auto ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}>
-              {heroSubtitle}
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+              {copy.subheadline}
             </p>
 
-            {/* Real Channel Stats (No fake A B C D boxes!) */}
-            <div className="pt-2 pb-2 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-300">
-              {creatorData?.followers && (
-                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                  <span className="text-white font-bold">{creatorData.followers}</span>
-                  <span className="text-slate-400">Subscribers</span>
-                </div>
-              )}
-              {recentVideoList.length > 0 && (
-                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                  <span className="text-white font-bold">{creatorData?.videoCount || recentVideoList.length}</span>
-                  <span className="text-slate-400">Curated Videos</span>
-                </div>
-              )}
-              {creatorData?.totalViews && (
-                <div className="px-3 py-1.5 bg-[#141824] border border-[#222634] flex items-center gap-2">
-                  <span className="text-white font-bold">{creatorData.totalViews}</span>
-                  <span className="text-slate-400">Channel Views</span>
-                </div>
-              )}
-            </div>
-
-            {/* Direct Outcome CTAs (NO $/mo!) */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 type="button"
-                onClick={onSwitchToProduct}
-                className="w-full sm:w-auto px-7 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition shadow-lg cursor-pointer rounded-none flex items-center justify-center gap-2 text-white"
-                style={{
-                  background: dynamicAccent,
-                  boxShadow: `0 4px 18px rgba(${accent.rgb}, 0.25)`,
-                  borderRadius: '0px'
-                }}
+                onClick={onOpenWaitlist}
+                className="px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer text-center shadow-lg"
+                style={{ background: styles.accent }}
               >
-                <span>Explore Platform & Videos</span>
-                <ArrowRight className="w-4 h-4" />
+                Join Waitlist — ${monthlyPrice}/mo
               </button>
-              {topVideo ? (
-                <button
-                  type="button"
-                  onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                  className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-semibold border border-[#2a3248] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1b2234] transition cursor-pointer rounded-none flex items-center justify-center gap-2"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" style={{ color: dynamicAccent }} />
-                  <span>Play Featured Video</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => scrollToSection('how-it-works')}
+                className="px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-[#121624] border border-[#232a3e] transition cursor-pointer text-center"
+              >
+                Explore Features & Workflow ↓
+              </button>
             </div>
 
+            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-mono pt-1">
+              <span>✓ Monthly subscription</span>
+              <span>✓ Cancel anytime</span>
+              <span>✓ Direct early cohort access</span>
+            </div>
           </div>
-        </section>
 
-        {/* 3. Featured Masterclass / Top Video Showcase */}
-        {topVideo && (
-          <section id="featured" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 pr-0 sm:pr-4">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <span className="w-2 h-2 shrink-0" style={{ backgroundColor: dynamicAccent }} />
-                    <span>{platformInfo.featuredLabel || 'Featured Release'}</span>
-                  </span>
-                  <h3 className="text-base sm:text-xl font-bold text-white mt-1 line-clamp-2 leading-snug">
-                    {cleanPostTitle(topVideoTitle, 75)}
-                  </h3>
+          <div className="lg:col-span-5 w-full">
+            <ProductMockupPreview
+              category={blueprint.raw?.product_category || blueprint.category || blueprint.type || 'tool'}
+              blueprint={blueprint}
+              creatorData={creatorData}
+              dynamicAccent={styles.accent}
+              isMobileFrame={isMobile}
+            />
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3. PROBLEM SECTION */}
+      <section id="problem" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="space-y-2 text-left max-w-2xl">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              The Bottleneck
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Why Existing Workflows Keep Breaking
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Discussions across the community consistently highlight recurring operational frustrations that generic advice and mass-market tools fail to resolve.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {copy.problemPoints.map((point, idx) => (
+              <div
+                key={idx}
+                className="p-5 bg-[#0e121c] border border-[#1d2436] rounded-none space-y-2.5 text-left"
+              >
+                <div className="w-7 h-7 rounded-none bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-xs flex items-center justify-center font-bold">
+                  0{idx + 1}
                 </div>
-                {creatorUrl && (
-                  <a
-                    href={topVideoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono hover:underline flex items-center gap-1 text-slate-400 hover:text-white shrink-0 self-start sm:self-auto py-1"
-                  >
-                    <span>{platformInfo.watchLabel}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                  {point}
+                </h4>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              {/* Cinematic Video Player Mockup */}
-              <div className="relative aspect-video w-full bg-[#141824] border border-[#222634] overflow-hidden group shadow-2xl">
-                {topVideoThumb ? (
-                  <img
-                    src={topVideoThumb}
-                    alt={topVideoTitle}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#111420]">
-                    <Video className="w-12 h-12 text-slate-600" />
+      {/* 4. HOW IT WORKS */}
+      <section id="how-it-works" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="space-y-2 text-left max-w-2xl">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+              Execution Architecture
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              How {name} Streamlines Your Process
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              A 3-step structured workflow engineered to replace fragmented manual setups.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {copy.howItWorks.map((step, idx) => (
+              <div
+                key={idx}
+                className="p-6 bg-[#0c101a] border border-[#1b2336] rounded-none space-y-3 text-left relative"
+              >
+                <span className="text-2xl font-black font-mono text-slate-600 block">
+                  {step.step}
+                </span>
+                <h3 className="text-sm sm:text-base font-bold text-white">
+                  {step.title}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FEATURES & CAPABILITIES */}
+      <section id="features" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="space-y-2 text-left max-w-2xl">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Capabilities
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Engineered Capabilities Included in Your Subscription
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Direct interactive utilities built strictly for this problem domain.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {copy.features.map((feat, idx) => (
+              <div
+                key={idx}
+                className="p-5 bg-[#0e121d] border border-[#1f273a] rounded-none space-y-2 text-left hover:border-slate-600 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-none flex items-center justify-center" style={{ background: `${styles.accent}22`, color: styles.accent }}>
+                    <Check size={12} strokeWidth={3} />
                   </div>
-                )}
-
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                    className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110 cursor-pointer"
-                    style={{ background: dynamicAccent, color: '#ffffff' }}
-                    title="Play video in preview"
-                  >
-                    <Play className="w-7 h-7 fill-current ml-1 text-white" />
-                  </button>
+                  <h4 className="text-xs sm:text-sm font-bold text-white">{feat.title}</h4>
                 </div>
+                <p className="text-xs text-slate-300 leading-relaxed pl-7">
+                  {feat.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                {/* Bottom Video Meta Bar */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
-                  <div className="flex items-center gap-3 font-mono">
-                    {formatViewsString(topVideo.views) ? (
-                      <span>{formatViewsString(topVideo.views)}</span>
-                    ) : topVideo.likes ? (
-                      <span>{String(topVideo.likes).includes('like') ? topVideo.likes : `${topVideo.likes} likes`}</span>
-                    ) : null}
-                    {topVideo.likes && formatViewsString(topVideo.views) && (
-                      <>
-                        <span>·</span>
-                        <span>{topVideo.likes} likes</span>
-                      </>
-                    )}
-                    {topVideo.published && (
-                      <>
-                        <span>·</span>
-                        <span>{topVideo.published}</span>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onPlayVideo ? onPlayVideo(topVideo) : onSwitchToProduct()}
-                    className="text-xs font-semibold px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer"
-                  >
-                    Play in Preview →
-                  </button>
+      {/* 6. TRANSPARENT PRICING */}
+      <section id="pricing" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-4xl mx-auto space-y-8 text-center">
+          <div className="space-y-2 max-w-xl mx-auto">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+              Predictable Pricing
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Simple Monthly Subscription
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              One clear subscription tier. All software capabilities and updates included.
+            </p>
+          </div>
+
+          <div className="max-w-md mx-auto p-6 sm:p-8 bg-[#0d101a] border border-[#232b3e] rounded-none space-y-6 text-left shadow-2xl relative" style={{ borderColor: `${styles.accent}55` }}>
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Full Platform Membership
+              </span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-black text-white font-mono">${monthlyPrice}</span>
+                <span className="text-xs text-slate-400 font-mono">/ month</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pt-1">
+                Per active subscriber. Includes cloud workspace, all features, and continuous updates.
+              </p>
+            </div>
+
+            <div className="border-t border-[#1d2538] pt-4 space-y-2.5">
+              <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider block">
+                Everything Included:
+              </span>
+              {copy.features.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs text-slate-200">
+                  <Check size={13} className="text-emerald-400 shrink-0" />
+                  <span>{f.title}</span>
                 </div>
+              ))}
+              <div className="flex items-center gap-2 text-xs text-slate-200">
+                <Check size={13} className="text-emerald-400 shrink-0" />
+                <span>Regular software enhancements & bug fixes</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-200">
+                <Check size={13} className="text-emerald-400 shrink-0" />
+                <span>Cancel anytime</span>
               </div>
             </div>
-          </section>
-        )}
 
-        {/* 4. Curated Video Archive Grid (Show Their Videos!) */}
-        {recentVideoList.length > 0 && (
-          <section id="archive" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-                <div>
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                    {platformInfo.feedLabel}
-                  </span>
-                  <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
-                    Latest Releases from @{handleClean}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Organized by topic with zero advertising interruptions.
-                  </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onOpenWaitlist}
+                className="w-full py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md text-center block"
+                style={{ background: styles.accent }}
+              >
+                Join Waitlist — ${monthlyPrice}/mo
+              </button>
+            </div>
+
+            <p className="text-[10px] font-mono text-slate-500 text-center">
+              Demand-validation cohort · Early supporters secure first access.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. CREATOR ORIGIN SECTION ("Why @creator") */}
+      <section className="px-4 sm:px-8 lg:px-12 py-12 sm:py-16 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-4xl mx-auto space-y-6 text-left">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#1b2234]">
+            <div className="flex items-center gap-3.5">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={creatorHandle}
+                  className="w-12 h-12 rounded-none object-cover border border-white/10"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-none bg-[#141926] border border-white/10 flex items-center justify-center font-bold text-white">
+                  {creatorHandle.charAt(0).toUpperCase()}
                 </div>
-                {creatorUrl && (
-                  <a
-                    href={creatorUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono hover:underline flex items-center gap-1.5 self-start sm:self-auto"
-                    style={{ color: dynamicAccent }}
-                  >
-                    <span>{platformInfo.exploreLabel}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+              )}
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-white">Why @{creatorHandle}</h3>
+                {creatorBio && (
+                  <p className="text-xs text-slate-400 line-clamp-1 max-w-md">{creatorBio}</p>
                 )}
               </div>
+            </div>
+            {fmtFollowers && (
+              <div className="text-left sm:text-right">
+                <span className="text-base font-black text-white font-mono block">{fmtFollowers}</span>
+                <span className="text-[10px] text-slate-400 font-mono uppercase">Audience Community</span>
+              </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {recentVideoList.slice(0, 6).map((v, idx) => {
-                  const vidThumb = v.thumbnail || (v.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '') : '')
-                  const vidLink = v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)
+          {originVideos.length > 0 && (
+            <div className="space-y-3">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                Where this idea comes from:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {originVideos.map((vid, idx) => {
+                  const title = cleanPostTitle(vid.title || vid.caption || 'Channel Topic', 55)
+                  const thumb = vid.thumbnail || ''
                   return (
                     <div
                       key={idx}
-                      className="bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition overflow-hidden flex flex-col justify-between group shadow-sm"
+                      onClick={() => onPlayVideo ? onPlayVideo(vid) : null}
+                      className="p-2.5 bg-[#0e121c] border border-[#1d2538] rounded-none flex items-center gap-2.5 cursor-pointer hover:border-slate-500 transition group"
                     >
-                      <div>
-                        {/* Thumbnail Clickable */}
-                        <div
-                          onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                          className="relative aspect-video w-full bg-[#161a26] overflow-hidden flex items-center justify-center cursor-pointer group/thumb"
-                          title="Click to play video in preview modal"
-                        >
-                          {vidThumb ? (
-                            <img
-                              src={vidThumb}
-                              alt=""
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <Video className="w-8 h-8 text-slate-600" />
-                          )}
-                          <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
-                            <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-transform group-hover/thumb:scale-110"
-                              style={{ background: dynamicAccent, color: '#ffffff' }}
-                            >
-                              <Play className="w-6 h-6 fill-current ml-0.5 text-white" />
-                            </div>
-                          </div>
+                      {thumb ? (
+                        <img src={thumb} alt="" className="w-12 h-9 object-cover shrink-0 rounded-none" />
+                      ) : (
+                        <div className="w-12 h-9 bg-[#151a28] flex items-center justify-center shrink-0">
+                          <Play size={12} className="text-slate-400 group-hover:text-white" />
                         </div>
-
-                        {/* Content */}
-                        <div className="p-3.5 space-y-1.5">
-                          <h5
-                            onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                            className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug hover:underline cursor-pointer"
-                          >
-                            {cleanPostTitle(v.title, 65)}
-                          </h5>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono flex-wrap">
-                            {formatViewsString(v.views) ? (
-                              <span>{formatViewsString(v.views)}</span>
-                            ) : v.likes ? (
-                              <span>{String(v.likes).includes('like') ? v.likes : `${v.likes} likes`}</span>
-                            ) : null}
-                            {v.comments && (
-                              <>
-                                <span>·</span>
-                                <span>{String(v.comments).includes('comment') ? v.comments : `${v.comments} comments`}</span>
-                              </>
-                            )}
-                            {v.published && (
-                              <>
-                                <span>·</span>
-                                <span>{v.published}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="p-3 pt-0 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onPlayVideo ? onPlayVideo(v) : onSwitchToProduct()}
-                          className="flex-1 py-1.5 text-[11px] font-semibold bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-300 hover:text-white transition text-center cursor-pointer"
-                        >
-                          Play in Preview
-                        </button>
-                        <a
-                          href={vidLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 bg-[#171b28] hover:bg-[#1f2538] border border-[#23293a] text-slate-400 hover:text-white transition"
-                          title={platformInfo.watchLabel}
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs text-slate-300 font-medium block truncate group-hover:text-white">
+                          {title}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500 block">Channel Reference</span>
                       </div>
                     </div>
                   )
                 })}
               </div>
             </div>
-          </section>
-        )}
+          )}
+        </div>
+      </section>
 
-        {/* 5. Real Audience Community Discussions (Rendered only when real channel comments exist — zero fake comments) */}
-        {communityComments.length > 0 && (
-          <section id="discussions" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0e111a] scroll-mt-[58px]`}>
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                <div>
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                    Community Feed
-                  </span>
-                  <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
-                    What the Community Is Saying
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Direct reactions, discussions, and questions from viewers across recent uploads.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onSwitchToProduct}
-                  className="text-xs font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
-                  style={{ color: dynamicAccent }}
-                >
-                  <span>Join Discussion Room →</span>
-                </button>
-              </div>
+      {/* 8. HONEST FAQ */}
+      <section id="faq" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-4xl mx-auto space-y-8 text-left">
+          <div className="space-y-2 max-w-xl">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Clear Answers
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Straightforward details about the tool, release timeline, and billing model.
+            </p>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {communityComments.map((c, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 bg-[#121520] border border-[#1f2433] hover:border-slate-700 transition flex flex-col justify-between space-y-3"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 border border-[#222634] flex items-center justify-center text-[10px] font-bold text-white uppercase"
-                          style={{ background: dynamicAccentBg }}
-                        >
-                          {(c.author || c.user || 'V').replace('@', '').charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-xs font-bold text-white truncate block">
-                            {c.author || c.user || '@viewer'}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono block">
-                            {c.published || c.time || 'Community Member'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
-                        "{c.text || c.quote}"
-                      </p>
-                    </div>
-
-                    {c.videoTitle && (
-                      <div className="pt-2 border-t border-[#1f2433] text-[10px] text-slate-400 truncate font-mono">
-                        on: {c.videoTitle}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 6. What's Included & Platform Deliverables (NO $/mo!) */}
-        <section id="resources" className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-12'} bg-[#0b0d13] scroll-mt-[58px]`}>
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="text-center space-y-1">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                Platform Features
-              </span>
-              <h3 className="text-lg sm:text-2xl font-bold text-white">
-                Everything Accessible Inside the Hub
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-                <Video className="w-5 h-5" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Ad-Free Video Archive</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Stream complete tutorials and masterclasses in chronological order without commercial breaks.
-                </p>
-              </div>
-
-              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-                <Download className="w-5 h-5" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Resource Files & Templates</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Direct access to project assets, code boilerplates, study roadmaps, and cheat sheets.
-                </p>
-              </div>
-
-              <div className="p-5 bg-[#10131d] border border-[#1f2433] space-y-2">
-                <Users className="w-5 h-5" style={{ color: dynamicAccent }} />
-                <h4 className="text-sm font-bold text-white">Private Community Rooms</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Connect with fellow practitioners, share your progress, and get direct creator feedback.
-                </p>
-              </div>
-            </div>
-
-            {/* Clean Invitation Box (No subscription pricing!) */}
-            <div className="p-6 bg-[#131622] border border-[#23293a] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-              <div>
-                <h4 className="text-sm font-bold text-white">
-                  Enter @{handleClean}'s Digital Platform
-                </h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Access the complete video archive, download files, and participate in community discussions.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onSwitchToProduct}
-                className="px-6 py-3 text-xs uppercase tracking-wider font-bold transition shadow-lg rounded-none text-white shrink-0 cursor-pointer"
-                style={{
-                  background: dynamicAccent,
-                  borderRadius: '0px'
-                }}
+          <div className="space-y-3">
+            {copy.faq.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-4 sm:p-5 bg-[#0d101a] border border-[#1b2336] rounded-none space-y-1.5"
               >
-                Get Free Access Now →
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* 7. Creator Authority & Welcome Statement */}
-        <section className={`border-b border-[#1f2433] ${isMobile ? 'p-4' : 'p-8 sm:p-10'} bg-[#0e111a]`}>
-          <div className="max-w-3xl mx-auto p-5 bg-[#121520] border border-[#1f2433] flex flex-col sm:flex-row items-center gap-5">
-            <div
-              className="w-16 h-16 rounded-none flex items-center justify-center font-bold text-lg border overflow-hidden relative flex-shrink-0"
-              style={{ background: dynamicAccentBg, borderColor: dynamicAccentBorder, color: dynamicAccent }}
-            >
-              {resolvedAvatar ? (
-                <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-              ) : (
-                <span>{creatorName.charAt(0).toUpperCase()}</span>
-              )}
-            </div>
-            <div className="space-y-1 text-center sm:text-left min-w-0 flex-1">
-              <h4 className="text-sm font-bold text-white">{creatorName} (@{handleClean})</h4>
-              <div className="flex items-center justify-center sm:justify-start gap-3 text-slate-400 text-xs font-mono">
-                {creatorData?.followers && <span>{creatorData.followers} subscribers</span>}
-                {creatorData?.videoCount && <span>{creatorData.videoCount} videos</span>}
-                {creatorData?.totalViews && <span>{creatorData.totalViews} views</span>}
+                <h4 className="text-xs sm:text-sm font-bold text-white">
+                  {item.question}
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {item.answer}
+                </p>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed pt-1">
-                {creatorData?.description
-                  ? (creatorData.description.length > 200 ? creatorData.description.slice(0, 200) + '...' : creatorData.description)
-                  : `Dedicated to helping our community grow with high-utility, structured video releases and frameworks.`}
-              </p>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 8. Minimal Footer */}
-        <footer className="p-8 pb-32 bg-[#080a0e] text-center text-xs text-slate-500 space-y-2 rounded-b-2xl">
-          <p>© {new Date().getFullYear()} {productName}. All rights reserved.</p>
-          <p className="text-[11px] text-slate-600">
-            Official platform powered by CoLaunch Autonomous Creator Operations.
+      {/* 9. FINAL CTA & MINIMAL FOOTER */}
+      <section className="px-4 sm:px-8 lg:px-12 py-16 bg-[#0b0e18] text-center border-b border-[#181f30]">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            {copy.cta.headline}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+            {copy.cta.subheadline}
           </p>
-        </footer>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onOpenWaitlist}
+              className="px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-xl"
+              style={{ background: styles.accent }}
+            >
+              {copy.cta.buttonText}
+            </button>
+          </div>
+        </div>
+      </section>
 
-      </div>
+      <footer className="px-4 sm:px-8 py-6 bg-[#080a0f] text-center text-xs text-slate-500 font-mono">
+        <p>© {new Date().getFullYear()} {name}. Co-created with @{creatorHandle}. All rights reserved.</p>
+      </footer>
+
     </div>
   )
 }
 
-export function AppMockup({ theme, activeTab, setActiveTab, blueprint, creatorData, extraTabs, isMobile, viewMode = 'landing', onSwitchView, channelComments = [], onPlayVideo }) {
-  const isDark = theme === 'dark' || theme === 'premium' || theme === 'minimalist' || !theme
-  const resolvedAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. APP MOCKUP WRAPPER COMPONENT
+// Handles ViewModes ('landing' vs 'product' / 'mobile') cleanly
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function AppMockup({
+  theme = 'dark',
+  activeTab,
+  setActiveTab,
+  blueprint,
+  creatorData,
+  extraTabs,
+  isMobile,
+  viewMode = 'landing',
+  onSwitchView,
+  channelComments = [],
+  onPlayVideo
+}) {
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
   const accent = getAccent(creatorData)
   const dynamicAccent = accent.color
-  const dynamicAccentBg = `rgba(${accent.rgb}, 0.12)`
-  const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
-  const isLight = isLightColor(dynamicAccent)
-
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
-
-  const recentVideoList = Array.isArray(creatorData?.recentPosts) && creatorData.recentPosts.length > 0
-    ? creatorData.recentPosts
-    : Array.isArray(creatorData?.videos) && creatorData.videos.length > 0
-      ? creatorData.videos
-      : []
-
-  const topVideoTitle = recentVideoList[0]?.title || ''
-  const secondVideoTitle = recentVideoList[1]?.title || ''
-  const thirdVideoTitle = recentVideoList[2]?.title || ''
-
-  const effectiveComments = (Array.isArray(channelComments) && channelComments.length > 0)
-    ? channelComments
-    : (Array.isArray(creatorData?.comments) && creatorData.comments.length > 0)
-      ? creatorData.comments
-      : (Array.isArray(creatorData?.channelComments) && creatorData.channelComments.length > 0)
-        ? creatorData.channelComments
-        : []
-
-  const [internalComments, setInternalComments] = useState(effectiveComments)
-
-  useEffect(() => {
-    if (effectiveComments.length > 0) {
-      setInternalComments(effectiveComments)
-      return
-    }
-    const h = creatorData?.handle || creatorData?.url || creatorData?.name
-    if (!h) return
-    const clean = String(h).replace(/^@/, '').trim()
-    try {
-      const cached = sessionStorage.getItem(`forge_creator_comments_${clean}`) || localStorage.getItem(`forge_creator_comments_${clean}`)
-      if (cached) {
-        const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setInternalComments(parsed)
-          return
-        }
-      }
-    } catch { }
-
-    fetchCreatorComments(h, creatorData?.platform || 'youtube', 12)
-      .then(res => {
-        if (Array.isArray(res) && res.length > 0) {
-          setInternalComments(res)
-        }
-      })
-      .catch(() => { })
-  }, [creatorData?.handle, creatorData?.url, effectiveComments.length])
-
-  const [postLikes, setPostLikes] = useState({})
-
-  const toggleLike = (id, baseLikes) => {
-    setPostLikes(prev => {
-      const isLiked = prev[id]?.liked
-      const count = prev[id]?.count ?? baseLikes
-      return {
-        ...prev,
-        [id]: {
-          liked: !isLiked,
-          count: isLiked ? count - 1 : count + 1
-        }
-      }
-    })
-  }
-
-
 
   const themeStyles = {
     dark: {
       bg: '#0f1117',
       cardBg: '#12141c',
-      cardHover: '#161922',
       borderColor: '#222634',
       text: '#f3f4f6',
-      textMuted: '#94a3b8',
       accent: dynamicAccent,
-      accentBg: dynamicAccentBg,
-      accentBorder: dynamicAccentBorder
-    },
-    light: {
-      bg: '#f9fafb',
-      cardBg: '#ffffff',
-      cardHover: '#f3f4f6',
-      borderColor: 'rgba(0,0,0,0.08)',
-      text: '#111827',
-      textMuted: '#6b7280',
-      accent: dynamicAccent,
-      accentBg: dynamicAccentBg,
-      accentBorder: dynamicAccentBorder
     },
     premium: {
       bg: '#0a0b10',
       cardBg: '#12141c',
-      cardHover: '#161922',
-      borderColor: dynamicAccentBorder,
+      borderColor: `rgba(${accent.rgb}, 0.28)`,
       text: '#f8fafc',
-      textMuted: '#94a3b8',
       accent: dynamicAccent,
-      accentBg: dynamicAccentBg,
-      accentBorder: dynamicAccentBorder,
+    },
+    light: {
+      bg: '#f9fafb',
+      cardBg: '#ffffff',
+      borderColor: 'rgba(0,0,0,0.08)',
+      text: '#111827',
+      accent: dynamicAccent,
     },
     minimalist: {
       bg: '#ffffff',
       cardBg: '#ffffff',
-      cardHover: '#f9fafb',
       borderColor: '#000000',
       text: '#000000',
-      textMuted: '#737373',
       accent: '#000000',
-      accentBg: 'rgba(0, 0, 0, 0.05)',
-      accentBorder: '#000000'
-    },
-    feminine: {
-      bg: '#faf5f6',
-      cardBg: 'rgba(255, 241, 242, 0.8)',
-      cardHover: '#fff',
-      borderColor: 'rgba(251, 113, 133, 0.18)',
-      text: '#4c0519',
-      textMuted: '#fda4af',
-      accent: '#db2777',
-      accentBg: 'rgba(219, 39, 119, 0.08)',
-      accentBorder: 'rgba(219, 39, 119, 0.15)'
     }
   }
 
   const styles = themeStyles[theme] || themeStyles.dark
+  const landingCopy = creatorData?.landingCopy || buildDeterministicLandingCopy(creatorData, blueprint)
 
   if (viewMode === 'landing') {
-    const defaultTab = getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs)[0] || 'Community'
     return (
-      <ProductLandingPage
-        styles={styles}
-        creatorData={creatorData}
-        blueprint={blueprint}
-        onSwitchToProduct={() => onSwitchView ? onSwitchView('product') : setActiveTab(defaultTab)}
-        channelComments={internalComments}
-        isMobile={isMobile}
-        onPlayVideo={onPlayVideo}
-      />
-    )
-  }
-
-  if (viewMode === 'dashboard') {
-    return (
-      <CreatorDashboardView
-        styles={styles}
-        dynamicAccent={dynamicAccent}
-        dynamicAccentBg={dynamicAccentBg}
-        dynamicAccentBorder={dynamicAccentBorder}
-        creatorData={creatorData}
-        blueprint={blueprint}
-        channelComments={internalComments}
-      />
-    )
-  }
-
-  const allTabs = getAnalyzedTabsForCreator(creatorData, blueprint, extraTabs)
-  const platform = (creatorData?.platform || 'youtube').toLowerCase()
-  const platformInfo = getPlatformInfo(platform)
-  const creatorUrl = getCreatorChannelUrl(creatorData)
-  const cleanCreatorUrlDisplay = creatorUrl.replace(/^https?:\/\/(www\.)?/, '')
-
-  const renderTabContent = () => {
-    const tabLower = activeTab.toLowerCase()
-
-    // 1. VIDEOS / POSTS TAB (Real Scraped Videos from Apify / Social)
-    if (tabLower.includes('video') || tabLower.includes('archive') || tabLower.includes('watch') || tabLower.includes('upload') || tabLower.includes('feed') || tabLower.includes('post')) {
-      if (recentVideoList.length === 0) {
-        return (
-          <div className="p-8 text-center text-slate-400 space-y-2">
-            <p className="text-xs">No media archive loaded for this creator.</p>
-            {creatorUrl && (
-              <a
-                href={creatorUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs hover:underline"
-                style={{ color: styles.accent }}
-              >
-                <span>Browse profile on {platformInfo.name}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-        )
-      }
-
-      return (
-        <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
-          <div className="flex items-center justify-between pb-2 border-b border-[#222634]">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Latest {platformInfo.name} Releases & Archive</h4>
-              <p className="text-[11px] text-slate-400">{recentVideoList.length} {platform === 'instagram' ? 'posts & reels' : 'videos'} from official channel</p>
-            </div>
-            {creatorUrl && (
-              <a
-                href={creatorUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs hover:underline flex items-center gap-1 font-mono"
-                style={{ color: styles.accent }}
-              >
-                <span>{platformInfo.name}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-
-          <div className={isMobile ? "space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"}>
-            {recentVideoList.map((v, i) => {
-              const videoLink = v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)
-              const thumbUrl = v.thumbnail || (v.videoId ? (platform === 'youtube' ? `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` : '') : '')
-
-              return (
-                <div
-                  key={i}
-                  className="rounded-2xl border bg-[#12141c] border-[#222634] hover:border-slate-700 transition overflow-hidden shadow-sm flex flex-col justify-between group"
-                >
-                  <div>
-                    {/* Thumbnail */}
-                    <div className="relative aspect-video w-full bg-[#161922] overflow-hidden flex items-center justify-center">
-                      {thumbUrl ? (
-                        <img
-                          src={thumbUrl}
-                          alt=""
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <Play className="w-8 h-8 text-slate-500" />
-                      )}
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => onPlayVideo ? onPlayVideo(v) : null}
-                          className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
-                          style={{ background: styles.accent, color: '#ffffff' }}
-                          title="Play in Preview"
-                        >
-                          <Play className="w-5 h-5 fill-current ml-0.5 text-white" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-3.5">
-                      <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-snug transition-colors">
-                        {cleanPostTitle(v.title, 65)}
-                      </h5>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 font-mono flex-wrap">
-                        {formatViewsString(v.views) ? (
-                          <span>{formatViewsString(v.views)}</span>
-                        ) : v.likes ? (
-                          <span>{String(v.likes).includes('like') ? v.likes : `${v.likes} likes`}</span>
-                        ) : null}
-                        {v.likes && formatViewsString(v.views) && (
-                          <>
-                            <span>·</span>
-                            <span>{v.likes} likes</span>
-                          </>
-                        )}
-                        {v.published && (
-                          <>
-                            <span>·</span>
-                            <span>{v.published}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="px-3.5 pb-3.5 pt-0 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onPlayVideo ? onPlayVideo(v) : null}
-                      className="flex-1 py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-white hover:brightness-110 cursor-pointer"
-                      style={{ background: dynamicAccent, borderColor: dynamicAccentBorder, borderRadius: '0px' }}
-                    >
-                      <Play className="w-3 h-3 fill-current" />
-                      <span>Play in Preview</span>
-                    </button>
-                    <a
-                      href={videoLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-1.5 px-3 rounded-none text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] hover:bg-[#1f2430] border-[#222634]"
-                      style={{ borderRadius: '0px' }}
-                      title={platformInfo.watchLabel}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )
-    }
-
-    // 2. COMMUNITY TAB (Real Comments Scraped from Apify)
-    if (tabLower.includes('community') || tabLower.includes('feed') || tabLower.includes('forum') || tabLower.includes('discussion')) {
-      const posts = getDynamicCommunityPosts(creatorName, blueprint, creatorData, internalComments)
-
-      return (
-        <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
-          {/* Apify Real Channel Stats Banner */}
-          <div className="p-3 bg-[#12141c] border border-[#222634] shadow-sm flex items-center justify-between gap-2.5 rounded-none">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div
-                className="w-9 h-9 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs flex-shrink-0"
-                style={{ background: styles.accentBg, color: styles.accent }}
-              >
-                {resolvedAvatar ? (
-                  <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                ) : (
-                  <span>{creatorName.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 truncate">
-                  <h4 className="text-xs font-bold text-white truncate">{creatorName}</h4>
-                  <span className="text-[10px] text-slate-400 font-mono truncate">@{handleClean}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 font-mono mt-0.5 truncate">
-                  {creatorData?.followers && (
-                    <span className="text-slate-300 font-semibold">{fmt(creatorData.followers)} subscribers</span>
-                  )}
-                  {creatorData?.videoCount && (
-                    <>
-                      <span>·</span>
-                      <span>{creatorData.videoCount} videos</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {creatorUrl && (
-              <a
-                href={creatorUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider border flex items-center gap-1 transition shrink-0 whitespace-nowrap cursor-pointer rounded-none text-white shadow-sm"
-                style={{
-                  color: '#ffffff',
-                  background: styles.accent,
-                  borderColor: styles.accent,
-                  borderRadius: '0px'
-                }}
-                title="Open Channel on YouTube"
-              >
-                <span>Channel Link</span>
-                <ExternalLink className="w-3 h-3 shrink-0 text-white" />
-              </a>
-            )}
-          </div>
-
-          {/* Posts list */}
-          {posts.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 space-y-3 rounded-none bg-[#12141c] border border-[#222634]">
-              <div
-                className="w-10 h-10 rounded-none flex items-center justify-center mx-auto"
-                style={{ background: styles.accentBg, color: styles.accent }}
-              >
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <p className="text-xs text-slate-300 font-medium">No comments synced yet.</p>
-              {creatorUrl && (
-                <a
-                  href={creatorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs hover:underline font-mono"
-                  style={{ color: styles.accent }}
-                >
-                  <span>Explore discussions on official {platformInfo.name} profile</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {posts.map((p) => {
-                return (
-                  <div
-                    key={p.id}
-                    className={`bg-[#12141c] border border-[#222634] hover:border-slate-700 transition rounded-none shadow-sm ${isMobile ? "p-3.5" : "p-4 sm:p-5"
-                      }`}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                        <div
-                          className="w-8 h-8 rounded-none font-bold flex items-center justify-center flex-shrink-0 text-xs"
-                          style={{
-                            background: p.isCreator ? styles.accentBg : 'rgba(255,255,255,0.06)',
-                            color: p.isCreator ? styles.accent : '#fff'
-                          }}
-                        >
-                          {p.user.replace('@', '').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-xs sm:text-sm text-white truncate">{p.user}</span>
-                            {p.isCreator && (
-                              <span
-                                className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-none border uppercase tracking-wider"
-                                style={{ background: styles.accentBg, color: styles.accent, borderColor: styles.accentBorder, borderRadius: '0px' }}
-                              >
-                                CREATOR
-                              </span>
-                            )}
-                            <span className="text-[10px] text-slate-500">·</span>
-                            <span className="text-[10px] text-slate-400 font-mono">{p.time}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-slate-300 leading-relaxed text-xs sm:text-sm mt-1">
-                      {p.text}
-                    </p>
-
-                    {/* Direct Link to the Video / Post */}
-                    {p.videoUrl && (
-                      <div className="mt-3 pt-2.5 border-t border-[#222634]/60 flex items-center justify-between gap-2 flex-wrap">
-                        <a
-                          href={p.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-none border transition hover:opacity-90 group/vlink truncate max-w-full"
-                          style={{
-                            color: styles.accent,
-                            background: styles.accentBg,
-                            borderColor: styles.accentBorder,
-                            borderRadius: '0px'
-                          }}
-                          title={`Watch "${p.videoTitle || `${platformInfo.name} Post`}" on ${platformInfo.name}`}
-                        >
-                          <Play className="w-2.5 h-2.5 fill-current shrink-0" />
-                          <span className="truncate group-hover/vlink:underline font-mono text-[11px]">
-                            {p.videoTitle || platformInfo.watchLabel}
-                          </span>
-                          <ExternalLink className="w-3 h-3 shrink-0 opacity-70 group-hover/vlink:opacity-100" />
-                        </a>
-
-                        {p.source && (
-                          <span className="text-[10px] text-slate-500 font-mono shrink-0 hidden sm:inline ml-auto">
-                            {p.source}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    // 3. ANNOUNCEMENTS TAB (Official updates from creator)
-    if (tabLower.includes('announcement') || tabLower.includes('bulletin') || tabLower.includes('news') || tabLower.includes('update')) {
-      return (
-        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
-          <div className="rounded-none border p-4 sm:p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-none overflow-hidden flex items-center justify-center font-bold text-xs"
-                style={{ background: styles.accentBg, color: styles.accent }}
-              >
-                {resolvedAvatar ? (
-                  <img src={resolvedAvatar} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                ) : (
-                  <span>{creatorName.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <div>
-                <span className="text-xs font-bold text-white block">{creatorName}</span>
-                <span className="text-[10px] text-slate-400 font-mono">@{handleClean}</span>
-              </div>
-            </div>
-
-            <h4 className="text-sm sm:text-base font-bold text-white">
-              Official Channel Announcements & Releases
-            </h4>
-
-            {topVideoTitle ? (
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Latest release from channel: <strong className="text-white">"{cleanPostTitle(topVideoTitle, 75)}"</strong>.
-              </p>
-            ) : null}
-
-            {creatorData?.description && (
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {creatorData.description}
-              </p>
-            )}
-
-            {creatorUrl && (
-              <div className="pt-2 border-t border-[#222634]">
-                <a
-                  href={creatorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs hover:underline"
-                  style={{ color: styles.accent }}
-                >
-                  <span>Visit @{handleClean} on {platformInfo.name}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    // 4. COURSES TAB (ONLY IF EDUCATIONAL)
-    if (tabLower.includes('course') || tabLower.includes('lesson') || tabLower.includes('curriculum') || tabLower.includes('academy')) {
-      return (
-        <div className={isMobile ? "p-3 space-y-3" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-6"}>
-          {recentVideoList.slice(0, 6).map((v, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border bg-[#12141c] border-[#222634] p-4 flex flex-col justify-between shadow-sm"
-            >
-              <div>
-                <div className="aspect-video w-full rounded-xl bg-[#161922] mb-3 overflow-hidden relative flex items-center justify-center">
-                  {v.thumbnail ? (
-                    <img src={v.thumbnail} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                  ) : (
-                    <Play className="w-6 h-6 text-slate-500" />
-                  )}
-                </div>
-                <h5 className="text-xs sm:text-sm font-bold text-white line-clamp-2">{cleanPostTitle(v.title, 65)}</h5>
-                <span className="text-[10px] text-slate-400 font-mono mt-1 block">{formatViewsString(v.views) || (v.likes ? `${v.likes} likes` : 'Lesson Video')}</span>
-              </div>
-              <a
-                href={v.url || (v.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${v.videoId}/` : `https://www.youtube.com/watch?v=${v.videoId}`) : creatorUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold border flex items-center justify-center gap-1.5 transition text-slate-300 hover:text-white bg-[#161922] border-[#222634]"
-              >
-                <span>Watch Lesson</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          ))}
-        </div>
-      )
-    }
-
-    // 5. PODCAST TAB (ONLY IF PODCAST)
-    if (tabLower.includes('podcast') || tabLower.includes('audio') || tabLower.includes('episode')) {
-      const podcastVids = recentVideoList.filter(v => /podcast|episode|ep\s*\d|interview/i.test(v.title || ''))
-      const listToUse = podcastVids.length > 0 ? podcastVids : recentVideoList.slice(0, 4)
-
-      return (
-        <div className={isMobile ? "p-3 space-y-3" : "p-6 space-y-4"}>
-          <div className="flex items-center justify-between pb-2 border-b border-[#222634]">
-            <h4 className="text-xs sm:text-sm font-bold text-white">Podcast Episodes</h4>
-            {creatorUrl && (
-              <a href={creatorUrl} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline flex items-center gap-1" style={{ color: styles.accent }}>
-                <span>View on {platformInfo.name}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-          <div className="space-y-3">
-            {listToUse.map((ep, i) => (
-              <div key={i} className="rounded-2xl border p-4 bg-[#12141c] border-[#222634] flex items-center justify-between gap-3 shadow-sm">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-[#161922] border border-[#222634] flex items-center justify-center flex-shrink-0">
-                    <Headphones className="w-5 h-5" style={{ color: styles.accent }} />
-                  </div>
-                  <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">{ep.title}</h5>
-                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{formatViewsString(ep.views) || (ep.likes ? `${ep.likes} likes` : '')} {ep.published ? `· ${ep.published}` : ''}</span>
-                  </div>
-                </div>
-                <a
-                  href={ep.url || (ep.videoId ? (platform === 'instagram' ? `https://www.instagram.com/p/${ep.videoId}/` : `https://www.youtube.com/watch?v=${ep.videoId}`) : creatorUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 text-slate-300 hover:text-white bg-[#161922] border-[#222634] flex-shrink-0"
-                >
-                  <Play className="w-3 h-3 fill-current" />
-                  <span>Listen</span>
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    // 6. LIVE AMAS TAB (ONLY IF LIVE)
-    if (tabLower.includes('live') || tabLower.includes('event') || tabLower.includes('ama')) {
-      return (
-        <div className={isMobile ? "p-3 space-y-3.5" : "p-6 space-y-4"}>
-          <div className="rounded-2xl border p-5 bg-[#12141c] border-[#222634] shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">Live Stage & Broadcasts</span>
-            </div>
-            <h4 className="text-sm sm:text-base font-bold text-white">
-              {topVideoTitle ? `Live Stream: ${cleanPostTitle(topVideoTitle, 65)}` : `${creatorName} Live Community Broadcast`}
-            </h4>
-            <p className="text-xs text-slate-300">
-              Join the live stream on {platformInfo.name} and connect with fellow viewers in real time.
-            </p>
-            {creatorUrl && (
-              <a
-                href={creatorUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition text-white bg-red-600 hover:bg-red-500"
-              >
-                <span>Open {platformInfo.name} Live</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    // Fallback for Products / other tabs
-    return (
-      <div className="p-8 text-center text-slate-400 space-y-2">
-        <p className="text-xs font-medium text-white">{activeTab}</p>
-        <p className="text-xs text-slate-400">Content directly connected to {creatorName}'s profile.</p>
-        {creatorUrl && (
-          <a
-            href={creatorUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs hover:underline mt-2"
-            style={{ color: styles.accent }}
-          >
-            <span>Visit profile on {platformInfo.name}</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
+      <div className="w-full relative">
+        <ProductLandingPage
+          styles={styles}
+          creatorData={creatorData}
+          blueprint={blueprint}
+          landingCopy={landingCopy}
+          isMobile={isMobile}
+          onPlayVideo={onPlayVideo}
+          onOpenWaitlist={() => setIsWaitlistOpen(true)}
+        />
+        <DemandWaitlistModal
+          isOpen={isWaitlistOpen}
+          onClose={() => setIsWaitlistOpen(false)}
+          productName={blueprint?.name || creatorData?.productName || 'Software Workspace'}
+          monthlyPrice={clampPrice(blueprint?.monthly_price || 19)}
+          creatorHandle={creatorData?.handle || 'creator'}
+          dynamicAccent={dynamicAccent}
+        />
       </div>
     )
   }
 
-  // Mobile Shell View Layout
-  if (isMobile) {
-    return (
-      <div className="w-full h-full flex flex-col bg-[#0f1117] text-slate-100 rounded-[32px] overflow-hidden">
-        {/* Mobile App Header */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[#222634] flex-shrink-0 bg-[#12141c]">
-          <span className="text-xs font-bold uppercase tracking-wider truncate mr-2 text-white">
-            {blueprint.name.split("'")[0]}
-          </span>
-          <div
-            className="w-7 h-7 rounded-none overflow-hidden flex items-center justify-center font-bold text-[10px] flex-shrink-0 relative shadow-sm"
-            style={{ background: styles.accentBg, color: styles.accent }}
-          >
-            <span>{creatorName.charAt(0).toUpperCase()}</span>
-            {resolvedAvatar ? (
-              <img
-                src={resolvedAvatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(resolvedAvatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            ) : null}
-          </div>
-        </div>
-
-        {/* Mobile Content (Scrollable) */}
-        <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {/* Mobile Hero Banner */}
-          <div className="px-3.5 py-3 flex-shrink-0 text-center border-b border-[#222634] bg-gradient-to-b from-[#161922] to-[#12141c]">
-            <h3 className="text-sm font-bold leading-tight tracking-tight mb-0.5 text-white">
-              {blueprint.name}
-            </h3>
-            <p className="text-[11px] text-slate-400 line-clamp-2">
-              {creatorData?.description
-                ? (creatorData.description.length > 100 ? creatorData.description.slice(0, 100) + '...' : creatorData.description)
-                : 'Official community space and latest video releases.'}
-            </p>
-          </div>
-          {renderTabContent()}
-        </div>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <div className="h-12 border-t border-[#222634] flex items-center justify-around flex-shrink-0 bg-[#12141c] rounded-b-[32px] px-1">
-          {allTabs.slice(0, 4).map(t => {
-            const isTabActive = activeTab === t
-            return (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                className="flex flex-col items-center justify-center py-1 flex-1 text-[11px] font-semibold transition-colors cursor-pointer"
-                style={{ color: isTabActive ? styles.accent : '#94a3b8' }}
-              >
-                <span>{t.split(' ')[0]}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  // Desktop Member Web View
+  // Member Product App / Tool Preview View
   return (
-    <div className="w-full h-full flex flex-col bg-[#0f1117] text-slate-100 overflow-y-auto">
-      {/* App Inner Header */}
-      <div className="p-6 border-b border-[#222634] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-shrink-0 bg-[#0f1117]">
-        <div className="flex items-center space-x-3.5">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-lg shadow-md overflow-hidden relative flex-shrink-0 border"
-            style={{
-              background: styles.accentBg,
-              color: styles.accent,
-              borderColor: styles.accentBorder,
-              boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.2)`
-            }}
-          >
-            <span>{(creatorName || blueprint.name || 'C').charAt(0).toUpperCase()}</span>
-            {resolvedAvatar ? (
-              <img
-                src={resolvedAvatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && resolvedAvatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(resolvedAvatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            ) : null}
-          </div>
-          <div>
-            <h2 className="font-bold text-lg text-white leading-tight">{blueprint.name}</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              {creatorData?.niche ? `${creatorData.niche} · ` : ''}Official Member Space & Video Hub
-            </p>
-          </div>
+    <div className="w-full p-4 sm:p-6 bg-[#08090d] min-h-[600px] flex flex-col items-center justify-center">
+      <div className="w-full max-w-3xl space-y-4">
+        <div className="p-3 bg-[#111624] border border-[#20293d] rounded-none flex items-center justify-between text-xs font-mono">
+          <span className="text-emerald-400 font-bold uppercase">Product Preview · Member App View</span>
+          <span className="text-slate-400">Subscriber Tool Interface</span>
         </div>
-
-        <div className="flex items-center gap-2.5">
-          {onSwitchView && (
-            <button
-              type="button"
-              onClick={() => onSwitchView('landing')}
-              className="font-semibold px-3.5 py-2 text-xs transition border border-[#222634] text-slate-300 hover:text-white bg-[#141824] hover:bg-[#1a2030] flex items-center gap-1.5 cursor-pointer rounded-none"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Public Landing Page</span>
-            </button>
-          )}
+        <ProductMockupPreview
+          category={blueprint?.raw?.product_category || blueprint?.category || blueprint?.type || 'tool'}
+          blueprint={blueprint}
+          creatorData={creatorData}
+          dynamicAccent={dynamicAccent}
+          isMobileFrame={isMobile}
+        />
+        <div className="text-center pt-2">
           <button
-            className="font-bold px-5 py-2 rounded-none text-xs transition shadow-lg flex items-center space-x-2 cursor-pointer active:scale-95 text-white"
-            style={{
-              background: styles.accent,
-              color: '#ffffff',
-              boxShadow: `0 4px 14px rgba(${accent.rgb}, 0.25)`,
-              borderRadius: '0px'
-            }}
+            type="button"
+            onClick={() => onSwitchView ? onSwitchView('landing') : null}
+            className="text-xs font-mono text-slate-400 hover:text-white underline cursor-pointer"
           >
-            <span className="text-white">SIGN IN</span>
-            <ArrowRight className="w-3 h-3 stroke-[2.5] text-white" />
+            ← Return to Public Demand-Test Landing Page
           </button>
         </div>
-      </div>
-
-      {/* Inner Nav Tabs */}
-      <div className="flex items-center space-x-8 px-6 border-b border-[#222634] text-sm overflow-x-auto flex-shrink-0 bg-[#0f1117]">
-        {allTabs.map(t => {
-          const isTabActive = activeTab === t
-          return (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className="pb-3 pt-3 border-b-2 font-semibold whitespace-nowrap transition cursor-pointer"
-              style={{
-                color: isTabActive ? styles.accent : '#94a3b8',
-                borderColor: isTabActive ? styles.accent : 'transparent'
-              }}
-            >
-              {t}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Welcome Card */}
-      <div className="px-6 pt-6 flex-shrink-0">
-        <div className="bg-gradient-to-r from-[#161922] to-[#12141c] border border-[#222634] p-6 rounded-2xl relative overflow-hidden shadow-sm">
-          <div
-            className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-40"
-            style={{ background: dynamicAccentBg }}
-          />
-          <h3 className="text-xl font-bold text-white mb-2 relative z-10">
-            Welcome to {blueprint.name}
-          </h3>
-          <p className="text-sm text-slate-400 leading-relaxed max-w-2xl relative z-10">
-            {creatorData?.description
-              ? (creatorData.description.length > 220 ? creatorData.description.slice(0, 220) + '...' : creatorData.description)
-              : `Connect with fellow members, explore official releases, and participate in community discussions with ${creatorName}.`}
-          </p>
-        </div>
-      </div>
-
-      {/* Tab Dynamic Content */}
-      <div className="flex-1">
-        {renderTabContent()}
       </div>
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. MAIN ONBOARDING PREVIEW STEP COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Preview() {
   const { next, creatorData, updateCreator, prev, requestWipeCreator } = useForge()
-  const [visible, setVisible] = useState(false)
-  const [prompt, setPrompt] = useState('')
-  const [theme, setTheme] = useState('dark')
-  const [isRegenerating, setIsRegenerating] = useState(false)
-  const [appliedPrompts, setAppliedPrompts] = useState([])
-  const [variationIndex, setVariationIndex] = useState(0)
+  const [theme, setTheme] = useState(creatorData?.theme || 'dark')
+  const [viewMode, setViewMode] = useState(creatorData?.viewMode || 'landing') // 'landing' | 'mobile'
+  const isMobileView = viewMode === 'mobile'
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [isRegenerating, setIsRegenerating] = useState(false)
   const [playingVideo, setPlayingVideo] = useState(null)
-  const [channelComments, setChannelComments] = useState(() => {
-    return creatorData?.comments || creatorData?.channelComments || []
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
+  const previewContainerRef = useRef(null)
+
+  // 1. Preserve blueprint strictly from creatorData.blueprint (or first candidate if jumping directly)
+  const [currentBlueprint, setCurrentBlueprint] = useState(() => {
+    return creatorData?.blueprint || creatorData?.recommendations?.[0] || null
   })
 
-  // Fetch real channel comments from Apify / YouTube if not yet loaded
   useEffect(() => {
-    const handle = creatorData?.handle || creatorData?.name || creatorData?.url
-    if (!handle) return
+    if (!currentBlueprint && (creatorData?.blueprint || creatorData?.recommendations?.[0])) {
+      const bp = creatorData?.blueprint || creatorData?.recommendations?.[0]
+      setCurrentBlueprint(bp)
+      setLandingCopy(getInitialLandingCopy(creatorData, bp))
+    }
+  }, [creatorData, currentBlueprint])
 
-    // Check localStorage cache first
-    const clean = String(handle).replace(/^@/, '').trim()
-    try {
-      const cached = sessionStorage.getItem(`forge_creator_comments_${clean}`) || localStorage.getItem(`forge_creator_comments_${clean}`)
-      if (cached) {
-        const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setChannelComments(parsed)
-          return
-        }
-      }
-    } catch { }
-
-    fetchCreatorComments(handle, creatorData?.platform || 'youtube', 12)
-      .then(res => {
-        if (Array.isArray(res) && res.length > 0) {
-          setChannelComments(res)
-          updateCreator({ comments: res, channelComments: res })
-        }
-      })
-      .catch(err => console.warn('[Preview] Channel comments fetch notice:', err))
-  }, [creatorData?.handle, creatorData?.url])
-
-  const previewContainerRef = useRef(null)
+  // 2. Initial landing copy
+  const [landingCopy, setLandingCopy] = useState(() => {
+    return getInitialLandingCopy(creatorData, currentBlueprint)
+  })
 
   const accent = getAccent(creatorData)
   const dynamicAccent = accent.color
-  const dynamicAccentBg = `rgba(${accent.rgb}, 0.12)`
-  const dynamicAccentBorder = `rgba(${accent.rgb}, 0.28)`
-  const isLight = isLightColor(dynamicAccent)
-
-  const creatorUrl = getCreatorChannelUrl(creatorData)
-  const cleanCreatorUrlDisplay = creatorUrl.replace(/^https?:\/\/(www\.)?/, '')
 
   const showToast = (msg) => {
     setToastMessage(msg)
-    setTimeout(() => {
-      setToastMessage('')
-    }, 2800)
+    setTimeout(() => setToastMessage(''), 2800)
   }
 
-  const [currentBlueprint, setCurrentBlueprint] = useState(() => {
-    const rawBp = creatorData.blueprint
-    const isEdu = isEducationalCreator(creatorData)
-    const creatorName = creatorData.name || creatorData.handle?.replace('@', '') || 'Creator'
-
-    if (rawBp && !isEdu && (rawBp.name?.includes('Masterclass') || rawBp.name?.includes('Academy') || rawBp.type === 'Course Platform')) {
-      return {
-        ...rawBp,
-        name: `${creatorName}'s Community Hub`,
-        type: 'Membership Community',
-        preview: 'community',
-        features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
-      }
-    }
-    return rawBp || {
-      name: `${creatorName}'s Space`,
-      type: 'Membership',
-      preview: 'community',
-      features: ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
-    }
-  })
-
-  const [viewMode, setViewMode] = useState('landing') // 'landing' | 'product' | 'mobile'
-  const isMobileView = viewMode === 'mobile'
-  const [extraTabs, setExtraTabs] = useState(() => creatorData.extraTabs || [])
-  const [localFeatures, setLocalFeatures] = useState(() => {
-    const isEdu = isEducationalCreator(creatorData)
-    if (!isEdu && currentBlueprint.features?.some(f => f.includes('Course') || f.includes('worksheet') || f.includes('Certificate'))) {
-      return ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
-    }
-    return currentBlueprint.features || ['Community forum', 'Member discussions', 'Video releases', 'Official announcements']
-  })
-
-  const analyzedTabs = getAnalyzedTabsForCreator(creatorData, currentBlueprint, extraTabs)
-  const [activeTab, setActiveTab] = useState(() => analyzedTabs[0] || 'Community')
-
-  useEffect(() => {
-    if (!analyzedTabs.includes(activeTab)) {
-      setActiveTab(analyzedTabs[0] || 'Community')
-    }
-  }, [analyzedTabs, activeTab])
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 80)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
-    const handleFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement))
-    document.addEventListener('fullscreenchange', handleFsChange)
-    return () => document.removeEventListener('fullscreenchange', handleFsChange)
-  }, [])
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setPlayingVideo(null)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
-  const toggleFullscreenPreview = () => {
-    if (!document.fullscreenElement) {
-      previewContainerRef.current?.requestFullscreen().catch(() => {
-        showToast("Error enabling fullscreen")
-      })
-      setIsFullscreen(true)
-      showToast("Entered fullscreen mode")
-    } else {
-      document.exitFullscreen().catch(() => { })
-      setIsFullscreen(false)
-      showToast("Exited fullscreen mode")
-    }
-  }
-
-  const processPrompt = (text) => {
-    const p = text.toLowerCase()
-
-    if (p.includes('regenerat')) {
-      const variations = getVariationsForCreator(creatorData, extraTabs)
-      const nextIdx = (variationIndex + 1) % variations.length
-      setVariationIndex(nextIdx)
-      const nextBp = variations[nextIdx]
-      setCurrentBlueprint(nextBp)
-      setLocalFeatures(nextBp.features)
-      setActiveTab('Community')
-
-      const updated = {
-        ...creatorData,
-        blueprint: nextBp,
-        productName: nextBp.name,
-        features: nextBp.features,
-        theme,
-        isMobileView,
-        viewMode
-      }
-      updateCreator(updated)
-      try {
-        localStorage.setItem('forge_creator_data', JSON.stringify(updated))
-      } catch { }
-      showToast("Generated new blueprint variation!")
-      return
-    }
-
-    let updatedFeatures = [...localFeatures]
-    let updatedTabs = [...extraTabs]
-    let updatedTheme = theme
-    let updatedViewMode = viewMode
-
-    if (p.includes('premium')) {
-      updatedTheme = 'premium'
-      setTheme('premium')
-      if (!updatedFeatures.includes('Exclusive perks')) updatedFeatures.push('Exclusive perks')
-      if (!updatedFeatures.includes('Tiered memberships')) updatedFeatures.push('Tiered memberships')
-    } else if (p.includes('minimalist') || p.includes('minimal')) {
-      updatedTheme = 'minimalist'
-      setTheme('minimalist')
-    } else if (p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25')) {
-      updatedTheme = 'feminine'
-      setTheme('feminine')
-    } else if (p.includes('light') || p.includes('paper')) {
-      updatedTheme = 'light'
-      setTheme('light')
-    } else if (p.includes('dark') || p.includes('graphite')) {
-      updatedTheme = 'dark'
-      setTheme('dark')
-    }
-
-    if (p.includes('community')) {
-      setActiveTab('Community')
-      if (!updatedFeatures.includes('Community forum')) updatedFeatures.push('Community forum')
-      if (!updatedFeatures.includes('Member discussions')) updatedFeatures.push('Member discussions')
-    }
-
-    if (p.includes('mobile') || p.includes('phone') || p.includes('handheld')) {
-      updatedViewMode = 'mobile'
-      setViewMode('mobile')
-    } else if (p.includes('desktop') || p.includes('web')) {
-      updatedViewMode = 'desktop'
-      setViewMode('desktop')
-    }
-
-    if (p.includes('podcast')) {
-      if (!updatedTabs.includes('Podcast')) updatedTabs.push('Podcast')
-      if (!updatedFeatures.includes('Podcast section')) updatedFeatures.push('Podcast section')
-      setActiveTab('Podcast')
-    }
-
-    if (p.includes('live') || p.includes('ama') || p.includes('stream') || p.includes('event')) {
-      if (!updatedTabs.includes('Live AMAs')) updatedTabs.push('Live AMAs')
-      if (!updatedFeatures.includes('Live events & AMAs')) updatedFeatures.push('Live events & AMAs')
-      setActiveTab('Live AMAs')
-    }
-
-    if (p.includes('product') || p.includes('store') || p.includes('merch') || p.includes('download')) {
-      if (!updatedTabs.includes('Products')) updatedTabs.push('Products')
-      if (!updatedFeatures.includes('Digital products & store')) updatedFeatures.push('Digital products & store')
-      setActiveTab('Products')
-    }
-
-    setLocalFeatures(updatedFeatures)
-    setExtraTabs(updatedTabs)
-
+  // Handle price adjustment (clamped $9–$29). Never regenerates copy!
+  const handlePriceChange = (newPrice) => {
+    const price = clampPrice(newPrice)
     const updatedBp = {
       ...currentBlueprint,
-      features: updatedFeatures
+      monthly_price: price,
     }
     setCurrentBlueprint(updatedBp)
 
-    const updatedData = {
+    // Recalculate subscription revenue estimate using single shared helper
+    const audienceCount = parseFollowerCount(creatorData?.followers || creatorData?.subscriberCount || 0)
+    const revEst = calculateSubscriptionRevenue({
+      audience: audienceCount,
+      monthlyPrice: price,
+      engagementRate: parseFloat(creatorData?.engagementRate) || 3.5,
+    })
+
+    const updatedCopy = {
+      ...landingCopy,
+      monthlyPrice: price,
+      pricing: {
+        ...landingCopy.pricing,
+        price,
+        ctaText: `Join Waitlist — $${price}/mo`,
+      },
+      cta: {
+        ...landingCopy.cta,
+        buttonText: `Join Waitlist — $${price}/mo`,
+      },
+    }
+    setLandingCopy(updatedCopy)
+
+    const updatedCreator = {
       ...creatorData,
       blueprint: updatedBp,
-      productName: updatedBp.name,
-      features: updatedFeatures,
-      extraTabs: updatedTabs,
-      theme: updatedTheme,
-      viewMode: updatedViewMode,
-      isMobileView: updatedViewMode === 'mobile'
+      monthly_price: price,
+      revenue_estimate: revEst,
+      landingCopy: updatedCopy,
     }
-    updateCreator(updatedData)
+    updateCreator(updatedCreator)
     try {
-      localStorage.setItem('forge_creator_data', JSON.stringify(updatedData))
-    } catch { }
+      localStorage.setItem('forge_creator_data', JSON.stringify(updatedCreator))
+    } catch {}
+    showToast(`Updated price to $${price}/mo per subscriber`)
   }
 
-  const handleToggleFeature = (label) => {
-    let updatedFeatures;
-    let updatedTabs = [...extraTabs];
+  // Handle Regenerate: Only regenerates landing copy and theme; never alters name, tool_summary, audience, price, evidence or features!
+  const handleRegenerateCopy = async (tone = 'professional') => {
+    if (isRegenerating) return
+    setIsRegenerating(true)
+    showToast(`Synthesizing fresh ${tone} SaaS landing copy...`)
 
-    const matchedPreset = CAPABILITY_PRESETS.find(p =>
-      p.label === label ||
-      label.toLowerCase().includes(p.label.toLowerCase()) ||
-      (p.tab && label.toLowerCase().includes(p.tab.toLowerCase()))
-    );
-    const tabName = matchedPreset?.tab;
-
-    if (localFeatures.includes(label)) {
-      updatedFeatures = localFeatures.filter(f => f !== label);
-      if (tabName && updatedTabs.includes(tabName)) {
-        updatedTabs = updatedTabs.filter(t => t !== tabName);
-        if (activeTab === tabName) setActiveTab('Community');
-      }
-      showToast(`Removed "${label}" from build`);
-    } else {
-      updatedFeatures = [...localFeatures, label];
-      if (tabName && !updatedTabs.includes(tabName)) {
-        updatedTabs.push(tabName);
-        setActiveTab(tabName);
-      }
-      showToast(`Added "${label}" to build`);
-    }
-
-    setLocalFeatures(updatedFeatures);
-    setExtraTabs(updatedTabs);
-
-    const updatedBp = { ...currentBlueprint, features: updatedFeatures };
-    setCurrentBlueprint(updatedBp);
-
-    const updatedData = {
-      ...creatorData,
-      blueprint: updatedBp,
-      features: updatedFeatures,
-      extraTabs: updatedTabs,
-      productName: updatedBp.name
-    };
-    updateCreator(updatedData);
     try {
-      localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
-    } catch { }
-  };
-
-  const handlePromptSend = () => {
-    if (!prompt.trim()) return
-    setIsRegenerating(true)
-    showToast("Applying custom modification...")
-    setAppliedPrompts(prev => [...prev, prompt])
-    const currentPrompt = prompt
-    setPrompt('')
-
-    setTimeout(() => {
-      processPrompt(currentPrompt)
-      setIsRegenerating(false)
-      showToast("Build architecture updated!")
-    }, 400)
-  }
-
-  const handleQuickPrompt = (p) => {
-    setIsRegenerating(true)
-    if (!p.toLowerCase().includes('regenerat')) {
-      setAppliedPrompts(prev => [...prev, p])
-    }
-    showToast(`Refining: "${p}"...`)
-
-    setTimeout(() => {
-      processPrompt(p)
-      setIsRegenerating(false)
-    }, 400)
-  }
-
-  const handleChipClick = (chip) => {
-    setIsRegenerating(true)
-    showToast(`Applying "${chip}"...`)
-
-    setTimeout(() => {
-      processPrompt(chip)
-      if (!appliedPrompts.includes(chip)) {
-        setAppliedPrompts(prev => [...prev, chip])
-      }
-      setIsRegenerating(false)
-      showToast(`Applied: "${chip}"`)
-    }, 350)
-  }
-
-  const removeAppliedPrompt = (promptText) => {
-    setIsRegenerating(true)
-    setTimeout(() => {
-      setAppliedPrompts(prev => prev.filter(x => x !== promptText))
-      const p = promptText.toLowerCase()
-
-      let updatedFeatures = [...localFeatures]
-      let updatedTabs = [...extraTabs]
-
-      if (p.includes('premium') || p.includes('minimalist') || p.includes('minimal') ||
-        p.includes('women') || p.includes('female') || p.includes('feminine') || p.includes('rose') || p.includes('25') ||
-        p.includes('light') || p.includes('paper') || p.includes('dark') || p.includes('graphite')) {
-        setTheme('dark')
-      }
-
-      if (p.includes('mobile') || p.includes('phone') || p.includes('handheld')) {
-        setViewMode('desktop')
-      }
-
-      if (p.includes('podcast')) {
-        updatedTabs = updatedTabs.filter(x => x !== 'Podcast')
-        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('podcast'))
-        setExtraTabs(updatedTabs)
-        setLocalFeatures(updatedFeatures)
-        setActiveTab('Community')
-      }
-
-      if (p.includes('live') || p.includes('ama') || p.includes('event')) {
-        updatedTabs = updatedTabs.filter(x => x !== 'Live AMAs')
-        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('live') && !x.toLowerCase().includes('ama') && !x.toLowerCase().includes('event'))
-        setExtraTabs(updatedTabs)
-        setLocalFeatures(updatedFeatures)
-        setActiveTab('Community')
-      }
-
-      if (p.includes('product') || p.includes('store') || p.includes('merch')) {
-        updatedTabs = updatedTabs.filter(x => x !== 'Products')
-        updatedFeatures = updatedFeatures.filter(x => !x.toLowerCase().includes('product') && !x.toLowerCase().includes('store') && !x.toLowerCase().includes('merch'))
-        setExtraTabs(updatedTabs)
-        setLocalFeatures(updatedFeatures)
-        setActiveTab('Community')
-      }
-
-      const updatedBp = { ...currentBlueprint, features: updatedFeatures }
-      setCurrentBlueprint(updatedBp)
-
-      const updatedData = {
+      const freshCopy = await generateLandingCopyAI(creatorData, currentBlueprint, { tone })
+      setLandingCopy(freshCopy)
+      const updatedCreator = {
         ...creatorData,
-        blueprint: updatedBp,
-        features: updatedFeatures,
-        extraTabs: updatedTabs
+        landingCopy: freshCopy,
       }
-      updateCreator(updatedData)
+      updateCreator(updatedCreator)
       try {
-        localStorage.setItem('forge_creator_data', JSON.stringify(updatedData));
-      } catch { }
-
+        localStorage.setItem('forge_creator_data', JSON.stringify(updatedCreator))
+      } catch {}
+      showToast('Generated fresh SaaS landing copy!')
+    } catch (err) {
+      console.warn('[Preview] Regenerate copy error:', err)
+      const fallback = buildDeterministicLandingCopy(creatorData, currentBlueprint)
+      setLandingCopy(fallback)
+    } finally {
       setIsRegenerating(false)
-      showToast("Refinement removed")
-    }, 350)
-  }
-
-  const handleSwitchView = (mode) => {
-    setViewMode(mode)
-    if (mode === 'landing') {
-      showToast("Switched to Public Landing Page")
-    } else if (mode === 'product' || mode === 'desktop') {
-      setAppliedPrompts(prev => prev.filter(p => !p.toLowerCase().includes('mobile')))
-      showToast("Switched to Member Product App")
-    } else if (mode === 'mobile') {
-      showToast("Switched to Mobile Preview")
     }
   }
 
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (previewContainerRef.current?.requestFullscreen) {
+        previewContainerRef.current.requestFullscreen().catch(() => {})
+        setIsFullscreen(true)
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {})
+        setIsFullscreen(false)
+      }
+    }
+  }
+
+  // Handle final CTA: Approve landing page and proceed to launch preparation
   const handleBuild = () => {
     const finalPayload = {
-      blueprint: {
-        ...currentBlueprint,
-        features: localFeatures
-      },
-      productName: currentBlueprint.name,
-      features: localFeatures,
+      blueprint: currentBlueprint,
+      productName: currentBlueprint?.name || creatorData.productName,
+      features: currentBlueprint?.features || [],
+      landingCopy,
       theme,
-      isMobileView: viewMode === 'mobile',
+      isMobileView,
       viewMode,
-      extraTabs,
-    };
-    updateCreator(finalPayload);
+    }
+    updateCreator(finalPayload)
     try {
-      localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }));
-    } catch { }
-    showToast("Launching application build...")
+      localStorage.setItem('forge_creator_data', JSON.stringify({ ...creatorData, ...finalPayload }))
+    } catch {}
+    showToast('Approving landing page...')
     setTimeout(() => {
-      next();
-    }, 400);
-  };
+      next()
+    }, 350)
+  }
+
+  // Clean creator handle for URL preview
+  const rawH = creatorData?.handle || creatorData?.name || 'creator'
+  const cleanHandle = rawH.replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'creator'
+
+  if (!currentBlueprint) {
+    return (
+      <div className="min-h-screen bg-[#08090d] text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md p-8 bg-[#0d101a] border border-[#242c42] rounded-none space-y-4 shadow-2xl">
+          <AlertCircle size={32} className="text-amber-400 mx-auto" />
+          <h2 className="text-lg font-bold text-white">No Product Selected</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Please return to the Blueprint step to choose a subscription software product idea for your audience.
+          </p>
+          <button
+            type="button"
+            onClick={prev}
+            className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white rounded-none cursor-pointer"
+            style={{ background: dynamicAccent }}
+          >
+            ← Return to Blueprint
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const currentPrice = clampPrice(currentBlueprint.monthly_price || 19)
 
   return (
     <div className="min-h-screen flex flex-col bg-[#08090d] text-slate-100 selection:bg-white/20">
 
-      {/* Top Navigation Bar */}
-      <header className="h-16 border-b border-[#1f2430] bg-[#0b0c10]/80 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center space-x-4">
+      {/* Top Studio Header */}
+      <header className="h-16 border-b border-[#1b2234] bg-[#0c0f17]/90 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={prev}
-            className="flex items-center space-x-2 text-sm font-medium text-slate-400 hover:text-white bg-[#161922] hover:bg-[#1f2430] px-3.5 py-2 rounded-xl transition border border-[#222634] cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-white bg-white/5 border border-white/10 rounded-none transition cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back</span>
+            <ArrowLeft size={13} />
+            <span>Blueprint</span>
           </button>
+          <div className="h-4 w-[1px] bg-[#1f2433]" />
 
-          <div className="h-5 w-[1px] bg-slate-800 hidden sm:block" />
+          {/* CoLaunch 4-Square Brand Mark & Link */}
+          <CoLaunchLogo
+            size={18}
+            href="https://co-launch.app"
+            color={dynamicAccent}
+            showWordmark={true}
+          />
 
-          <a href="https://co-launch.app" className="flex items-center space-x-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="Visit co-launch.app">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm bg-[#12141c] border border-[#222634] shadow-sm"
-            >
-              <WingLogo size={18} />
-            </div>
-            <span className="font-bold text-base tracking-tight text-white">
-              CoLaunch
+          <div className="h-4 w-[1px] bg-[#1f2433] hidden md:block" />
+          <div className="hidden md:flex items-center gap-2">
+            <span className="text-xs font-bold text-white truncate max-w-[180px]">
+              {currentBlueprint.name}
             </span>
-          </a>
-        </div>
-
-        {/* Center View Mode Selector */}
-        <div className="hidden md:flex items-center bg-[#12141c] p-1 border border-[#222634] shadow-inner">
-          <button
-            onClick={() => handleSwitchView('landing')}
-            className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
-            style={{
-              background: viewMode === 'landing' ? dynamicAccent : 'transparent',
-              color: viewMode === 'landing' ? '#ffffff' : '#94a3b8',
-              boxShadow: viewMode === 'landing' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
-            }}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>Public Landing Page</span>
-          </button>
-          <button
-            onClick={() => handleSwitchView('product')}
-            className="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
-            style={{
-              background: (viewMode === 'product' || viewMode === 'desktop') ? dynamicAccent : 'transparent',
-              color: (viewMode === 'product' || viewMode === 'desktop') ? '#ffffff' : '#94a3b8',
-              boxShadow: (viewMode === 'product' || viewMode === 'desktop') ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
-            }}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Member Product App</span>
-          </button>
-          <button
-            onClick={() => handleSwitchView('mobile')}
-            className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer rounded-none"
-            style={{
-              background: viewMode === 'mobile' ? dynamicAccent : 'transparent',
-              color: viewMode === 'mobile' ? '#ffffff' : '#94a3b8',
-              boxShadow: viewMode === 'mobile' ? `0 4px 12px rgba(${accent.rgb}, 0.25)` : 'none'
-            }}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Mobile</span>
-          </button>
-        </div>
-
-        {/* Right Header Badges & Actions */}
-        <div className="flex items-center space-x-3">
-          <div className="hidden lg:flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-none text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Generated v2.4</span>
+            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/25">
+              ${currentPrice}/mo SaaS
+            </span>
           </div>
+        </div>
 
+        {/* Center: Device Mode Switcher */}
+        <div className="hidden md:inline-flex items-center gap-1 p-0.5 bg-[#121624] border border-[#20273a]">
+          <button
+            type="button"
+            onClick={() => setViewMode('landing')}
+            className={`flex items-center gap-1 px-3 py-1 text-xs font-bold transition cursor-pointer ${viewMode === 'landing' ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'}`}
+          >
+            <Laptop size={12} />
+            <span className="hidden sm:inline">Landing Page</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('mobile')}
+            className={`flex items-center gap-1 px-3 py-1 text-xs font-bold transition cursor-pointer ${viewMode === 'mobile' ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'}`}
+          >
+            <Smartphone size={12} />
+            <span className="hidden sm:inline">Mobile</span>
+          </button>
+        </div>
+
+        {/* Right Action: Reset Creator + Interactive Step Indicator + Approve CTA */}
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={requestWipeCreator}
-            className="flex items-center space-x-2 text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3.5 py-2 rounded-none transition cursor-pointer"
-            title="Wipe creator state"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+            title="Wipe creator from session storage"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Reset Creator</span>
+            <span className="hidden md:inline">Reset Creator</span>
           </button>
+
+          {/* Interactive 8-Step Navigation Indicator */}
+          <OnboardingStepIndicator currentStep="preview" showOptions={true} />
 
           <button
             type="button"
-            onClick={handleBuild}
-            disabled={isRegenerating}
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 font-bold text-xs uppercase tracking-wider text-white shadow-md transition cursor-pointer rounded-none active:scale-95"
-            style={{
-              background: dynamicAccent,
-              borderRadius: '0px'
-            }}
+            onClick={toggleFullscreen}
+            className="p-2 text-slate-400 hover:text-white bg-white/5 border border-white/10 transition cursor-pointer hidden sm:block"
+            title="Toggle fullscreen"
           >
-            <span>Looks good, build it</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
-
-          <div className="flex items-center space-x-1 pl-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div
-                key={i}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: i === 5 ? '16px' : '6px',
-                  height: '6px',
-                  background: i === 5 ? dynamicAccent : i < 5 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.15)',
-                }}
-              />
-            ))}
-          </div>
+          <button
+            type="button"
+            id="dynamic-cta-button"
+            onClick={handleBuild}
+            className="px-4 sm:px-5 py-2 text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-lg flex items-center gap-1.5"
+            style={{ background: dynamicAccent }}
+          >
+            <span>Approve landing page</span>
+            <ArrowRight size={13} />
+          </button>
         </div>
       </header>
 
-      {/* Main Workspace Layout (Full Width, No Sidebar) */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 pb-44 max-w-[1440px] mx-auto w-full">
+      {/* Main Studio Workspace Grid */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
-        <div className="w-full flex-1 flex flex-col space-y-4">
-
-          {/* Breadcrumb / Header Info & Fullscreen Toggle */}
-          <div className="flex items-center justify-between px-2">
-            <div>
-              <span
-                className="text-xs uppercase tracking-wider font-semibold"
-                style={{ color: dynamicAccent }}
-              >
-                Live Preview
-              </span>
-              <h1 className="text-2xl font-bold tracking-tight text-white mt-0.5">
-                {currentBlueprint.name}
-              </h1>
+        {/* Left Refine Panel (Software-focused controls) */}
+        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-[#1a2133] bg-[#0a0d16] p-4 sm:p-5 flex-shrink-0 space-y-6 overflow-y-auto">
+          
+          {/* Product Overview Card */}
+          <div className="p-3.5 bg-[#101420] border border-[#1f273b] space-y-2 text-left">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+              Active Software Product
+            </span>
+            <h3 className="text-sm font-bold text-white">{currentBlueprint.name}</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {currentBlueprint.tool_summary || currentBlueprint.description}
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-emerald-400">
+              Target: {currentBlueprint.target_audience || 'Target Community'}
             </div>
+          </div>
 
-            {/* Mobile View Toggle (Shown when on small screens) */}
-            <div className="flex items-center space-x-2">
-              <div className="flex md:hidden items-center bg-[#12141c] p-1 rounded-xl border border-[#222634]">
+          {/* Pricing Controller (Clamped $9–$29) */}
+          <div className="space-y-2 text-left">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white">Monthly Subscription Price</span>
+              <span className="text-xs font-mono font-bold text-emerald-400">${currentPrice} / mo</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1 pt-1">
+              {[9, 15, 19, 24, 29].map(p => (
                 <button
-                  onClick={() => handleSwitchView('desktop')}
-                  className="p-1.5 rounded-lg text-xs"
-                  style={{ background: viewMode === 'desktop' ? dynamicAccent : 'transparent', color: viewMode === 'desktop' ? '#000' : '#888' }}
+                  key={p}
+                  type="button"
+                  onClick={() => handlePriceChange(p)}
+                  className={`py-1 text-xs font-mono font-bold transition cursor-pointer border ${currentPrice === p ? 'border-emerald-400 bg-emerald-500/20 text-white' : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'}`}
                 >
-                  <Globe className="w-3.5 h-3.5" />
+                  ${p}
                 </button>
-                <button
-                  onClick={() => handleSwitchView('mobile')}
-                  className="p-1.5 rounded-lg text-xs"
-                  style={{ background: viewMode === 'mobile' ? dynamicAccent : 'transparent', color: viewMode === 'mobile' ? '#000' : '#888' }}
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 font-mono pt-1">
+              {REVENUE_DISCLAIMER}
+            </p>
+          </div>
 
+          {/* Landing Copy Refinement (Tone & AI regeneration) */}
+          <div className="space-y-2 text-left border-t border-white/5 pt-4">
+            <span className="text-xs font-bold text-white block">Regenerate Copy Tone</span>
+            <p className="text-[11px] text-slate-400">
+              Only rewrites copywriting while preserving product name, features, and price.
+            </p>
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
               <button
-                onClick={toggleFullscreenPreview}
-                className="p-2.5 rounded-xl bg-[#12141c] hover:bg-[#1a1d26] border border-[#222634] text-slate-300 hover:text-white transition cursor-pointer"
-                title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
+                type="button"
+                disabled={isRegenerating}
+                onClick={() => handleRegenerateCopy('professional')}
+                className="py-1.5 px-2 bg-white/5 border border-white/10 text-[10px] font-mono text-slate-300 hover:text-white transition cursor-pointer disabled:opacity-50"
               >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                Professional
+              </button>
+              <button
+                type="button"
+                disabled={isRegenerating}
+                onClick={() => handleRegenerateCopy('bold')}
+                className="py-1.5 px-2 bg-white/5 border border-white/10 text-[10px] font-mono text-slate-300 hover:text-white transition cursor-pointer disabled:opacity-50"
+              >
+                Bold
+              </button>
+              <button
+                type="button"
+                disabled={isRegenerating}
+                onClick={() => handleRegenerateCopy('friendly')}
+                className="py-1.5 px-2 bg-white/5 border border-white/10 text-[10px] font-mono text-slate-300 hover:text-white transition cursor-pointer disabled:opacity-50"
+              >
+                Friendly
               </button>
             </div>
           </div>
 
-          {/* Browser Mockup Canvas Container */}
-          <div
-            ref={previewContainerRef}
-            id="preview-container"
-            className={`w-full flex-1 bg-[#12141c] border border-[#222634] rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ${isFullscreen
-                ? 'fixed inset-0 z-50 overflow-y-auto rounded-none border-0'
-                : (viewMode === 'landing' ? 'min-h-[600px]' : 'min-h-[580px] h-[680px] overflow-hidden')
-              }`}
-            style={{
-              boxShadow: `0 0 35px -5px rgba(${accent.rgb}, 0.12)`,
-              height: isFullscreen ? '100vh' : (viewMode === 'landing' ? 'auto' : '680px'),
-              minHeight: '580px'
-            }}
-          >
-            {/* Browser Top Chrome Bar */}
-            <div className={`bg-[#161922] px-4 py-3 border-b border-[#222634] flex items-center justify-between select-none flex-shrink-0 ${isFullscreen ? '' : 'rounded-t-2xl'
-              }`}>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-              </div>
-
-              <div className="flex-1 max-w-md mx-4">
-                <div
-                  className="bg-[#0b0c10] border border-[#222634] rounded-none px-4 py-1.5 text-xs text-slate-300 text-center truncate flex items-center justify-between shadow-inner"
-                >
-                  <div className="flex items-center space-x-2 truncate min-w-0">
-                    <Lock className="w-3 h-3 flex-shrink-0" style={{ color: dynamicAccent }} />
-                    <span id="browser-url" className="truncate font-mono font-semibold" style={{ color: dynamicAccent }}>
-                      {viewMode === 'landing'
-                        ? `${(creatorData?.handle || 'creator').replace('@', '')}.colaunch.app`
-                        : `${(creatorData?.handle || 'creator').replace('@', '')}.colaunch.app/app`}
-                    </span>
-                  </div>
-                  <span className="text-[9.5px] uppercase font-mono px-2 py-0.5 border border-[#222634] bg-[#141824] text-slate-400 shrink-0 ml-2">
-                    {viewMode === 'landing' ? 'Public Landing Page' : 'Member App'}
-                  </span>
+          {/* Included Features List */}
+          <div className="space-y-2 text-left border-t border-white/5 pt-4">
+            <span className="text-xs font-bold text-white block">Included Software Features</span>
+            <div className="space-y-1.5">
+              {(currentBlueprint.features || []).map((feat, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs text-slate-300 py-1 px-2 bg-[#121624] border border-[#1d2538]">
+                  <Check size={11} className="text-emerald-400 shrink-0" />
+                  <span className="truncate">{feat}</span>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3 text-slate-400 text-xs">
-                <RotateCcw
-                  className="w-3.5 h-3.5 hover:text-white cursor-pointer transition-transform duration-300 active:rotate-180"
-                  onClick={() => {
-                    handleQuickPrompt('Regenerate')
-                    showToast("Reloading live preview...")
-                  }}
-                  title="Reload preview"
-                />
-              </div>
+              ))}
             </div>
-
-            {/* Inner Viewport Area */}
-            <div className={`flex-1 relative flex bg-[#0f1117] ${viewMode === 'mobile'
-                ? 'items-center justify-center min-h-[600px] overflow-hidden'
-                : (viewMode === 'landing' ? 'items-stretch min-h-0' : 'items-stretch min-h-0 overflow-hidden')
-              }`}>
-              {/* Regenerating overlay */}
-              {isRegenerating && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center z-30 animate-fade-in"
-                  style={{ background: 'rgba(8,9,13,0.85)', backdropFilter: 'blur(4px)' }}
-                >
-                  <div className="text-center p-6 rounded-2xl bg-[#12141c] border border-[#222634] shadow-2xl">
-                    <div
-                      className="w-10 h-10 border-2 border-white/20 rounded-full animate-spin mx-auto mb-3"
-                      style={{ borderTopColor: dynamicAccent }}
-                    />
-                    <p className="text-sm font-semibold text-white">Refining Interface...</p>
-                    <p className="text-xs text-slate-400 mt-1">Applying aesthetic parameters</p>
-                  </div>
-                </div>
-              )}
-
-              {viewMode === 'mobile' ? (
-                /* Mobile Phone Shell */
-                <div
-                  className="relative rounded-[40px] p-[8px] bg-[#222634] shadow-2xl transition-all duration-300 my-4 ring-1 ring-white/10"
-                  style={{
-                    width: '320px',
-                    height: '540px',
-                    boxShadow: `0 25px 50px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)`
-                  }}
-                >
-                  {/* Inner Screen */}
-                  <div className="w-full h-full rounded-[32px] overflow-hidden bg-[#0f1117] flex flex-col relative [isolation:isolate]">
-                    {/* Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-4 bg-[#141414] rounded-b-xl z-20 pointer-events-none" />
-
-                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                      <AppMockup
-                        theme={theme}
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        blueprint={currentBlueprint}
-                        creatorData={creatorData}
-                        extraTabs={extraTabs}
-                        isMobile={true}
-                        viewMode={viewMode === 'landing' ? 'landing' : 'mobile'}
-                        onSwitchView={handleSwitchView}
-                        channelComments={channelComments}
-                        onPlayVideo={(v) => setPlayingVideo(v)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Desktop / Dashboard Viewport */
-                <div className={`w-full flex flex-col ${viewMode === 'landing' ? 'min-h-0' : 'h-full min-h-0 overflow-hidden'
-                  }`}>
-                  <AppMockup
-                    theme={theme}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    blueprint={currentBlueprint}
-                    creatorData={creatorData}
-                    extraTabs={extraTabs}
-                    isMobile={false}
-                    viewMode={viewMode}
-                    onSwitchView={handleSwitchView}
-                    channelComments={channelComments}
-                    onPlayVideo={(v) => setPlayingVideo(v)}
-                  />
-                </div>
-              )}
-            </div>
-
           </div>
 
-          {/* Applied Prompts Filter Tags */}
-          {appliedPrompts.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1 px-1">
-              {appliedPrompts.map((p, i) => (
+          {/* Theme Selector */}
+          <div className="space-y-2 text-left border-t border-white/5 pt-4">
+            <span className="text-xs font-bold text-white block">Visual Theme</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {['dark', 'premium', 'light', 'minimalist'].map(t => (
                 <button
-                  key={i}
-                  onClick={() => removeAppliedPrompt(p)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs bg-[#161922] hover:bg-rose-500/10 hover:text-rose-400 border border-[#222634] hover:border-rose-500/30 text-slate-300 group transition-all duration-150 cursor-pointer shadow-sm"
-                  style={{ borderRadius: '0px' }}
-                  title="Click to remove refinement"
+                  key={t}
+                  type="button"
+                  onClick={() => setTheme(t)}
+                  className={`py-1 text-xs font-mono uppercase tracking-wider transition cursor-pointer border ${theme === t ? 'border-white/60 bg-white/15 text-white font-bold' : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'}`}
                 >
-                  <Check className="w-3 h-3 group-hover:hidden text-emerald-400" />
-                  <span className="hidden group-hover:inline font-bold text-rose-400">×</span>
-                  <span>{p}</span>
+                  {t}
                 </button>
               ))}
             </div>
-          )}
+          </div>
 
-        </div>
+        </aside>
 
-        {/* ========================================================= */}
-        {/* PLATFORM ARCHITECTURE & FORGE AI STUDIO (REFINED DESIGN)  */}
-        {/* ========================================================= */}
-        <section className="w-full mt-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#1f2433] gap-2">
-            <div>
+        {/* Right Canvas Stage: Mockup Container with Browser Chrome */}
+        <main
+          ref={previewContainerRef}
+          className="flex-1 bg-[#05070a] p-3 sm:p-6 flex flex-col items-center justify-start overflow-y-auto"
+        >
+          {/* Browser Frame */}
+          <div className={`w-full ${isMobileView ? 'max-w-[390px]' : 'max-w-5xl'} bg-[#0a0d16] border border-[#1f273b] shadow-2xl flex flex-col transition-all duration-300 my-auto`}>
+            
+            {/* Address Bar Chrome */}
+            <div className="px-4 py-2.5 bg-[#0e121d] border-b border-[#1b2336] flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-                <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-white">
-                  Platform Architecture & Forge Studio
-                </h2>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Configure active capabilities and use Forge AI to refine your application in real time.
-              </p>
+
+              {/* Labeled Preview URL */}
+              <div className="flex-1 max-w-md mx-3 px-3 py-1 bg-[#131826] border border-[#232c42] flex items-center justify-between text-xs text-slate-300 font-mono shadow-inner">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Lock size={11} className="text-emerald-400 shrink-0" />
+                  <span className="truncate text-[11px]">https://{cleanHandle}.colaunch.app</span>
+                </div>
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 bg-white/5 px-1.5 py-0.5 border border-white/10 shrink-0 ml-2">
+                  Preview URL
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleRegenerateCopy('professional')}
+                  disabled={isRegenerating}
+                  className="p-1 hover:text-white transition cursor-pointer"
+                  title="Regenerate copy"
+                >
+                  <RotateCcw size={13} className={isRegenerating ? 'animate-spin text-white' : ''} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 font-mono text-[11px]">
-              <span className="px-2.5 py-1 bg-[#12141c] border border-[#222634] text-slate-300">
-                Build: <strong className="text-white">{currentBlueprint?.name}</strong>
-              </span>
-              <span
-                className="px-2.5 py-1 border font-bold"
-                style={{ background: dynamicAccentBg, color: dynamicAccent, borderColor: dynamicAccentBorder }}
-              >
-                {localFeatures.length} Active Modules
-              </span>
+
+            {/* Viewport Content */}
+            <div className="overflow-y-auto custom-scrollbar max-h-[82vh]">
+              <AppMockup
+                theme={theme}
+                blueprint={currentBlueprint}
+                creatorData={{ ...creatorData, landingCopy, monthly_price: currentPrice }}
+                isMobile={isMobileView}
+                viewMode="landing"
+                onPlayVideo={v => setPlayingVideo(v)}
+              />
             </div>
           </div>
+        </main>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      </div>
 
-            {/* LEFT COLUMN: What's Included & Add More Modules (Span 7) */}
-            <div className="lg:col-span-7 flex flex-col space-y-4">
-
-              {/* 1. What's Included Card */}
-              <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <h3 className="font-bold text-xs uppercase tracking-wider text-white font-mono">
-                        What's Included
-                      </h3>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Active capabilities configured for your build
-                    </p>
-                  </div>
-                  <span
-                    className="text-[10px] px-2.5 py-1 font-mono font-bold border"
-                    style={{
-                      background: dynamicAccentBg,
-                      color: dynamicAccent,
-                      borderColor: dynamicAccentBorder
-                    }}
-                  >
-                    {localFeatures.length} Active
-                  </span>
-                </div>
-
-                {/* Active modules grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {localFeatures.map(label => {
-                    const matched = FEATURES.find(f => f.label.toLowerCase() === label.toLowerCase()) ||
-                      CAPABILITY_PRESETS.find(p => p.label.toLowerCase() === label.toLowerCase())
-                    const Icon = matched ? matched.icon : Layout
-                    return (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between p-3 bg-[#141824] border border-[#222a3d] hover:border-slate-600 transition group"
-                        style={{ borderRadius: '0px' }}
-                      >
-                        <div className="flex items-center space-x-3 min-w-0 pr-2">
-                          <div
-                            className="w-7 h-7 flex items-center justify-center text-xs shadow-sm border flex-shrink-0"
-                            style={{
-                              background: dynamicAccentBg,
-                              color: dynamicAccent,
-                              borderColor: dynamicAccentBorder,
-                              borderRadius: '0px'
-                            }}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-semibold text-slate-200 block truncate">{label}</span>
-                            <span className="text-[10px] text-emerald-400 font-mono block">Enabled in build</span>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleFeature(label)}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer flex-shrink-0"
-                          title={`Remove "${label}" from build`}
-                          style={{ borderRadius: '0px' }}
-                        >
-                          <X className="w-3.5 h-3.5 group-hover:block hidden" />
-                          <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden block" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Add More Modules Card */}
-              {(() => {
-                const unadded = CAPABILITY_PRESETS.filter(p =>
-                  !localFeatures.some(f => f.toLowerCase() === p.label.toLowerCase() || f.toLowerCase().includes(p.label.toLowerCase()))
-                )
-                if (unadded.length === 0) return null
-                return (
-                  <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col space-y-3">
-                    <div className="flex items-center justify-between pb-2 border-b border-[#1f2433]">
-                      <div>
-                        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300 font-mono">
-                          Add More Modules
-                        </h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          Click to include additional capabilities in your platform
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {unadded.length} Available
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {unadded.map((preset, idx) => {
-                        const PresetIcon = preset.icon
-                        const isOddLast = idx === unadded.length - 1 && unadded.length % 2 !== 0
-                        return (
-                          <div
-                            key={preset.label}
-                            className={`flex items-center justify-between p-3 bg-[#141824]/60 hover:bg-[#141824] border border-[#222a3d]/80 hover:border-slate-600 transition group min-h-[62px] ${isOddLast ? 'sm:col-span-2' : ''}`}
-                            style={{ borderRadius: '0px' }}
-                          >
-                            <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                              <div className="w-7 h-7 flex items-center justify-center text-xs bg-[#0e111a] border border-[#222a3d] text-slate-400 group-hover:text-white transition flex-shrink-0">
-                                <PresetIcon className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-xs font-semibold text-slate-200 group-hover:text-white block truncate">
-                                  {preset.label}
-                                </span>
-                                <span className="text-[10.5px] text-slate-400 block truncate">
-                                  {preset.desc}
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleFeature(preset.label)}
-                              className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition border flex items-center gap-1 shrink-0 cursor-pointer text-white active:scale-95"
-                              style={{
-                                background: dynamicAccent,
-                                borderColor: dynamicAccentBorder,
-                                borderRadius: '0px'
-                              }}
-                              title={`Add ${preset.label}`}
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span>Add</span>
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })()}
-
-            </div>
-
-            {/* RIGHT COLUMN: Refine with Forge (Span 5) */}
-            <div className="lg:col-span-5 flex flex-col">
-              <div className="bg-[#10131d] border border-[#1f2433] p-5 shadow-xl flex flex-col h-full justify-between space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5" style={{ color: dynamicAccent }} />
-                      <h3 className="font-bold text-xs uppercase tracking-wider text-white font-mono">
-                        Refine with Forge
-                      </h3>
-                    </div>
-                    <span
-                      className="text-[10px] px-2 py-0.5 font-mono font-bold border"
-                      style={{
-                        background: dynamicAccentBg,
-                        color: dynamicAccent,
-                        borderColor: dynamicAccentBorder
-                      }}
-                    >
-                      AI ASSISTANT
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                    Click any refinement chip or type custom commands to instantly tailor your application build.
-                  </p>
-
-                  {/* Interactive Dynamic Prompt Chips (ZERO EMOJIS, CLEAN ICONS) */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {QUICK_PROMPTS.map(chip => {
-                      const isChipApplied = appliedPrompts.includes(chip)
-                      const isPodcastChip = chip.toLowerCase().includes('podcast') && localFeatures.some(f => f.toLowerCase().includes('podcast'))
-                      const isLiveChip = chip.toLowerCase().includes('live') && localFeatures.some(f => f.toLowerCase().includes('live') || f.toLowerCase().includes('ama'))
-                      const isStoreChip = chip.toLowerCase().includes('store') && localFeatures.some(f => f.toLowerCase().includes('store') || f.toLowerCase().includes('product'))
-                      const isMobileChip = chip.toLowerCase().includes('mobile') && viewMode === 'mobile'
-                      const isCommunityChip = chip.toLowerCase().includes('community') && activeTab === 'Community'
-                      const isPremiumChip = chip.toLowerCase().includes('premium') && theme === 'premium'
-                      const isMinimalistChip = chip.toLowerCase().includes('minimalist') && theme === 'minimalist'
-
-                      const isActive = isChipApplied || isPodcastChip || isLiveChip || isStoreChip || isMobileChip || isCommunityChip || isPremiumChip || isMinimalistChip
-
-                      // Dynamic clean icon
-                      let ChipIcon = Sparkles
-                      if (chip.toLowerCase().includes('community')) ChipIcon = Users
-                      else if (chip.toLowerCase().includes('minimalist')) ChipIcon = Layout
-                      else if (chip.toLowerCase().includes('mobile')) ChipIcon = Smartphone
-                      else if (chip.toLowerCase().includes('podcast')) ChipIcon = Volume2
-                      else if (chip.toLowerCase().includes('live')) ChipIcon = Radio
-                      else if (chip.toLowerCase().includes('store')) ChipIcon = ShoppingBag
-
-                      return (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => {
-                            if (isActive) {
-                              removeAppliedPrompt(chip)
-                            } else {
-                              handleChipClick(chip)
-                            }
-                          }}
-                          className="text-xs p-2.5 border transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-between gap-1.5 text-left"
-                          style={{
-                            background: isActive ? dynamicAccentBg : '#141824',
-                            borderColor: isActive ? dynamicAccentBorder : '#222a3d',
-                            color: isActive ? '#ffffff' : '#cbd5e1',
-                            fontWeight: isActive ? 600 : 400,
-                            borderRadius: '0px'
-                          }}
-                          title={isActive ? `Click to remove "${chip}"` : `Click to apply "${chip}"`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <ChipIcon className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? dynamicAccent : '#94a3b8' }} />
-                            <span className="truncate">{chip}</span>
-                          </div>
-                          {isActive ? (
-                            <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" style={{ color: dynamicAccent }} />
-                          ) : (
-                            <Plus className="w-3 h-3 shrink-0 text-slate-500" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {/* Input Area */}
-                  <div className="relative mb-3">
-                    <textarea
-                      rows={3}
-                      placeholder="Describe a change (e.g. Add podcast section, switch to mobile, customize layout...)"
-                      value={prompt}
-                      onChange={e => setPrompt(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          handlePromptSend()
-                        }
-                      }}
-                      className="w-full bg-[#141824] border border-[#222a3d] focus:border-slate-500 p-3 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none resize-none shadow-inner transition"
-                      style={{ borderRadius: '0px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handlePromptSend}
-                      disabled={!prompt.trim()}
-                      className="absolute right-3 bottom-4 p-2 transition border border-[#222a3d] bg-[#0d0f17] hover:bg-[#1a1f2e] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                      style={{ color: dynamicAccent, borderRadius: '0px' }}
-                      title="Send instruction"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Regenerate Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPrompt('Regenerate')}
-                    disabled={isRegenerating}
-                    className="w-full bg-[#141824] hover:bg-[#1c2233] font-bold py-2.5 text-xs transition flex items-center justify-center space-x-2 shadow-sm border border-[#222a3d] cursor-pointer active:scale-95 disabled:opacity-40"
-                    style={{
-                      color: dynamicAccent,
-                      borderRadius: '0px'
-                    }}
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                    <span>{isRegenerating ? 'Regenerating Component...' : 'Regenerate Component'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* Generous Bottom Clearance Spacer so fixed bottom bar never hides any content */}
-        <div className="h-44 w-full flex-shrink-0" aria-hidden="true" />
-      </main>
-
-      {/* Video Player Modal */}
+      {/* Video Modal if referenced from origin */}
       {playingVideo && (
         <VideoPlayerModal
           video={playingVideo}
           onClose={() => setPlayingVideo(null)}
           creatorData={creatorData}
           dynamicAccent={dynamicAccent}
-          isLight={isLight}
+          isLight={false}
         />
       )}
 
-      {/* Sticky Bottom Action Bar */}
-      <aside className="fixed bottom-0 left-0 right-0 z-40 bg-[#08090c]/95 border-t border-[#1f2433] py-3.5 px-4 sm:px-6 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-2 h-2" style={{ backgroundColor: dynamicAccent }} />
-            <span>Ready to ship <strong>{currentBlueprint?.name}</strong> for @{(creatorData?.handle || 'creator').replace('@', '')}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleBuild}
-            disabled={isRegenerating}
-            className="w-full sm:w-auto font-bold px-8 py-3 text-xs uppercase tracking-wider transition shadow-xl flex items-center justify-center space-x-2 group cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed text-white"
-            style={{
-              background: dynamicAccent,
-              borderRadius: '0px'
-            }}
-          >
-            <span>Looks good, build it</span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </button>
-        </div>
-      </aside>
-
-      {/* Floating Notification Toast */}
+      {/* Toast Notice */}
       {toastMessage && (
-        <div
-          className="fixed bottom-24 right-6 z-50 bg-[#161922] border px-4 py-3 rounded-none shadow-2xl flex items-center space-x-3 animate-fade-in"
-          style={{ borderColor: dynamicAccentBorder, borderRadius: '0px' }}
-        >
-          <div
-            className="w-7 h-7 rounded-none flex items-center justify-center text-xs shadow-sm"
-            style={{ background: dynamicAccent, color: '#ffffff' }}
-          >
-            <Check className="w-4 h-4 stroke-[3] text-white" />
-          </div>
-          <span className="text-xs font-medium text-white">{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-[120] px-4 py-2 bg-[#121624] border border-[#2b354d] text-white text-xs font-mono shadow-2xl flex items-center gap-2 animate-fade-in">
+          <span className="w-2 h-2 rounded-full" style={{ background: dynamicAccent }} />
+          <span>{toastMessage}</span>
         </div>
       )}
 

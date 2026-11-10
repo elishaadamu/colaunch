@@ -15,6 +15,11 @@ import {
   formatRevenueAmount,
   REVENUE_DISCLAIMER
 } from "../utils/subscriptionRevenue.js";
+import {
+  buildDeterministicLandingCopy,
+  validateLandingCopy,
+  LANDING_COPY_SCHEMA_VERSION
+} from "./landingCopy.js";
 
 // ── Key management ─────────────────────────────────────────────────────────────
 
@@ -7057,4 +7062,135 @@ Return ONLY a valid JSON object in this exact schema:
     }
   }
 }
+
+/**
+ * Generates conversion-focused SaaS demand-test landing page copy via AI.
+ * Strictly validated: falls back to deterministic copy on any validation failure.
+ */
+export async function generateLandingCopyAI(creatorData = {}, blueprint = {}, options = {}, signal = undefined) {
+  const deterministicFallback = buildDeterministicLandingCopy(creatorData, blueprint);
+  const name = blueprint?.name || creatorData?.productName || deterministicFallback.productName;
+  const toolSummary = blueprint?.tool_summary || blueprint?.toolSummary || blueprint?.description || deterministicFallback.subheadline;
+  const targetAudience = blueprint?.target_audience || blueprint?.targetAudience || deterministicFallback.targetAudience;
+  const price = clampPrice(blueprint?.monthly_price || blueprint?.monthlyPrice || deterministicFallback.monthlyPrice);
+  const featuresList = (Array.isArray(blueprint?.features) && blueprint.features.length > 0)
+    ? blueprint.features
+    : deterministicFallback.features.map(f => f.title);
+  const creatorHandle = creatorData?.handle || creatorData?.name || '@creator';
+
+  const tone = options.tone || 'professional'; // 'professional' | 'bold' | 'friendly'
+  const style = options.style || 'standard';   // 'concise' | 'standard'
+
+  const prompt = `You are a world-class conversion copywriter specializing in B2B/B2C SaaS subscription products.
+Write high-converting, honest demand-test landing page copy for this subscription software product:
+
+Product Name: "${name}"
+Tool Summary: "${toolSummary}"
+Target Audience: "${targetAudience}"
+Monthly Subscription Price: $${price}/month
+Approved Features: ${JSON.stringify(featuresList)}
+Creator: @${creatorHandle.replace(/^@/, '')}
+Desired Tone: ${tone} (${style === 'concise' ? 'punchy, short sentences' : 'clear, outcome-focused'})
+
+STRICT RULES (ANY VIOLATION WILL FAIL AUTOMATED AUDIT):
+1. The headline must be OUTCOME-FOCUSED (what the user gets/achieves, NOT just the product name).
+2. The subheadline must be 1 clear sentence explaining what the tool does.
+3. Problem section: provide 3 qualitative problem statements that this software solves. DO NOT use percentages like "39%" and DO NOT quote or invent customer names.
+4. How it works: exactly 3 sequential workflow steps (01, 02, 03).
+5. Features: write a 1-sentence benefit for EACH of the approved features: ${JSON.stringify(featuresList)}. DO NOT add new features that are not in this list.
+6. FAQ: 5 honest questions and answers (What is it, Who is it for, How much does it cost [$${price}/mo], When does it launch, How to get access). State honestly that early access opens once the waitlist cohort is reached.
+7. Tone must be grounded. NEVER invent ratings (e.g. "4.9/5"), testimonials, user counts (e.g. "10,000+ users"), press logos ("Forbes", "TechCrunch"), or false guarantees ("No hidden fees").
+8. Do NOT mention courses, video vaults, masterclasses, or digital downloads. This is an interactive SaaS software application.
+
+Return ONLY a single valid JSON object with this exact shape:
+{
+  "headline": "...",
+  "subheadline": "...",
+  "problemPoints": [
+    "problem statement 1",
+    "problem statement 2",
+    "problem statement 3"
+  ],
+  "howItWorks": [
+    { "step": "01", "title": "...", "description": "..." },
+    { "step": "02", "title": "...", "description": "..." },
+    { "step": "03", "title": "...", "description": "..." }
+  ],
+  "features": [
+    { "title": "Approved Feature Name", "description": "1-sentence benefit description" }
+  ],
+  "faq": [
+    { "question": "...", "answer": "..." }
+  ],
+  "cta": {
+    "headline": "Join the Early Waitlist for ${name}",
+    "subheadline": "Reserve early cohort access for $${price}/mo once live.",
+    "buttonText": "Join Waitlist — $${price}/mo"
+  }
+}`;
+
+  const system = `You write honest, conversion-optimized SaaS copy. You return strictly valid JSON with zero markdown wrappers.`;
+
+  try {
+    const data = await aiTextCall(prompt, system, 4096, signal, true);
+    let parsed = null;
+    if (typeof data === 'string') {
+      const cleaned = data.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+      parsed = JSON.parse(cleaned);
+    } else if (data && typeof data === 'object') {
+      parsed = data;
+    }
+
+    if (parsed) {
+      const candidate = {
+        schemaVersion: LANDING_COPY_SCHEMA_VERSION,
+        productName: name,
+        headline: parsed.headline || deterministicFallback.headline,
+        subheadline: parsed.subheadline || deterministicFallback.subheadline,
+        targetAudience,
+        monthlyPrice: price,
+        problemPoints: Array.isArray(parsed.problemPoints) && parsed.problemPoints.length >= 2
+          ? parsed.problemPoints.slice(0, 4)
+          : deterministicFallback.problemPoints,
+        howItWorks: Array.isArray(parsed.howItWorks) && parsed.howItWorks.length === 3
+          ? parsed.howItWorks
+          : deterministicFallback.howItWorks,
+        features: Array.isArray(parsed.features) && parsed.features.length > 0
+          ? parsed.features.slice(0, featuresList.length)
+          : deterministicFallback.features,
+        pricing: {
+          price,
+          period: '/mo',
+          title: 'Monthly Subscription',
+          included: featuresList,
+          ctaText: `Join Waitlist — $${price}/mo`,
+          cancelNote: 'Cancel anytime.',
+        },
+        creatorOrigin: {
+          tagline: `Co-created with @${creatorHandle.replace(/^@/, '')}`,
+          whyText: `Developed to address recurring audience challenges identified across @${creatorHandle.replace(/^@/, '')}'s channel.`,
+        },
+        faq: Array.isArray(parsed.faq) && parsed.faq.length >= 4
+          ? parsed.faq
+          : deterministicFallback.faq,
+        cta: {
+          headline: parsed.cta?.headline || deterministicFallback.cta.headline,
+          subheadline: parsed.cta?.subheadline || deterministicFallback.cta.subheadline,
+          buttonText: `Join Waitlist — $${price}/mo`,
+        },
+      };
+
+      if (validateLandingCopy(candidate, blueprint)) {
+        return candidate;
+      }
+      console.warn('[LandingCopy] AI copy failed validation rules. Falling back to deterministic copy.');
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    console.warn('[LandingCopy] AI copy generation notice, using deterministic fallback:', err);
+  }
+
+  return deterministicFallback;
+}
+
 

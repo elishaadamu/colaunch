@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { startScrape } from '../../services/scraper'
 import CoLaunchLogo from '../ui/CoLaunchLogo'
+import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 
 export function TikTokIcon({ className = 'w-4 h-4' }) {
   return (
@@ -123,7 +124,7 @@ export default function CreatorLink() {
       if (ts) {
         return (Date.now() - parseInt(ts, 10)) > 30 * 60 * 1000
       }
-    } catch {}
+    } catch { }
     return false
   }
 
@@ -158,7 +159,7 @@ export default function CreatorLink() {
             handleClear()
           }
         }
-      } catch {}
+      } catch { }
     }
 
     checkExpiry()
@@ -264,7 +265,7 @@ export default function CreatorLink() {
     setScrapeTelemetryLogs([])
     try {
       localStorage.removeItem('forge_creator_timestamp')
-    } catch {}
+    } catch { }
     if (resetCreator) {
       resetCreator()
     }
@@ -347,14 +348,14 @@ export default function CreatorLink() {
       setTimeout(() => {
         setIsAnalyzing(false)
         if (winner && winner.handle) {
-          const finalPayload = { 
-            ...winner, 
+          const finalPayload = {
+            ...winner,
             url: cleanUrl,
-            platform: winner.platform || platformId 
+            platform: winner.platform || platformId
           }
           try {
             localStorage.setItem('forge_creator_timestamp', String(Date.now()))
-          } catch {}
+          } catch { }
           updateCreator(finalPayload)
           setScrapedPreview(finalPayload)
           setShowPreview(true)
@@ -452,21 +453,7 @@ export default function CreatorLink() {
           )}
 
           <div className="flex items-center gap-3 bg-[#111317]/70 border border-[#1f242c] px-3.5 py-1.5 rounded-none">
-            <span className="text-[11px] font-semibold text-neutral-400 tracking-wider uppercase font-mono mr-1">
-              <span className="text-neutral-200">01</span> / 08
-            </span>
-            <div className="flex items-center gap-1.5">
-              {/* Active pill */}
-              <span className="w-5 h-1.5 rounded-none bg-[#c81e3c] shadow-sm shadow-[#c81e3c]/50"></span>
-              {/* Inactive dots */}
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-              <span className="w-1.5 h-1.5 rounded-none bg-neutral-700"></span>
-            </div>
+            <OnboardingStepIndicator currentStep="creator-link" showCounter={true} showOptions={true} />
           </div>
         </div>
       </header>
