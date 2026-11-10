@@ -2379,6 +2379,68 @@ export function calculateFollowerRevenueRange(followers = 0, category = 'tool', 
 }
 
 /**
+ * Calculates a creator's realistic upload cadence from recent video timestamps.
+ * If timestamps are missing or sparse, returns an accurate qualitative cadence
+ * rather than hardcoded fake numbers.
+ */
+export function calculateUploadCadence(creatorData) {
+  const posts = Array.isArray(creatorData?.recentPosts)
+    ? creatorData.recentPosts
+    : Array.isArray(creatorData?.videos)
+    ? creatorData.videos
+    : [];
+  const platform = String(creatorData?.platform || 'youtube').toLowerCase().trim();
+  const unit = platform === 'youtube' ? 'vids' : 'posts';
+
+  const timestamps = posts
+    .map(p => {
+      const d = p?.publishedAt || p?.date || p?.uploadDate;
+      if (!d) return null;
+      const t = new Date(d).getTime();
+      return isNaN(t) ? null : t;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b - a);
+
+  if (timestamps.length >= 2) {
+    const spanDays = (timestamps[0] - timestamps[timestamps.length - 1]) / (1000 * 60 * 60 * 24);
+    if (spanDays >= 7) {
+      const weeks = spanDays / 7;
+      const ratePerWeek = (timestamps.length - 1) / weeks;
+      if (ratePerWeek >= 1.5) {
+        return {
+          frequency: `${ratePerWeek.toFixed(1)} ${unit} / wk`,
+          cadenceLabel: 'Calculated from recent uploads',
+        };
+      } else if (ratePerWeek >= 0.8) {
+        return {
+          frequency: `~1 ${unit} / wk`,
+          cadenceLabel: 'Weekly release schedule',
+        };
+      } else {
+        const ratePerMonth = ratePerWeek * 4.33;
+        if (ratePerMonth >= 0.8) {
+          return {
+            frequency: `${Math.round(ratePerMonth)} ${unit} / mo`,
+            cadenceLabel: 'Monthly release cadence',
+          };
+        } else {
+          return {
+            frequency: 'Periodic releases',
+            cadenceLabel: 'Project-based releases',
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    frequency: 'Periodic releases',
+    cadenceLabel: 'Based on catalog activity',
+  };
+}
+
+/**
  * Dynamically computes a realistic, niche-tailored 10-module audience intelligence dataset
  * from creator signals, real video uploads, and audience comments.
  */
@@ -2780,13 +2842,7 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
   }));
 
   const creatorPlatform = String(creatorData?.platform || 'youtube').toLowerCase().trim();
-  const uploadFrequency = creatorPlatform === 'youtube'
-    ? '2.3 vids / wk'
-    : creatorPlatform === 'instagram'
-    ? '3.5 posts / wk'
-    : creatorPlatform === 'tiktok'
-    ? '4.0 vids / wk'
-    : '3.0 posts / wk';
+  const cadence = calculateUploadCadence(creatorData);
 
   const retentionAnalysis = creatorPlatform === 'youtube'
     ? `Videos in @${name}'s catalog demonstrate an evergreen playback tail: 64% of total views originate from searches and repeat streams, confirming sustained audience reliance.`
@@ -2801,7 +2857,8 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
       subscribers: fmtFollowers,
       avg_views: avgViewsStr,
       engagement_rate: `${eng}%`,
-      upload_frequency: uploadFrequency,
+      upload_frequency: cadence.frequency,
+      upload_cadence_label: cadence.cadenceLabel,
       growth_rate_yoy: growthRate,
       retention_analysis: retentionAnalysis,
     },
@@ -2913,8 +2970,8 @@ Return ONLY a valid JSON object matching this exact schema:
     "subscribers": "${followers}",
     "avg_views": "Calculated view velocity (e.g. 52K views)",
     "engagement_rate": "${engRate}%",
-    "upload_frequency": "Calculated frequency (e.g. 2.1 vids/wk)",
-    "growth_rate_yoy": "+18.4% YoY Growth",
+    "upload_frequency": "${dynamicFallback.telemetry.upload_frequency}",
+    "upload_cadence_label": "${dynamicFallback.telemetry.upload_cadence_label}",
     "retention_analysis": "2-sentence specific retention behavior analysis"
   },
   "pain_points": [
@@ -3100,6 +3157,14 @@ Return ONLY a valid JSON object matching this exact schema:
         if (isHallucinatedQuote && dynamicFallback.purchasing?.buyer_quote) {
           parsed.purchasing.buyer_quote = dynamicFallback.purchasing.buyer_quote;
         }
+      }
+
+      if (parsed.telemetry && typeof parsed.telemetry === 'object') {
+        const cadence = calculateUploadCadence(creatorData);
+        if (!parsed.telemetry.upload_frequency || parsed.telemetry.upload_frequency.includes('2.1') || parsed.telemetry.upload_frequency.includes('2.3')) {
+          parsed.telemetry.upload_frequency = cadence.frequency;
+        }
+        parsed.telemetry.upload_cadence_label = cadence.cadenceLabel;
       }
 
       if (Array.isArray(parsed.pain_points)) {

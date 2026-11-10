@@ -447,6 +447,7 @@ async function _scrapeYouTubeApify(rawUrl, token) {
       views:     fmt(parseBigNum(v.viewCount    || v.views    || 0)),
       likes:     fmt(parseBigNum(v.likeCount    || v.likes    || 0)),
       comments:  fmt(parseBigNum(v.commentCount || v.comments || 0)),
+      publishedAt: v.uploadDate || v.publishedAt || v.publishedTime || v.date || '',
       hue:       0,
     })),
   }
@@ -542,6 +543,7 @@ async function _scrapeYouTubeDataAPI(rawUrl, key) {
         views:     fmt(vs.viewCount),
         likes:     fmt(vs.likeCount),
         comments:  fmt(vs.commentCount),
+        publishedAt: vSnip.publishedAt || v.snippet?.publishedAt || '',
         hue:       0,
       }
     })
