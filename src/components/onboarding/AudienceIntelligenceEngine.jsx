@@ -37,7 +37,9 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
   const handleClean = (creatorData?.handle || creatorName || 'creator').replace('@', '').toLowerCase()
   const niche = creatorData?.niche || 'Software & Digital Creation'
-  const platform = creatorData?.platform || 'youtube'
+  const platform = (creatorData?.platform || 'youtube').toLowerCase()
+  const intelCacheKey = `forge_audience_intel_${platform}_${handleClean}`
+  const commentsCacheKey = `forge_creator_comments_${platform}_${handleClean}`
   const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || creatorData?.subscriberCount || 0)
   const engagementRate = parseFloat(creatorData?.engagementRate) || null
   const productName = activeBlueprint?.name || creatorData?.productName || 'Subscription Software Tool'
@@ -65,16 +67,20 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
   const [intelligence, setIntelligence] = useState(() => {
     // 1. Check creatorData.audienceIntelligence first
     if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
-      return creatorData.audienceIntelligence
+      if (!creatorData.audienceIntelligence.platform || creatorData.audienceIntelligence.platform === platform) {
+        return creatorData.audienceIntelligence
+      }
     }
 
-    // 2. Check saved localStorage cache for this creator (must match schemaVersion: 3)
+    // 2. Check saved localStorage cache for this creator & platform (must match schemaVersion: 3)
     try {
-      const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+      const cached = localStorage.getItem(intelCacheKey) || localStorage.getItem(`forge_audience_intel_${handleClean}`)
       if (cached) {
         const parsed = JSON.parse(cached)
         if (parsed && parsed.schemaVersion === 3 && parsed.telemetry && parsed.pain_points) {
-          return parsed
+          if (!parsed.platform || parsed.platform === platform) {
+            return parsed
+          }
         }
       }
     } catch {}
@@ -82,7 +88,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     // 3. Fallback: dynamic intelligence computed from signals
     let storedComments = []
     try {
-      const c1 = localStorage.getItem(`forge_creator_comments_${handleClean}`)
+      const c1 = localStorage.getItem(commentsCacheKey) || localStorage.getItem(`forge_creator_comments_${handleClean}`)
       if (c1) storedComments = JSON.parse(c1)
     } catch {}
     if (!storedComments.length && Array.isArray(creatorData?.comments)) {
@@ -100,7 +106,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
     const dynamic = getDynamicAudienceIntelligence(creatorData, storedComments, storedSearch)
     try {
-      localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(dynamic))
+      localStorage.setItem(intelCacheKey, JSON.stringify({ ...dynamic, platform }))
     } catch {}
     return dynamic
   })
@@ -115,18 +121,22 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     // If NOT an explicit force refresh, check if valid data is already saved in localStorage or creatorData
     if (!forceRefresh) {
       if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
-        setIntelligence(creatorData.audienceIntelligence)
-        setIsAnalyzing(false)
-        return
+        if (!creatorData.audienceIntelligence.platform || creatorData.audienceIntelligence.platform === platform) {
+          setIntelligence(creatorData.audienceIntelligence)
+          setIsAnalyzing(false)
+          return
+        }
       }
       try {
-        const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+        const cached = localStorage.getItem(intelCacheKey) || localStorage.getItem(`forge_audience_intel_${handleClean}`)
         if (cached) {
           const parsed = JSON.parse(cached)
           if (parsed && parsed.schemaVersion === 3 && parsed.telemetry && parsed.pain_points) {
-            setIntelligence(parsed)
-            setIsAnalyzing(false)
-            return
+            if (!parsed.platform || parsed.platform === platform) {
+              setIntelligence(parsed)
+              setIsAnalyzing(false)
+              return
+            }
           }
         }
       } catch {}
@@ -198,38 +208,41 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
           synthesized.requests = cleanReqs.slice(0, 3)
         }
 
-        setIntelligence(synthesized)
+        const payloadToSave = { ...synthesized, platform }
+        setIntelligence(payloadToSave)
         setLastAnalyzedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         try {
-          localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(synthesized))
+          localStorage.setItem(intelCacheKey, JSON.stringify(payloadToSave))
         } catch {}
       }
     } catch (err) {
       console.warn('[Forge] Intelligence pipeline error, applying verified dynamic dataset:', err)
       const dynamic = getDynamicAudienceIntelligence(creatorData)
-      setIntelligence(dynamic)
+      setIntelligence({ ...dynamic, platform })
     } finally {
       setIsAnalyzing(false)
       setAnalysisStatus('')
     }
   }
 
-  // Auto-run pipeline on mount ONLY if not already saved in localStorage for this creator
+  // Auto-run pipeline on mount ONLY if not already saved in localStorage for this creator & platform
   useEffect(() => {
     if (defaultSearchQuery && (!googleQuery || googleQuery === 'undefined software tools pricing' || (googleQuery.includes('Worship chord') && (handleClean.includes('marques') || handleClean.includes('mkbhd'))))) {
       setGoogleQuery(defaultSearchQuery)
     }
 
-    // Check if 10 modules already saved in localStorage or creatorData
+    // Check if 10 modules already saved in localStorage or creatorData for this platform
     let hasSaved = false
     if (creatorData?.audienceIntelligence?.telemetry && creatorData?.audienceIntelligence?.pain_points) {
-      hasSaved = true
+      if (!creatorData.audienceIntelligence.platform || creatorData.audienceIntelligence.platform === platform) {
+        hasSaved = true
+      }
     }
     try {
-      const cached = localStorage.getItem(`forge_audience_intel_${handleClean}`)
+      const cached = localStorage.getItem(intelCacheKey) || localStorage.getItem(`forge_audience_intel_${handleClean}`)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (parsed && parsed.telemetry && parsed.pain_points) {
+        if (parsed && parsed.telemetry && parsed.pain_points && (!parsed.platform || parsed.platform === platform)) {
           hasSaved = true
         }
       }
@@ -240,16 +253,16 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
     } else {
       setIsAnalyzing(false)
     }
-  }, [handleClean, defaultSearchQuery])
+  }, [handleClean, platform, defaultSearchQuery])
 
   // Ensure any intelligence updates are immediately persisted to localStorage
   useEffect(() => {
     if (intelligence && intelligence.telemetry && intelligence.pain_points && handleClean) {
       try {
-        localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(intelligence))
+        localStorage.setItem(intelCacheKey, JSON.stringify({ ...intelligence, platform }))
       } catch {}
     }
-  }, [intelligence, handleClean])
+  }, [intelligence, handleClean, platform])
 
   // Trigger manual market competitor search
   const handleRunApifyGoogleSearch = async () => {
@@ -275,7 +288,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
             competitors: newComps.length >= 3 ? newComps : prev.competitors
           }
           try {
-            localStorage.setItem(`forge_audience_intel_${handleClean}`, JSON.stringify(updated))
+            localStorage.setItem(intelCacheKey, JSON.stringify({ ...updated, platform }))
           } catch {}
           return updated
         })
@@ -419,7 +432,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3.5 bg-[#111624] rounded-none border-0">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Subscribers / Followers</span>
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">{platform === 'youtube' ? 'Subscribers' : 'Followers'}</span>
                 <span className="text-xl font-extrabold text-white mt-1 block">{intel.telemetry.subscribers}</span>
                 <span className="text-[10px] text-emerald-400 flex items-center gap-0.5 mt-0.5">
                   <TrendingUp size={11} /> {intel.telemetry.growth_rate_yoy}
@@ -429,7 +442,7 @@ export default function AudienceIntelligenceEngine({ creatorData, activeBlueprin
               <div className="p-3.5 bg-[#111624] rounded-none border-0">
                 <span className="text-[10px] uppercase font-mono text-slate-400 block">Average View Velocity</span>
                 <span className="text-xl font-extrabold text-white mt-1 block">{intel.telemetry.avg_views}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Per primary channel release</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">{platform === 'youtube' ? 'Per primary channel release' : 'Per primary media post / reel'}</span>
               </div>
 
               <div className="p-3.5 bg-[#111624] rounded-none border-0">

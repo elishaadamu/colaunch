@@ -1037,10 +1037,14 @@ export default function App() {
       const newH = (data?.handle || '').toLowerCase().replace(/^@/, '').trim()
       const prevUrl = (prev?.url || '').toLowerCase().trim()
       const newUrl = (data?.url || '').toLowerCase().trim()
+      const prevPlatform = (prev?.platform || '').toLowerCase().trim()
+      const newPlatform = (data?.platform || '').toLowerCase().trim()
 
+      const isDifferentPlatform = Boolean(prevPlatform && newPlatform && prevPlatform !== newPlatform)
       const isDifferentCreator = Boolean(
         (prevH && newH && prevH !== newH) ||
-        (prevUrl && newUrl && prevUrl !== newUrl)
+        (prevUrl && newUrl && prevUrl !== newUrl) ||
+        isDifferentPlatform
       )
 
       if (isDifferentCreator) {
@@ -1050,6 +1054,9 @@ export default function App() {
             if (k && (
               k.startsWith('forge_calendar_') ||
               k.startsWith('forge_campaign_posts_') ||
+              k.startsWith('forge_audience_intel_') ||
+              k.startsWith('forge_creator_comments_') ||
+              k.startsWith('forge_creator_videos_') ||
               k.includes('_launch_pack') ||
               k.includes('_launch_image') ||
               k.includes('_studio_')
@@ -1078,6 +1085,9 @@ export default function App() {
         blueprint: null,
         productName: '',
         buildItems: [],
+        audienceIntelligence: null,
+        recommendations: null,
+        id: null,
       } : (prev || {})
 
       const updated = { ...base, ...data }

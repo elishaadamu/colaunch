@@ -34,8 +34,9 @@ export function TikTokIcon({ className = 'w-4 h-4' }) {
 
 const PLATFORMS = [
   { id: 'youtube', label: 'YouTube', icon: Youtube, color: 'text-red-500', patterns: ['youtube.com', 'youtu.be'] },
-  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-500', patterns: ['instagram.com'] },
+  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-500', patterns: ['instagram.com', 'instagr.am'] },
   { id: 'tiktok', label: 'TikTok', icon: TikTokIcon, color: 'text-teal-400', patterns: ['tiktok.com'] },
+  { id: 'twitter', label: 'X / Twitter', icon: Globe, color: 'text-blue-400', patterns: ['twitter.com', 'x.com'] },
 ]
 
 function detectPlatform(url) {
@@ -346,7 +347,11 @@ export default function CreatorLink() {
       setTimeout(() => {
         setIsAnalyzing(false)
         if (winner && winner.handle) {
-          const finalPayload = { ...winner, url: cleanUrl }
+          const finalPayload = { 
+            ...winner, 
+            url: cleanUrl,
+            platform: winner.platform || platformId 
+          }
           try {
             localStorage.setItem('forge_creator_timestamp', String(Date.now()))
           } catch {}
@@ -360,6 +365,18 @@ export default function CreatorLink() {
             next()
           }, 700)
         } else {
+          // Scrape failed or timed out: initialize clean creator on the chosen platform so previous creator never bleeds through
+          const fallbackPayload = {
+            url: cleanUrl,
+            handle: currentHandle,
+            platform: platformId,
+            name: currentHandle.replace('@', ''),
+            followers: 0,
+            recentPosts: [],
+            audienceIntelligence: null,
+            recommendations: null
+          }
+          updateCreator(fallbackPayload)
           next()
         }
       }, 400)
@@ -808,18 +825,39 @@ export default function CreatorLink() {
 
           {/* SUPPORTED PLATFORMS FOOTER */}
           <div className="w-full mt-10 pt-6 border-t border-[#1f242c]/60 flex items-center justify-center gap-6 text-sm text-neutral-500">
-            <div className="flex items-center gap-1.5 hover:text-neutral-300 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                const p = PLATFORMS.find(x => x.id === 'youtube')
+                setPlatform(p)
+              }}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer bg-transparent border-0 p-0 ${platform?.id === 'youtube' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+            >
               <Youtube className="w-3.5 h-3.5 text-red-500" />
               <span className="text-xs font-medium">YouTube</span>
-            </div>
-            <div className="flex items-center gap-1.5 hover:text-neutral-300 transition-colors">
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const p = PLATFORMS.find(x => x.id === 'tiktok')
+                setPlatform(p)
+              }}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer bg-transparent border-0 p-0 ${platform?.id === 'tiktok' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+            >
               <TikTokIcon className="w-3.5 h-3.5 text-teal-400" />
               <span className="text-xs font-medium">TikTok</span>
-            </div>
-            <div className="flex items-center gap-1.5 hover:text-neutral-300 transition-colors">
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const p = PLATFORMS.find(x => x.id === 'instagram')
+                setPlatform(p)
+              }}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer bg-transparent border-0 p-0 ${platform?.id === 'instagram' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+            >
               <Instagram className="w-3.5 h-3.5 text-pink-500" />
               <span className="text-xs font-medium">Instagram</span>
-            </div>
+            </button>
           </div>
 
         </div>

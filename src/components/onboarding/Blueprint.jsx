@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import { 
   ArrowRight, ArrowLeft, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram, 
-  CheckCircle, CheckCircle2, Play, Lock, Check, ChevronDown, HelpCircle, Info, Video, Compass, MoreHorizontal,
+  CheckCircle, CheckCircle2, Play, Lock, Check, ChevronDown, HelpCircle, Info, Video, Camera, Compass, MoreHorizontal,
   Hammer, Trash2, MessageSquare, Heart, Sparkles, Layers, Sliders, DollarSign, Plus
 } from 'lucide-react'
 import { XLogo } from '../launch/PostVisualMockup'
@@ -1351,14 +1351,26 @@ export default function Blueprint() {
                         {creatorData.handle ? (creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`) : (creatorData.name || '@creator')}
                       </h1>
                       <span 
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none text-[11px] font-bold uppercase tracking-wider font-mono"
                         style={{
-                          background: `rgba(${creatorData.platform === 'youtube' ? '239,68,68' : accent.rgb}, 0.1)`,
-                          color: creatorData.platform === 'youtube' ? '#f87171' : accent.color,
-                          border: `1px solid rgba(${creatorData.platform === 'youtube' ? '239,68,68' : accent.rgb}, 0.2)`
+                          background: creatorData.platform === 'youtube'
+                            ? 'rgba(239,68,68, 0.12)'
+                            : creatorData.platform === 'instagram'
+                            ? 'rgba(225,48,108, 0.15)'
+                            : creatorData.platform === 'tiktok'
+                            ? 'rgba(20,184,166, 0.12)'
+                            : `rgba(${accent.rgb}, 0.12)`,
+                          color: creatorData.platform === 'youtube'
+                            ? '#f87171'
+                            : creatorData.platform === 'instagram'
+                            ? '#f472b6'
+                            : creatorData.platform === 'tiktok'
+                            ? '#2dd4bf'
+                            : accent.color,
+                          border: `1px solid ${creatorData.platform === 'youtube' ? 'rgba(239,68,68, 0.25)' : creatorData.platform === 'instagram' ? 'rgba(225,48,108, 0.3)' : 'rgba(255,255,255,0.1)'}`
                         }}
                       >
-                        {PLATFORM_LABELS[creatorData.platform] || 'YouTube'}
+                        {PLATFORM_LABELS[creatorData.platform] || (creatorData.platform ? creatorData.platform.toUpperCase() : 'Creator')}
                       </span>
                     </div>
                     <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl leading-relaxed">
@@ -1400,13 +1412,17 @@ export default function Blueprint() {
               </div>
             </div>
 
-            {/* Latest Videos Carousel (Only if real posts exist) */}
+            {/* Latest Media Carousel (Only if real posts exist) */}
             {displayPosts.length > 0 && (
               <div className="space-y-3" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.1s' }}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Video className="w-3.5 h-3.5 text-slate-400" />
-                    Latest Videos
+                    {creatorData.platform === 'youtube' ? (
+                      <Video className="w-3.5 h-3.5 text-slate-400" />
+                    ) : (
+                      <Camera className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                    {creatorData.platform === 'youtube' ? 'Latest Videos' : 'Latest Posts'}
                   </span>
                   <span className="text-xs text-slate-400">Audience affinity benchmark</span>
                 </div>

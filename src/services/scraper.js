@@ -166,6 +166,7 @@ let _isPending = false
 export function startScrape(url, platform) {
   _isPending = true
   _scrapePromise = _doScrape(url, platform).then(data => {
+    _isPending = false
     if (data) {
       const rawAv = data.avatarUrl || data.avatar_url || data.avatar || ''
       if (rawAv) {
@@ -284,7 +285,8 @@ async function _doScrape(url, platform) {
   const cleanNiche = rawNiche ? (rawNiche.charAt(0).toUpperCase() + rawNiche.slice(1)) : 'Entertainment'
 
   let rawPosts = scraped.recent_posts || scraped.recentPosts || scraped.videos || []
-  if ((!rawPosts || rawPosts.length === 0) && (platform === 'youtube' || scraped.platform === 'youtube')) {
+  const resolvedPlatform = (scraped.platform || platform || 'youtube').toLowerCase()
+  if ((!rawPosts || rawPosts.length === 0) && resolvedPlatform === 'youtube') {
     try {
       rawPosts = await fetchCreatorYouTubeVideos(url || handle, 6)
     } catch {}
@@ -292,10 +294,11 @@ async function _doScrape(url, platform) {
 
   let channelComments = []
   try {
-    channelComments = await fetchCreatorComments(handle || url, platform, 10)
+    channelComments = await fetchCreatorComments(handle || url, resolvedPlatform, 10)
   } catch {}
 
   return {
+    url: url || '',
     platform: scraped.platform || platform,
     handle: scraped.handle?.startsWith('@') ? scraped.handle : `@${scraped.handle || handle}`,
     name: scraped.name || scraped.display_name || scraped.handle?.replace('@', '') || 'Creator',
@@ -1114,7 +1117,8 @@ export async function fetchYouTubeVideoComments(videoIdOrUrl, limit = 8) {
 export async function fetchCreatorComments(handleOrId, platform = 'youtube', limit = 10) {
   if (!handleOrId) return []
   const clean = String(handleOrId).replace(/^@/, '').trim()
-  const cacheKey = `forge_creator_comments_${clean}`
+  const cleanPlatform = String(platform || 'youtube').toLowerCase().trim()
+  const cacheKey = `forge_creator_comments_${cleanPlatform}_${clean}`
 
   try {
     const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
@@ -1134,15 +1138,17 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
         const creatorRaw = localStorage.getItem('forge_creator_data')
         if (creatorRaw) {
           const cd = JSON.parse(creatorRaw)
-          if (Array.isArray(cd.recentPosts) && cd.recentPosts.length > 0) {
+          const cdPlatform = String(cd.platform || 'youtube').toLowerCase()
+          if (cdPlatform === cleanPlatform && Array.isArray(cd.recentPosts) && cd.recentPosts.length > 0) {
             targetUrls = cd.recentPosts
-              .map(p => p.url || (p.videoId ? `https://www.youtube.com/watch?v=${p.videoId}` : null))
+              .map(p => p.url || (p.videoId && cleanPlatform === 'youtube' ? `https://www.youtube.com/watch?v=${p.videoId}` : null))
               .filter(Boolean)
           }
         }
       } catch {}
 
-      if (targetUrls.length === 0) {
+      // ONLY query YouTube videos and comments if platform is strictly YouTube
+      if (targetUrls.length === 0 && cleanPlatform === 'youtube') {
         try {
           const vids = await fetchCreatorYouTubeVideos(clean, 10)
           if (Array.isArray(vids) && vids.length > 0) {
@@ -1151,7 +1157,7 @@ export async function fetchCreatorComments(handleOrId, platform = 'youtube', lim
         } catch {}
       }
 
-      if (targetUrls.length > 0) {
+      if (targetUrls.length > 0 && cleanPlatform === 'youtube') {
         const startUrls = targetUrls.slice(0, 10).map(url => ({ url }))
         const apifyRes = await apifyRunSync(
           'streamers~youtube-comments-scraper',

@@ -289,10 +289,12 @@ export default function Analyzing() {
       }
 
       if (synthesized) {
+        const payloadToSave = { ...synthesized, platform }
         try {
-          localStorage.setItem(`forge_audience_intel_${cleanHandle}`, JSON.stringify(synthesized))
+          localStorage.setItem(`forge_audience_intel_${platform}_${cleanHandle}`, JSON.stringify(payloadToSave))
+          localStorage.setItem(`forge_audience_intel_${cleanHandle}`, JSON.stringify(payloadToSave))
         } catch {}
-        updateCreator({ audienceIntelligence: synthesized })
+        updateCreator({ audienceIntelligence: payloadToSave })
       }
     } catch (e) {
       console.warn('[Forge] 10-point analysis notice:', e)

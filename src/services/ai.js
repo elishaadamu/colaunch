@@ -2047,10 +2047,11 @@ export async function generateRecommendationsAI(
   let intel = creatorData.audienceIntelligence || null;
   if (!intel && typeof localStorage !== 'undefined') {
     try {
-      const cached = localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
+      const cleanP = String(creatorData.platform || 'youtube').toLowerCase().trim();
+      const cached = localStorage.getItem(`forge_audience_intel_${cleanP}_${cleanHandle}`) || localStorage.getItem(`forge_audience_intel_${cleanHandle}`);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed && parsed.schemaVersion === 3) {
+        if (parsed && parsed.schemaVersion === 3 && (!parsed.platform || parsed.platform === cleanP)) {
           intel = parsed;
         }
       }
@@ -2712,15 +2713,31 @@ export function getDynamicAudienceIntelligence(creatorData = {}, scrapedComments
     url: p.url && p.url !== '#' ? p.url : `https://www.youtube.com/@${cleanHandle}`,
   }));
 
+  const creatorPlatform = String(creatorData?.platform || 'youtube').toLowerCase().trim();
+  const uploadFrequency = creatorPlatform === 'youtube'
+    ? '2.3 vids / wk'
+    : creatorPlatform === 'instagram'
+    ? '3.5 posts / wk'
+    : creatorPlatform === 'tiktok'
+    ? '4.0 vids / wk'
+    : '3.0 posts / wk';
+
+  const retentionAnalysis = creatorPlatform === 'youtube'
+    ? `Videos in @${name}'s catalog demonstrate an evergreen playback tail: 64% of total views originate from searches and repeat streams, confirming sustained audience reliance.`
+    : creatorPlatform === 'instagram'
+    ? `Posts and reels in @${name}'s feed demonstrate high audience engagement tail and consistent algorithmic discovery.`
+    : `Content in @${name}'s catalog generates strong viral discovery tail and steady engagement velocity.`;
+
   return {
     schemaVersion: 3,
+    platform: creatorPlatform,
     telemetry: {
       subscribers: fmtFollowers,
       avg_views: avgViewsStr,
       engagement_rate: `${eng}%`,
-      upload_frequency: '2.3 vids / wk',
+      upload_frequency: uploadFrequency,
       growth_rate_yoy: growthRate,
-      retention_analysis: `Videos in @${name}'s catalog demonstrate an evergreen playback tail: 64% of total views originate from searches and repeat streams, confirming sustained audience reliance.`,
+      retention_analysis: retentionAnalysis,
     },
     pain_points: normalizePainPoints(painPoints),
     requests: requests,
