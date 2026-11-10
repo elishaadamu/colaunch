@@ -1346,7 +1346,7 @@ function mapCalendarResult(result) {
   return result.map(day => ({
     day: day.day,
     posts: (day.posts || []).map(post => ({
-      id: `post-gen-${idCounter++}`,
+      id: post.id || `post-gen-${idCounter++}`,
       type: post.type || 'post',
       label: post.title || 'Untitled Post',
       title: post.title || 'Untitled Post',
@@ -1631,11 +1631,17 @@ export default function Marketing({ chatOpen: propChatOpen, setActiveTab: propSe
       `forge_calendar_${h}_launch_w0`,
       `forge_calendar_${h.toLowerCase()}_launch_w0`,
       `forge_calendar_${hClean}_launch_w0`,
-      `forge_calendar_${hClean.toLowerCase()}_launch_w0`
+      `forge_calendar_${hClean.toLowerCase()}_launch_w0`,
+      `forge_calendar_@${hClean}_launch_w0`,
+      `forge_calendar_@${hClean.toLowerCase()}_launch_w0`
     ]
     keys.forEach(k => {
       try { localStorage.setItem(k, JSON.stringify(rawCal)) } catch (_) {}
     })
+    try {
+      localStorage.removeItem(`forge_campaign_posts_${hClean}`)
+      localStorage.removeItem(`forge_campaign_posts_${hClean.toLowerCase()}`)
+    } catch (_) {}
     window.dispatchEvent(new CustomEvent('forge_calendar_updated', { detail: { source: 'Marketing' } }))
   }
 

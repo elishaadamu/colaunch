@@ -343,8 +343,6 @@ function generateWeekCampaignPosts(productName, offset = 0, creatorData = {}) {
     const d = new Date(weekData.monday)
     d.setDate(weekData.monday.getDate() + t.dayIndex)
     const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    // Alternate high-impact scheduled pipeline posts (e.g. Monday, Wednesday, Friday)
-    const isScheduledByDefault = (t.dayIndex === 0 || t.dayIndex === 2 || t.dayIndex === 4) && (offset >= 0 && offset <= 2)
 
     return {
       id: `post-gen-${offset}-${idx}-${d.getTime()}`,
@@ -359,8 +357,8 @@ function generateWeekCampaignPosts(productName, offset = 0, creatorData = {}) {
       strategy: t.strategy,
       title: t.title,
       caption: t.caption,
-      status: isScheduledByDefault ? 'Scheduled' : 'Draft',
-      scheduledAt: isScheduledByDefault ? `${dateKey}T${t.time}` : null,
+      status: 'Draft',
+      scheduledAt: null,
       time: t.time,
       imageUrl: null
     }
@@ -420,18 +418,18 @@ function generateTailoredCaption(post, creatorData, productName) {
   return `${title}\n\nExcited to share ${prod} with you today! Check our main link for full details.`
 }
 
-// Tailored fallback week generator (matches creator niche & product)
+// Tailored fallback week generator (matches creator niche & product - 100% synced with Marketing Launch Plan)
 function buildTailoredFallbackWeek(creatorData) {
   const name = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@/, '')
   const prod = creatorData?.productName || `${name} Launchpad`
   const niche = creatorData?.niche || 'Digital Content'
   return [
     { day: 'Mon', posts: [
-      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'scheduled' },
+      { id: 1, type: 'Video', title: `Official Reveal: Inside the New ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
       { id: 2, type: 'Reel', title: `The Biggest Announcement of the Year: ${prod}`, platform: 'Instagram', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Tue', posts: [
-      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'scheduled' },
+      { id: 3, type: 'Shorts', title: `3 Things You Can Do Today Inside ${prod}`, platform: 'YouTube', theme: 'launch', status: 'draft' },
       { id: 4, type: 'Post', title: `Behind The Scenes: Why We Built ${prod} For Our Community`, platform: 'Instagram', theme: 'value', status: 'draft' }
     ]},
     { day: 'Wed', posts: [
@@ -439,11 +437,11 @@ function buildTailoredFallbackWeek(creatorData) {
       { id: 6, type: 'Thread', title: `My Journey Building ${prod} for ${name}'s Audience`, platform: 'Twitter', theme: 'story', status: 'draft' }
     ]},
     { day: 'Thu', posts: [
-      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'scheduled' },
+      { id: 7, type: 'Community', title: `What feature should we prioritize next in ${prod}? Vote below!`, platform: 'YouTube', theme: 'community', status: 'draft' },
       { id: 8, type: 'Email', title: `IT'S LIVE! The ${prod} VIP Early Access`, platform: 'Email', theme: 'launch', status: 'draft' }
     ]},
     { day: 'Fri', posts: [
-      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'scheduled' },
+      { id: 9, type: 'Reel', title: `Live Demo: How Members Are Using ${prod}`, platform: 'Instagram', theme: 'cta', status: 'draft' },
       { id: 10, type: 'Shorts', title: `Quick Tour: Everything You Get With ${prod}!`, platform: 'YouTube', theme: 'proof', status: 'draft' }
     ]},
     { day: 'Sat', posts: [
@@ -451,8 +449,8 @@ function buildTailoredFallbackWeek(creatorData) {
       { id: 12, type: 'Community', title: `Weekend AMA: Drop your questions about ${prod}`, platform: 'YouTube', theme: 'community', status: 'draft' }
     ]},
     { day: 'Sun', posts: [
-      { id: 13, type: 'Post', title: `A HUGE Thank You! ❤️ Week 1 of the ${prod}`, platform: 'Instagram', theme: 'proof', status: 'draft' },
-      { id: 14, type: 'Email', title: `Your Impact So Far! A Look Back at Our First Week & What's Next`, platform: 'Email', theme: 'cta', status: 'draft' }
+      { id: 13, type: 'Post', title: `Week 1 Recap: What We Learned Launching ${prod}`, platform: 'Instagram', theme: 'proof', status: 'draft' },
+      { id: 14, type: 'Email', title: `Your Week Ahead With ${prod}: Roadmap & Updates`, platform: 'Email', theme: 'retention', status: 'draft' }
     ]}
   ]
 }
@@ -760,8 +758,14 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
   const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
   const rawH = handle.replace(/^@+/, '').toLowerCase().replace(/[^a-z0-9_]/g, '_')
   const cleanHandlePlain = handle.replace(/^@+/, '').toLowerCase()
+  const rawHandleWithAt = handle.startsWith('@') ? handle : `@${handle}`
+  const rawHandleNoAt = handle.replace(/^@+/, '')
 
   const cacheKeys = [
+    `forge_calendar_${rawHandleWithAt}_launch_w0`,
+    `forge_calendar_${rawHandleNoAt}_launch_w0`,
+    `forge_calendar_${rawHandleWithAt.toLowerCase()}_launch_w0`,
+    `forge_calendar_${rawHandleNoAt.toLowerCase()}_launch_w0`,
     `forge_calendar_${hClean}_launch_w0`,
     `forge_calendar_${rawH}_launch_w0`,
     `forge_calendar_${cleanHandlePlain}_launch_w0`,
@@ -778,21 +782,19 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     return []
   }
 
-  // 1. Check if we already have valid campaign posts cached for this creator (requiring at least 14 posts with dateKeys)
+  // Purge any legacy 50+ synthetic filler cache from previous sessions
   try {
     const cachedPosts = localStorage.getItem(`forge_campaign_posts_${hClean}`) || localStorage.getItem(`forge_campaign_posts_${cleanHandlePlain}`)
     if (cachedPosts) {
       const parsed = JSON.parse(cachedPosts)
-      if (Array.isArray(parsed) && parsed.length >= 14 && !isStaleOrClashingCalendar(parsed, creatorData)) {
-        const hasDateKeys = parsed.filter(p => p.dateKey).length >= 14
-        if (hasDateKeys) {
-          return parsed
-        }
+      if (Array.isArray(parsed) && (parsed.length > 20 || parsed.some(p => (p.weekOffset ?? 0) === -2 || (p.weekOffset ?? 0) === 5))) {
+        localStorage.removeItem(`forge_campaign_posts_${hClean}`)
+        localStorage.removeItem(`forge_campaign_posts_${cleanHandlePlain}`)
       }
     }
   } catch (_) {}
 
-  // 2. Read raw 7-day calendar from cache keys
+  // 1. Read raw 7-day launch calendar from Marketing Launch Plan shared cache keys FIRST
   let rawCalendar = null
   for (const k of cacheKeys) {
     try {
@@ -807,7 +809,7 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
     } catch (_) {}
   }
 
-  // 3. If no calendar found, build tailored 7-day launch plan from onboarding data
+  // 2. If no calendar found, build tailored 7-day launch plan from onboarding data
   if (!rawCalendar) {
     rawCalendar = buildTailoredFallbackWeek(creatorData)
     cacheKeys.forEach(k => {
@@ -848,11 +850,10 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
       const title = p.title || p.label || `Launch Post ${pIdx + 1}`
       const isConnected = isChannelConnected(channel, null, creatorData)
       const isConnOrOnboarded = isConnected || hasOnboardedData
-      const status = isConnOrOnboarded && (p.status === 'posted' || p.done)
-        ? 'Posted'
-        : (isConnOrOnboarded && (p.status === 'scheduled' || p.status === 'Scheduled'))
-          ? 'Scheduled'
-          : 'Draft'
+      // All posts start as Draft by default. Only mark Scheduled if explicitly scheduled with a scheduledAt timestamp!
+      const isPosted = isConnOrOnboarded && (p.status === 'posted' || p.done)
+      const isSched = isConnOrOnboarded && (p.status === 'scheduled' || p.status === 'Scheduled') && Boolean(p.scheduledAt)
+      const status = isPosted ? 'Posted' : isSched ? 'Scheduled' : 'Draft'
       const time = p.time || defaultTimes[pIdx % defaultTimes.length]
       const caption = generateTailoredCaption(p, creatorData, productName)
 
@@ -871,31 +872,31 @@ export function loadSyncedCampaignPosts(creatorData, productName, handleClean) {
         title,
         caption,
         status,
+        scheduledAt: status === 'Scheduled' ? (p.scheduledAt || `${dateKey}T${time}`) : null,
         time,
         imageUrl: p.imageUrl || null
       })
     })
   })
 
-  // Generate full 7-day schedules across surrounding weeks covering the entire month grid (-2, -1, +1, +2, +3, +4, +5)
-  const weekNeg2Posts = generateWeekCampaignPosts(productName, -2, creatorData)
-  const weekNeg1Posts = generateWeekCampaignPosts(productName, -1, creatorData)
-  const week1Posts = generateWeekCampaignPosts(productName, 1, creatorData)
-  const week2Posts = generateWeekCampaignPosts(productName, 2, creatorData)
-  const week3Posts = generateWeekCampaignPosts(productName, 3, creatorData)
-  const week4Posts = generateWeekCampaignPosts(productName, 4, creatorData)
-  const week5Posts = generateWeekCampaignPosts(productName, 5, creatorData)
+  // Preserve any custom posts the user explicitly created/added for surrounding weeks
+  let customUserPosts = []
+  try {
+    const cachedPosts = localStorage.getItem(`forge_campaign_posts_${hClean}`) || localStorage.getItem(`forge_campaign_posts_${cleanHandlePlain}`)
+    if (cachedPosts) {
+      const parsed = JSON.parse(cachedPosts)
+      if (Array.isArray(parsed)) {
+        customUserPosts = parsed.filter(p => p.isCustomCreated || (p.id && !p.id.startsWith('post-gen-') && !p.id.startsWith('post-mkt-')))
+      }
+    }
+  } catch (_) {}
 
+  // Active campaign posts: 1:1 launch sprint matching Marketing + any user custom creations (no 50+ filler posts!)
   const allPosts = [
-    ...weekNeg2Posts,
-    ...weekNeg1Posts,
     ...week0Posts,
-    ...week1Posts,
-    ...week2Posts,
-    ...week3Posts,
-    ...week4Posts,
-    ...week5Posts
+    ...customUserPosts
   ]
+
   try {
     localStorage.setItem(`forge_campaign_posts_${hClean}`, JSON.stringify(allPosts))
     localStorage.setItem(`forge_campaign_posts_${cleanHandlePlain}`, JSON.stringify(allPosts))
@@ -985,7 +986,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
   }, [calendarDate])
 
   // Active View Mode: 'sprint' (7-day board) vs 'calendar' (monthly grid)
-  const [viewMode, setViewMode] = useState('calendar')
+  const [viewMode, setViewMode] = useState('sprint')
   const [platformFilter, setPlatformFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'scheduled'
   const [newTagInput, setNewTagInput] = useState('')
@@ -1067,7 +1068,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
   // Self-heal: Ensure calendar posts are populated for onboarded creators
   useEffect(() => {
-    if ((!posts || posts.length < 14) && hasOnboardedData) {
+    if ((!posts || posts.length === 0) && hasOnboardedData) {
       const fresh = loadSyncedCampaignPosts(creatorData, productName, handleClean)
       if (fresh && fresh.length > 0) {
         setPosts(fresh)
@@ -1149,8 +1150,17 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
       const handle = creatorData?.handle || creatorName || 'creator'
       const hClean = (handleClean || handle.replace(/^@+/, '')).toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      const rawHandleWithAt = handle.startsWith('@') ? handle : `@${handle}`
+      const rawHandleNoAt = handle.replace(/^@+/, '')
+
       const keys = [
-        `forge_calendar_${hClean}_launch_w0`
+        `forge_calendar_${rawHandleWithAt}_launch_w0`,
+        `forge_calendar_${rawHandleNoAt}_launch_w0`,
+        `forge_calendar_${rawHandleWithAt.toLowerCase()}_launch_w0`,
+        `forge_calendar_${rawHandleNoAt.toLowerCase()}_launch_w0`,
+        `forge_calendar_${hClean}_launch_w0`,
+        `forge_calendar_${handle}_launch_w0`,
+        `forge_calendar_${handle.toLowerCase()}_launch_w0`
       ]
       keys.forEach(k => {
         try { localStorage.setItem(k, JSON.stringify(rawCalendar)) } catch (_) {}
@@ -1301,29 +1311,42 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
     const match = posts.find(p => p.dateKey === cell.dateKey)
     if (match) {
       setSelectedPostId(match.id)
-    } else {
-      const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
-      const newDraftPost = {
-        id: `post-date-${cell.dateKey}`,
-        dateKey: cell.dateKey,
-        dayName: cell.dayName,
-        fullDayName: cell.fullDayName || getFullDayName(cell),
-        fullDateStr: `${MONTH_NAMES[cell.dateObj.getMonth()]} ${cell.dayNumber}, ${cell.dateObj.getFullYear()}`,
-        channel: 'Instagram',
-        format: 'REEL',
-        strategy: 'LAUNCH',
-        title: `${creatorCleanName}: ${productName} Campaign Update`,
-        caption: `Exciting update from our team!\n\nWe're continuing our launch week for ${productName} with exclusive founder perks and live member access.\n\nTap the link in bio to join us today!\n\n#${creatorCleanName.replace(/\s+/g, '')} #Launch #Exclusive`,
-        status: 'Draft',
-        time: '11:30 AM',
-        imageUrl: null,
-        weekOffset: 0,
-        dayIndex: (cell.dateObj.getDay() + 6) % 7
-      }
-      setPosts(prev => [newDraftPost, ...prev])
-      setSelectedPostId(newDraftPost.id)
-      if (triggerToast) triggerToast(`Draft loaded for ${getFullDayName(cell)} ${cell.dayNumber}!`, 'info')
     }
+  }
+
+  // Explicitly create a post for an empty date in month grid view
+  const handleCreatePostForDate = (dateKey) => {
+    const parts = (dateKey || '').split('-').map(Number)
+    let dateObj = new Date()
+    if (parts.length === 3) {
+      dateObj = new Date(parts[0], parts[1] - 1, parts[2])
+    }
+    const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const dayName = dayNamesShort[dateObj.getDay()]
+    const creatorCleanName = creatorData?.name || (creatorData?.handle || 'Creator').replace(/^@+/, '')
+    const fullDateStr = `${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`
+
+    const newDraftPost = {
+      id: `post-date-${dateKey}-${Date.now()}`,
+      dateKey,
+      dayName,
+      fullDayName: getFullDayName({ dayName }),
+      fullDateStr,
+      channel: 'Instagram',
+      format: 'REEL',
+      strategy: 'LAUNCH',
+      title: `${creatorCleanName}: ${productName} Campaign Update`,
+      caption: `Exciting update from our team!\n\nWe're continuing our launch week for ${productName} with exclusive founder perks and live member access.\n\nTap the link in bio to join us today!\n\n#${creatorCleanName.replace(/\s+/g, '')} #Launch #Exclusive`,
+      status: 'Draft',
+      time: '11:30 AM',
+      imageUrl: null,
+      weekOffset: 0,
+      dayIndex: (dateObj.getDay() + 6) % 7,
+      isCustomCreated: true
+    }
+    setPosts(prev => [newDraftPost, ...prev])
+    setSelectedPostId(newDraftPost.id)
+    if (triggerToast) triggerToast(`Draft created for ${fullDateStr}!`, 'info')
   }
 
   // Week Shifting Handler that dynamically generates posts if none exist (guaranteed functional)
@@ -1402,7 +1425,7 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
         strategy: 'PROOF',
         title: `3 Reasons Creators Are Switching to ${prod}`,
         caption: `1. Verified productivity gains\n2. Direct community access\n3. Founding member pricing\n\nLink in bio!`,
-        status: 'Scheduled',
+        status: 'Draft',
         time: '3:00 PM',
         imageUrl: null
       },
@@ -2896,9 +2919,9 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
                                   ? 'bg-emerald-950/90 text-emerald-100 border-emerald-500/60'
                                   : isScheduled
                                   ? 'bg-sky-950/80 text-sky-100 border-sky-500/50'
-                                  : ''
+                                  : 'bg-[#151a28] text-slate-200 border-[#263047] hover:border-[#3d4c70]'
                               }`}
-                              style={(!isPosted && !isScheduled) ? { background: brandRed, color: '#ffffff', borderRadius: '0px' } : { borderRadius: '0px' }}
+                              style={{ borderRadius: '0px' }}
                               title={`${p.title} (${p.time}) - ${p.status}`}
                             >
                               <div className="truncate flex items-center justify-between gap-1">
@@ -2941,7 +2964,29 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
         {/* ── RIGHT WORKSPACE: LIVE DRAFT INSPECTOR STUDIO (Direct Publishing Engine - 15% Tighter Width) ── */}
         <aside className="w-[320px] lg:w-[375px] xl:w-[410px] bg-[#0c0f17] flex flex-col flex-shrink-0 overflow-y-auto z-10 custom-scrollbar border-l border-[#161b2b] p-3.5 sm:p-4 space-y-3.5 h-full">
-          
+          {viewMode === 'calendar' && (!activePost || !posts.some(p => p.dateKey === selectedCalendarDateKey)) ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 my-auto">
+              <div className="w-12 h-12 rounded-none bg-[#111522] border border-[#202738] flex items-center justify-center text-slate-400">
+                <Calendar size={22} className="text-slate-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">No post on {selectedCalendarDateKey}</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-[240px]">
+                  This day is currently open. You can create a tailored launch draft or leave it unscheduled.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCreatePostForDate(selectedCalendarDateKey)}
+                className="px-4 py-2 text-xs font-bold text-white flex items-center gap-1.5 transition cursor-pointer border-0 shadow-sm"
+                style={{ background: brandRed, color: '#ffffff', borderRadius: '0px' }}
+              >
+                <Plus size={13} className="text-white" />
+                <span>Create Draft for this Date</span>
+              </button>
+            </div>
+          ) : (
+            <>
           {/* Header: Title, Date, Real Dynamic Status Badge */}
           <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-[#1b2336]">
             <div className="min-w-0 flex-1">
@@ -4040,7 +4085,8 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
 
             </div>
           )}
-
+          </>
+        )}
         </aside>
 
       </div>

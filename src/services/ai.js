@@ -1722,7 +1722,7 @@ For each post, provide:
 - type: e.g., "Reel", "Post", "Thread", "Story", "Email", "Video", "Shorts", "Community" (appropriate for the platform)
 - title: a specific, compelling hook, outline, or title for the post (e.g. "Behind-the-scenes building Creator Academy" or "5 tools I use to save 10 hours a week")
 - theme: one of the allowed theme keys: "launch", "value", "bts", "proof", "cta", "community", "story"
-- status: one of "draft", "scheduled" (default most to "draft", but include a few "scheduled" or "posted" for variety)
+- status: "draft" (all posts must start as drafts until explicitly scheduled by creator)
 
 Return exactly this JSON structure (a JSON object containing a "calendar" array of 7 objects representing the days of the week, in order from Mon to Sun):
 {
@@ -1730,7 +1730,7 @@ Return exactly this JSON structure (a JSON object containing a "calendar" array 
     {
       "day": "Mon",
       "posts": [
-        { "id": 1, "platform": "Instagram", "type": "Reel", "title": "...", "theme": "...", "status": "..." }
+        { "id": 1, "platform": "Instagram", "type": "Reel", "title": "...", "theme": "...", "status": "draft" }
       ]
     },
     ...
@@ -1762,7 +1762,15 @@ Ensure each post id is a unique number (starting from 1 and incrementing). Make 
     }
 
     if (Array.isArray(parsed)) {
-      return parsed;
+      return parsed.map(day => ({
+        ...day,
+        posts: Array.isArray(day.posts)
+          ? day.posts.map(p => ({
+              ...p,
+              status: 'draft'
+            }))
+          : []
+      }));
     }
 
     throw new Error("AI did not return a valid calendar array");
