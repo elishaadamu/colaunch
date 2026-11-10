@@ -282,7 +282,7 @@ export function ProductMockupPreview({
             <div className="p-3 bg-[#131724] border border-[#22293d] rounded-none">
               <span className="text-[10px] font-mono text-slate-400 block uppercase">Input Parameter A</span>
               <span className="text-base font-bold text-white font-mono mt-0.5 block">84.50</span>
-              <span className="text-[10px] text-emerald-400 font-mono">Calibrated baseline</span>
+              <span className="text-[10px] text-cyan-400 font-mono">Calibrated baseline</span>
             </div>
             <div className="p-3 bg-[#131724] border border-[#22293d] rounded-none">
               <span className="text-[10px] font-mono text-slate-400 block uppercase">Variance Factor</span>
@@ -327,7 +327,7 @@ export function ProductMockupPreview({
               <span className="text-xs font-bold text-white block">Execution Progress & Daily Logging</span>
               <span className="text-[10px] text-slate-400 font-mono">4 of 5 weekly objectives completed</span>
             </div>
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/40 border border-cyan-500/30">
               On Track
             </span>
           </div>
@@ -335,8 +335,8 @@ export function ProductMockupPreview({
             {features.slice(0, 3).map((feat, idx) => (
               <div key={idx} className="p-2.5 bg-[#121624] border border-[#1f273c] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-none border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center">
-                    <Check size={11} className="text-emerald-400" />
+                  <div className="w-4 h-4 rounded-none border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center">
+                    <Check size={11} className="text-cyan-400" />
                   </div>
                   <span className="text-xs text-slate-200 font-medium">{feat}</span>
                 </div>
@@ -358,8 +358,8 @@ export function ProductMockupPreview({
           <div className="grid grid-cols-3 gap-2">
             <div className="p-2 bg-[#121624] border border-[#20283c]">
               <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 1</span>
-              <span className="text-xs font-bold text-emerald-400">Validated</span>
-              <div className="h-1 w-full bg-emerald-500/20 mt-1.5"><div className="h-full bg-emerald-400 w-full" /></div>
+              <span className="text-xs font-bold text-cyan-400">Validated</span>
+              <div className="h-1 w-full bg-cyan-500/20 mt-1.5"><div className="h-full bg-cyan-400 w-full" /></div>
             </div>
             <div className="p-2 bg-[#121624] border border-[#20283c]" style={{ borderColor: `${dynamicAccent}66` }}>
               <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 2</span>
@@ -385,7 +385,7 @@ export function ProductMockupPreview({
         <div className="space-y-3">
           <div className="p-3 bg-[#131724] border border-[#222a3e] space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold">Verified Member Workspace</span>
+              <span className="text-[10px] font-mono uppercase text-cyan-400 font-bold">Verified Member Workspace</span>
               <span className="text-[10px] font-mono text-slate-400">$19/mo subscriber access</span>
             </div>
             <p className="text-xs text-slate-200">
@@ -399,7 +399,7 @@ export function ProductMockupPreview({
             </div>
             <div className="p-2.5 bg-[#101420] border border-[#1d2538] space-y-1">
               <span className="text-[10px] font-mono text-slate-400 block">Resource Sync</span>
-              <span className="text-emerald-400 font-medium block">All Files Ready</span>
+              <span className="text-cyan-400 font-medium block">All Files Ready</span>
             </div>
           </div>
         </div>
@@ -413,7 +413,7 @@ export function ProductMockupPreview({
           <div className="p-2.5 bg-[#121624] border border-[#20273c]">
             <span className="text-[9px] font-mono text-slate-400 uppercase block">Active Engine</span>
             <span className="text-sm font-bold text-white font-mono mt-0.5 block">v1.2 Live</span>
-            <span className="text-[9px] text-emerald-400 font-mono">Sync healthy</span>
+            <span className="text-[9px] text-cyan-400 font-mono">Sync healthy</span>
           </div>
           <div className="p-2.5 bg-[#121624] border border-[#20273c]">
             <span className="text-[9px] font-mono text-slate-400 uppercase block">Throughput</span>
@@ -430,7 +430,7 @@ export function ProductMockupPreview({
         <div className="p-3 bg-[#101420] border border-[#1c2438] space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-300 pb-1.5 border-b border-white/5">
             <span className="font-mono text-[10px] uppercase text-slate-400">Core Software Capabilities</span>
-            <span className="text-[10px] font-mono text-emerald-400">Active Pipeline</span>
+            <span className="text-[10px] font-mono text-cyan-400">Active Pipeline</span>
           </div>
           <div className="space-y-1.5">
             {features.slice(0, 3).map((feat, idx) => (
@@ -535,7 +535,7 @@ function DemandWaitlistModal({
         {!submitted ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400">
                 Early Access Cohort
               </span>
               <h3 className="text-lg font-bold text-white">Join the Waitlist for {productName}</h3>
@@ -573,7 +573,7 @@ function DemandWaitlistModal({
           </form>
         ) : (
           <div className="py-6 text-center space-y-3">
-            <div className="w-10 h-10 mx-auto rounded-none bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 mx-auto rounded-none bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
               <Check size={20} />
             </div>
             <h4 className="text-base font-bold text-white">You're on the preview waitlist</h4>
@@ -650,22 +650,22 @@ function ProductLandingPage({
       {/* 1. STICKY NAV */}
       <nav
         ref={navRef}
-        className="sticky top-0 z-40 w-full bg-[#0c0f17]/95 backdrop-blur-md border-b border-[#1b2234] px-4 sm:px-8 py-3.5 flex items-center justify-between select-none"
+        className="sticky top-0 z-40 w-full bg-[#0c0f17]/95 backdrop-blur-md border-b border-[#1b2234] px-4 sm:px-6 py-2.5 flex items-center justify-between select-none"
       >
         <button
           type="button"
           onClick={scrollToTop}
           className="flex items-center gap-2 text-left cursor-pointer group"
         >
-          <div className="w-6 h-6 flex items-center justify-center font-bold text-xs rounded-none" style={{ background: styles.accent, color: '#ffffff' }}>
+          <div className="w-5 h-5 flex items-center justify-center font-bold text-xs rounded-none" style={{ background: styles.accent, color: '#ffffff' }}>
             {name.charAt(0)}
           </div>
-          <span className="font-bold text-sm sm:text-base text-white tracking-tight group-hover:text-slate-200 transition">
+          <span className="font-bold text-xs sm:text-sm text-white tracking-tight group-hover:text-slate-200 transition">
             {name}
           </span>
         </button>
 
-        <div className="hidden md:flex items-center gap-6 text-xs text-slate-300 font-medium">
+        <div className="hidden md:flex items-center gap-5 text-xs text-slate-300 font-medium">
           <button type="button" onClick={() => scrollToSection('problem')} className="hover:text-white transition cursor-pointer">
             The Problem
           </button>
@@ -687,7 +687,7 @@ function ProductLandingPage({
           <button
             type="button"
             onClick={onOpenWaitlist}
-            className="px-3.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md"
+            className="px-3 sm:px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md"
             style={{ background: styles.accent }}
           >
             Join Waitlist — ${monthlyPrice}/mo
@@ -696,12 +696,12 @@ function ProductLandingPage({
       </nav>
 
       {/* 2. HERO SECTION */}
-      <section className="relative px-4 sm:px-8 lg:px-12 py-12 sm:py-16 md:py-20 border-b border-[#192032] overflow-hidden">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <section className="relative px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12 border-b border-[#192032] overflow-hidden">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
           
-          <div className="lg:col-span-7 space-y-5 text-left">
+          <div className="lg:col-span-7 space-y-3.5 text-left">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/25">
+              <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/40 border border-cyan-500/30">
                 Designed for {copy.targetAudience}
               </span>
               <span className="text-[11px] text-slate-400 font-mono">
@@ -709,19 +709,19 @@ function ProductLandingPage({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.15]">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-[1.15]">
               {copy.headline}
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg">
               {copy.subheadline}
             </p>
 
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
               <button
                 type="button"
                 onClick={onOpenWaitlist}
-                className="px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer text-center shadow-lg"
+                className="px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer text-center shadow-lg"
                 style={{ background: styles.accent }}
               >
                 Join Waitlist — ${monthlyPrice}/mo
@@ -729,16 +729,16 @@ function ProductLandingPage({
               <button
                 type="button"
                 onClick={() => scrollToSection('how-it-works')}
-                className="px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-[#121624] border border-[#232a3e] transition cursor-pointer text-center"
+                className="px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-[#121624] border border-[#232a3e] transition cursor-pointer text-center"
               >
                 Explore Features & Workflow ↓
               </button>
             </div>
 
-            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-mono pt-1">
-              <span>✓ Monthly subscription</span>
-              <span>✓ Cancel anytime</span>
-              <span>✓ Direct early cohort access</span>
+            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-mono pt-0.5">
+              <span><span className="text-cyan-400 font-bold mr-1">✓</span>Monthly subscription</span>
+              <span><span className="text-cyan-400 font-bold mr-1">✓</span>Cancel anytime</span>
+              <span><span className="text-cyan-400 font-bold mr-1">✓</span>Direct early cohort access</span>
             </div>
           </div>
 
@@ -756,30 +756,30 @@ function ProductLandingPage({
       </section>
 
       {/* 3. PROBLEM SECTION */}
-      <section id="problem" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#0a0d15] border-b border-[#181f30]">
-        <div className="max-w-5xl mx-auto space-y-8">
-          <div className="space-y-2 text-left max-w-2xl">
+      <section id="problem" className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-5">
+          <div className="space-y-1.5 text-left max-w-2xl">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
               The Bottleneck
             </span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
               Why Existing Workflows Keep Breaking
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Discussions across the community consistently highlight recurring operational frustrations that generic advice and mass-market tools fail to resolve.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             {copy.problemPoints.map((point, idx) => (
               <div
                 key={idx}
-                className="p-5 bg-[#0e121c] border border-[#1d2436] rounded-none space-y-2.5 text-left"
+                className="p-3.5 sm:p-4 bg-[#0e121c] border border-[#1d2436] rounded-none space-y-2 text-left"
               >
-                <div className="w-7 h-7 rounded-none bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-xs flex items-center justify-center font-bold">
+                <div className="w-6 h-6 rounded-none bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-[11px] flex items-center justify-center font-bold">
                   0{idx + 1}
                 </div>
-                <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
                   {point}
                 </h4>
               </div>
@@ -789,30 +789,30 @@ function ProductLandingPage({
       </section>
 
       {/* 4. HOW IT WORKS */}
-      <section id="how-it-works" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
-        <div className="max-w-5xl mx-auto space-y-8">
-          <div className="space-y-2 text-left max-w-2xl">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+      <section id="how-it-works" className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-5">
+          <div className="space-y-1.5 text-left max-w-2xl">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">
               Execution Architecture
             </span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
               How {name} Streamlines Your Process
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               A 3-step structured workflow engineered to replace fragmented manual setups.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             {copy.howItWorks.map((step, idx) => (
               <div
                 key={idx}
-                className="p-6 bg-[#0c101a] border border-[#1b2336] rounded-none space-y-3 text-left relative"
+                className="p-4 sm:p-5 bg-[#0c101a] border border-[#1b2336] rounded-none space-y-2 text-left relative"
               >
-                <span className="text-2xl font-black font-mono text-slate-600 block">
+                <span className="text-xl font-black font-mono text-slate-600 block">
                   {step.step}
                 </span>
-                <h3 className="text-sm sm:text-base font-bold text-white">
+                <h3 className="text-xs sm:text-sm font-bold text-white">
                   {step.title}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
@@ -825,33 +825,33 @@ function ProductLandingPage({
       </section>
 
       {/* 5. FEATURES & CAPABILITIES */}
-      <section id="features" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#0a0d15] border-b border-[#181f30]">
-        <div className="max-w-5xl mx-auto space-y-8">
-          <div className="space-y-2 text-left max-w-2xl">
+      <section id="features" className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-5xl mx-auto space-y-5">
+          <div className="space-y-1.5 text-left max-w-2xl">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
               Capabilities
             </span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
               Engineered Capabilities Included in Your Subscription
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Direct interactive utilities built strictly for this problem domain.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {copy.features.map((feat, idx) => (
               <div
                 key={idx}
-                className="p-5 bg-[#0e121d] border border-[#1f273a] rounded-none space-y-2 text-left hover:border-slate-600 transition"
+                className="p-3.5 sm:p-4 bg-[#0e121d] border border-[#1f273a] rounded-none space-y-1.5 text-left hover:border-slate-600 transition"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-none flex items-center justify-center" style={{ background: `${styles.accent}22`, color: styles.accent }}>
-                    <Check size={12} strokeWidth={3} />
+                  <div className="w-4 h-4 rounded-none flex items-center justify-center shrink-0" style={{ background: `${styles.accent}22`, color: styles.accent }}>
+                    <Check size={11} strokeWidth={3} />
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-white">{feat.title}</h4>
+                  <h4 className="text-xs sm:text-[13px] font-bold text-white">{feat.title}</h4>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed pl-7">
+                <p className="text-xs text-slate-300 leading-relaxed pl-6">
                   {feat.description}
                 </p>
               </div>
@@ -861,59 +861,59 @@ function ProductLandingPage({
       </section>
 
       {/* 6. TRANSPARENT PRICING */}
-      <section id="pricing" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
-        <div className="max-w-4xl mx-auto space-y-8 text-center">
-          <div className="space-y-2 max-w-xl mx-auto">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400">
+      <section id="pricing" className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-3xl mx-auto space-y-5 text-center">
+          <div className="space-y-1.5 max-w-xl mx-auto">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">
               Predictable Pricing
             </span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
               Simple Monthly Subscription
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               One clear subscription tier. All software capabilities and updates included.
             </p>
           </div>
 
-          <div className="max-w-md mx-auto p-6 sm:p-8 bg-[#0d101a] border border-[#232b3e] rounded-none space-y-6 text-left shadow-2xl relative" style={{ borderColor: `${styles.accent}55` }}>
-            <div className="space-y-1">
+          <div className="max-w-md mx-auto p-5 sm:p-6 bg-[#0d101a] border border-[#232b3e] rounded-none space-y-4 text-left shadow-2xl relative" style={{ borderColor: `${styles.accent}55` }}>
+            <div className="space-y-0.5">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
                 Full Platform Membership
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black text-white font-mono">${monthlyPrice}</span>
+                <span className="text-2xl sm:text-3xl font-black text-white font-mono">${monthlyPrice}</span>
                 <span className="text-xs text-slate-400 font-mono">/ month</span>
               </div>
-              <p className="text-[11px] text-slate-400 pt-1">
+              <p className="text-[11px] text-slate-400 pt-0.5">
                 Per active subscriber. Includes cloud workspace, all features, and continuous updates.
               </p>
             </div>
 
-            <div className="border-t border-[#1d2538] pt-4 space-y-2.5">
+            <div className="border-t border-[#1d2538] pt-3 space-y-2">
               <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider block">
                 Everything Included:
               </span>
               {copy.features.map((f, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs text-slate-200">
-                  <Check size={13} className="text-emerald-400 shrink-0" />
+                  <Check size={12} className="text-cyan-400 shrink-0" />
                   <span>{f.title}</span>
                 </div>
               ))}
               <div className="flex items-center gap-2 text-xs text-slate-200">
-                <Check size={13} className="text-emerald-400 shrink-0" />
+                <Check size={12} className="text-cyan-400 shrink-0" />
                 <span>Regular software enhancements & bug fixes</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-200">
-                <Check size={13} className="text-emerald-400 shrink-0" />
+                <Check size={12} className="text-cyan-400 shrink-0" />
                 <span>Cancel anytime</span>
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={onOpenWaitlist}
-                className="w-full py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md text-center block"
+                className="w-full py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-md text-center block"
                 style={{ background: styles.accent }}
               >
                 Join Waitlist — ${monthlyPrice}/mo
@@ -928,23 +928,23 @@ function ProductLandingPage({
       </section>
 
       {/* 7. CREATOR ORIGIN SECTION ("Why @creator") */}
-      <section className="px-4 sm:px-8 lg:px-12 py-12 sm:py-16 bg-[#0a0d15] border-b border-[#181f30]">
-        <div className="max-w-4xl mx-auto space-y-6 text-left">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#1b2234]">
-            <div className="flex items-center gap-3.5">
+      <section className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#0a0d15] border-b border-[#181f30]">
+        <div className="max-w-4xl mx-auto space-y-4 text-left">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-[#1b2234]">
+            <div className="flex items-center gap-3">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt={creatorHandle}
-                  className="w-12 h-12 rounded-none object-cover border border-white/10"
+                  className="w-10 h-10 rounded-none object-cover border border-white/10"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-none bg-[#141926] border border-white/10 flex items-center justify-center font-bold text-white">
+                <div className="w-10 h-10 rounded-none bg-[#141926] border border-white/10 flex items-center justify-center font-bold text-white text-xs">
                   {creatorHandle.charAt(0).toUpperCase()}
                 </div>
               )}
               <div>
-                <h3 className="text-sm sm:text-base font-bold text-white">Why @{creatorHandle}</h3>
+                <h3 className="text-xs sm:text-sm font-bold text-white">Why @{creatorHandle}</h3>
                 {creatorBio && (
                   <p className="text-xs text-slate-400 line-clamp-1 max-w-md">{creatorBio}</p>
                 )}
@@ -952,18 +952,18 @@ function ProductLandingPage({
             </div>
             {fmtFollowers && (
               <div className="text-left sm:text-right">
-                <span className="text-base font-black text-white font-mono block">{fmtFollowers}</span>
+                <span className="text-sm font-black text-white font-mono block">{fmtFollowers}</span>
                 <span className="text-[10px] text-slate-400 font-mono uppercase">Audience Community</span>
               </div>
             )}
           </div>
 
           {originVideos.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
                 Where this idea comes from:
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {originVideos.map((vid, idx) => {
                   const title = cleanPostTitle(vid.title || vid.caption || 'Channel Topic', 55)
                   const thumb = vid.thumbnail || ''
@@ -971,13 +971,13 @@ function ProductLandingPage({
                     <div
                       key={idx}
                       onClick={() => onPlayVideo ? onPlayVideo(vid) : null}
-                      className="p-2.5 bg-[#0e121c] border border-[#1d2538] rounded-none flex items-center gap-2.5 cursor-pointer hover:border-slate-500 transition group"
+                      className="p-2 bg-[#0e121c] border border-[#1d2538] rounded-none flex items-center gap-2 cursor-pointer hover:border-slate-500 transition group"
                     >
                       {thumb ? (
-                        <img src={thumb} alt="" className="w-12 h-9 object-cover shrink-0 rounded-none" />
+                        <img src={thumb} alt="" className="w-11 h-8 object-cover shrink-0 rounded-none" />
                       ) : (
-                        <div className="w-12 h-9 bg-[#151a28] flex items-center justify-center shrink-0">
-                          <Play size={12} className="text-slate-400 group-hover:text-white" />
+                        <div className="w-11 h-8 bg-[#151a28] flex items-center justify-center shrink-0">
+                          <Play size={11} className="text-slate-400 group-hover:text-white" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
@@ -996,27 +996,27 @@ function ProductLandingPage({
       </section>
 
       {/* 8. HONEST FAQ */}
-      <section id="faq" className="px-4 sm:px-8 lg:px-12 py-14 sm:py-18 bg-[#08090d] border-b border-[#181f30]">
-        <div className="max-w-4xl mx-auto space-y-8 text-left">
-          <div className="space-y-2 max-w-xl">
+      <section id="faq" className="px-4 sm:px-6 lg:px-8 py-8 sm:py-10 bg-[#08090d] border-b border-[#181f30]">
+        <div className="max-w-4xl mx-auto space-y-5 text-left">
+          <div className="space-y-1.5 max-w-xl">
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
               Clear Answers
             </span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">
               Frequently Asked Questions
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Straightforward details about the tool, release timeline, and billing model.
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {copy.faq.map((item, idx) => (
               <div
                 key={idx}
-                className="p-4 sm:p-5 bg-[#0d101a] border border-[#1b2336] rounded-none space-y-1.5"
+                className="p-3.5 sm:p-4 bg-[#0d101a] border border-[#1b2336] rounded-none space-y-1"
               >
-                <h4 className="text-xs sm:text-sm font-bold text-white">
+                <h4 className="text-xs sm:text-[13px] font-bold text-white">
                   {item.question}
                 </h4>
                 <p className="text-xs text-slate-300 leading-relaxed">
@@ -1029,19 +1029,19 @@ function ProductLandingPage({
       </section>
 
       {/* 9. FINAL CTA & MINIMAL FOOTER */}
-      <section className="px-4 sm:px-8 lg:px-12 py-16 bg-[#0b0e18] text-center border-b border-[#181f30]">
-        <div className="max-w-2xl mx-auto space-y-4">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+      <section className="px-4 sm:px-6 lg:px-8 py-10 sm:py-12 bg-[#0b0e18] text-center border-b border-[#181f30]">
+        <div className="max-w-xl mx-auto space-y-3">
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             {copy.cta.headline}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
             {copy.cta.subheadline}
           </p>
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               type="button"
               onClick={onOpenWaitlist}
-              className="px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-xl"
+              className="px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-xl"
               style={{ background: styles.accent }}
             >
               {copy.cta.buttonText}
@@ -1143,7 +1143,7 @@ export function AppMockup({
     <div className="w-full p-4 sm:p-6 bg-[#08090d] min-h-[600px] flex flex-col items-center justify-center">
       <div className="w-full max-w-3xl space-y-4">
         <div className="p-3 bg-[#111624] border border-[#20293d] rounded-none flex items-center justify-between text-xs font-mono">
-          <span className="text-emerald-400 font-bold uppercase">Product Preview · Member App View</span>
+          <span className="text-cyan-400 font-bold uppercase">Product Preview · Member App View</span>
           <span className="text-slate-400">Subscriber Tool Interface</span>
         </div>
         <ProductMockupPreview
@@ -1375,7 +1375,7 @@ export default function Preview() {
             <span className="text-xs font-bold text-white truncate max-w-[180px]">
               {currentBlueprint.name}
             </span>
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/25">
+            <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 border border-cyan-500/30">
               ${currentPrice}/mo SaaS
             </span>
           </div>
@@ -1452,7 +1452,7 @@ export default function Preview() {
             <p className="text-xs text-slate-300 leading-relaxed">
               {currentBlueprint.tool_summary || currentBlueprint.description}
             </p>
-            <div className="pt-1 text-[11px] font-mono text-emerald-400">
+            <div className="pt-1 text-[11px] font-mono text-cyan-400">
               Target: {currentBlueprint.target_audience || 'Target Community'}
             </div>
           </div>
@@ -1461,7 +1461,7 @@ export default function Preview() {
           <div className="space-y-2 text-left">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white">Monthly Subscription Price</span>
-              <span className="text-xs font-mono font-bold text-emerald-400">${currentPrice} / mo</span>
+              <span className="text-xs font-mono font-bold text-cyan-400">${currentPrice} / mo</span>
             </div>
             <div className="grid grid-cols-5 gap-1 pt-1">
               {[9, 15, 19, 24, 29].map(p => (
@@ -1469,7 +1469,7 @@ export default function Preview() {
                   key={p}
                   type="button"
                   onClick={() => handlePriceChange(p)}
-                  className={`py-1 text-xs font-mono font-bold transition cursor-pointer border ${currentPrice === p ? 'border-emerald-400 bg-emerald-500/20 text-white' : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'}`}
+                  className={`py-1 text-xs font-mono font-bold transition cursor-pointer border ${currentPrice === p ? 'border-cyan-400 bg-cyan-950/40 text-cyan-300 font-bold' : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'}`}
                 >
                   ${p}
                 </button>
@@ -1520,7 +1520,7 @@ export default function Preview() {
             <div className="space-y-1.5">
               {(currentBlueprint.features || []).map((feat, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs text-slate-300 py-1 px-2 bg-[#121624] border border-[#1d2538]">
-                  <Check size={11} className="text-emerald-400 shrink-0" />
+                  <Check size={11} className="text-cyan-400 shrink-0" />
                   <span className="truncate">{feat}</span>
                 </div>
               ))}
@@ -1565,7 +1565,7 @@ export default function Preview() {
               {/* Labeled Preview URL */}
               <div className="flex-1 max-w-md mx-3 px-3 py-1 bg-[#131826] border border-[#232c42] flex items-center justify-between text-xs text-slate-300 font-mono shadow-inner">
                 <div className="flex items-center gap-1.5 truncate">
-                  <Lock size={11} className="text-emerald-400 shrink-0" />
+                  <Lock size={11} className="text-cyan-400 shrink-0" />
                   <span className="truncate text-[11px]">https://{cleanHandle}.colaunch.app</span>
                 </div>
                 <span className="text-[9px] uppercase tracking-wider text-slate-400 bg-white/5 px-1.5 py-0.5 border border-white/10 shrink-0 ml-2">
