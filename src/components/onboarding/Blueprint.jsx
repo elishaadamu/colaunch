@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForge, getAccent, useBgJob } from '../../App'
 import {
-  ArrowRight, ArrowLeft, Globe, Smartphone, ShoppingBag, Users, Youtube, Instagram,
-  CheckCircle, CheckCircle2, Play, Lock, Check, ChevronDown, HelpCircle, Info, Video, Camera, Compass, MoreHorizontal,
-  Hammer, Trash2, MessageSquare, Heart, Sparkles, Layers, Sliders, DollarSign, Plus
+  ArrowLeft, Globe, Smartphone, Users, Check, Trash2, Sparkles, Layers,
+  Plus, AlertCircle, Info
 } from 'lucide-react'
-import { XLogo } from '../launch/PostVisualMockup'
-import WingLogo from '../ui/WingLogo'
 import CoLaunchLogo from '../ui/CoLaunchLogo'
 import OnboardingStepIndicator from '../ui/OnboardingStepIndicator'
 import { getScrapePromise, isScrapePending } from '../../services/scraper'
@@ -14,7 +11,6 @@ import {
   generateRecommendationsAI,
   areRecsValidForCreator,
   getFallbackCleanRecommendations,
-  calculateFollowerRevenueRange,
   parseFollowerCount,
   deriveFeaturesFromToolSummary,
   deriveWhoPaysAndWhy,
@@ -24,15 +20,137 @@ import {
 import {
   calculateSubscriptionRevenue,
   clampPrice,
-  formatRevenueAmount,
   REVENUE_DISCLAIMER
 } from '../../utils/subscriptionRevenue.js'
 import { recommendCreator } from '../../services/opsApi'
 import AudienceIntelligenceEngine from './AudienceIntelligenceEngine'
-import { ProductMockupPreview } from './Preview'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Look and feel
+// Soft dark surfaces, one accent (the creator's), a serif for the few big moments.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const C = {
+  bg: '#08090c',
+  sheet: '#10131a',
+  row: '#0c0e13',
+  raised: '#171b24',
+  line: 'rgba(255,255,255,0.07)',
+  lineStrong: 'rgba(255,255,255,0.16)',
+  text: '#f3f4f6',
+  body: '#cdd1da',
+  muted: '#9ba1ae',
+  faint: '#6c7280',
+}
+
+const PLATFORM_LABELS = {
+  youtube: 'YouTube',
+  instagram: 'Instagram',
+  twitter: 'X',
+  tiktok: 'TikTok',
+}
+
+const PAGE_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap');
+
+.bp-serif {
+  font-family: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+.bp-focus:focus-visible,
+.bp-btn:focus-visible {
+  outline: 2px solid var(--bp-accent);
+  outline-offset: 3px;
+}
+
+.bp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.bp-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--bp-accent) var(--pct), rgba(255,255,255,0.12) var(--pct));
+}
+.bp-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+}
+.bp-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bp-accent);
+}
+.bp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.55);
+}
+.bp-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.55);
+}
+.bp-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--bp-accent); outline-offset: 3px; }
+.bp-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--bp-accent); outline-offset: 3px; }
+
+@keyframes bp-swap {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.bp-swap { animation: bp-swap 0.28s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-swap { animation: none; }
+}
+`
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product rules: the client sells subscription SOFTWARE, not content.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BANNED_CATEGORIES = new Set(['course', 'coaching', 'consulting', 'newsletter', 'physical_product', 'digital_download'])
+
+const CONTENT_RE = /\b(courses?|masterclass(es)?|lessons?|curriculum|cohorts?|boot ?camps?|coaching|consulting|consultants?|newsletters?|e-?books?|workshops?|webinars?|mentorship|training program|step-by-step guides?)\b/i
+
+const GENERIC_FEATURE_RE = /^(real-time telemetry|custom metrics|workflow status|data export|interactive workspace|automated workflows|saved user projects|cloud data sync|member software tools|discussion boards|live monthly sessions|member directory)$/i
+
+const CATEGORY_MAP = {
+  tool: { type: 'Software tool', icon: Globe, iconKey: 'globe', preview: 'webapp' },
+  calculator: { type: 'Calculator', icon: Globe, iconKey: 'globe', preview: 'webapp' },
+  tracker: { type: 'Tracker', icon: Layers, iconKey: 'layers', preview: 'dashboard' },
+  planner: { type: 'Planner', icon: Layers, iconKey: 'layers', preview: 'dashboard' },
+  dashboard: { type: 'Dashboard', icon: Layers, iconKey: 'layers', preview: 'dashboard' },
+  community: { type: 'Member platform', icon: Users, iconKey: 'users', preview: 'community' },
+  mobile_app: { type: 'Mobile app', icon: Smartphone, iconKey: 'smartphone', preview: 'mobile' },
+  app: { type: 'Mobile app', icon: Smartphone, iconKey: 'smartphone', preview: 'mobile' },
+  marketplace: { type: 'Marketplace', icon: Globe, iconKey: 'globe', preview: 'webapp' },
+  automation: { type: 'Automation', icon: Sparkles, iconKey: 'sparkles', preview: 'webapp' },
+  creator_tool: { type: 'Creator tool', icon: Sparkles, iconKey: 'sparkles', preview: 'webapp' },
+  saas: { type: 'Software tool', icon: Globe, iconKey: 'globe', preview: 'webapp' },
+  other: { type: 'Software tool', icon: Globe, iconKey: 'globe', preview: 'webapp' },
+}
+
+const DEFAULT_PRICES = [19, 24, 15, 29]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
 function fmt(n) {
   n = parseFollowerCount(n)
@@ -56,336 +174,16 @@ function isLightColor(hex) {
   return ((r * 299 + g * 587 + b * 114) / 1000) > 135
 }
 
-const PLATFORM_ICONS = {
-  youtube: Youtube,
-  instagram: Instagram,
-  twitter: XLogo,
-  tiktok: Globe,
-}
-
-const PLATFORM_LABELS = {
-  youtube: 'YouTube',
-  instagram: 'Instagram',
-  twitter: 'X',
-  tiktok: 'TikTok',
-}
-
-// ── Creator blurb from scraped signals ───────────────────────────────────────
-
-function buildCreatorBlurb(creator) {
-  const { name, handle, platform, followers, engagementRate, niche, description } = creator
-  const displayName = name || (handle || '').replace('@', '') || 'This creator'
-  const fmtFollowers = followers ? fmt(followers) : null
-  const eng = parseFloat(engagementRate) || 0
-  const isYT = platform === 'youtube'
-  const followerTerm = isYT ? 'subscribers' : 'followers'
-
-  // Use real bio if available and meaningful (avoid generic subscribe prompts)
-  if (description && description.length > 20) {
-    const short = description.split('.')[0].trim()
-    const isGenericPrompt = short.toLowerCase().includes('subscribe') && short.length < 35
-    if (short.length > 15 && short.length < 120 && !isGenericPrompt) {
-      return short
-    }
-  }
-
-  // Build natural, grammatically correct blurb from signals
-  const cleanNiche = (niche && niche !== 'Lifestyle & Creativity' && niche !== 'Creator') ? niche : 'content'
-  const article = /^[aeiou]/i.test(cleanNiche) ? 'an' : 'a'
-
-  let text = `${displayName} is ${article} ${cleanNiche} creator`
-  if (fmtFollowers) {
-    text += ` with ${fmtFollowers} ${followerTerm}`
-  }
-  if (eng >= 6) {
-    text += ' and an exceptionally engaged audience.'
-  } else if (eng >= 3.0) {
-    text += ' and a highly engaged audience.'
-  } else if (eng > 0) {
-    text += ' and an established community.'
-  } else {
-    text += '.'
-  }
-
-  return text
-}
-
-// ── Why-this-fits reasons (dynamic per blueprint × creator) ──────────────────
-
-function buildReasons(blueprint, creator) {
-  // If recommendation has grounded evidence from audience intelligence, clean and prioritize it
-  if (blueprint?.evidence && Array.isArray(blueprint.evidence) && blueprint.evidence.length > 0) {
-    const cleaned = cleanEvidenceList(
-      blueprint.evidence.filter(Boolean),
-      creator?.comments || [],
-      creator?.recentPosts || []
-    )
-    if (cleaned.length > 0) return cleaned
-  }
-
-  const { platform, followers, engagementRate, niche } = creator || {}
-  const eng = parseFloat(engagementRate) || 0
-  const subs = parseFollowerCount(followers)
-  const nicheL = (niche || 'creator').toLowerCase()
-  const highEng = eng >= 4
-
-  const category = (blueprint?.type || blueprint?.raw?.product_category || '').toLowerCase()
-
-  if (category.includes('tracker')) {
-    return [
-      `Your audience actively asks how to measure, log, and benchmark their ${nicheL} progress`,
-      highEng
-        ? `${eng}% engagement signals strong commitment to daily tracking and habit logging`
-        : `Tracking software builds daily utility and monthly retention into the subscriber relationship`,
-      `Monthly recurring pricing ($9–$29/mo) turns one-time questions into ongoing software utility`,
-      `Curated community benchmarks give your subscribers a clear reason to remain subscribed month after month`
-    ]
-  }
-
-  if (category.includes('calc') || category.includes('utility')) {
-    return [
-      `Solves repetitive calculation and decision-making bottlenecks frequently asked in your comments`,
-      `Instant web utility gives subscribers immediate value on their first visit without onboarding friction`,
-      `${fmt(subs)} followers provides the ideal subscriber base for a focused, high-frequency utility tool`,
-      `Software utility generates predictable MRR with zero ongoing physical inventory or 1-on-1 coaching time`
-    ]
-  }
-
-  if (category.includes('community') || category.includes('member')) {
-    return [
-      highEng
-        ? `${eng}% engagement indicates your audience already interacts with each other in comments`
-        : `Followers seek direct collaboration, shared assets, and verified peer discussion`,
-      `Software platform combines direct utility tools with member collaboration and monthly drops`,
-      `Recurring membership creates stable, predictable monthly cash flow without one-off launch cycles`,
-      `Members pay monthly for sustained access to your tools, templates, and active peer network`
-    ]
-  }
-
-  // Default software tool / Workflow OS
-  return [
-    `Addresses the core recurring workflow challenge your ${nicheL} audience repeatedly discusses`,
-    highEng
-      ? `${eng}% engagement rate demonstrates audience willingness to adopt a dedicated tool`
-      : `Subscribers convert to software when it saves them hours of repetitive manual effort`,
-    `A subscription app monetizes recurring audience utility rather than one-time digital downloads`,
-    `Platform handles all billing, hosting, user accounts, and technical updates automatically`
-  ]
-}
-
-// ── Software Product Blueprint definitions ────────────────────────────────────
-
-const BLUEPRINTS = [
-  {
-    id: 'tool-os',
-    type: 'Software App',
-    name: 'Workflow OS',
-    tagline: 'Your niche command center & workflow software',
-    description: 'A cloud software tool solving your audience\'s most repetitive workflow bottlenecks with automated templates, calculators, and task tracking.',
-    monthly_price: 19,
-    fit: 96,
-    icon: Globe,
-    primary: true,
-    preview: 'webapp',
-    features: ['Interactive workspace', 'Automated workflows', 'Saved user projects', 'Cloud data sync'],
-    targetAudience: 'Active community practitioners & creators',
-    evidence: ['Solves top workflow bottleneck repeatedly asked in comments', 'Audience actively asks for structured execution tools']
-  },
-  {
-    id: 'tracker-app',
-    type: 'Tracker App',
-    name: 'Benchmark Tracker',
-    tagline: 'Milestone tracking and performance benchmarking',
-    description: 'Interactive web application where members record metrics, track goal progress, and benchmark their results against community standards.',
-    monthly_price: 24,
-    fit: 91,
-    icon: Smartphone,
-    preview: 'dashboard',
-    features: ['Daily progress logging', 'Community benchmarks', 'Goal milestones', 'Automated reports'],
-    targetAudience: 'Members tracking daily improvement & goals',
-    evidence: ['High engagement on metric and outcome discussions', 'Recurring questions regarding performance benchmarks']
-  },
-  {
-    id: 'calculator-tool',
-    type: 'Web Utility',
-    name: 'Workflow Calculator',
-    tagline: 'Instant estimations, formulas, and recommendations',
-    description: 'A specialized web utility giving followers instant answers, formulas, and tailored recommendations without complex manual spreadsheets.',
-    monthly_price: 15,
-    fit: 87,
-    icon: Globe,
-    preview: 'webapp',
-    features: ['Instant formula solver', 'Scenario comparison', 'Exportable summary reports', 'Saved user profiles'],
-    targetAudience: 'Followers seeking rapid decision support and formulas',
-    evidence: ['Recurring questions on calculations and setup comparisons']
-  },
-  {
-    id: 'community-platform',
-    type: 'Member Platform',
-    name: 'Pro Member Hub',
-    tagline: 'Software tools & direct member community',
-    description: 'A gated software hub offering direct tools, monthly feature drops, and structured peer collaboration for your most dedicated followers.',
-    monthly_price: 29,
-    fit: 82,
-    icon: Users,
-    preview: 'community',
-    features: ['Member software tools', 'Discussion boards', 'Live monthly sessions', 'Member directory'],
-    targetAudience: 'Dedicated community members wanting tools & direct access',
-    evidence: ['Community engagement signals high readiness for monthly subscription']
-  },
-]
-
-
-// ── Mapping Recommendations ──────────────────────────────────────────────────
-
-function mapRecommendationsToBlueprints(recs, creatorData = {}) {
-  const followers = parseFollowerCount(
-    creatorData?.followers ||
-    creatorData?.subscribers ||
-    creatorData?.subscriberCount ||
-    creatorData?.channelData?.subscriberCount ||
-    creatorData?.telemetry?.subscribers ||
+// One follower count, parsed once and reused everywhere on the page.
+function getFollowers(c) {
+  return parseFollowerCount(
+    c?.followers ||
+    c?.subscribers ||
+    c?.subscriberCount ||
+    c?.channelData?.subscriberCount ||
+    c?.telemetry?.subscribers ||
     0
   )
-  const eng = parseFloat(creatorData?.engagementRate) || 3.5
-  const niche = creatorData?.niche || 'Software & Workflow'
-
-  const defaultPrices = [19, 24, 15, 29]
-
-  if (!recs || recs.length === 0) {
-    const baseFit = eng >= 6.0 ? 97 : eng >= 4.0 ? 94 : followers >= 100_000 ? 92 : 89
-    return BLUEPRINTS.map((b, idx) => {
-      const price = clampPrice(b.monthly_price || defaultPrices[idx % 4])
-      const rev = calculateSubscriptionRevenue({
-        audience: followers,
-        monthlyPrice: price,
-        engagementRate: eng
-      })
-
-      const targetAud = sanitizeTargetAudience(b.targetAudience, niche)
-      const whoPays = deriveWhoPaysAndWhy({ ...b, target_audience: targetAud, monthly_price: price }, niche)
-
-      return {
-        ...b,
-        monthly_price: price,
-        fit: Math.max(65, baseFit - (idx * 6)),
-        revenue: rev.formattedRange,
-        revenueEstimate: rev,
-        subscribers: rev.formattedSubscribers,
-        revenueModel: `$${price}/mo recurring subscription`,
-        targetAudience: targetAud,
-        whoPaysAndWhy: whoPays,
-        features: (Array.isArray(b.features) && b.features.length >= 3)
-          ? b.features
-          : deriveFeaturesFromToolSummary(b.toolSummary || b.description, b.name, b.type)
-      }
-    })
-  }
-
-  const CATEGORY_MAP = {
-    tool: { type: 'Software App', icon: Globe, preview: 'webapp' },
-    tracker: { type: 'Tracker App', icon: Smartphone, preview: 'dashboard' },
-    calculator: { type: 'Web Utility', icon: Globe, preview: 'webapp' },
-    community: { type: 'Member Platform', icon: Users, preview: 'community' },
-    dashboard: { type: 'Dashboard', icon: Globe, preview: 'dashboard' },
-    app: { type: 'Mobile App', icon: Smartphone, preview: 'mobile' },
-    saas: { type: 'Software App', icon: Globe, preview: 'webapp' },
-    other: { type: 'Software App', icon: Globe, preview: 'webapp' },
-  }
-
-  // Ensure at least 3 candidate recommendations exist so "Other options" is always populated
-  let effectiveRecs = Array.isArray(recs) ? [...recs] : []
-  if (effectiveRecs.length > 0 && effectiveRecs.length < 3) {
-    const fallbacks = getFallbackCleanRecommendations(creatorData)
-    for (const fb of fallbacks) {
-      if (effectiveRecs.length >= 3) break
-      const exists = effectiveRecs.some(r =>
-        (r.product_name || r.name || '').toLowerCase() === (fb.product_name || fb.name || '').toLowerCase() ||
-        (r.product_category || r.category || '').toLowerCase() === (fb.product_category || fb.category || '').toLowerCase()
-      )
-      if (!exists) {
-        effectiveRecs.push({
-          ...fb,
-          id: fb.id || `rec-fallback-${effectiveRecs.length}`,
-          confidence_score: parseFloat(Math.max(0.68, (effectiveRecs[0]?.confidence_score || 0.92) - (effectiveRecs.length * 0.07)).toFixed(2))
-        })
-      }
-    }
-  }
-
-  return effectiveRecs.slice(0, 4).map((r, index) => {
-    const cat = (r.product_category || 'tool').toLowerCase()
-    const config = CATEGORY_MAP[cat] || CATEGORY_MAP.other
-    const price = clampPrice(r.monthly_price || defaultPrices[index % 4])
-
-    const rev = calculateSubscriptionRevenue({
-      audience: followers,
-      monthlyPrice: price,
-      engagementRate: eng
-    })
-
-    const rawConf = r.confidence_score ?? r.confidenceScore ?? r.fit
-    let fitVal
-    if (typeof rawConf === 'number' && !isNaN(rawConf)) {
-      fitVal = rawConf <= 1 ? Math.round(rawConf * 100) : Math.round(rawConf)
-    } else if (typeof rawConf === 'string') {
-      const parsed = parseFloat(rawConf.replace('%', ''))
-      if (!isNaN(parsed)) {
-        fitVal = parsed <= 1 ? Math.round(parsed * 100) : Math.round(parsed)
-      }
-    }
-
-    if (!fitVal || isNaN(fitVal)) {
-      const topFit = eng >= 6.0 ? 96 : eng >= 4.0 ? 94 : followers >= 100_000 ? 92 : 89
-      fitVal = Math.max(68, topFit - (index * 7))
-    }
-
-    const finalFit = Math.min(98, Math.max(65, fitVal))
-    const toolSummary = r.tool_summary || r.description || ''
-    const targetAud = sanitizeTargetAudience(r.target_audience, niche)
-    const whoPays = r.who_pays_and_why || deriveWhoPaysAndWhy({ ...r, target_audience: targetAud, monthly_price: price }, niche)
-
-    // Dynamic feature pills strictly from tool_summary or AI key_features
-    const features = (Array.isArray(r.key_features) && r.key_features.length >= 3)
-      ? r.key_features.slice(0, 4)
-      : deriveFeaturesFromToolSummary(toolSummary, r.product_name, cat)
-
-    // Clean evidence to remove fabricated quotes
-    const cleanedEvidence = cleanEvidenceList(
-      Array.isArray(r.evidence) ? r.evidence : [],
-      creatorData?.comments || [],
-      creatorData?.recentPosts || []
-    )
-
-    return {
-      id: r.id || `rec-${index}`,
-      type: config.type,
-      name: r.product_name,
-      tagline: r.tagline || 'Custom built for your audience',
-      description: toolSummary || 'A tailored subscription software app designed specifically for your audience.',
-      toolSummary: toolSummary,
-      monthly_price: price,
-      revenue: rev.formattedRange,
-      revenueEstimate: rev,
-      subscribers: rev.formattedSubscribers,
-      fit: finalFit,
-      icon: config.icon,
-      primary: index === 0,
-      preview: config.preview,
-      features: features,
-      rationale: r.rationale || '',
-      targetAudience: targetAud,
-      whoPaysAndWhy: whoPays,
-      evidence: cleanedEvidence,
-      revenueModel: `$${price}/mo subscription`,
-      raw: r
-    }
-  })
-}
-
-function getReasonsCategoryKey(selectedBlueprint) {
-  if (!selectedBlueprint) return 'tool-os'
-  return selectedBlueprint.id || 'tool-os'
 }
 
 function parseMetricViews(str) {
@@ -398,8 +196,9 @@ function parseMetricViews(str) {
   return parseFloat(clean) || 0
 }
 
+// Estimated from average views vs audience size. Always shown as an estimate.
 function getDynamicEngagementRate(creator) {
-  const followers = parseFollowerCount(creator?.followers || creator?.subscribers || 0)
+  const followers = getFollowers(creator)
   const posts = creator?.recentPosts || []
 
   if (followers > 0 && posts.length > 0) {
@@ -423,300 +222,689 @@ function getDynamicEngagementRate(creator) {
   if (!isNaN(stored) && stored > 0 && stored !== 3.8) {
     return stored
   }
-
   return null
 }
 
-function calculateAudienceFit(creator, blueprint) {
-  if (blueprint?.fit && typeof blueprint.fit === 'number') {
-    return blueprint.fit
+function normCat(c) {
+  return String(c || 'tool').toLowerCase().trim().replace(/[\s-]+/g, '_')
+}
+
+function normName(n) {
+  return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+// Only software ideas pass. Courses, coaching, consulting, newsletters and guides do not.
+function isSoftwareIdea(r) {
+  if (!r) return false
+  if (BANNED_CATEGORIES.has(normCat(r.product_category || r.category))) return false
+  const text = `${r.product_name || r.name || ''} ${r.tool_summary || r.description || ''}`
+  return !CONTENT_RE.test(text)
+}
+
+function safeRevenue(audience, price, engagement) {
+  if (!(audience > 0)) return null
+  try {
+    return calculateSubscriptionRevenue({ audience, monthlyPrice: price, engagementRate: engagement })
+  } catch {
+    return null
   }
-  return 92
+}
+
+// "9–28 members" -> "9–28" so we can write "9–28 subscribers" without doubling the noun.
+function subsText(rev) {
+  const s = String(rev?.formattedSubscribers ?? '').replace(/\s*(members?|subscribers?)\s*$/i, '').trim()
+  return s || '—'
+}
+
+// "$135–$420 / mo" -> "$135–$420"
+function rangeMain(rev) {
+  return String(rev?.formattedRange ?? '').replace(/\s*\/\s*mo\w*\s*$/i, '').trim() || '—'
+}
+
+function featureLabel(f) {
+  if (typeof f === 'string') return f.trim()
+  return String(f?.title || f?.label || f?.name || '').trim()
+}
+
+// Feature pills must come from the product itself. Generic template features are
+// dropped unless the tool summary actually talks about them.
+function pickFeatures(candidates, summary, name, cat) {
+  const text = `${summary} ${name}`.toLowerCase()
+  const clean = (list) => {
+    const seen = new Set()
+    return (Array.isArray(list) ? list : [])
+      .map(featureLabel)
+      .filter(f => {
+        if (!f || seen.has(f.toLowerCase())) return false
+        seen.add(f.toLowerCase())
+        return true
+      })
+  }
+  const keep = (f) => {
+    if (!GENERIC_FEATURE_RE.test(f)) return true
+    return f.toLowerCase().split(/\W+/).filter(w => w.length > 4).some(w => text.includes(w))
+  }
+
+  const given = clean(candidates)
+  let derived = []
+  try {
+    derived = clean(deriveFeaturesFromToolSummary(summary, name, cat))
+  } catch { /* fall through */ }
+
+  let list = given.filter(keep)
+  if (list.length < 3) list = [...list, ...derived.filter(keep).filter(d => !list.includes(d))]
+  if (list.length < 3) list = [...list, ...[...given, ...derived].filter(d => !list.includes(d))]
+  return list.slice(0, 4)
+}
+
+function makeBlueprint(p, ctx) {
+  const config = CATEGORY_MAP[p.cat] || CATEGORY_MAP.tool
+  const rev = safeRevenue(ctx.followers, p.price, ctx.engagement)
+  return {
+    id: p.id,
+    type: config.type,
+    category: p.cat,
+    name: p.name,
+    tagline: p.tagline || '',
+    description: p.toolSummary,
+    toolSummary: p.toolSummary,
+    tool_summary: p.toolSummary,
+    targetAudience: p.targetAudience,
+    target_audience: p.targetAudience,
+    whoPaysAndWhy: p.whoPays,
+    who_pays_and_why: p.whoPays,
+    monthly_price: p.price,
+    revenue: rev ? rev.formattedRange : '',
+    revenueEstimate: rev,
+    subscribers: rev ? rev.formattedSubscribers : '',
+    fit: p.fit,
+    icon: config.icon,
+    iconKey: config.iconKey,
+    primary: false,
+    preview: config.preview,
+    features: p.features,
+    evidence: p.evidence,
+    rationale: p.rationale || '',
+    revenueModel: `$${p.price}/mo subscription`,
+    isTemplate: Boolean(p.isTemplate),
+    isCustom: Boolean(p.isCustom),
+    raw: p.raw,
+  }
+}
+
+function mapRecommendationsToBlueprints(recs, creatorData, ctx) {
+  const { followers, engagement, niche } = ctx
+  if (!Array.isArray(recs) || recs.length === 0) return []
+
+  // 1. Keep software ideas only.
+  const list = recs.filter(isSoftwareIdea).slice(0, 4).map(rec => ({ rec, isTemplate: false }))
+
+  // 2. If too few real ideas remain, add clearly labelled starter templates (never passed off as audience-backed).
+  if (list.length < 3) {
+    let fallbacks = []
+    try {
+      fallbacks = (getFallbackCleanRecommendations(creatorData) || []).filter(isSoftwareIdea)
+    } catch { /* ignore */ }
+    for (const fb of fallbacks) {
+      if (list.length >= 3) break
+      const name = normName(fb.product_name || fb.name)
+      const cat = normCat(fb.product_category || fb.category)
+      const dup = list.some(({ rec }) =>
+        normName(rec.product_name || rec.name) === name ||
+        normCat(rec.product_category || rec.category) === cat
+      )
+      if (!dup) list.push({ rec: fb, isTemplate: true })
+    }
+  }
+
+  const topFit = engagement >= 6 ? 96 : engagement >= 4 ? 94 : followers >= 100_000 ? 92 : 89
+
+  const mapped = list.map(({ rec: r, isTemplate }, index) => {
+    const cat = normCat(r.product_category || r.category)
+    const price = clampPrice(r.monthly_price || DEFAULT_PRICES[index % 4])
+    const name = r.product_name || r.name || 'Untitled software idea'
+    const toolSummary = r.tool_summary || r.description || ''
+
+    const rawConf = r.confidence_score ?? r.confidenceScore ?? r.fit
+    let fit
+    if (typeof rawConf === 'number' && !isNaN(rawConf)) {
+      fit = rawConf <= 1 ? Math.round(rawConf * 100) : Math.round(rawConf)
+    } else if (typeof rawConf === 'string') {
+      const parsed = parseFloat(rawConf.replace('%', ''))
+      if (!isNaN(parsed)) fit = parsed <= 1 ? Math.round(parsed * 100) : Math.round(parsed)
+    }
+    if (!fit || isNaN(fit)) fit = Math.max(68, topFit - (index * 7))
+    fit = Math.min(98, Math.max(65, fit))
+    if (isTemplate) fit = Math.min(fit, 72)
+
+    const targetAudience = sanitizeTargetAudience(r.target_audience, niche)
+    let whoPays = r.who_pays_and_why
+    if (!whoPays) {
+      try {
+        whoPays = deriveWhoPaysAndWhy({ ...r, target_audience: targetAudience, monthly_price: price }, niche)
+      } catch {
+        whoPays = ''
+      }
+    }
+
+    // Evidence is shown only when it matches real comments or posts. Templates carry none.
+    let evidence = []
+    if (!isTemplate) {
+      try {
+        evidence = cleanEvidenceList(
+          Array.isArray(r.evidence) ? r.evidence.filter(Boolean) : [],
+          creatorData?.comments || [],
+          creatorData?.recentPosts || []
+        ) || []
+      } catch {
+        evidence = []
+      }
+    }
+
+    const features = pickFeatures(r.key_features, toolSummary, name, cat)
+
+    return makeBlueprint({
+      id: isTemplate ? `template-${index}-${normName(name)}` : (r.id || `rec-${index}`),
+      name,
+      tagline: r.tagline,
+      toolSummary,
+      targetAudience,
+      whoPays,
+      price,
+      cat,
+      fit,
+      features,
+      evidence,
+      rationale: r.rationale,
+      isTemplate,
+      raw: r,
+    }, ctx)
+  })
+
+  // Highest match first, so the featured idea is always the strongest one.
+  mapped.sort((a, b) => (b.fit || 0) - (a.fit || 0))
+  return mapped
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small pieces
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Pill({ children, tone = 'neutral', icon: Icon }) {
+  const tones = {
+    neutral: { color: C.muted, background: 'rgba(255,255,255,0.06)' },
+    amber: { color: '#f5c066', background: 'rgba(245,192,102,0.12)' },
+    green: { color: '#5fd3a0', background: 'rgba(95,211,160,0.12)' },
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" style={tones[tone]}>
+      {Icon ? <Icon className="w-3.5 h-3.5" /> : null}
+      {children}
+    </span>
+  )
+}
+
+function MiniBar({ pct, accent }) {
+  return (
+    <div className="h-1.5 w-full rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: accent.color }} />
+    </div>
+  )
+}
+
+// A neutral software window. Every value in it is illustration, and it says so.
+function IdeaMockup({ bp, accent }) {
+  const features = Array.isArray(bp.features) && bp.features.length > 0
+    ? bp.features
+    : ['Workspace', 'Saved items', 'Exports']
+  const feat = (i) => features[i % features.length]
+  const box = { background: C.raised }
+  const tint = { background: `rgba(${accent.rgb},0.14)` }
+
+  let body
+  if (bp.preview === 'dashboard') {
+    body = (
+      <div className="space-y-2.5">
+        <div className="grid grid-cols-3 gap-2">
+          {[['Active', '24'], ['Saved', '128'], ['Score', '86%']].map(([label, value], i) => (
+            <div key={label} className="rounded-lg p-2.5" style={i === 2 ? tint : box}>
+              <span className="text-[11px] block" style={{ color: C.muted }}>{label}</span>
+              <span className="text-base font-semibold tabular-nums block mt-0.5">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg p-3" style={box}>
+          <div className="flex items-end gap-1.5 h-16">
+            {[38, 62, 48, 78, 58, 92, 72].map((h, i, arr) => (
+              <div
+                key={i}
+                className="flex-1 rounded-sm"
+                style={{ height: `${h}%`, background: i >= arr.length - 2 ? accent.color : 'rgba(255,255,255,0.12)' }}
+              />
+            ))}
+          </div>
+        </div>
+        {[0, 1].map(i => (
+          <div key={i} className="rounded-lg px-3 py-2 flex items-center justify-between text-xs" style={box}>
+            <span className="truncate pr-2" style={{ color: C.body }}>{feat(i)}</span>
+            <span style={{ color: C.faint }}>Ready</span>
+          </div>
+        ))}
+      </div>
+    )
+  } else if (bp.preview === 'community') {
+    body = (
+      <div className="space-y-2.5">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="rounded-lg p-3 flex items-start gap-3" style={box}>
+            <div className="w-7 h-7 rounded-full shrink-0" style={{ background: `rgba(${accent.rgb},${0.22 + i * 0.1})` }} />
+            <div className="flex-1 min-w-0 space-y-2">
+              <span className="text-xs font-medium block truncate" style={{ color: C.body }}>{feat(i)}</span>
+              <div className="h-1.5 w-full rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="h-1.5 w-3/5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  } else if (bp.preview === 'mobile') {
+    body = (
+      <div className="flex justify-center">
+        <div className="w-40 rounded-2xl p-2.5 space-y-2" style={{ background: C.row, boxShadow: `inset 0 0 0 2px ${C.lineStrong}` }}>
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[11px] font-semibold truncate pr-1">{bp.name}</span>
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent.color }} />
+          </div>
+          {[0, 1, 2].map(i => (
+            <div key={i} className="rounded-lg p-2" style={box}>
+              <span className="text-[10px] block truncate mb-1.5" style={{ color: C.body }}>{feat(i)}</span>
+              <MiniBar pct={[80, 55, 30][i]} accent={accent} />
+            </div>
+          ))}
+          <div className="flex items-center justify-around pt-1">
+            {[0, 1, 2, 3].map(i => (
+              <span key={i} className="w-2 h-2 rounded-full" style={{ background: i === 0 ? accent.color : 'rgba(255,255,255,0.14)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  } else {
+    body = (
+      <div className="space-y-2.5">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="rounded-lg p-3" style={box}>
+            <div className="flex items-center justify-between text-xs mb-2" style={{ color: C.muted }}>
+              <span className="truncate pr-2">{feat(i)}</span>
+              <span className="tabular-nums shrink-0">{[72, 48, 86][i]}%</span>
+            </div>
+            <MiniBar pct={[72, 48, 86][i]} accent={accent} />
+          </div>
+        ))}
+        <div className="rounded-lg p-3 flex items-center justify-between" style={tint}>
+          <span className="text-xs" style={{ color: C.muted }}>Result</span>
+          <span className="text-lg font-semibold tabular-nums">+34%</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: C.row, boxShadow: `inset 0 0 0 1px ${C.line}` }}>
+      <div className="flex items-center gap-3 px-3.5 py-3">
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map(i => <span key={i} className="w-2 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.14)' }} />)}
+        </div>
+        <span className="text-xs truncate" style={{ color: C.muted }}>{bp.name}</span>
+      </div>
+      <div className="px-3.5 pb-3">{body}</div>
+      <p className="px-3.5 pb-3 text-[11px]" style={{ color: C.faint }}>Sample data, for illustration</p>
+    </div>
+  )
+}
+
+function PostThumb({ post }) {
+  const url = post?.url && post.url !== '#' ? post.url : null
+  const rawViews = post?.views || post?.viewCount
+  const meta = rawViews
+    ? (/view/i.test(String(rawViews)) ? String(rawViews) : `${rawViews} views`)
+    : (post?.duration || '')
+
+  const inner = (
+    <>
+      <div className="relative aspect-video overflow-hidden rounded-xl" style={{ background: C.raised }}>
+        {post?.thumbnail ? (
+          <img
+            src={post.thumbnail}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            onError={e => {
+              if (!e.currentTarget.dataset.proxied) {
+                e.currentTarget.dataset.proxied = 'true'
+                e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(post.thumbnail)}`
+              } else {
+                e.currentTarget.style.display = 'none'
+              }
+            }}
+          />
+        ) : null}
+      </div>
+      <p className="mt-2 text-[13px] leading-snug line-clamp-2 transition-colors group-hover:text-white" style={{ color: C.body }}>
+        {post?.title}
+      </p>
+      {meta && <p className="mt-0.5 text-xs" style={{ color: C.faint }}>{meta}</p>}
+    </>
+  )
+
+  const cls = 'group block w-44 shrink-0 bp-focus rounded-xl'
+  return url
+    ? <a href={url} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
+    : <div className={cls}>{inner}</div>
 }
 
 export default function Blueprint() {
-  const { next, creatorData, updateCreator, startBgJob, prev, goTo, requestWipeCreator } = useForge()
+  const { next, creatorData, updateCreator, startBgJob, goTo, requestWipeCreator } = useForge()
   const accent = getAccent(creatorData)
+  const onAccent = isLightColor(accent.color) ? '#08090c' : '#ffffff'
 
   const recsJob = useBgJob('onboarding-recs')
   const rawRecs = creatorData.recommendations
   const isValidRecs = areRecsValidForCreator(rawRecs, creatorData)
   const validRecs = isValidRecs ? rawRecs : null
-  const generatedBlueprints = mapRecommendationsToBlueprints(validRecs, creatorData)
+
+  const [useFallback, setUseFallback] = useState(false)
+  const regen = useRef({ handle: null, n: 0 })
+
+  const fallbackRecs = useMemo(
+    () => (useFallback ? getFallbackCleanRecommendations(creatorData) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [useFallback]
+  )
+  const sourceRecs = validRecs || fallbackRecs
+
+  // One audience size and one engagement figure feed every number on the page.
+  const followersCount = getFollowers(creatorData)
+  const dynamicEngagement = getDynamicEngagementRate(creatorData)
+  const engagementForMath = dynamicEngagement || parseFloat(creatorData?.engagementRate) || 3.5
+  const niche = creatorData?.niche || 'Software & Workflow'
+
+  const generatedBlueprints = useMemo(
+    () => mapRecommendationsToBlueprints(sourceRecs, creatorData, {
+      followers: followersCount,
+      engagement: engagementForMath,
+      niche,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sourceRecs, followersCount, engagementForMath, niche, creatorData.comments, creatorData.recentPosts]
+  )
 
   const [customPrices, setCustomPrices] = useState({})
   const [customBlueprints, setCustomBlueprints] = useState([])
-  const [showCustomModal, setShowCustomModal] = useState(false)
-  const [customName, setCustomName] = useState('')
-  const [customSummary, setCustomSummary] = useState('')
-  const [customPrice, setCustomPrice] = useState(19)
-  const [customTargetAudience, setCustomTargetAudience] = useState('')
+  const [showCustomForm, setShowCustomForm] = useState(false)
+  const [customForm, setCustomForm] = useState({ name: '', summary: '', audience: '', price: 19 })
   const [customError, setCustomError] = useState(null)
 
-  const blueprints = [...customBlueprints, ...generatedBlueprints]
-  const [selected, setSelected] = useState(blueprints[0]?.id)
-  const [visible, setVisible] = useState(false)
-  const [showReasons, setShowReasons] = useState(true)
+  const blueprints = useMemo(
+    () => [...customBlueprints, ...generatedBlueprints],
+    [customBlueprints, generatedBlueprints]
+  )
+  const [selected, setSelected] = useState(null)
   const [isScraping, setIsScraping] = useState(false)
   const [quotaWarning, setQuotaWarning] = useState(null)
 
-  const hasNoRecs = (!validRecs || validRecs.length === 0) && customBlueprints.length === 0
-  const isGenerating = recsJob.status === 'running' || (hasNoRecs && !isScraping)
+  const hasNoRecs = (!sourceRecs || sourceRecs.length === 0) && customBlueprints.length === 0
+  const gaveUp = useFallback && generatedBlueprints.length === 0
+  const isGenerating = recsJob.status === 'running' || (hasNoRecs && !isScraping && !gaveUp)
+  const busy = isScraping || isGenerating
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 80)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
+    let cancelled = false
     const promise = getScrapePromise()
     if (promise && isScrapePending()) {
       setIsScraping(true)
       promise
         .then((data) => {
+          if (cancelled) return
           setIsScraping(false)
-          if (data && (data.followers || data.name || data.recentPosts)) {
-            updateCreator(data)
-          }
+          if (data && (data.followers || data.name || data.recentPosts)) updateCreator(data)
         })
-        .catch(() => setIsScraping(false))
+        .catch(() => { if (!cancelled) setIsScraping(false) })
     } else {
       setIsScraping(false)
     }
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Trigger recommendations when audience intelligence is ready or as fallback
+  // Reset the retry counter when the creator changes.
   useEffect(() => {
-    if (hasNoRecs && recsJob.status !== 'running' && !isScraping) {
-      if (rawRecs && !isValidRecs) {
-        updateCreator({ recommendations: null })
-      }
+    if (regen.current.handle !== creatorData.handle) {
+      regen.current = { handle: creatorData.handle, n: 0 }
+    }
+  }, [creatorData.handle])
+
+  // Start generating ideas. Backend first, AI as the fallback.
+  useEffect(() => {
+    const idle = !['running', 'done', 'error'].includes(recsJob.status)
+    if (hasNoRecs && idle && !isScraping && !useFallback) {
+      if (rawRecs && !isValidRecs) updateCreator({ recommendations: null })
       startBgJob('onboarding-recs', async (sig) => {
         let finalRecs = null
         if (creatorData.id) {
           try {
             finalRecs = await recommendCreator(creatorData.id)
           } catch (err) {
-            console.warn('[CoLaunch] Backend recommend in Blueprint failed, fallback to AI:', err)
+            console.warn('[CoLaunch] Backend recommend in Blueprint failed, falling back to AI:', err)
           }
         }
-        const isPlaceholder = finalRecs && finalRecs.length === 1 && (finalRecs[0].product_name?.includes('[Placeholder]') || finalRecs[0].product_name?.includes('Placeholder'))
+        const isPlaceholder = finalRecs && finalRecs.length === 1 &&
+          String(finalRecs[0].product_name || '').toLowerCase().includes('placeholder')
         if (!finalRecs || finalRecs.length === 0 || isPlaceholder) {
           finalRecs = await generateRecommendationsAI(creatorData, sig)
         }
-        if (finalRecs && Array.isArray(finalRecs) && finalRecs.length > 0) {
-          return finalRecs
-        }
-        throw new Error("Empty recommendations response")
+        if (Array.isArray(finalRecs) && finalRecs.length > 0) return finalRecs
+        throw new Error('Empty recommendations response')
       })
     }
-  }, [hasNoRecs, recsJob.status, isScraping, creatorData.handle, creatorData.name, creatorData.id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasNoRecs, recsJob.status, isScraping, useFallback, creatorData.handle, creatorData.name, creatorData.id])
 
+  // Apply the job result, retry once if it does not match this creator, then fall back.
   useEffect(() => {
     if (recsJob.status === 'done' && recsJob.result) {
       if (areRecsValidForCreator(recsJob.result, creatorData)) {
         updateCreator({ recommendations: recsJob.result })
-      } else {
-        console.warn('[CoLaunch] Stale recommendations detected in recsJob. Regenerating...')
+      } else if (regen.current.n < 1) {
+        regen.current.n += 1
         startBgJob('onboarding-recs', async (sig) => {
           const aiRecs = await generateRecommendationsAI(creatorData, sig)
-          if (aiRecs && Array.isArray(aiRecs) && aiRecs.length > 0) {
-            return aiRecs
-          }
-          throw new Error("Empty recommendations response")
+          if (Array.isArray(aiRecs) && aiRecs.length > 0) return aiRecs
+          throw new Error('Empty recommendations response')
         })
+      } else {
+        setUseFallback(true)
+        setQuotaWarning('Live ideas did not match your channel, so these are general starter ideas.')
       }
     } else if (recsJob.status === 'error') {
       const fallbacks = getFallbackCleanRecommendations(creatorData)
       updateCreator({ recommendations: fallbacks })
+      setUseFallback(true)
+      const msg = String(recsJob.error?.message || recsJob.error || '')
       setQuotaWarning(
-        recsJob.error?.includes('429') || recsJob.error?.includes('exceeded')
-          ? "API rate limit reached. Loaded estimated subscription software templates."
-          : "Failed to load live recommendations. Loaded default software templates."
+        msg.includes('429') || msg.includes('exceeded')
+          ? 'API rate limit reached. Showing general starter ideas.'
+          : 'Could not load live ideas. Showing general starter ideas.'
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recsJob.status, recsJob.result, recsJob.error, creatorData.handle, creatorData.name])
-
-  useEffect(() => {
-    if (blueprints.length > 0 && !blueprints.some(b => b.id === selected)) {
-      setSelected(blueprints[0].id)
-    }
-  }, [creatorData.recommendations, customBlueprints.length])
-
-  const selectedBlueprint = blueprints.find(b => b.id === selected) || blueprints[0]
-  const activeBlueprint = selectedBlueprint || blueprints[0]
-  const otherOptions = blueprints
-    .filter(b => b.id !== activeBlueprint.id)
-    .sort((a, b) => (b.fit || 0) - (a.fit || 0))
-
-  const dynamicEngagement = getDynamicEngagementRate(creatorData)
-  const followersCount = parseFollowerCount(creatorData?.followers || creatorData?.subscribers || 0)
-
-  // Interactive chosen price for the active blueprint (clamps $9–$29)
-  const activePrice = clampPrice(customPrices[activeBlueprint?.id] || activeBlueprint?.monthly_price || 19)
-
-  // Live subscription revenue calculations purely using the shared helper
-  const activeRevenue = calculateSubscriptionRevenue({
-    audience: followersCount,
-    monthlyPrice: activePrice,
-    engagementRate: dynamicEngagement || 3.5
-  })
 
   useEffect(() => {
     if (dynamicEngagement && (!creatorData.engagementRate || creatorData.engagementRate === 3.8)) {
       updateCreator({ engagementRate: dynamicEngagement })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dynamicEngagement, creatorData.engagementRate])
 
-  const blurb = buildCreatorBlurb(creatorData)
-  const reasons = buildReasons(activeBlueprint, creatorData)
+  // Derived selection: always valid, falls back to the strongest idea.
+  const activeBlueprint = blueprints.find(b => b.id === selected) || blueprints[0] || null
+  const otherOptions = activeBlueprint
+    ? blueprints.filter(b => b.id !== activeBlueprint.id)
+    : []
 
-  const PLATFORM_COLORS = {
-    youtube: '#ef4444',
-    instagram: '#e1306c',
-    twitter: '#60a5fa',
-    tiktok: '#00c8c8',
-    twitch: '#9146ff',
-  }
+  const activePrice = clampPrice(customPrices[activeBlueprint?.id] ?? activeBlueprint?.monthly_price ?? 19)
+  const activeRevenue = activeBlueprint ? safeRevenue(followersCount, activePrice, engagementForMath) : null
 
-  const platformColor = PLATFORM_COLORS[creatorData.platform] || accent.color
   const activeAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const ActiveIcon = activeBlueprint?.icon || Globe
-
   const creatorName = creatorData.name || (creatorData.handle || 'Creator').replace('@', '')
+  const displayPosts = (Array.isArray(creatorData.recentPosts) ? creatorData.recentPosts : []).slice(0, 5)
+  const engineFit = typeof activeBlueprint?.fit === 'number'
+    ? activeBlueprint.fit
+    : (generatedBlueprints[0]?.fit ?? 85)
 
-  const handlePriceChange = (newPrice) => {
-    const clamped = clampPrice(newPrice)
-    setCustomPrices(prev => ({
-      ...prev,
-      [activeBlueprint.id]: clamped
-    }))
+  const handlePriceChange = (value) => {
+    if (!activeBlueprint) return
+    setCustomPrices(prev => ({ ...prev, [activeBlueprint.id]: clampPrice(value) }))
   }
 
-  const handleCreateCustomProduct = (e) => {
+  const handleCreateCustom = (e) => {
     e.preventDefault()
-    if (!customName.trim()) {
-      setCustomError('Please enter a software product name')
-      return
+    const name = customForm.name.trim()
+    const summary = customForm.summary.trim()
+    const audience = customForm.audience.trim()
+
+    if (!name) return setCustomError('Give your software idea a name.')
+    if (summary.length < 20) return setCustomError('Describe what the tool does in a sentence or two (at least 20 characters).')
+    if (CONTENT_RE.test(`${name} ${summary}`)) {
+      return setCustomError('This sounds like content (a course, coaching, newsletter or guide). Describe a tool people use every month, like a calculator, tracker or dashboard.')
     }
-    if (!customSummary.trim()) {
-      setCustomError('Please describe what tool or recurring problem the software solves')
-      return
-    }
 
-    const price = clampPrice(customPrice)
-    const customId = `custom-software-${Date.now()}`
-    const rev = calculateSubscriptionRevenue({
-      audience: followersCount,
-      monthlyPrice: price,
-      engagementRate: dynamicEngagement || 3.5
-    })
+    const price = clampPrice(customForm.price)
+    const targetAudience = audience || `${creatorName}'s audience`
+    let whoPays = ''
+    try {
+      whoPays = deriveWhoPaysAndWhy({
+        product_name: name,
+        tool_summary: summary,
+        target_audience: targetAudience,
+        monthly_price: price,
+        product_category: 'tool',
+      }, niche)
+    } catch { /* optional */ }
 
-    const targetAud = customTargetAudience.trim() || `${creatorName}'s audience`
-    const customFeatures = deriveFeaturesFromToolSummary(customSummary.trim(), customName.trim(), 'tool')
-    const whoPays = `${targetAud} paying $${price}/mo for automated tools and ongoing software utility.`
-
-    const newBp = {
-      id: customId,
-      type: 'Software App',
-      name: customName.trim(),
-      tagline: 'Custom subscription software',
-      description: customSummary.trim(),
-      toolSummary: customSummary.trim(),
-      targetAudience: targetAud,
-      whoPaysAndWhy: whoPays,
-      monthly_price: price,
-      revenue: rev.formattedRange,
-      revenueEstimate: rev,
-      subscribers: rev.formattedSubscribers,
-      fit: 95,
-      icon: Globe,
-      primary: true,
-      preview: 'webapp',
-      features: customFeatures,
-      evidence: ['Custom software idea designed for audience recurring workflow'],
-      revenueModel: `$${price}/mo subscription`,
+    const id = `custom-software-${Date.now()}`
+    const bp = makeBlueprint({
+      id,
+      name,
+      tagline: 'Your own idea',
+      toolSummary: summary,
+      targetAudience,
+      whoPays,
+      price,
+      cat: 'tool',
+      fit: null,
+      features: pickFeatures([], summary, name, 'tool'),
+      evidence: [],
+      isCustom: true,
       raw: {
         schemaVersion: 3,
-        id: customId,
-        product_name: customName.trim(),
-        tool_summary: customSummary.trim(),
-        target_audience: targetAud,
+        id,
+        product_name: name,
+        tool_summary: summary,
+        target_audience: targetAudience,
         who_pays_and_why: whoPays,
-        key_features: customFeatures,
         monthly_price: price,
-        product_category: 'tool'
-      }
-    }
+        product_category: 'tool',
+      },
+    }, { followers: followersCount, engagement: engagementForMath })
 
-    setCustomBlueprints(prev => [newBp, ...prev])
-    setSelected(customId)
-    setShowCustomModal(false)
-    setCustomName('')
-    setCustomSummary('')
-    setCustomTargetAudience('')
+    setCustomBlueprints(prev => [bp, ...prev])
+    setSelected(id)
+    setShowCustomForm(false)
+    setCustomForm({ name: '', summary: '', audience: '', price: 19 })
     setCustomError(null)
   }
 
   const handleContinue = () => {
-    if (isScraping || isGenerating) return
-    const chosenPrice = activePrice
-    const updatedBlueprint = {
+    if (busy || !activeBlueprint) return
+    const saved = {
       ...activeBlueprint,
-      monthly_price: chosenPrice,
-      revenue: activeRevenue.formattedRange,
+      primary: true,
+      monthly_price: activePrice,
+      revenue: activeRevenue ? activeRevenue.formattedRange : '',
       revenueEstimate: activeRevenue,
-      subscribers: activeRevenue.formattedSubscribers,
+      subscribers: activeRevenue ? activeRevenue.formattedSubscribers : '',
     }
 
+    // If the product or price changed, the cached landing copy is stale.
+    const prev = creatorData.blueprint
+    const sameProduct = Boolean(prev) &&
+      prev.id === saved.id &&
+      prev.name === saved.name &&
+      prev.monthly_price === activePrice
+
     updateCreator({
-      blueprint: updatedBlueprint,
-      productName: activeBlueprint.name,
-      monthly_price: chosenPrice,
-      tool_summary: activeBlueprint.toolSummary || activeBlueprint.description,
-      target_audience: activeBlueprint.targetAudience,
-      estimated_subscribers: activeRevenue.formattedSubscribers,
+      blueprint: saved,
+      productName: saved.name,
+      monthly_price: activePrice,
+      tool_summary: saved.toolSummary,
+      target_audience: saved.targetAudience,
+      estimated_subscribers: activeRevenue ? activeRevenue.formattedSubscribers : '',
       revenue_estimate: activeRevenue,
-      evidence: activeBlueprint.evidence,
-      category: activeBlueprint.raw?.product_category || 'tool',
+      evidence: saved.evidence,
+      features: saved.features,
+      category: saved.raw?.product_category || saved.category,
+      ...(sameProduct ? {} : { landingCopy: null }),
     })
     next()
   }
 
-  const rawPosts = (creatorData.recentPosts && creatorData.recentPosts.length > 0)
-    ? creatorData.recentPosts
-    : []
+  const rail = blueprints
+  const activeIndex = Math.max(0, rail.findIndex(b => b.id === activeBlueprint?.id))
+  const moveSelection = (dir) => {
+    if (rail.length === 0) return
+    setSelected(rail[(activeIndex + dir + rail.length) % rail.length].id)
+  }
 
-  const displayPosts = rawPosts.slice(0, 5)
+  const audienceWord = creatorData.platform === 'youtube' ? 'subscribers' : 'followers'
+  const handleLabel = creatorData.handle
+    ? (creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`)
+    : (creatorData.name || '@creator')
+  const pricePct = ((activePrice - 9) / 20) * 100
+  const evidence = activeBlueprint?.evidence || []
 
-  const VIDEO_GRADIENTS = [
-    { bg: 'from-amber-900/40 via-stone-800 to-black', text: 'text-amber-200' },
-    { bg: 'from-blue-900/40 via-sky-950 to-black', text: 'text-sky-200' },
-    { bg: 'from-cyan-950 via-teal-900/40 to-black', text: 'text-teal-200' },
-    { bg: 'from-purple-950 via-indigo-900/30 to-black', text: 'text-indigo-200' },
-    { bg: 'from-rose-950 via-orange-950/40 to-black', text: 'text-orange-200' },
-  ]
+  const evidenceNote = activeBlueprint?.isCustom
+    ? 'This is your own idea. The landing page will show whether your audience wants it.'
+    : activeBlueprint?.isTemplate
+      ? 'A general starter idea for your niche. It is not based on your audience data.'
+      : 'No comment or video matched this idea. It is based on your niche and channel topics.'
 
   return (
     <div
-      className="min-h-screen flex flex-col text-slate-200 font-sans antialiased selection:bg-brand-500 selection:text-white pb-36 sm:pb-44"
-      style={{
-        background: `radial-gradient(circle at 50% 0%, rgba(${accent.rgb}, 0.08) 0%, transparent 60%), radial-gradient(circle at 10% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 40%), #08090c`
-      }}
+      className="bp-root min-h-screen flex flex-col antialiased pb-40 sm:pb-32 selection:bg-white/20"
+      style={{ background: C.bg, color: C.text, '--bp-accent': accent.color }}
     >
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#08090c]/85 border-b border-[#1f2433]/70 transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Back Button & Brand */}
-          <div className="flex items-center gap-4">
+      <style>{PAGE_CSS}</style>
+
+      {/* Header */}
+      <header
+        className="sticky top-0 z-40 w-full backdrop-blur-xl border-b"
+        style={{ background: 'rgba(8,9,12,0.82)', borderColor: C.line }}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-5">
             <button
+              type="button"
               onClick={() => goTo('creator-link')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-[#0f1117] hover:bg-[#151822] border border-[#1f2433] rounded-lg transition-all active:scale-95 cursor-pointer"
+              className="bp-btn inline-flex items-center gap-1.5 text-sm rounded-md transition-colors hover:text-white cursor-pointer"
+              style={{ color: C.muted }}
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <div className="h-4 w-[1px] bg-[#1f2433]"></div>
             <CoLaunchLogo
               size={18}
               href="https://co-launch.app"
@@ -725,559 +913,530 @@ export default function Blueprint() {
             />
           </div>
 
-          {/* Action Menus & Step Indicator */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={requestWipeCreator}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+              className="bp-btn hidden sm:inline-flex items-center gap-1.5 text-sm rounded-md text-red-400/80 hover:text-red-300 transition-colors cursor-pointer"
               title="Wipe creator from session storage"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset Creator</span>
+              <span>Reset creator</span>
             </button>
-
             <OnboardingStepIndicator currentStep="blueprint" showOptions={true} />
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-12 space-y-8">
-        {quotaWarning && (
-          <div className="p-4 rounded-xl border flex items-center justify-between gap-4" style={{ background: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.15)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
-                <CheckCircle size={16} className="text-amber-400" />
-              </div>
-              <div>
-                <p className="text-[13px] font-medium text-white">Notice</p>
-                <p className="text-[12px] text-white/50">{quotaWarning}</p>
-              </div>
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-10 sm:pt-16 pb-16">
+
+        {/* Intro */}
+        <section className="max-w-3xl">
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ background: C.raised }}>
+              <span className="text-sm font-semibold select-none" style={{ color: C.muted }}>
+                {(creatorData.name || creatorData.handle || 'C').replace(/^@/, '').charAt(0).toUpperCase()}
+              </span>
+              {activeAvatar && (
+                <img
+                  src={activeAvatar}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={e => {
+                    if (!e.currentTarget.dataset.proxied && activeAvatar.startsWith('http')) {
+                      e.currentTarget.dataset.proxied = 'true'
+                      e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(activeAvatar)}`
+                    } else {
+                      e.currentTarget.style.display = 'none'
+                    }
+                  }}
+                />
+              )}
             </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{handleLabel}</p>
+              <p className="text-xs" style={{ color: C.muted }}>
+                {PLATFORM_LABELS[creatorData.platform] || 'Creator'}
+                {followersCount > 0 ? `, ${fmt(followersCount)} ${audienceWord}` : ''}
+                {dynamicEngagement ? `, about ${dynamicEngagement}% engagement (estimate)` : ''}
+              </p>
+            </div>
+          </div>
+
+          <h1 className="bp-serif mt-9 text-[44px] sm:text-[64px] leading-[1.02]">
+            Which app should {creatorName} launch?
+          </h1>
+          <p className="mt-5 text-base sm:text-lg leading-relaxed max-w-xl" style={{ color: C.muted }}>
+            These ideas come from what your audience asks about. Pick one, set a monthly price, then preview its landing page.
+          </p>
+        </section>
+
+        {quotaWarning && (
+          <div
+            className="mt-8 max-w-3xl rounded-xl px-4 py-3 flex items-start gap-3 text-sm"
+            style={{ background: 'rgba(245,192,102,0.08)', color: '#f5d9a6' }}
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#f5c066' }} />
+            <p className="leading-relaxed">{quotaWarning}</p>
           </div>
         )}
 
-        {/* ═══════════════ SKELETON LOADER ═══════════════ */}
-        {(isScraping || isGenerating) ? (
-          <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }} className="space-y-8">
-            <div className="space-y-2">
-              <div
-                className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider border"
-                style={{ background: `rgba(${accent.rgb}, 0.1)`, borderColor: `rgba(${accent.rgb}, 0.25)`, color: accent.color }}
-              >
-                <Compass className="w-3.5 h-3.5" />
-                {isScraping ? 'Analyzing Channel Signals…' : 'Synthesizing Software Candidates…'}
+        {busy ? (
+          <section className="mt-14" aria-busy="true">
+            <p className="text-sm" style={{ color: C.muted }}>
+              {isScraping ? 'Reading your channel...' : 'Matching app ideas to what your audience asks about...'}
+            </p>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-6">
+              <div className="space-y-3">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="h-28 rounded-2xl animate-pulse" style={{ background: C.sheet }} />
+                ))}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Product ideas for {creatorName}
-              </h2>
-              <p className="text-sm text-slate-400">
-                {isScraping
-                  ? 'CoLaunch is analyzing recurring audience problems, tool requests, and subscription demand.'
-                  : 'Tailoring recurring software products ($9–$29/mo) grounded in your audience signals.'}
-              </p>
+              <div className="h-[520px] rounded-3xl animate-pulse" style={{ background: C.sheet }} />
             </div>
-
-            <div className="rounded-2xl bg-[#0f1117] border border-[#1f2433] p-5 sm:p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl shimmer-line shrink-0" />
-                  <div className="space-y-2">
-                    <div className="w-36 h-4 rounded-full shimmer-line" />
-                    <div className="w-64 h-3 rounded-full shimmer-line" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-12 rounded-xl shimmer-line" />
-                  <div className="w-20 h-12 rounded-xl shimmer-line" />
-                  <div className="w-20 h-12 rounded-xl shimmer-line" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-8 rounded-2xl bg-[#0f1117] border border-[#1f2433] p-6 h-80 shimmer-line" />
-              <div className="lg:col-span-4 space-y-4">
-                <div className="h-32 rounded-2xl shimmer-line" />
-                <div className="h-32 rounded-2xl shimmer-line" />
-              </div>
-            </div>
-          </div>
+          </section>
         ) : (
-          /* ═══════════════ REAL CONTENT ═══════════════ */
           <>
-            {/* Creator Profile Header Card */}
-            <div
-              className="relative overflow-hidden rounded-2xl bg-[#0f1117] border border-[#1f2433]/80 p-5 sm:p-6 backdrop-blur-sm transition-all"
-              style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-
-                {/* Creator Identity */}
-                <div className="flex items-start sm:items-center gap-4">
-                  <div className="relative shrink-0">
-                    <div className="w-14 h-14 rounded-2xl shadow-lg bg-[#0c101a] flex items-center justify-center overflow-hidden relative">
-                      <span className="text-xl font-extrabold text-white/80 select-none">
-                        {(creatorData.name || creatorData.handle || 'C').replace(/^@/, '').charAt(0).toUpperCase()}
-                      </span>
-                      {activeAvatar && (
-                        <img
-                          src={activeAvatar}
-                          alt={creatorData.handle || ''}
-                          referrerPolicy="no-referrer"
-                          className="absolute inset-0 w-full h-full object-cover"
-                          onError={e => {
-                            if (!e.currentTarget.dataset.proxied && activeAvatar.startsWith('http')) {
-                              e.currentTarget.dataset.proxied = 'true';
-                              e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(activeAvatar)}`;
-                            } else {
-                              e.currentTarget.style.display = 'none';
-                            }
-                          }}
-                        />
-                      )}
-                    </div>
-                    <div
-                      className="absolute -bottom-1 -right-1 text-white rounded-full p-1 border-2 border-[#0f1117] flex items-center justify-center"
-                      style={{ background: platformColor }}
-                      title={`${PLATFORM_LABELS[creatorData.platform] || 'Creator'} Verified`}
-                    >
-                      <Play className="w-2.5 h-2.5 fill-current" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                        {creatorData.handle ? (creatorData.handle.startsWith('@') ? creatorData.handle : `@${creatorData.handle}`) : (creatorData.name || '@creator')}
-                      </h1>
-                      <span
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none text-[11px] font-bold uppercase tracking-wider font-mono"
-                        style={{
-                          background: creatorData.platform === 'youtube'
-                            ? 'rgba(239,68,68, 0.12)'
-                            : creatorData.platform === 'instagram'
-                              ? 'rgba(225,48,108, 0.15)'
-                              : creatorData.platform === 'tiktok'
-                                ? 'rgba(20,184,166, 0.12)'
-                                : `rgba(${accent.rgb}, 0.12)`,
-                          color: creatorData.platform === 'youtube'
-                            ? '#f87171'
-                            : creatorData.platform === 'instagram'
-                              ? '#f472b6'
-                              : creatorData.platform === 'tiktok'
-                                ? '#2dd4bf'
-                                : accent.color,
-                          border: `1px solid ${creatorData.platform === 'youtube' ? 'rgba(239,68,68, 0.25)' : creatorData.platform === 'instagram' ? 'rgba(225,48,108, 0.3)' : 'rgba(255,255,255,0.1)'}`
-                        }}
-                      >
-                        {PLATFORM_LABELS[creatorData.platform] || (creatorData.platform ? creatorData.platform.toUpperCase() : 'Creator')}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl leading-relaxed">
-                      {blurb}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Metric Badges */}
-                <div className="flex items-center gap-2 sm:gap-4 border-t md:border-t-0 pt-4 md:pt-0 border-[#1f2433]">
-                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
-                    <div className="text-base sm:text-lg font-bold text-white tracking-tight">
-                      {followersCount > 0 ? fmt(followersCount) : '—'}
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
-                      {creatorData.platform === 'youtube' ? 'Subscribers' : 'Followers'}
-                    </div>
-                  </div>
-
-                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
-                    <div className="text-base sm:text-lg font-bold text-emerald-400 tracking-tight">
-                      {dynamicEngagement ? `${dynamicEngagement}%` : 'Estimated'}
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
-                      Engagement
-                    </div>
-                  </div>
-
-                  <div className="px-3.5 py-2 rounded-xl bg-[#151822]/80 border border-[#1f2433]/60 text-center min-w-[76px]">
-                    <div className="text-base sm:text-lg font-bold tracking-tight" style={{ color: accent.color }}>
-                      {activeBlueprint.fit}%
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">
-                      Estimated Fit
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Latest Media Carousel (Only if real posts exist) */}
+            {/* Channel */}
             {displayPosts.length > 0 && (
-              <div className="space-y-3" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.1s' }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    {creatorData.platform === 'youtube' ? (
-                      <Video className="w-3.5 h-3.5 text-slate-400" />
-                    ) : (
-                      <Camera className="w-3.5 h-3.5 text-slate-400" />
-                    )}
-                    {creatorData.platform === 'youtube' ? 'Latest Videos' : 'Latest Posts'}
-                  </span>
-                  <span className="text-xs text-slate-400">Audience affinity benchmark</span>
+              <section className="mt-14">
+                <h2 className="text-sm font-medium" style={{ color: C.muted }}>From your channel</h2>
+                <div className="mt-4 flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {displayPosts.map((post, i) => <PostThumb key={i} post={post} />)}
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                  {displayPosts.map((post, i) => {
-                    const grad = VIDEO_GRADIENTS[i % VIDEO_GRADIENTS.length]
-                    let postUrl = post.url || '#'
-
-                    return (
-                      <div
-                        key={i}
-                        onClick={() => {
-                          if (postUrl && postUrl !== '#') window.open(postUrl, '_blank', 'noopener,noreferrer')
-                        }}
-                        className={`group relative rounded-xl overflow-hidden bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] transition-all cursor-pointer ${i === 4 ? 'col-span-2 sm:col-span-1' : ''}`}
-                      >
-                        <div className={`aspect-video w-full bg-gradient-to-br ${grad.bg} relative overflow-hidden flex flex-col justify-between p-2`}>
-                          {post.thumbnail ? (
-                            <img
-                              src={post.thumbnail}
-                              alt={post.title || ''}
-                              referrerPolicy="no-referrer"
-                              className="absolute inset-0 w-full h-full object-cover"
-                              onError={e => {
-                                if (!e.currentTarget.dataset.proxied) {
-                                  e.currentTarget.dataset.proxied = 'true';
-                                  e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(post.thumbnail)}`;
-                                } else {
-                                  e.currentTarget.style.display = 'none';
-                                }
-                              }}
-                            />
-                          ) : null}
-
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#08090c] via-black/40 to-black/20 group-hover:via-black/20 transition-all pointer-events-none" />
-
-                          <div className="relative z-10 self-center my-auto">
-                            <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center group-hover:scale-110 group-hover:bg-black/80 transition-all shadow-md">
-                              <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-                            </div>
-                          </div>
-
-                          <div className="relative z-10 w-full mt-auto flex items-end justify-between gap-1.5">
-                            <p className="text-[11px] font-semibold text-white/90 line-clamp-1 leading-snug group-hover:text-white transition-colors text-left flex-1 drop-shadow-sm">
-                              {post.title}
-                            </p>
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/80 text-white/90 border border-white/10 shrink-0">
-                              {post.duration || post.views || 'Video'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+              </section>
             )}
 
-            {/* 10-MODULE AUDIENCE INTELLIGENCE ENGINE */}
-            <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.12s' }}>
-              <AudienceIntelligenceEngine
-                creatorData={creatorData}
-                activeBlueprint={activeBlueprint}
-                accent={accent}
-                fitScore={activeBlueprint.fit}
-              />
-            </div>
+            {/* Audience signals */}
+            {activeBlueprint && (
+              <section className="mt-16">
+                <h2 className="bp-serif text-3xl sm:text-4xl leading-tight">What we found in your audience</h2>
+                <p className="mt-2 text-sm max-w-xl leading-relaxed" style={{ color: C.muted }}>
+                  Signals from your videos and comments.
+                </p>
+                <div className="mt-6 overflow-hidden rounded-2xl">
+                  <AudienceIntelligenceEngine
+                    creatorData={creatorData}
+                    activeBlueprint={activeBlueprint}
+                    accent={accent}
+                    fitScore={engineFit}
+                  />
+                </div>
+              </section>
+            )}
 
-            {/* Recommendation Section Header */}
-            <div className="pt-0 space-y-1" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.15s' }}>
-              <div
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider"
-                style={{
-                  background: 'rgba(200, 30, 60, 0.12)',
-                  borderColor: 'rgba(200, 30, 60, 0.25)',
-                  borderWidth: '1px',
-                  color: '#c81e3c'
-                }}
-              >
-                <Hammer className="w-3 h-3" />
-                <span>Software Product Candidates</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-tight">
-                Product ideas for {creatorName}
-              </h2>
-              <p className="text-xs text-slate-400">
-                Subscription software solving recurring problems your audience keeps asking about. Validated before building.
+            {/* Ideas */}
+            <section className="mt-20">
+              <h2 className="bp-serif text-4xl sm:text-5xl leading-none">App ideas</h2>
+              <p className="mt-3 text-sm sm:text-base max-w-xl leading-relaxed" style={{ color: C.muted }}>
+                Each one is a subscription app. Choose the one you want to preview.
               </p>
-            </div>
 
-            {/* Audience Scale Notice (< 20K followers) */}
-            {followersCount > 0 && followersCount < 20_000 && (
-              <div
-                className="p-2 bg-amber-500/10 border border-amber-500/25 rounded-none flex items-start gap-2 text-xs text-amber-200"
-                style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease 0.18s' }}
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-amber-300">Audience Scale Notice: </span>
-                  <span>
-                    @{creatorName}'s audience ({followersCount.toLocaleString()} followers) is below the typical 20,000 follower threshold for software co-launch ventures. Estimated revenue figures reflect this smaller audience scale at standard conversion benchmarks.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Product Options Matrix */}
-            <div
-              className="w-full max-w-5xl mx-auto"
-              style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.2s' }}
-            >
-              {/* Blueprint Candidates Switcher (Clean tabs instead of bulky Other Options sidebar) */}
-              {blueprints.length > 1 && (
-                <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0">Candidates:</span>
-                  {blueprints.map(b => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setSelected(b.id)}
-                      className={`px-3 py-1 text-xs font-mono transition-all cursor-pointer border ${
-                        b.id === activeBlueprint.id
-                          ? 'bg-[#151a26] text-white border-[#313c54] font-bold shadow-sm'
-                          : 'bg-[#0f121a] text-slate-400 border-[#1f2638] hover:text-white hover:border-slate-500'
-                      }`}
-                    >
-                      {b.name} ({b.fit || 90}% Match)
-                    </button>
-                  ))}
+              {followersCount > 0 && followersCount < 20_000 && (
+                <div
+                  className="mt-6 max-w-3xl rounded-xl px-4 py-3 flex items-start gap-3 text-sm"
+                  style={{ background: 'rgba(245,192,102,0.08)', color: '#f5d9a6' }}
+                >
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#f5c066' }} />
+                  <p className="leading-relaxed">
+                    {creatorName} has {followersCount.toLocaleString()} {audienceWord}. CoLaunch usually works with creators from 20,000, so the earnings estimates below are small.
+                  </p>
                 </div>
               )}
 
-              {/* Primary Recommended Product (Featured) */}
-              <div
-                className="w-full rounded-none bg-[#0f1117] border border-[#1f2433] p-4 sm:p-5 relative overflow-hidden transition-all duration-300 shadow-2xl"
-              >
-                {/* Header Tag & Match Indicator */}
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-none font-bold text-[10px] tracking-wide"
-                    style={{
-                      background: 'rgba(200, 30, 60, 0.15)',
-                      borderColor: 'rgba(200, 30, 60, 0.3)',
-                      borderWidth: '1px',
-                      color: '#c81e3c'
-                    }}
-                  >
-                    <ActiveIcon className="w-3 h-3" />
-                    <span>{activeBlueprint.type.toUpperCase()}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-slate-400 truncate max-w-[240px]">
-                      Target Audience: {activeBlueprint.targetAudience || 'Subscribers'}
-                    </span>
-                    <div className="px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold shrink-0">
-                      {activeBlueprint.fit}% Match
-                    </div>
+              {!activeBlueprint ? (
+                <div className="mt-8 rounded-3xl p-6 sm:p-10" style={{ background: C.sheet, boxShadow: `inset 0 0 0 1px ${C.line}` }}>
+                  <h3 className="bp-serif text-3xl">No ideas yet</h3>
+                  <p className="mt-2 text-sm max-w-md leading-relaxed" style={{ color: C.muted }}>
+                    We could not build ideas from your channel data. Describe an app below and we will price it and preview it.
+                  </p>
+                  <div className="mt-6 max-w-md">
+                    <CustomIdeaCard
+                      accent={accent}
+                      onAccent={onAccent}
+                      open={true}
+                      setOpen={setShowCustomForm}
+                      form={customForm}
+                      setForm={setCustomForm}
+                      error={customError}
+                      onSubmit={handleCreateCustom}
+                    />
                   </div>
                 </div>
+              ) : (
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-start">
-
-                  {/* Left Specs Column */}
-                  <div className="md:col-span-7 space-y-2.5">
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
-                        {activeBlueprint.name}
-                      </h3>
-                      <p className="text-xs font-medium text-slate-300 mt-0.5">
-                        {activeBlueprint.tagline}
-                      </p>
-                    </div>
-
-                    <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
-                      {activeBlueprint.toolSummary || activeBlueprint.description}
-                    </p>
-
-                    {/* Feature Pills */}
-                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                      {activeBlueprint.features.slice(0, 4).map(f => (
-                        <div
-                          key={f}
-                          className="px-2 py-1 text-[11px] font-medium rounded-none bg-[#151822] border border-[#1f2433] text-slate-300 flex items-center gap-1.5 truncate"
+                  {/* Idea list */}
+                  <div role="radiogroup" aria-label="App ideas" className="space-y-3 lg:sticky lg:top-24">
+                    {rail.map(bp => {
+                      const isActive = bp.id === activeBlueprint.id
+                      const rowPrice = clampPrice(customPrices[bp.id] ?? bp.monthly_price ?? 19)
+                      const rowRev = safeRevenue(followersCount, rowPrice, engagementForMath)
+                      return (
+                        <button
+                          key={bp.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={isActive}
+                          tabIndex={isActive ? 0 : -1}
+                          onClick={() => setSelected(bp.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                              e.preventDefault()
+                              moveSelection(1)
+                            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                              e.preventDefault()
+                              moveSelection(-1)
+                            }
+                          }}
+                          className="bp-focus w-full text-left rounded-2xl p-4 transition-colors cursor-pointer"
+                          style={{
+                            background: isActive ? C.sheet : 'transparent',
+                            boxShadow: isActive ? `inset 0 0 0 1.5px ${accent.color}` : `inset 0 0 0 1px ${C.line}`,
+                          }}
                         >
-                          <Check className="w-3 h-3 shrink-0 text-[#c81e3c]" />
-                          <span className="truncate">{f}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Who Pays & Why */}
-                    {activeBlueprint.whoPaysAndWhy && (
-                      <div className="p-2 rounded-none bg-[#141822] border border-[#1f2433] space-y-0.5">
-                        <div className="text-[9px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
-                          <Users className="w-3 h-3" />
-                          <span>Who Pays &amp; Why</span>
-                        </div>
-                        <p className="text-[11px] text-slate-300 leading-tight">
-                          {activeBlueprint.whoPaysAndWhy}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Interactive Monthly Price Selector */}
-                    <div className="pt-2 border-t border-[#1f2433] space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                          <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Monthly Price</span>
-                        </label>
-                        <span className="text-xs font-extrabold text-white font-mono px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                          ${activePrice} / mo per subscriber
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="range"
-                          min="9"
-                          max="29"
-                          step="1"
-                          value={activePrice}
-                          onChange={(e) => handlePriceChange(Number(e.target.value))}
-                          className="w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-800 rounded-none appearance-none"
-                        />
-                      </div>
-
-                      {/* Quick Preset Buttons */}
-                      <div className="flex items-center gap-1.5 pt-0.5">
-                        <span className="text-[10px] uppercase font-mono text-slate-400">Presets:</span>
-                        {[9, 15, 19, 24, 29].map((p) => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => handlePriceChange(p)}
-                            className={`px-2 py-0.5 text-[10px] font-mono font-bold transition-all cursor-pointer rounded-none ${activePrice === p
-                              ? 'bg-emerald-400 text-black shadow-sm'
-                              : 'bg-[#151822] border border-[#1f2433] text-slate-300 hover:text-white hover:bg-[#1a202c]'
-                              }`}
-                          >
-                            ${p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Why this fits & Audience Evidence */}
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowReasons(!showReasons)}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
-                      >
-                        <HelpCircle className="w-3 h-3 text-[#c81e3c]" />
-                        <span>Audience Demand Evidence ({reasons.length} signals)</span>
-                        <ChevronDown
-                          className="w-3 h-3 transition-transform duration-200"
-                          style={{ transform: showReasons ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </button>
-                      {showReasons && (
-                        <div className="mt-1.5 p-2 rounded-none bg-[#141822] border border-[#1f2433] space-y-1">
-                          {reasons.map((r, i) => (
-                            <div key={i} className="flex items-start gap-1.5">
-                              <span className="text-[10px] mt-0.5 flex-shrink-0 font-bold text-emerald-400">✓</span>
-                              <p className="text-[11px] leading-relaxed text-slate-300">{r}</p>
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-[15px] font-semibold leading-snug">{bp.name}</span>
+                            {typeof bp.fit === 'number' && (
+                              <span className="text-xs tabular-nums shrink-0 mt-0.5" style={{ color: C.muted }}>{bp.fit}% match</span>
+                            )}
+                          </div>
+                          <p className="mt-1 text-[13px] leading-relaxed line-clamp-2" style={{ color: C.muted }}>{bp.toolSummary}</p>
+                          <div className="mt-3 flex items-baseline justify-between gap-3 text-[13px]">
+                            <span style={{ color: C.muted }}>${rowPrice} a month</span>
+                            {rowRev && <span className="font-medium tabular-nums">{rangeMain(rowRev)} a month</span>}
+                          </div>
+                          {(bp.isTemplate || bp.isCustom) && (
+                            <div className="mt-2.5">
+                              <Pill tone={bp.isTemplate ? 'amber' : 'neutral'}>{bp.isCustom ? 'Your idea' : 'Starter template'}</Pill>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          )}
+                        </button>
+                      )
+                    })}
 
-                    {/* Projected Gross Subscription Revenue */}
-                    <div className="pt-2 border-t border-[#1f2433] space-y-0.5">
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tight whitespace-nowrap shrink-0">
-                          {activeRevenue.formattedRange}
-                        </span>
-                        <span className="text-[11px] text-slate-400 whitespace-nowrap">
-                          ({activeRevenue.formattedSubscribers} subscribers at ~0.5% conversion)
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 italic">
-                        {activeRevenue.disclaimer}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Interactive App Preview Window */}
-                  <div className="md:col-span-5 flex flex-col justify-start">
-                    <ProductMockupPreview
-                      category={activeBlueprint?.category || activeBlueprint?.type || 'tool'}
-                      blueprint={{
-                        ...activeBlueprint,
-                        monthly_price: activePrice,
-                        price: activePrice
-                      }}
-                      creatorData={creatorData}
-                      dynamicAccent={accent.color}
+                    <CustomIdeaCard
+                      accent={accent}
+                      onAccent={onAccent}
+                      open={showCustomForm}
+                      setOpen={setShowCustomForm}
+                      form={customForm}
+                      setForm={setCustomForm}
+                      error={customError}
+                      onSubmit={handleCreateCustom}
                     />
                   </div>
 
+                  {/* Selected idea */}
+                  <article
+                    className="rounded-3xl p-5 sm:p-8 lg:p-10"
+                    style={{ background: C.sheet, boxShadow: `inset 0 0 0 1px ${C.line}` }}
+                  >
+                    <div key={activeBlueprint.id} className="bp-swap space-y-10">
+
+                      <header>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Pill icon={ActiveIcon}>{activeBlueprint.type}</Pill>
+                          {activeBlueprint.isTemplate && <Pill tone="amber">Starter template</Pill>}
+                          {activeBlueprint.isCustom && <Pill>Your idea</Pill>}
+                          {typeof activeBlueprint.fit === 'number' && <Pill tone="green">{activeBlueprint.fit}% match</Pill>}
+                        </div>
+                        <h3 className="bp-serif mt-5 text-5xl sm:text-6xl leading-[1.02]">{activeBlueprint.name}</h3>
+                        {activeBlueprint.tagline && (
+                          <p className="mt-2 text-base" style={{ color: C.muted }}>{activeBlueprint.tagline}</p>
+                        )}
+                        <p className="mt-5 text-base sm:text-lg leading-relaxed max-w-xl" style={{ color: C.body }}>
+                          {activeBlueprint.toolSummary}
+                        </p>
+                      </header>
+
+                      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] gap-8 lg:gap-10">
+                        <div className="space-y-7">
+                          <div>
+                            <h4 className="text-sm font-semibold">What subscribers get</h4>
+                            <ul className="mt-3 space-y-2.5">
+                              {activeBlueprint.features.map(f => (
+                                <li key={f} className="flex items-start gap-3 text-[15px] leading-snug" style={{ color: C.body }}>
+                                  <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: accent.color }} strokeWidth={2.5} />
+                                  <span>{f}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {activeBlueprint.whoPaysAndWhy && (
+                            <div>
+                              <h4 className="text-sm font-semibold">Who pays for it</h4>
+                              <p className="mt-2 text-[15px] leading-relaxed" style={{ color: C.body }}>
+                                {activeBlueprint.whoPaysAndWhy}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <IdeaMockup bp={activeBlueprint} accent={accent} />
+                      </div>
+
+                      {/* Price and earnings */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 pt-8 border-t" style={{ borderColor: C.line }}>
+                        <div>
+                          <label htmlFor="bp-price" className="text-sm font-semibold">Monthly price per subscriber</label>
+                          <div className="mt-3 flex items-baseline gap-2.5">
+                            <span className="bp-serif text-[76px] sm:text-[92px] leading-none tabular-nums">${activePrice}</span>
+                            <span className="text-sm whitespace-nowrap" style={{ color: C.muted }}>a month</span>
+                          </div>
+
+                          <input
+                            id="bp-price"
+                            type="range"
+                            min="9"
+                            max="29"
+                            step="1"
+                            value={activePrice}
+                            onChange={e => handlePriceChange(Number(e.target.value))}
+                            className="bp-range mt-5"
+                            style={{ '--pct': `${pricePct}%` }}
+                          />
+
+                          <div className="mt-2 grid grid-cols-5 gap-2">
+                            {[9, 15, 19, 24, 29].map(p => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => handlePriceChange(p)}
+                                className="bp-btn rounded-full py-1.5 text-xs font-medium tabular-nums transition-colors cursor-pointer"
+                                style={{
+                                  background: activePrice === p ? 'rgba(255,255,255,0.14)' : 'transparent',
+                                  color: activePrice === p ? '#fff' : C.muted,
+                                  boxShadow: `inset 0 0 0 1px ${activePrice === p ? C.lineStrong : C.line}`,
+                                }}
+                              >
+                                ${p}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-semibold">What it could earn</h4>
+                          {activeRevenue ? (
+                            <>
+                              <p className="mt-3 text-[15px] leading-relaxed" style={{ color: C.body }}>
+                                If {subsText(activeRevenue)} of your {followersCount.toLocaleString()} {audienceWord} subscribe, you could bring in about
+                              </p>
+                              <p className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums">
+                                {rangeMain(activeRevenue)}
+                                <span className="text-base font-normal" style={{ color: C.muted }}> a month</span>
+                              </p>
+                              <p className="mt-4 text-xs leading-relaxed" style={{ color: C.faint }}>
+                                {activeRevenue.disclaimer || REVENUE_DISCLAIMER}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="mt-3 text-sm leading-relaxed" style={{ color: C.muted }}>
+                              We could not read your audience size, so there is no estimate yet.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Evidence */}
+                      <div className="pt-8 border-t" style={{ borderColor: C.line }}>
+                        <h4 className="text-sm font-semibold">
+                          {evidence.length > 0 ? 'What your audience said' : 'Audience evidence'}
+                        </h4>
+                        {evidence.length > 0 ? (
+                          <ul className="mt-4 space-y-4">
+                            {evidence.map((r, i) => (
+                              <li
+                                key={i}
+                                className="pl-4 text-[15px] leading-relaxed max-w-xl"
+                                style={{ borderLeft: `2px solid ${accent.color}`, color: C.body }}
+                              >
+                                {r}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-3 flex items-start gap-2.5 text-sm leading-relaxed max-w-xl" style={{ color: C.muted }}>
+                            <Info className="w-4 h-4 mt-0.5 shrink-0" style={{ color: C.faint }} />
+                            <span>{evidenceNote}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </article>
                 </div>
-              </div>
-            </div>
+              )}
+            </section>
           </>
         )}
       </main>
 
-      {/* Sticky Bottom CTA Action Bar */}
-      <aside className="fixed bottom-0 left-0 right-0 z-50 bg-[#08090c]/95 backdrop-blur-md border-t border-[#1f2433] py-2.5 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-
-          {/* Primary Dynamic Action Button (Keep id="dynamic-cta-button" intact) */}
-          <div className="w-full sm:w-auto">
-            <button
-              id="dynamic-cta-button"
-              onClick={handleContinue}
-              disabled={isScraping || isGenerating}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-none font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer group shadow-md"
-              style={{
-                background: (isScraping || isGenerating) ? 'rgba(255,255,255,0.08)' : '#c81e3c',
-                color: (isScraping || isGenerating) ? 'rgba(255,255,255,0.4)' : '#ffffff',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}
-            >
-              {(isScraping || isGenerating) ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span>Synthesizing Software Product…</span>
-                </span>
-              ) : (
-                <>
-                  <span>Preview landing page for {activeBlueprint?.name}</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
+      {/* Action bar */}
+      <aside
+        className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t"
+        style={{ background: 'rgba(8,9,12,0.88)', borderColor: C.line }}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            {activeBlueprint && !busy ? (
+              <>
+                <p className="text-sm font-semibold truncate">{activeBlueprint.name} at ${activePrice} a month</p>
+                <p className="text-xs" style={{ color: C.muted }}>
+                  {activeRevenue ? `Could earn about ${rangeMain(activeRevenue)} a month` : 'No earnings estimate yet'}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: C.muted }}>
+                {busy ? 'Getting your ideas ready' : 'Add an idea to continue'}
+              </p>
+            )}
           </div>
 
-          {/* Supporting Status Copy */}
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 text-center sm:text-right">
-            <Info className="w-3 h-3 text-slate-400 shrink-0" />
-            <span>Customize live landing page layout and test demand in next steps</span>
-          </div>
-
+          {/* Keep id="dynamic-cta-button" intact */}
+          <button
+            id="dynamic-cta-button"
+            type="button"
+            onClick={handleContinue}
+            disabled={busy || !activeBlueprint}
+            className="bp-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold transition-all duration-200 active:scale-[0.98] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none cursor-pointer"
+            style={{
+              background: (busy || !activeBlueprint) ? 'rgba(255,255,255,0.08)' : accent.color,
+              color: (busy || !activeBlueprint) ? 'rgba(255,255,255,0.45)' : onAccent,
+            }}
+          >
+            {busy ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Getting ideas ready</span>
+              </>
+            ) : (
+              <span>Preview landing page</span>
+            )}
+          </button>
         </div>
       </aside>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Your own idea, added inline
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CustomIdeaCard({ accent, onAccent, open, setOpen, form, setForm, error, onSubmit }) {
+  const field = 'w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none placeholder-slate-600 transition-shadow focus:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]'
+  const fieldStyle = { background: C.row, boxShadow: `inset 0 0 0 1px ${C.line}` }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="bp-focus w-full rounded-2xl px-4 py-4 text-left transition-colors hover:bg-white/[0.03] cursor-pointer"
+        style={{ boxShadow: `inset 0 0 0 1px ${C.line}` }}
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <Plus className="w-4 h-4" style={{ color: accent.color }} />
+          Add your own idea
+        </span>
+        <span className="block mt-1 text-[13px] leading-relaxed" style={{ color: C.muted }}>
+          Describe an app and we will price it.
+        </span>
+      </button>
+    )
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="rounded-2xl p-4 space-y-4"
+      style={{ background: C.sheet, boxShadow: `inset 0 0 0 1px ${C.lineStrong}` }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <Sparkles className="w-4 h-4" style={{ color: accent.color }} />
+          Your idea
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="bp-btn text-xs rounded-md hover:text-white transition-colors cursor-pointer"
+          style={{ color: C.muted }}
+        >
+          Cancel
+        </button>
+      </div>
+
+      {error && <p className="text-[13px] leading-relaxed text-red-400">{error}</p>}
+
+      <div>
+        <label htmlFor="bp-custom-name" className="text-xs font-medium block mb-1.5" style={{ color: C.muted }}>Name</label>
+        <input
+          id="bp-custom-name"
+          type="text"
+          placeholder="Grant Budget Tracker"
+          value={form.name}
+          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          className={field}
+          style={fieldStyle}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="bp-custom-summary" className="text-xs font-medium block mb-1.5" style={{ color: C.muted }}>What does the tool do?</label>
+        <textarea
+          id="bp-custom-summary"
+          rows={3}
+          placeholder="Lets NGO staff log project spending and see budget gaps in one dashboard."
+          value={form.summary}
+          onChange={e => setForm(f => ({ ...f, summary: e.target.value }))}
+          className={`${field} resize-none`}
+          style={fieldStyle}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="bp-custom-audience" className="text-xs font-medium block mb-1.5" style={{ color: C.muted }}>Who would pay for it? (optional)</label>
+        <input
+          id="bp-custom-audience"
+          type="text"
+          placeholder="Program managers at small NGOs"
+          value={form.audience}
+          onChange={e => setForm(f => ({ ...f, audience: e.target.value }))}
+          className={field}
+          style={fieldStyle}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="bp-custom-price" className="text-xs font-medium block mb-1" style={{ color: C.muted }}>
+          Monthly price: ${form.price}
+        </label>
+        <input
+          id="bp-custom-price"
+          type="range"
+          min="9"
+          max="29"
+          value={form.price}
+          onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))}
+          className="bp-range"
+          style={{ '--pct': `${((form.price - 9) / 20) * 100}%` }}
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="bp-btn w-full rounded-xl py-2.5 text-sm font-semibold hover:brightness-110 transition cursor-pointer"
+        style={{ background: accent.color, color: onAccent }}
+      >
+        Add and select
+      </button>
+    </form>
   )
 }
