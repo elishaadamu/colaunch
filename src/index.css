@@ -5,6 +5,15 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 16.5px;
+    font-size-adjust: 0.54;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   html,
   body,
   #root,
@@ -13,6 +22,12 @@
   select,
   textarea {
     font-family: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    letter-spacing: 0.012em;
+  }
+
+  body {
+    font-size: 1.1rem;
+    line-height: 1.5;
   }
 
   :root {
@@ -1629,5 +1644,57 @@ input[type="range"]::-moz-range-thumb {
   border-style: none !important;
   outline: none !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Instrument Serif Global Font Size Scale Boost (frontend)
+   Compensates for Instrument Serif's narrow width & small x-height
+   so labels, badges, body text, buttons, and metrics are clear and legible.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.text-\[7px\], .text-\[7\.5px\], .text-\[8px\], .text-\[8\.5px\],
+[class*="text-[7px]"], [class*="text-[7.5px]"], [class*="text-[8px]"], [class*="text-[8.5px]"] {
+  font-size: 11.5px !important;
+}
+
+.text-\[9px\], .text-\[9\.5px\],
+[class*="text-[9px]"], [class*="text-[9.5px]"] {
+  font-size: 12.5px !important;
+}
+
+.text-\[10px\], .text-\[10\.5px\],
+[class*="text-[10px]"], [class*="text-[10.5px]"] {
+  font-size: 13.5px !important;
+}
+
+.text-\[11px\], .text-\[11\.5px\],
+[class*="text-[11px]"], [class*="text-[11.5px]"] {
+  font-size: 14.5px !important;
+}
+
+.text-\[12px\], .text-\[12\.5px\],
+[class*="text-[12px]"], [class*="text-[12.5px]"] {
+  font-size: 15.5px !important;
+}
+
+.text-\[13px\], .text-\[13\.5px\],
+[class*="text-[13px]"], [class*="text-[13.5px]"] {
+  font-size: 16.5px !important;
+}
+
+.text-\[14px\], .text-\[14\.5px\],
+[class*="text-[14px]"], [class*="text-[14.5px]"] {
+  font-size: 17.5px !important;
+}
+
+.text-\[15px\], .text-\[15\.5px\],
+[class*="text-[15px]"], [class*="text-[15.5px]"] {
+  font-size: 18.5px !important;
+}
+
+.text-\[16px\],
+[class*="text-[16px]"] {
+  font-size: 19.5px !important;
+}
+
 
 

@@ -9,6 +9,18 @@ export default {
         serif: ['"Instrument Serif"', '"Iowan Old Style"', '"Palatino Linotype"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
+      fontSize: {
+        '2xs': ['0.8rem', { lineHeight: '1.3' }],       // ~13.5px
+        'xs': ['0.925rem', { lineHeight: '1.35' }],      // ~15.5px (was 12px)
+        'sm': ['1.05rem', { lineHeight: '1.45' }],       // ~17.5px (was 14px)
+        'base': ['1.175rem', { lineHeight: '1.5' }],     // ~19.5px (was 16px)
+        'lg': ['1.3rem', { lineHeight: '1.45' }],        // ~21.5px (was 18px)
+        'xl': ['1.45rem', { lineHeight: '1.4' }],        // ~24px (was 20px)
+        '2xl': ['1.75rem', { lineHeight: '1.3' }],       // ~29px (was 24px)
+        '3xl': ['2.25rem', { lineHeight: '1.25' }],      // ~37px (was 30px)
+        '4xl': ['2.85rem', { lineHeight: '1.2' }],       // ~47px (was 36px)
+        '5xl': ['3.6rem', { lineHeight: '1.15' }],       // ~60px (was 48px)
+      },
       colors: {
         obsidian: {
           DEFAULT: '#080A0C',
