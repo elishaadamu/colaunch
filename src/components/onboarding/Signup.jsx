@@ -397,14 +397,30 @@ export default function Signup() {
           <span className="text-white font-semibold text-[15px] tracking-tight">CoLaunch</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => goTo('login')}
-          className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 border border-white/10 hover:border-white/25 transition cursor-pointer"
-          style={{ borderRadius: '0px' }}
-        >
-          Sign In
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.location.pathname !== '/creator-link') {
+                window.history.pushState(null, '', '/creator-link')
+              }
+              goTo('creator-link')
+            }}
+            className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 border border-white/10 hover:border-[#c81e3c]/60 hover:bg-[#c81e3c]/10 transition cursor-pointer flex items-center gap-1.5"
+            style={{ borderRadius: '0px' }}
+          >
+            <span>Start Onboarding</span>
+            <ArrowRight size={12} className="text-[#c81e3c]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo('login')}
+            className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 border border-white/10 hover:border-white/25 transition cursor-pointer"
+            style={{ borderRadius: '0px' }}
+          >
+            Sign In
+          </button>
+        </div>
       </header>
 
       {/* Main Signup Form Card */}
@@ -588,16 +604,34 @@ export default function Signup() {
             </button>
           </form>
 
-          {/* Footer link to sign in */}
-          <div className="pt-3 border-t border-[#162033] text-center text-xs text-slate-400">
-            Already have an account?{' '}
-            <button
-              type="button"
-              onClick={() => goTo('login')}
-              className="text-white hover:text-[#c81e3c] font-bold underline transition cursor-pointer ml-1 bg-transparent border-0"
-            >
-              Sign in
-            </button>
+          {/* Footer link to sign in & onboarding */}
+          <div className="pt-3 border-t border-[#162033] text-center text-xs text-slate-400 space-y-2">
+            <div>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => goTo('login')}
+                className="text-white hover:text-[#c81e3c] font-bold underline transition cursor-pointer ml-1 bg-transparent border-0"
+              >
+                Sign in
+              </button>
+            </div>
+            <div>
+              <span>Prefer to analyze your channel first? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.location.pathname !== '/creator-link') {
+                    window.history.pushState(null, '', '/creator-link')
+                  }
+                  goTo('creator-link')
+                }}
+                className="text-[#c81e3c] hover:text-[#e02849] font-bold underline transition cursor-pointer inline-flex items-center gap-1 bg-transparent border-0"
+              >
+                <span>Start Onboarding</span>
+                <ArrowRight size={11} />
+              </button>
+            </div>
           </div>
         </div>
       </main>

@@ -22,6 +22,7 @@ import ApiKeysModal from '../ui/ApiKeysModal'
 import PricingPointModal from './PricingPointModal'
 import DIYSubscriptionModal from '../launch/DIYSubscriptionModal'
 import EmailConfigModal from '../ui/EmailConfigModal'
+import RequiredSignupModal, { isUserSignedUpWithPassword } from '../ui/RequiredSignupModal'
 import { hexToRgb, extractBrandColorFromAvatar, getDeterministicBrandColor, getContrastTextColor } from '../../utils/avatarColorExtractor'
 import { getStoredYouTubeConnection } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
@@ -457,6 +458,10 @@ export default function DashboardLayout() {
   // System Notifications modal state
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false)
 
+  // Required Signup modal state (guards logout & profile completion)
+  const [requiredSignupModalOpen, setRequiredSignupModalOpen] = useState(false)
+  const [requiredSignupMode, setRequiredSignupMode] = useState('logout') // 'logout' | 'save'
+
   // Listen for open notifications event (e.g. from ContentCalendar)
   useEffect(() => {
     const handleOpenNotifications = () => setNotificationsModalOpen(true)
@@ -464,9 +469,35 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('forge_open_notifications', handleOpenNotifications)
   }, [])
 
+  // Listen for open required signup event
+  useEffect(() => {
+    const handleOpenRequiredSignup = (e) => {
+      const mode = e.detail?.mode || 'logout'
+      setRequiredSignupMode(mode)
+      setRequiredSignupModalOpen(true)
+    }
+    window.addEventListener('forge_open_required_signup', handleOpenRequiredSignup)
+    return () => window.removeEventListener('forge_open_required_signup', handleOpenRequiredSignup)
+  }, [])
+
   // Dynamic system notifications list for unread badge count
   const notificationsList = useMemo(() => {
     const list = []
+    if (!isUserSignedUpWithPassword(userProfile)) {
+      list.push({
+        id: 'signup_required',
+        title: 'Sign Up to Secure Your Workspace',
+        subtitle: 'Account Credentials Required',
+        description: 'You are currently working in an unverified session. Please sign up with your email and password to secure your channel signals, software blueprint, and scheduled content.',
+        actionLabel: 'Sign Up with Email & Password →',
+        icon: Lock,
+        onAction: () => {
+          setNotificationsModalOpen(false)
+          setRequiredSignupMode('save')
+          setRequiredSignupModalOpen(true)
+        }
+      })
+    }
     if (!isEmailConfigured) {
       list.push({
         id: 'email_not_configured',
@@ -496,9 +527,18 @@ export default function DashboardLayout() {
       })
     }
     return list
-  }, [isEmailConfigured, showCodeLoginBanner, setActiveTab])
+  }, [userProfile, isEmailConfigured, showCodeLoginBanner, setActiveTab])
 
   const notificationCount = notificationsList.length
+
+  const handleLogoutAttempt = () => {
+    if (!isUserSignedUpWithPassword(userProfile)) {
+      setRequiredSignupMode('logout')
+      setRequiredSignupModalOpen(true)
+    } else {
+      logout()
+    }
+  }
 
   // Listen for cross-component tab change events (e.g. ContentCalendar -> Accounts)
   useEffect(() => {
@@ -559,6 +599,7 @@ export default function DashboardLayout() {
         setActiveTab={setActiveTab}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
+        onRequestLogout={handleLogoutAttempt}
       />
 
       {/* Main content */}
@@ -669,7 +710,7 @@ export default function DashboardLayout() {
 
               {/* Individual User Logout Button */}
               <button
-                onClick={logout}
+                onClick={handleLogoutAttempt}
                 title={`Logout ${userProfile?.username || userProfile?.email || 'User'}`}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer shadow-sm ml-1"
               >
@@ -802,6 +843,18 @@ export default function DashboardLayout() {
         creatorData={creatorData}
         setUserProfile={setUserProfile}
         updateCreator={updateCreator}
+        triggerToast={triggerToast}
+      />
+
+      {/* Required Sign Up Modal (Guards logout & secures account) */}
+      <RequiredSignupModal
+        isOpen={requiredSignupModalOpen}
+        onClose={() => setRequiredSignupModalOpen(false)}
+        mode={requiredSignupMode}
+        userProfile={userProfile}
+        creatorData={creatorData}
+        setUserProfile={setUserProfile}
+        logout={logout}
         triggerToast={triggerToast}
       />
 

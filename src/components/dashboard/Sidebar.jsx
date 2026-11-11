@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Megaphone, Calendar, Layers, Package, DollarSign, Link, ChevronLeft, ChevronRight, Users, Laptop, LogOut, UserPlus, ShieldAlert, X, Rocket, Headphones, ArrowUp, TrendingUp } from 'lucide-react'
 import WingLogo from '../ui/WingLogo'
 import { useForge } from '../../App'
+import RequiredSignupModal, { isUserSignedUpWithPassword } from '../ui/RequiredSignupModal'
 
 const NAV_ITEMS = [
   { id: 'preview',    icon: Laptop,     label: 'App Preview',       badge: 'Live' },
@@ -16,13 +17,25 @@ const NAV_ITEMS = [
   { id: 'accounts',   icon: Link,       label: 'Accounts',          badge: null },
 ]
 
-export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
-  const { logout, isRegistered, goTo } = useForge()
-  const [showLogoutModal, setShowLogoutModal] = useState(false)
+export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen, onRequestLogout }) {
+  const { logout, isRegistered, goTo, userProfile, creatorData, setUserProfile, triggerToast } = useForge()
+  const [showRequiredSignupModal, setShowRequiredSignupModal] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [sidebarScrolled, setSidebarScrolled] = useState(false)
   const desktopNavRef = useRef(null)
   const mobileNavRef = useRef(null)
+
+  const handleLogoutClick = () => {
+    if (onRequestLogout) {
+      onRequestLogout()
+      return
+    }
+    if (!isUserSignedUpWithPassword(userProfile)) {
+      setShowRequiredSignupModal(true)
+    } else {
+      logout()
+    }
+  }
 
   // Scroll sidebar to top when tab changes
   useEffect(() => {
@@ -175,13 +188,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
             {/* Logout */}
             <div className="px-2 pb-4">
               <button
-                onClick={() => {
-                  if (!isRegistered) {
-                    setShowLogoutModal(true)
-                  } else {
-                    logout()
-                  }
-                }}
+                onClick={handleLogoutClick}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-none transition-all duration-150"
                 style={{ background: 'transparent', color: 'var(--theme-text-muted)' }}
                 onMouseEnter={e => {
@@ -398,13 +405,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
         {/* Logout button */}
         <div className="px-2 pb-2">
           <button
-            onClick={() => {
-              if (!isRegistered) {
-                setShowLogoutModal(true)
-              } else {
-                logout()
-              }
-            }}
+            onClick={handleLogoutClick}
             title={!isOpen ? "Logout" : undefined}
             className="w-full flex items-center rounded-none transition-all duration-150 group overflow-hidden"
             style={{
@@ -456,50 +457,17 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
         </div>
       </aside>
 
-      {/* Logout Warning Modal for Guests */}
-      {showLogoutModal && (
-        <LogoutModal
-          onRegister={() => { setShowLogoutModal(false); goTo('signup') }}
-          onLogout={() => { setShowLogoutModal(false); logout() }}
-          onCancel={() => setShowLogoutModal(false)}
-        />
-      )}
+      {/* Required Sign Up Modal (Guards logout) */}
+      <RequiredSignupModal
+        isOpen={showRequiredSignupModal}
+        onClose={() => setShowRequiredSignupModal(false)}
+        mode="logout"
+        userProfile={userProfile}
+        creatorData={creatorData}
+        setUserProfile={setUserProfile}
+        logout={logout}
+        triggerToast={triggerToast}
+      />
     </>
-  )
-}
-
-function LogoutModal({ onRegister, onLogout, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
-      <div className="w-full max-w-sm rounded-none border p-6 space-y-6 shadow-2xl text-left bg-[#0e0e0e]" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-        <div className="flex items-center gap-3 text-amber-500">
-          <ShieldAlert size={22} className="animate-bounce" />
-          <h3 className="text-[16px] font-bold text-white">Discard Guest Progress?</h3>
-        </div>
-        <p className="text-[12.5px] leading-relaxed text-white/50">
-          You are currently in a temporary guest session. If you log out without registering, all your scraped signals, content calendars, and campaign drafts will be permanently deleted.
-        </p>
-        <div className="flex flex-col gap-2 pt-2">
-          <button
-            onClick={onRegister}
-            className="forge-btn-primary w-full text-[13px] py-2.5 font-semibold rounded-none"
-          >
-            Register Account & Save
-          </button>
-          <button
-            onClick={onLogout}
-            className="w-full py-2.5 text-[12px] font-medium rounded-none border border-white/5 hover:border-red-500/20 hover:bg-red-500/5 text-white/40 hover:text-red-400 transition-all text-center"
-          >
-            Logout anyway (Discard all data)
-          </button>
-          <button
-            onClick={onCancel}
-            className="w-full py-2 text-[12px] font-medium rounded-none text-white/40 hover:text-white/60 transition-colors text-center"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }

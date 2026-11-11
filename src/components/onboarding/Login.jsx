@@ -516,7 +516,7 @@ export default function Login() {
         {/* Subtle ambient corner glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#C81E3C]/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top bar with back link */}
+        {/* Top bar with back link & onboarding link */}
         <div className="flex items-center justify-between w-full relative z-10 mb-8">
           <button
             type="button"
@@ -527,9 +527,25 @@ export default function Login() {
             <span>Back</span>
           </button>
 
-          {/* Mobile-only logo */}
-          <div className="lg:hidden">
-            <CoLaunchLogo size={20} theme="dark" showWordmark={true} />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.location.pathname !== '/creator-link') {
+                  window.history.pushState(null, '', '/creator-link')
+                }
+                goTo('creator-link')
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white px-2.5 py-1.5 border border-white/10 hover:border-[#C81E3C]/60 hover:bg-[#C81E3C]/10 transition cursor-pointer"
+            >
+              <span>Start Onboarding</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#C81E3C]" />
+            </button>
+
+            {/* Mobile-only logo */}
+            <div className="lg:hidden">
+              <CoLaunchLogo size={20} theme="dark" showWordmark={true} />
+            </div>
           </div>
         </div>
 
@@ -690,21 +706,39 @@ export default function Login() {
           )}
 
           {/* Bottom text */}
-          <p className="text-xs text-slate-400 text-center mt-6">
-            Don't have an account?{' '}
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined' && window.location.pathname !== '/signup') {
-                  window.history.pushState(null, '', '/signup')
-                }
-                goTo('signup')
-              }}
-              className="text-white hover:text-[#C81E3C] font-bold underline transition ml-1 cursor-pointer"
-            >
-              Sign up
-            </button>
-          </p>
+          <div className="space-y-2 text-center mt-6">
+            <p className="text-xs text-slate-400">
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.location.pathname !== '/signup') {
+                    window.history.pushState(null, '', '/signup')
+                  }
+                  goTo('signup')
+                }}
+                className="text-white hover:text-[#C81E3C] font-bold underline transition ml-1 cursor-pointer"
+              >
+                Sign up
+              </button>
+            </p>
+            <p className="text-xs text-slate-400">
+              New creator?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.location.pathname !== '/creator-link') {
+                    window.history.pushState(null, '', '/creator-link')
+                  }
+                  goTo('creator-link')
+                }}
+                className="text-[#C81E3C] hover:text-[#e02849] font-bold underline transition ml-1 cursor-pointer inline-flex items-center gap-1"
+              >
+                <span>Start Onboarding</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </p>
+          </div>
 
         </div>
 

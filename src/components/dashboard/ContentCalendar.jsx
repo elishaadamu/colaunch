@@ -12,6 +12,7 @@ import {
 } from '../../services/youtubeApi'
 import { getStoredMetaConnection } from '../../services/metaApi'
 import { isChannelConnectedOrConfigured, hasOnboardedSocialData } from '../../services/channelStudyService'
+import { isUserSignedUpWithPassword } from '../ui/RequiredSignupModal'
 import {
   Trophy,
   Flame,
@@ -2538,12 +2539,12 @@ export default function ContentCalendar({ setActiveTab: propSetActiveTab }) {
               title="Notifications & System Alerts"
             >
               <Bell size={13} />
-              {!isEmailConfigured && (
+              {(!isEmailConfigured || !isUserSignedUpWithPassword(userProfile)) && (
                 <span
                   className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white flex items-center justify-center border border-black/40"
                   style={{ background: '#c81e3c' }}
                 >
-                  1
+                  {(!isEmailConfigured && !isUserSignedUpWithPassword(userProfile)) ? '2' : '1'}
                 </span>
               )}
             </button>
