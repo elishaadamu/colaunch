@@ -440,7 +440,7 @@ export default function ProjectOSPage() {
             </div>
             <div className="hidden xs:block">
               <div className="flex items-center gap-1 sm:gap-1.5">
-                <span style={{ fontFamily: "'Playfair Display', Georgia, Cambria, serif" }} className="text-xs font-bold text-slate-950 tracking-tight hidden sm:inline">CoLaunch</span>
+                <span style={{ fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif" }} className="text-xs font-bold text-slate-950 tracking-tight hidden sm:inline">CoLaunch</span>
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
                   PROJECT OS
                 </span>

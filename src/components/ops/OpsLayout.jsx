@@ -164,7 +164,7 @@ export default function OpsLayout() {
           <CoLaunchLogo size={26} showWordmark={false} />
           <div>
             <p
-              style={{ fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
+              style={{ fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif" }}
               className="text-[15px] font-semibold text-white leading-tight"
             >
               CoLaunch

@@ -2715,7 +2715,7 @@ partnerships@colaunch.com`
                           <div className="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <CoLaunchLogo size={20} showText={false} theme="light" />
-                              <span style={{ fontFamily: "'Playfair Display', Georgia, Cambria, serif" }} className="font-bold text-slate-950 text-sm">CoLaunch</span>
+                              <span style={{ fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif" }} className="font-bold text-slate-950 text-sm">CoLaunch</span>
                             </div>
                             <span className="text-[10px] uppercase font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
                               Verified Invite

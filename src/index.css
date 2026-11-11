@@ -1,8 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  }
+
   :root {
     --brand: #c81e3c;
     --theme-bg: #080A0C;

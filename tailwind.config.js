@@ -4,8 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
-        sans: ['"Manrope"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['"Instrument Serif"', '"Iowan Old Style"', '"Palatino Linotype"', 'Georgia', 'serif'],
+        sans: ['"Instrument Serif"', '"Iowan Old Style"', '"Palatino Linotype"', 'Georgia', 'serif'],
+        serif: ['"Instrument Serif"', '"Iowan Old Style"', '"Palatino Linotype"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {

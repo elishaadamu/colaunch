@@ -98,7 +98,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
               <div className="flex items-center gap-2.5">
                 <WingLogo size={22} />
                 <span
-                  style={{ fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
+                  style={{ fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif" }}
                   className="text-white font-semibold text-[15px] tracking-tight"
                 >
                   CoLaunch
@@ -247,7 +247,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
             <span
               className="text-white font-semibold text-[15px] tracking-tight whitespace-nowrap cursor-pointer select-none"
               style={{
-                fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif",
+                fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif",
                 opacity: isOpen ? 1 : 0,
                 transition: 'opacity 0.15s',
               }}

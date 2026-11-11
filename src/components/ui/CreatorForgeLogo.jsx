@@ -3,7 +3,7 @@ import React from 'react'
 /**
  * Official CoLaunch Rocket Brand Logo
  * Features the signature white circular badge with multi-colored rocket mark
- * and the refined serif "CoLaunch" wordmark (Playfair Display).
+ * and the refined serif "CoLaunch" wordmark (Instrument Serif).
  */
 export default function CoLaunchLogo({
   size = 22,
@@ -49,7 +49,7 @@ export default function CoLaunchLogo({
       {displayWordmark && (
         <span
           style={{
-            fontFamily: "'Playfair Display', Georgia, Cambria, 'Times New Roman', serif",
+            fontFamily: "'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif",
             fontSize: `${fontSize}px`,
             letterSpacing: '-0.015em',
             lineHeight: 1,
