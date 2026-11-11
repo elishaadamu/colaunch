@@ -348,44 +348,58 @@ export function ProductMockupPreview({
 
   const rawFeatures = Array.isArray(blueprint.features) && blueprint.features.length > 0
     ? blueprint.features
-    : ['Workspace', 'Calculations', 'Saved projects', 'Exports']
+    : ['Interactive Workspace', 'Automated Calculations', 'Saved User Projects', 'Live Telemetry']
   const features = rawFeatures
     .map(f => (typeof f === 'string' ? f : (f?.title || f?.label || f?.name || '')))
     .filter(Boolean)
-  const feat = (i) => features[i % features.length]
+
+  const price = clampPrice(blueprint.monthly_price || blueprint.monthlyPrice || creatorData?.monthly_price || 19)
 
   const isCalc = /calc|formula|estimat/.test(cat)
   const isTracker = /track|log|milestone/.test(cat)
   const isPlanner = /plan|roadmap|sprint/.test(cat)
   const isCommunity = /communit|portal|forum|member/.test(cat)
-  const isMobileApp = /mobile/.test(cat)
 
-  const card = { background: s.raised, borderColor: s.border }
-  const bars = [38, 62, 48, 78, 58, 92, 72]
-
-  const renderCanvas = () => {
+  const renderMockupCanvas = () => {
     if (isCalc) {
-      const vals = [72, 48, 86]
       return (
-        <div className={`grid gap-3 ${isMobileFrame ? 'grid-cols-1' : 'grid-cols-5'}`}>
-          <div className={`${isMobileFrame ? '' : 'col-span-3'} space-y-3`}>
-            {vals.map((v, i) => (
-              <div key={i} className="p-3 border" style={card}>
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2">
-                  <span className="truncate pr-2">{feat(i)}</span>
-                  <span>{v}%</span>
-                </div>
-                <Track pct={v} accent={dynamicAccent} track={s.border} />
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="p-2.5 bg-[#121624] border border-[#20293d]">
+              <span className="text-[9px] font-mono text-slate-400 block uppercase">Input Parameter</span>
+              <span className="text-sm font-bold text-white font-mono mt-0.5 block">84.50</span>
+              <span className="text-[9px] text-cyan-400 font-mono">Calibrated baseline</span>
+            </div>
+            <div className="p-2.5 bg-[#121624] border border-[#20293d]">
+              <span className="text-[9px] font-mono text-slate-400 block uppercase">Variance Factor</span>
+              <span className="text-sm font-bold text-white font-mono mt-0.5 block">1.28x</span>
+              <span className="text-[9px] text-sky-400 font-mono">Optimal tolerance</span>
+            </div>
+            <div className="p-2.5 bg-[#121624] border border-[#20293d]" style={{ borderColor: `${dynamicAccent}66` }}>
+              <span className="text-[9px] font-mono text-slate-400 block uppercase">Projected Output</span>
+              <span className="text-sm font-bold text-white font-mono mt-0.5 block" style={{ color: dynamicAccent }}>+34.2%</span>
+              <span className="text-[9px] text-slate-400 font-mono">Automated result</span>
+            </div>
           </div>
-          <div
-            className={`${isMobileFrame ? '' : 'col-span-2'} p-4 border flex flex-col justify-between`}
-            style={{ background: `rgba(${rgb},0.08)`, borderColor: `rgba(${rgb},0.35)` }}
-          >
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Result</span>
-            <span className="text-3xl font-black font-mono text-white my-3">+34%</span>
-            <span className="text-[10px] font-mono text-slate-500">Sample output</span>
+          <div className="p-2.5 bg-[#10141f] border border-[#1e2538] space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span className="font-mono text-[10px]">Dynamic Variable Slider</span>
+              <span className="font-mono text-[10px] text-slate-400">72%</span>
+            </div>
+            <div className="h-1.5 w-full bg-[#1b2234]">
+              <div className="h-full" style={{ width: '72%', background: dynamicAccent }} />
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-0.5">
+            <div className="flex gap-1.5">
+              <span className="px-2 py-0.5 bg-white/5 border border-white/10 text-[10px] font-mono text-slate-300">
+                Run Simulation
+              </span>
+              <span className="px-2 py-0.5 bg-white/5 border border-white/10 text-[10px] font-mono text-slate-400">
+                Export CSV
+              </span>
+            </div>
+            <span className="text-[9px] font-mono text-slate-500">Live computation engine</span>
           </div>
         </div>
       )
@@ -394,43 +408,60 @@ export function ProductMockupPreview({
     if (isTracker) {
       return (
         <div className="space-y-2.5">
-          <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: s.border }}>
-            <span className="text-xs font-bold text-white">This week</span>
-            <span className="text-[10px] font-mono text-slate-400">3 of 5 done</span>
-          </div>
-          {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} className="p-2.5 border flex items-center gap-3" style={card}>
-              <div
-                className="w-4 h-4 border flex items-center justify-center shrink-0"
-                style={{ borderColor: i < 3 ? dynamicAccent : s.strong, background: i < 3 ? `rgba(${rgb},0.18)` : 'transparent' }}
-              >
-                {i < 3 && <Check size={11} style={{ color: dynamicAccent }} strokeWidth={3} />}
-              </div>
-              <span className="text-xs text-slate-200 truncate flex-1">{feat(i)}</span>
-              <div className="w-16 hidden sm:block">
-                <Track pct={[100, 100, 100, 55, 20][i]} accent={dynamicAccent} track={s.border} />
-              </div>
+          <div className="flex items-center justify-between pb-2 border-b border-[#20273a]">
+            <div>
+              <span className="text-xs font-bold text-white block">Execution Progress & Daily Logging</span>
+              <span className="text-[10px] text-slate-400 font-mono">4 of 5 weekly objectives completed</span>
             </div>
-          ))}
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/40 border border-cyan-500/30">
+              On Track
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {features.slice(0, 3).map((f, idx) => (
+              <div key={idx} className="p-2 bg-[#121624] border border-[#1f273c] flex items-center justify-between">
+                <div className="flex items-center gap-2 truncate pr-2">
+                  <div className="w-4 h-4 border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center shrink-0">
+                    <Check size={11} className="text-cyan-400" />
+                  </div>
+                  <span className="text-xs text-slate-200 font-medium truncate">{f}</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500 shrink-0">Day {idx + 1} logged</span>
+              </div>
+            ))}
+          </div>
+          <div className="p-2 bg-[#0f1320] border border-[#1b2336] flex items-center justify-between text-[10px] text-slate-400 font-mono">
+            <span>Next automated milestone audit</span>
+            <span className="text-slate-200">Tomorrow at 09:00 UTC</span>
+          </div>
         </div>
       )
     }
 
     if (isPlanner) {
-      const cols = ['To do', 'In progress', 'Done']
       return (
-        <div className={`grid gap-3 ${isMobileFrame ? 'grid-cols-1' : 'grid-cols-3'}`}>
-          {cols.map((c, ci) => (
-            <div key={c} className="p-2.5 border space-y-2" style={card}>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">{c}</span>
-              {[0, 1].map(k => (
-                <div key={k} className="p-2 border" style={{ background: s.card, borderColor: ci === 1 && k === 0 ? dynamicAccent : s.border }}>
-                  <span className="text-[11px] text-slate-200 block truncate">{feat(ci * 2 + k)}</span>
-                  <div className="h-1 w-2/3 mt-2" style={{ background: s.border }} />
-                </div>
-              ))}
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2 bg-[#121624] border border-[#20283c]">
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 1</span>
+              <span className="text-xs font-bold text-cyan-400">Validated</span>
+              <div className="h-1 w-full bg-cyan-500/20 mt-1"><div className="h-full bg-cyan-400 w-full" /></div>
             </div>
-          ))}
+            <div className="p-2 bg-[#121624] border border-[#20283c]" style={{ borderColor: `${dynamicAccent}66` }}>
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 2</span>
+              <span className="text-xs font-bold text-white">Active Sprint</span>
+              <div className="h-1 w-full bg-white/10 mt-1"><div className="h-full" style={{ width: '65%', background: dynamicAccent }} /></div>
+            </div>
+            <div className="p-2 bg-[#121624] border border-[#20283c]">
+              <span className="text-[9px] font-mono uppercase text-slate-400 block">Stage 3</span>
+              <span className="text-xs font-bold text-slate-400">Rollout</span>
+              <div className="h-1 w-full bg-white/5 mt-1"><div className="h-full bg-white/20 w-0" /></div>
+            </div>
+          </div>
+          <div className="p-2.5 bg-[#10141f] border border-[#1b2336] space-y-1">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Priority Execution Sequence</span>
+            <p className="text-xs text-slate-200 truncate">{features[0] || 'Centralized workflow management'}</p>
+          </div>
         </div>
       )
     }
@@ -438,131 +469,102 @@ export function ProductMockupPreview({
     if (isCommunity) {
       return (
         <div className="space-y-2.5">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="p-3 border flex items-start gap-3" style={card}>
-              <div className="w-7 h-7 shrink-0" style={{ background: `rgba(${rgb},${0.15 + i * 0.05})` }} />
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <span className="text-xs text-slate-200 font-medium block truncate">{feat(i)}</span>
-                <div className="h-1.5 w-full" style={{ background: s.border }} />
-                <div className="h-1.5 w-3/5" style={{ background: s.border }} />
-              </div>
-              <span className="text-[10px] font-mono text-slate-500 shrink-0">{[12, 8, 5, 3][i]} replies</span>
+          <div className="p-2.5 bg-[#131724] border border-[#222a3e] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase text-cyan-400 font-bold">Verified Member Workspace</span>
+              <span className="text-[10px] font-mono text-slate-400">${price}/mo access</span>
             </div>
-          ))}
-        </div>
-      )
-    }
-
-    if (isMobileApp) {
-      return (
-        <div className="flex justify-center py-1">
-          <div className="w-52 border-2 p-2.5 space-y-2" style={{ borderColor: s.strong, background: s.card }}>
-            <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: s.border }}>
-              <span className="text-[11px] font-bold text-white truncate">{name}</span>
-              <span className="w-2 h-2" style={{ background: dynamicAccent }} />
+            <p className="text-xs text-slate-200 leading-snug">
+              Collaborative portal with direct tooling, scheduled Q&amp;A queue, and member workspace files.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2 bg-[#101420] border border-[#1d2538] space-y-0.5">
+              <span className="text-[9px] font-mono text-slate-400 block">Workflow Channel</span>
+              <span className="text-white font-medium block truncate">#core-tooling</span>
             </div>
-            {[0, 1, 2].map(i => (
-              <div key={i} className="p-2 border" style={card}>
-                <span className="text-[10px] text-slate-200 block truncate">{feat(i)}</span>
-                <div className="h-1 mt-1.5" style={{ background: s.border }}>
-                  <div className="h-full" style={{ width: `${[80, 55, 30][i]}%`, background: dynamicAccent }} />
-                </div>
-              </div>
-            ))}
-            <div className="flex items-center justify-around pt-1.5 border-t" style={{ borderColor: s.border }}>
-              {[0, 1, 2, 3].map(i => (
-                <span key={i} className="w-2.5 h-2.5" style={{ background: i === 0 ? dynamicAccent : s.strong }} />
-              ))}
+            <div className="p-2 bg-[#101420] border border-[#1d2538] space-y-0.5">
+              <span className="text-[9px] font-mono text-slate-400 block">Resource Sync</span>
+              <span className="text-cyan-400 font-medium block">All Files Ready</span>
             </div>
           </div>
         </div>
       )
     }
 
-    // Default: tool / dashboard / automation / marketplace / creator tool
+    // Default dashboard / tool / automation / software engine view (matches Screenshot 5)
     return (
-      <div className="space-y-3">
-        <div className={`grid gap-3 ${isMobileFrame ? 'grid-cols-1' : 'grid-cols-3'}`}>
-          {[['Active', '24'], ['Saved', '128'], ['Score', '86%']].map(([l, v], i) => (
-            <div
-              key={l}
-              className="p-3 border"
-              style={i === 2 ? { background: `rgba(${rgb},0.08)`, borderColor: `rgba(${rgb},0.35)` } : card}
-            >
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">{l}</span>
-              <span className="text-xl font-black font-mono text-white block mt-1">{v}</span>
-            </div>
-          ))}
-        </div>
-        <div className="p-3 border" style={card}>
-          <div className="flex items-end gap-2 h-20">
-            {bars.map((h, i) => (
-              <div
-                key={i}
-                className="flex-1"
-                style={{ height: `${h}%`, background: i >= bars.length - 2 ? dynamicAccent : s.strong }}
-              />
-            ))}
+      <div className="space-y-2.5">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 bg-[#121624] border border-[#20273c]">
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Active Engine</span>
+            <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5 block">v1.2 Live</span>
+            <span className="text-[9px] text-cyan-400 font-mono">Sync healthy</span>
+          </div>
+          <div className="p-2 bg-[#121624] border border-[#20273c]">
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Throughput</span>
+            <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5 block">99.4%</span>
+            <span className="text-[9px] text-sky-400 font-mono">Automated</span>
+          </div>
+          <div className="p-2 bg-[#121624] border border-[#20273c]" style={{ borderColor: `${dynamicAccent}55` }}>
+            <span className="text-[9px] font-mono text-slate-400 uppercase block">Subscription</span>
+            <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5 block">${price}/mo</span>
+            <span className="text-[9px] text-slate-400 font-mono">Per member</span>
           </div>
         </div>
-        <div className="space-y-1.5">
-          {[0, 1].map(i => (
-            <div key={i} className="px-3 py-2 border flex items-center justify-between text-xs" style={card}>
-              <span className="text-slate-200 truncate pr-3">{feat(i)}</span>
-              <span className="text-[10px] font-mono text-slate-500 shrink-0">Configured</span>
-            </div>
-          ))}
+
+        <div className="p-2.5 bg-[#101420] border border-[#1c2438] space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-300 pb-1 border-b border-white/5">
+            <span className="font-mono text-[9px] uppercase text-slate-400">Core Software Capabilities</span>
+            <span className="text-[9px] font-mono text-cyan-400">Active Pipeline</span>
+          </div>
+          <div className="space-y-1">
+            {features.slice(0, 3).map((feat, idx) => (
+              <div key={idx} className="flex items-center justify-between text-[11px] py-0.5">
+                <span className="text-slate-300 truncate max-w-[75%]">{feat}</span>
+                <span className="text-[9px] font-mono text-slate-500 shrink-0">Configured</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div
-      className={`w-full border overflow-hidden ${isMobileFrame ? 'max-w-[340px] mx-auto' : ''}`}
-      style={{ background: s.card, borderColor: s.strong, boxShadow: `0 30px 80px -20px rgba(${rgb},0.25), 0 0 0 1px rgba(255,255,255,0.02)` }}
-    >
-      <div className="px-3.5 py-2 border-b flex items-center justify-between select-none" style={{ background: s.alt, borderColor: s.border }}>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.strong }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.strong }} />
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.strong }} />
+    <div className={`w-full bg-[#0a0d16] border border-[#20273c] shadow-2xl overflow-hidden rounded-none ${isMobileFrame ? 'max-w-[340px] mx-auto' : ''}`}>
+      {/* Sleek App Window Header */}
+      <div className="bg-[#101420] px-3 py-2 border-b border-[#20273c] flex items-center justify-between select-none">
+        <div className="flex items-center gap-2 truncate pr-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-slate-700" />
+            <span className="w-2 h-2 rounded-full bg-slate-700" />
+            <span className="w-2 h-2 rounded-full bg-slate-700" />
+          </div>
+          <span className="text-[11px] font-mono font-medium text-slate-300 truncate">
+            {name}
+          </span>
         </div>
-        <span className="text-[11px] font-mono text-slate-300 truncate max-w-[50%]">{name}</span>
-        <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest text-slate-400 border" style={{ borderColor: s.border }}>
-          Sample data
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest text-slate-400 bg-white/5 border border-white/10">
+            Preview · Software Engine
+          </span>
+        </div>
       </div>
 
-      <div className="flex" style={{ background: s.bg }}>
-        {!isMobileFrame && (
-          <div className="hidden sm:flex w-44 shrink-0 flex-col gap-1 p-2.5 border-r" style={{ background: s.alt, borderColor: s.border }}>
-            {features.slice(0, 5).map((f, i) => {
-              const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length]
-              const active = i === 0
-              return (
-                <div
-                  key={f}
-                  className="flex items-center gap-2 px-2.5 py-2 text-[11px] border"
-                  style={{
-                    background: active ? `rgba(${rgb},0.12)` : 'transparent',
-                    borderColor: active ? `rgba(${rgb},0.35)` : 'transparent',
-                    color: active ? '#fff' : '#94a3b8'
-                  }}
-                >
-                  <Icon size={12} style={{ color: active ? dynamicAccent : undefined }} className="shrink-0" />
-                  <span className="truncate">{f}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <div className="flex-1 min-w-0 p-3.5 sm:p-5">{renderCanvas()}</div>
+      {/* Main Canvas Body */}
+      <div className="p-3.5 sm:p-4 bg-[#0b0e18] relative">
+        {renderMockupCanvas()}
+
+        {/* Subtle Watermark Banner */}
+        <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[9px] font-mono text-slate-500">
+          <span>CoLaunch Software Platform</span>
+          <span>PREVIEW · ILLUSTRATIVE UI</span>
+        </div>
       </div>
     </div>
   )
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Waitlist modal (demand-test capture). Preview only: nothing is stored.
 // ─────────────────────────────────────────────────────────────────────────────

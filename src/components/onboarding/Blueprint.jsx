@@ -29,6 +29,7 @@ import {
 } from '../../utils/subscriptionRevenue.js'
 import { recommendCreator } from '../../services/opsApi'
 import AudienceIntelligenceEngine from './AudienceIntelligenceEngine'
+import { ProductMockupPreview } from './Preview'
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -234,503 +235,6 @@ const BLUEPRINTS = [
   },
 ]
 
-// ── Preview mocks (Subscription Software Tools) ───────────────────────────────
-
-function WebAppPreview({ accent, primary, creatorData }) {
-  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const appName = primary?.name || 'Workflow OS'
-  const monthlyPrice = primary?.monthly_price || 19
-
-  return (
-    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#0a0a0c' }}>
-      {/* Top Navbar */}
-      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 relative"
-            style={{ background: `rgba(${accent.rgb}, 0.15)`, border: `1px solid rgba(${accent.rgb}, 0.3)` }}>
-            <span className="text-[7px] font-black select-none" style={{ color: accent.color }}>
-              {creatorName.charAt(0).toUpperCase()}
-            </span>
-            {avatar && (
-              <img
-                src={avatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            )}
-          </div>
-          <span className="text-[9px] font-bold text-white/90 truncate max-w-[85px]">
-            {appName}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-[8px] font-semibold shrink-0">
-          <span className="relative pb-0.5 whitespace-nowrap" style={{ color: accent.color }}>
-            Workspace
-            <span className="absolute bottom-0 left-0 right-0 h-[1.5px] rounded-full" style={{ background: accent.color }} />
-          </span>
-          <span className="text-white/40 whitespace-nowrap hidden sm:inline">Calculators</span>
-          <span className="text-white/40 whitespace-nowrap">Benchmarks</span>
-          <div className="px-2 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0 leading-tight"
-            style={{
-              background: accent.color,
-              color: '#ffffff'
-            }}>
-            ${monthlyPrice}/mo
-          </div>
-        </div>
-      </div>
-
-      {/* Hero Feature Banner - Software Application */}
-      <div className="rounded-lg p-2 relative overflow-hidden flex items-center justify-between flex-shrink-0 border"
-        style={{
-          background: `rgba(${accent.rgb}, 0.12)`,
-          borderColor: `rgba(${accent.rgb}, 0.25)`
-        }}>
-        <div className="min-w-0 pr-2">
-          <div className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[6.5px] font-extrabold uppercase tracking-wide mb-0.5"
-            style={{ background: `rgba(${accent.rgb}, 0.22)`, color: accent.color }}>
-            Interactive Software Utility
-          </div>
-          <div className="text-[9.5px] font-bold text-white truncate leading-tight">
-            {appName}
-          </div>
-          <div className="text-[7.5px] text-white/50">Subscription App · ${monthlyPrice}/mo recurring</div>
-        </div>
-        <div className="px-2 py-1 rounded text-[8px] font-bold flex items-center gap-1"
-          style={{ background: accent.color, color: '#ffffff' }}>
-          <Sparkles size={9} />
-          <span>Launch</span>
-        </div>
-      </div>
-
-      {/* Grid of Real Tool Modules */}
-      <div className="grid grid-cols-2 gap-1.5 flex-1">
-        <div className="rounded-lg p-1.5 flex flex-col justify-between border"
-          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[7px] font-bold px-1 rounded uppercase tracking-wider"
-                style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>
-                ACTIVE TOOL
-              </span>
-              <Check size={9} style={{ color: accent.color }} />
-            </div>
-            <div className="text-[8.5px] font-semibold text-white/90 leading-tight truncate">
-              Instant Estimation Solver
-            </div>
-            <div className="text-[7px] text-white/40">Real-time parameters & outputs</div>
-          </div>
-          <div className="mt-1 pt-1 border-t border-white/5 text-[7px] text-emerald-400 font-mono">
-            ● Ready for subscribers
-          </div>
-        </div>
-
-        <div className="rounded-lg p-1.5 flex flex-col justify-between border"
-          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[7px] font-bold px-1 rounded uppercase tracking-wider bg-white/10 text-white/70">
-                DATABASE
-              </span>
-              <Lock size={9} className="text-white/40" />
-            </div>
-            <div className="text-[8.5px] font-semibold text-white/90 leading-tight truncate">
-              Verified Benchmark Archive
-            </div>
-            <div className="text-[7px] text-white/40">Gated subscriber metrics</div>
-          </div>
-          <div className="mt-1 pt-1 border-t border-white/5 text-[7px] text-slate-400 font-mono">
-            Requires active subscription
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-function MobilePreview({ accent, primary, creatorData }) {
-  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const appName = primary?.name || 'Workflow Tool'
-  const monthlyPrice = primary?.monthly_price || 19
-
-  return (
-    <div className="w-full h-full flex items-center justify-center p-2 select-none">
-      <div className="relative rounded-2xl border-2 overflow-hidden flex flex-col"
-        style={{ width: '135px', height: '200px', borderColor: 'rgba(255,255,255,0.18)', background: '#08080a' }}>
-
-        {/* Phone Speaker Notch */}
-        <div className="w-10 h-1.5 bg-black rounded-b-md mx-auto z-10 flex-shrink-0" />
-
-        {/* Mini App Header */}
-        <div className="flex items-center justify-between px-2 py-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-1 min-w-0">
-            <div className="w-3.5 h-3.5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 relative"
-              style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
-              <span className="text-[6px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
-              {avatar && (
-                <img
-                  src={avatar}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={e => {
-                    if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
-                      e.currentTarget.dataset.proxied = 'true';
-                      e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
-                    } else {
-                      e.currentTarget.style.display = 'none';
-                    }
-                  }}
-                />
-              )}
-            </div>
-            <span className="text-[7.5px] font-bold text-white truncate max-w-[65px]">{creatorName}</span>
-          </div>
-          <span className="text-[6.5px] font-mono px-1 py-0.2 rounded" style={{ background: `rgba(${accent.rgb}, 0.2)`, color: accent.color }}>
-            ${monthlyPrice}/mo
-          </span>
-        </div>
-
-        {/* App Utility Tabs */}
-        <div className="flex items-center gap-1 px-2 py-1 overflow-hidden">
-          {['Tool', 'Tracker', 'Metrics', 'Account'].map((s, i) => (
-            <div key={s} className="flex flex-col items-center gap-0.5 flex-shrink-0">
-              <div className="w-4 h-4 rounded-full p-0.5 flex items-center justify-center"
-                style={{ border: `1px solid ${i === 0 ? accent.color : 'rgba(255,255,255,0.2)'}` }}>
-                <div className="w-full h-full rounded-full bg-white/10 flex items-center justify-center text-[5px] text-white">
-                  {s.charAt(0)}
-                </div>
-              </div>
-              <span className="text-[5px] text-white/50">{s}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Feed Card - Interactive Tool Output */}
-        <div className="flex-1 px-2 space-y-1 overflow-hidden">
-          <div className="rounded-lg p-1.5 border"
-            style={{ background: `rgba(${accent.rgb}, 0.10)`, borderColor: `rgba(${accent.rgb}, 0.25)` }}>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[6px] font-bold uppercase" style={{ color: accent.color }}>Active Session</span>
-              <Sparkles size={7} style={{ color: accent.color }} />
-            </div>
-            <div className="text-[7.5px] font-bold text-white truncate leading-tight">{appName}</div>
-            <div className="text-[6px] text-emerald-400 font-mono">Calculated & synced · Today</div>
-          </div>
-
-          <div className="rounded-lg p-1.5 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-            <div className="text-[6px] text-white/40 mb-0.5">Benchmark Comparison</div>
-            <div className="text-[7px] text-white/80 line-clamp-2">"Your score ranks in the top 15% of community benchmarks."</div>
-          </div>
-        </div>
-
-        {/* Bottom Nav Bar */}
-        <div className="h-5 border-t flex items-center justify-around flex-shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.08)', background: '#000000' }}>
-          <div className="w-2.5 h-2.5 rounded-full flex items-center justify-center" style={{ background: accent.color }} />
-          <div className="w-2 h-2 rounded-full bg-white/20" />
-          <div className="w-2 h-2 rounded-full bg-white/20" />
-          <div className="w-2 h-2 rounded-full bg-white/20" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CommunityPreview({ accent, primary, creatorData }) {
-  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const appName = primary?.name || 'Member Hub'
-
-  return (
-    <div className="w-full h-full p-3.5 space-y-3 font-sans text-xs select-none bg-[#090b10]">
-      {/* Channel Title in Mock */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#1f2433]/70">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white overflow-hidden shrink-0 relative"
-            style={{ background: accent.color }}
-          >
-            <span className="select-none">{creatorName.charAt(0).toUpperCase()}</span>
-            {avatar && (
-              <img
-                src={avatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            )}
-          </div>
-          <span className="font-semibold text-slate-200 text-[11px] truncate max-w-[130px]">
-            {appName}
-          </span>
-        </div>
-        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-medium border border-emerald-500/20">
-          Subscriber Hub
-        </span>
-      </div>
-
-      {/* Channel Sidebar + Feed simulation */}
-      <div className="grid grid-cols-12 gap-2 text-[10px]">
-        <div className="col-span-4 space-y-1.5 text-slate-400 border-r border-[#1f2433]/50 pr-1">
-          <div
-            className="font-medium px-1.5 py-1 rounded truncate text-[9.5px]"
-            style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}
-          >
-            # software-tools
-          </div>
-          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
-            # benchmarks
-          </div>
-          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
-            # feature-requests
-          </div>
-          <div className="px-1.5 py-0.5 hover:text-slate-300 truncate text-[9.5px]">
-            # office-hours
-          </div>
-        </div>
-
-        <div className="col-span-8 space-y-2">
-          <div className="p-2 rounded-lg bg-[#151822] border border-[#1f2433]/60 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-200 text-[10px] truncate max-w-[90px]">{creatorName}</span>
-              <span className="text-[8px] text-slate-400">10m ago</span>
-            </div>
-            <p className="text-[9px] text-slate-300 leading-snug">
-              New tool update published to all active subscribers. Try the new workflow calculation engine!
-            </p>
-            <div className="flex items-center gap-3 pt-1 text-[8px] font-medium" style={{ color: accent.color }}>
-              <span className="flex items-center gap-1">
-                <MessageSquare className="w-2.5 h-2.5" />
-                <span>28 replies</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-2.5 h-2.5" />
-                <span>64 likes</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="p-1.5 rounded bg-[#151822]/40 border border-dashed border-[#1f2433] text-center text-slate-400 text-[9px] truncate">
-            Software Engine v2.4 live for members
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SoftwareToolPreview({ accent, primary, creatorData }) {
-  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const appName = primary?.name || 'Software Tool'
-  const monthlyPrice = primary?.monthly_price || 19
-
-  return (
-    <div className="w-full h-full flex flex-col p-2.5 gap-2 select-none" style={{ background: '#0a0a0c' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-md overflow-hidden flex items-center justify-center relative shrink-0"
-            style={{ background: `rgba(${accent.rgb}, 0.2)` }}>
-            <span className="text-[7px] font-bold select-none" style={{ color: accent.color }}>{creatorName.charAt(0)}</span>
-            {avatar && (
-              <img
-                src={avatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            )}
-          </div>
-          <span className="text-[8.5px] font-bold text-white truncate max-w-[100px]">{appName}</span>
-        </div>
-        <div className="px-1.5 py-0.5 rounded text-[7px] font-bold font-mono"
-          style={{ background: `rgba(${accent.rgb}, 0.15)`, color: accent.color }}>
-          ${monthlyPrice}/mo
-        </div>
-      </div>
-
-      {/* Interactive Tool Actions */}
-      <div className="grid grid-cols-2 gap-1.5 flex-1">
-        <div className="rounded-lg p-1.5 flex flex-col justify-between border"
-          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[6px] font-bold px-1 rounded uppercase bg-emerald-500/10 text-emerald-400">
-                ACTIVE
-              </span>
-              <span className="text-[7px] text-white/50">v2.1</span>
-            </div>
-            <div className="text-[8px] font-semibold text-white/90 leading-tight truncate">
-              Scenario Modeling
-            </div>
-            <div className="text-[7px] text-slate-400 mt-0.5">Instant automated projections</div>
-          </div>
-          <div className="mt-1 w-full py-0.5 rounded text-center text-[7px] font-bold uppercase"
-            style={{ background: accent.color, color: '#ffffff' }}>
-            Run Tool
-          </div>
-        </div>
-
-        <div className="rounded-lg p-1.5 flex flex-col justify-between border"
-          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[6px] font-bold px-1 rounded uppercase bg-white/10 text-white/60">
-                DATABASE
-              </span>
-              <Lock size={8} className="text-white/40" />
-            </div>
-            <div className="text-[8px] font-semibold text-white/90 leading-tight truncate">
-              Benchmark Vault
-            </div>
-            <div className="text-[7px] text-slate-400 mt-0.5">Verified creator records</div>
-          </div>
-          <div className="mt-1 w-full py-0.5 rounded text-center text-[7px] font-bold uppercase bg-white/10 text-white/80">
-            Subscriber Gated
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function DashboardPreview({ accent, primary, creatorData }) {
-  const avatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
-  const creatorName = creatorData?.name || creatorData?.handle?.replace('@', '') || 'Creator'
-  const appName = primary?.name || 'Workflow Tool'
-  const monthlyPrice = primary?.monthly_price || 19
-
-  return (
-    <div className="w-full h-full flex flex-col p-2 gap-1.5 select-none rounded-none" style={{ background: '#09090b' }}>
-      {/* Dashboard Top Header */}
-      <div className="flex items-center justify-between pb-1.5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div
-            className="w-4 h-4 rounded-none overflow-hidden flex items-center justify-center flex-shrink-0 relative"
-            style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)' }}
-          >
-            <span className="text-[7px] font-black select-none text-[#c81e3c]">
-              {creatorName.charAt(0).toUpperCase()}
-            </span>
-            {avatar && (
-              <img
-                src={avatar}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={e => {
-                  if (!e.currentTarget.dataset.proxied && avatar.startsWith('http')) {
-                    e.currentTarget.dataset.proxied = 'true';
-                    e.currentTarget.src = `/api/proxy/avatar?url=${encodeURIComponent(avatar)}`;
-                  } else {
-                    e.currentTarget.style.display = 'none';
-                  }
-                }}
-              />
-            )}
-          </div>
-          <span className="text-[9px] font-bold text-white truncate max-w-[90px]">
-            {appName}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="text-[7.5px] font-mono text-emerald-400 uppercase">${monthlyPrice}/mo</span>
-        </div>
-      </div>
-
-      {/* 2 Metric Tiles */}
-      <div className="grid grid-cols-2 gap-1.5">
-        <div className="rounded-none p-1.5 border"
-          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-[6.5px] text-white/40 uppercase">Monthly MRR</span>
-            <span className="text-[6px] font-bold px-1 rounded-none text-emerald-400 bg-emerald-500/10">Active</span>
-          </div>
-          <div className="text-[10px] font-bold text-white font-mono leading-tight">
-            {primary?.revenue || '$1.2K / mo'}
-          </div>
-          <div className="text-[6.5px] text-white/30">Gross recurring</div>
-        </div>
-
-        <div className="rounded-none p-1.5 border"
-          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-[6.5px] text-white/40 uppercase">Subscribers</span>
-            <span className="text-[6px] text-white/50 font-bold">~0.5%</span>
-          </div>
-          <div className="text-[10px] font-bold text-white font-mono leading-tight">
-            {primary?.subscribers || '60'}
-          </div>
-          <div className="text-[6.5px] text-white/30">Active accounts</div>
-        </div>
-      </div>
-
-      {/* Active Software Tool Engine Row */}
-      <div className="rounded-none p-1.5 border flex-1 flex flex-col justify-between"
-        style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center justify-between pb-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          <span className="text-[7.5px] font-bold text-white">Software Engine Core</span>
-          <span
-            className="text-[6.5px] px-1 py-0.2 rounded-none font-mono"
-            style={{ background: 'rgba(200, 30, 60, 0.15)', border: '1px solid rgba(200, 30, 60, 0.3)', color: '#c81e3c' }}
-          >
-            v1.0 Live
-          </span>
-        </div>
-        <div className="space-y-1 my-1">
-          <div className="flex items-center justify-between text-[7px]">
-            <span className="text-white/80 truncate max-w-[120px]">Tool Calculations &amp; Benchmarks</span>
-            <span className="font-mono text-emerald-400">Ready</span>
-          </div>
-          <div className="h-1 w-full rounded-none bg-white/5 overflow-hidden">
-            <div className="h-full rounded-none" style={{ width: '100%', background: '#c81e3c' }} />
-          </div>
-        </div>
-        <div className="flex items-center justify-between pt-1 border-t text-[6.5px] text-white/40" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          <span>Billing: Monthly recurring</span>
-          <span style={{ color: '#c81e3c' }}>CoLaunch Platform</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const PREVIEW_COMPONENTS = {
-  webapp: WebAppPreview,
-  mobile: MobilePreview,
-  community: CommunityPreview,
-  store: SoftwareToolPreview,
-  dashboard: DashboardPreview
-}
 
 // ── Mapping Recommendations ──────────────────────────────────────────────────
 
@@ -1078,7 +582,6 @@ export default function Blueprint() {
   const platformColor = PLATFORM_COLORS[creatorData.platform] || accent.color
   const activeAvatar = creatorData?.avatarUrl || creatorData?.avatar || creatorData?.avatar_url || ''
   const ActiveIcon = activeBlueprint?.icon || Globe
-  const PreviewComp = PREVIEW_COMPONENTS[activeBlueprint?.preview] || WebAppPreview
 
   const creatorName = creatorData.name || (creatorData.handle || 'Creator').replace('@', '')
 
@@ -1531,12 +1034,33 @@ export default function Blueprint() {
 
             {/* Product Options Matrix */}
             <div
-              className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start"
+              className="w-full max-w-5xl mx-auto"
               style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.2s' }}
             >
+              {/* Blueprint Candidates Switcher (Clean tabs instead of bulky Other Options sidebar) */}
+              {blueprints.length > 1 && (
+                <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0">Candidates:</span>
+                  {blueprints.map(b => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setSelected(b.id)}
+                      className={`px-3 py-1 text-xs font-mono transition-all cursor-pointer border ${
+                        b.id === activeBlueprint.id
+                          ? 'bg-[#151a26] text-white border-[#313c54] font-bold shadow-sm'
+                          : 'bg-[#0f121a] text-slate-400 border-[#1f2638] hover:text-white hover:border-slate-500'
+                      }`}
+                    >
+                      {b.name} ({b.fit || 90}% Match)
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Primary Recommended Product (Featured) */}
               <div
-                className="lg:col-span-8 rounded-none bg-[#0f1117] border border-[#1f2433] p-3.5 sm:p-4 relative overflow-hidden transition-all duration-300 shadow-xl"
+                className="w-full rounded-none bg-[#0f1117] border border-[#1f2433] p-4 sm:p-5 relative overflow-hidden transition-all duration-300 shadow-2xl"
               >
                 {/* Header Tag & Match Indicator */}
                 <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -1692,196 +1216,21 @@ export default function Blueprint() {
                   </div>
 
                   {/* Right Column: Interactive App Preview Window */}
-                  <div className="md:col-span-5">
-                    <div className="rounded-none bg-[#090b10] border border-[#1f2433]/90 overflow-hidden ring-1 ring-white/5 flex flex-col min-h-[190px]">
-                      {/* Window Bar */}
-                      <div className="px-2.5 py-1.5 bg-[#151822]/80 border-b border-[#1f2433] flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-none bg-red-500/80 inline-block"></span>
-                          <span className="w-2 h-2 rounded-none bg-amber-500/80 inline-block"></span>
-                          <span className="w-2 h-2 rounded-none bg-emerald-500/80 inline-block"></span>
-                        </div>
-                        <span className="text-[9px] font-mono text-slate-500 truncate">
-                          {activeBlueprint.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'app'}.app
-                        </span>
-                      </div>
-
-                      {/* Inside Mock UI */}
-                      <div className="flex-1 overflow-hidden">
-                        <PreviewComp
-                          accent={accent}
-                          primary={{
-                            ...activeBlueprint,
-                            monthly_price: activePrice,
-                            revenue: activeRevenue.formattedRange,
-                            subscribers: activeRevenue.formattedSubscribers
-                          }}
-                          creatorData={creatorData}
-                        />
-                      </div>
-                    </div>
+                  <div className="md:col-span-5 flex flex-col justify-start">
+                    <ProductMockupPreview
+                      category={activeBlueprint?.category || activeBlueprint?.type || 'tool'}
+                      blueprint={{
+                        ...activeBlueprint,
+                        monthly_price: activePrice,
+                        price: activePrice
+                      }}
+                      creatorData={creatorData}
+                      dynamicAccent={accent.color}
+                    />
                   </div>
 
                 </div>
               </div>
-
-              {/* Right Column: Secondary / Alternate Options */}
-              <div className="lg:col-span-4 space-y-2.5">
-                {otherOptions.length > 0 && (
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-0.5">
-                    Other options
-                  </div>
-                )}
-
-                {otherOptions.map(blueprint => {
-                  const altPrice = clampPrice(customPrices[blueprint.id] || blueprint.monthly_price || 19)
-                  const altRev = calculateSubscriptionRevenue({
-                    audience: followersCount,
-                    monthlyPrice: altPrice,
-                    engagementRate: dynamicEngagement || 3.5
-                  })
-                  const altReasons = buildReasons(blueprint, creatorData)
-                  const AltIcon = blueprint.icon || Globe
-
-                  return (
-                    <div
-                      key={blueprint.id}
-                      onClick={() => setSelected(blueprint.id)}
-                      className="group p-3 sm:p-3.5 rounded-none bg-[#0f1117] border border-[#1f2433] hover:border-[#2d354a] hover:bg-[#151822]/50 transition-all cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="w-full flex items-start justify-between gap-2 min-w-0">
-                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                          <div className="p-2 rounded-none bg-[#151822] border border-[#1f2433] group-hover:border-slate-600 transition-colors shrink-0">
-                            <AltIcon className="w-4 h-4 text-slate-300" />
-                          </div>
-                          <div className="space-y-0.5 min-w-0 flex-1">
-                            <h4 className="text-xs sm:text-sm font-bold text-white transition-colors leading-snug line-clamp-1 break-words">
-                              {blueprint.name}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                              {blueprint.toolSummary || blueprint.tagline}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="px-1.5 py-0.5 rounded-none text-[10px] font-semibold bg-[#151822] border border-[#1f2433] text-slate-300 shrink-0 self-start whitespace-nowrap ml-2">
-                          {blueprint.fit}%
-                        </span>
-                      </div>
-
-                      <div className="mt-2.5 pt-2 border-t border-[#1f2433]/70 flex items-center justify-between text-xs">
-                        <span className="font-bold text-white whitespace-nowrap text-xs">
-                          {altRev.formattedRange}
-                        </span>
-                        <span className="text-emerald-400 text-[10px] font-mono truncate ml-2">
-                          ${altPrice}/mo subscription
-                        </span>
-                      </div>
-
-                      {altReasons[0] && (
-                        <div className="mt-2 flex items-start gap-1.5 text-[10px] text-slate-400">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
-                          <span className="line-clamp-2">{altReasons[0]}</span>
-                        </div>
-                      )}
-
-                      {blueprint.whoPaysAndWhy && (
-                        <div className="mt-1.5 text-[10px] text-slate-400 line-clamp-1">
-                          <span className="text-slate-500 font-medium">Buyer: </span>
-                          <span>{blueprint.whoPaysAndWhy}</span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-
-                {/* Something Else / Custom Software Product Form */}
-                {showCustomModal ? (
-                  <form
-                    onSubmit={handleCreateCustomProduct}
-                    className="p-3.5 rounded-none bg-[#10141f] border border-brand-500/40 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3 text-[#c81e3c]" />
-                        <span>Custom Software Idea</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowCustomModal(false)}
-                        className="text-xs text-slate-400 hover:text-white"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-
-                    {customError && (
-                      <p className="text-[11px] text-red-400">{customError}</p>
-                    )}
-
-                    <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-0.5">
-                        Software Product Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Creator Performance Hub"
-                        value={customName}
-                        onChange={(e) => setCustomName(e.target.value)}
-                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2 py-1.5 text-white outline-none focus:border-[#c81e3c] rounded-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-0.5">
-                        Tool Summary (What recurring problem does it solve?)
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="e.g. Real-time preset manager & automated calculator answering repetitive setup questions."
-                        value={customSummary}
-                        onChange={(e) => setCustomSummary(e.target.value)}
-                        className="w-full text-xs bg-[#090b10] border border-white/10 px-2 py-1 text-white outline-none focus:border-[#c81e3c] resize-none rounded-none"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block">
-                          Monthly Price: ${customPrice}/mo
-                        </label>
-                        <input
-                          type="range"
-                          min="9"
-                          max="29"
-                          value={customPrice}
-                          onChange={(e) => setCustomPrice(Number(e.target.value))}
-                          className="w-24 accent-emerald-400 rounded-none"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        className="px-3 py-1 bg-[#c81e3c] hover:bg-[#a61730] text-white font-bold text-xs cursor-pointer rounded-none"
-                      >
-                        Add & Select
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div
-                    onClick={() => setShowCustomModal(true)}
-                    className="p-3 rounded-none border border-dashed border-[#1f2433] hover:border-slate-600 transition-all text-center cursor-pointer group"
-                  >
-                    <p className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center justify-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Something else?</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Specify a custom subscription software app for your audience
-                    </p>
-                  </div>
-                )}
-              </div>
-
             </div>
           </>
         )}
