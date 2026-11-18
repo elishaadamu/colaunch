@@ -1,11 +1,31 @@
 import { useState, useEffect } from 'react'
-import {
-  Sparkles, CheckCircle2, MessageSquare, Send, Star,
-  HelpCircle, ArrowRight, ShieldCheck, Heart, Loader2
-} from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { getProjectBySlug, getCoLaunchProjects, recordSurveyResponseUniversal } from '../../services/opsApi'
 import { trackVisit } from '../../services/tracker'
 import { updatePageSEO } from '../../utils/seo'
+
+const DEFAULT_ACCENT = '#c81e3c'
+
+// Every colour on this page is derived from one accent value, so changing the project's
+// brand colour (or falling back to the default) restyles the whole page with no other edits.
+function buildAccent(input) {
+  let hex = String(input || '').trim()
+  if (/^#[0-9a-f]{3}$/i.test(hex)) hex = '#' + hex.slice(1).split('').map(c => c + c).join('')
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) hex = DEFAULT_ACCENT
+  const n = parseInt(hex.slice(1), 16)
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+  const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  const tint = v => Math.round(v + (255 - v) * 0.4)
+  return {
+    '--acc': hex,
+    '--acc-soft': `rgba(${r},${g},${b},0.14)`,
+    '--acc-line': `rgba(${r},${g},${b},0.45)`,
+    '--acc-glow': `rgba(${r},${g},${b},0.32)`,
+    '--acc-text': `rgb(${tint(r)},${tint(g)},${tint(b)})`,
+    '--acc-ink': lum > 0.4 ? '#0a0c10' : '#ffffff',
+  }
+}
 
 export default function PublicSurveyPage({ slug }) {
   const [project, setProject] = useState(null)
@@ -15,6 +35,7 @@ export default function PublicSurveyPage({ slug }) {
   const [intentRating, setIntentRating] = useState(8)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -70,6 +91,7 @@ export default function PublicSurveyPage({ slug }) {
   const productName = project?.productName || 'Software Product'
   const creatorName = project?.creatorName || 'Creator'
   const niche = project?.niche || 'Software Workflows'
+  const brandColor = project?.brandColor || project?.brand_color || '#c81e3c'
   
   const rawQuestions = project?.surveyData?.questions ||
     project?.validationCampaign?.researchSurvey?.questions ||
@@ -108,6 +130,7 @@ export default function PublicSurveyPage({ slug }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setSubmitError('')
 
     try {
       const responsePayload = {
@@ -129,165 +152,242 @@ export default function PublicSurveyPage({ slug }) {
       setIsSubmitted(true)
     } catch (err) {
       console.error('Failed saving survey response to database:', err)
-      setIsSubmitted(true)
+      setSubmitError('Your answers could not be saved. Check your connection and send them again.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const accentVars = buildAccent(brandColor)
+  const answeredCount = questions.filter(q => String(answers[q.id] || '').trim()).length
+  const totalCount = questions.length
+  const firstName = respondentName.trim().split(/\s+/)[0] || ''
+  const preorderHref = `/preorder/${productName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 selection:bg-purple-500 selection:text-white font-sans antialiased py-10 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header Branding */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Community Discovery Research</span>
-          </div>
+    <div className="survey-root" style={accentVars}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        .survey-root { min-height: 100vh; background: #07090e; color: #e8eaf0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .survey-root ::selection { background: var(--acc); color: var(--acc-ink); }
+        .survey-root .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.015em; }
+        .sv-bar { position: sticky; top: 0; z-index: 10; background: rgba(7,9,14,.86); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,.07); }
+        .sv-track { height: 2px; background: rgba(255,255,255,.08); }
+        .sv-fill { height: 100%; background: var(--acc); transition: width .4s ease; }
+        .sv-wrap { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem; }
+        .sv-muted { color: #98a0ae; }
+        .sv-rail { position: relative; padding-left: 3rem; }
+        .sv-rail::before { content: ''; position: absolute; left: 1rem; top: 2.25rem; bottom: -1.5rem; width: 1px; background: rgba(255,255,255,.1); }
+        .sv-item:last-child .sv-rail::before { display: none; }
+        .sv-dot { position: absolute; left: 0; top: 0; width: 2rem; height: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 600; background: #0c0e14; border: 1px solid rgba(255,255,255,.16); color: #98a0ae; transition: all .25s ease; }
+        .sv-dot[data-done='true'] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+        .sv-field { width: 100%; background: #0c0e14; border: 1px solid rgba(255,255,255,.1); color: #fff; border-radius: .75rem; padding: .8rem 1rem; font-size: .95rem; line-height: 1.5; outline: none; transition: border-color .15s, box-shadow .15s; font-family: inherit; }
+        .sv-field::placeholder { color: #667082; }
+        .sv-field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+        .sv-scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: .375rem; }
+        .sv-pt { height: 2.75rem; border-radius: .625rem; background: #0c0e14; border: 1px solid rgba(255,255,255,.1); color: #aab1bf; font-weight: 600; font-size: .9rem; cursor: pointer; transition: all .15s; font-family: inherit; }
+        .sv-pt:hover { border-color: var(--acc-line); color: #fff; }
+        .sv-pt[aria-checked='true'] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+        .sv-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .95rem 1.25rem; border-radius: .75rem; border: 0; background: var(--acc); color: var(--acc-ink); font-weight: 700; font-size: .95rem; cursor: pointer; box-shadow: 0 10px 28px -10px var(--acc-glow); transition: transform .1s, opacity .15s; font-family: inherit; }
+        .sv-btn:hover { opacity: .92 }
+        .sv-btn:active { transform: scale(.99) }
+        .sv-btn:disabled { opacity: .5; cursor: default }
+        .sv-ghost { padding: .7rem 1.1rem; border-radius: .75rem; border: 1px solid rgba(255,255,255,.14); background: transparent; color: #d7dbe4; font-weight: 600; font-size: .85rem; cursor: pointer; font-family: inherit; }
+        .sv-ghost:hover { background: rgba(255,255,255,.05) }
+        .survey-root :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+        @keyframes sv-in { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+        .sv-in { animation: sv-in .4s ease-out both }
+        @media (prefers-reduced-motion: reduce) { .sv-in { animation: none } .sv-fill, .sv-dot { transition: none } }
+        @media (max-width: 480px) { .sv-pt { height: 2.5rem; font-size: .8rem } .sv-scale { gap: .25rem } }
+      `}</style>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Help Shape <span className="text-purple-400">{productName}</span>
-          </h1>
-
-          <p className="text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-            Co-founded with <strong className="text-white">{creatorName}</strong>. Share 2 minutes of feedback to help us build the exact features you need.
-          </p>
-
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Founding Contributor Priority Access Included</span>
-          </div>
-        </div>
-
-        {/* Survey Form Card */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-[#0e1117] border border-white/[0.08] shadow-2xl space-y-6">
-          {isSubmitted ? (
-            <div className="text-center py-10 space-y-4 animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl">
-                ✓
-              </div>
-              <h3 className="text-xl font-bold text-white">Thank You for Your Feedback!</h3>
-              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                Your response has been recorded. The AI validation engine is analyzing your feedback to prioritize the Day 1 MVP roadmap.
-              </p>
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a
-                  href={`/preorder/${productName.toLowerCase().replace(/[^a-z0-9]/g, '')}`}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
-                >
-                  <span>View Founding Pre-Order Page</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-                <button
-                  onClick={() => {
-                    setIsSubmitted(false)
-                    setAnswers({})
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 text-xs font-bold"
-                >
-                  Submit Another Response
-                </button>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Question Items */}
-              <div className="space-y-5">
-                {questions.map((q, idx) => (
-                  <div key={q.id || idx} className="p-4 rounded-2xl bg-[#141720] border border-white/[0.06] space-y-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider">
-                        {q.category || `Question ${idx + 1}`}
-                      </span>
-                      <span className="text-xs font-bold text-white flex-1">{q.question}</span>
-                    </div>
-
-                    <textarea
-                      rows={2}
-                      required={idx === 0}
-                      placeholder="Type your feedback here..."
-                      value={answers[q.id] || ''}
-                      onChange={e => handleAnswerChange(q.id, e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-[#090b0e] border border-white/[0.08] text-xs text-white placeholder:text-slate-500 outline-none focus:border-purple-500/60 transition-colors"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Buying Intent Rating Slider */}
-              <div className="p-4 rounded-2xl bg-[#141720] border border-white/[0.06] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">How excited are you to use {productName}?</span>
-                  <span className="text-xs font-extrabold text-purple-400 font-mono">{intentRating}/10</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={intentRating}
-                  onChange={e => setIntentRating(Number(e.target.value))}
-                  className="w-full accent-purple-500 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>1 - Not interested</span>
-                  <span>5 - Might try</span>
-                  <span>10 - Need it immediately 🔥</span>
-                </div>
-              </div>
-
-              {/* Respondent Info (Name & Email for VIP access) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">Your Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter your full name"
-                    value={respondentName}
-                    onChange={e => setRespondentName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white placeholder:text-slate-500 outline-none focus:border-purple-500/60"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-300 block mb-1">Your Email (for VIP Alpha invite)</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Enter your email address"
-                    value={respondentEmail}
-                    onChange={e => setRespondentEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#141720] border border-white/[0.08] text-xs text-white placeholder:text-slate-500 outline-none focus:border-purple-500/60"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-950/50 transition-all disabled:opacity-50 active:scale-[0.99]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Submitting Feedback...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Submit Discovery Feedback & Claim VIP Spot</span>
-                  </>
-                )}
-              </button>
-            </form>
+      {/* Sticky progress */}
+      <header className="sv-bar">
+        <div className="sv-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '3rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem', fontWeight: 600 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 9999, background: 'var(--acc)' }} />
+            {productName}
+          </span>
+          {!isSubmitted && (
+            <span className="sv-muted" style={{ fontSize: '.8rem' }} aria-live="polite">
+              {answeredCount} of {totalCount} answered
+            </span>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="text-center text-slate-500 text-xs">
-          Powered by CoLaunch Co-Launch OS · Confidential Discovery Research
+        <div className="sv-track" role="presentation">
+          <div className="sv-fill" style={{ width: isSubmitted ? '100%' : `${(answeredCount / Math.max(1, totalCount)) * 100}%` }} />
         </div>
-      </div>
+      </header>
+
+      <main className="sv-wrap" style={{ paddingTop: '3rem', paddingBottom: '4rem' }}>
+        {isSubmitted ? (
+          <section className="sv-in" style={{ paddingTop: '2rem' }}>
+            <span style={{ width: 52, height: 52, borderRadius: 9999, background: 'var(--acc-soft)', border: '1px solid var(--acc-line)', color: 'var(--acc-text)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={24} />
+            </span>
+            <h1 className="serif" style={{ fontSize: 'clamp(2.25rem, 7vw, 3.5rem)', lineHeight: 1.08, margin: '1.25rem 0 .75rem', color: '#fff' }}>
+              {firstName ? `Thank you, ${firstName}.` : 'Thank you.'}
+            </h1>
+            <p style={{ color: '#c3c9d4', lineHeight: 1.65, maxWidth: '32rem', margin: 0 }}>
+              Your answers were sent to {creatorName}. They help decide what {productName} does first.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', marginTop: '2rem' }}>
+              <a href={preorderHref} className="sv-btn" style={{ width: 'auto', textDecoration: 'none' }}>
+                See the founding pre-order page
+              </a>
+              <button
+                type="button"
+                className="sv-ghost"
+                onClick={() => { setIsSubmitted(false); setAnswers({}) }}
+              >
+                Send another response
+              </button>
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="sv-in" style={{ marginBottom: '2.5rem' }}>
+              <p className="sv-muted" style={{ margin: 0, fontSize: '.9rem' }}>
+                From {creatorName}
+              </p>
+              <h1 className="serif" style={{ fontSize: 'clamp(2.5rem, 8vw, 4rem)', lineHeight: 1.05, margin: '.5rem 0 1rem', color: '#fff' }}>
+                Help shape {productName}
+              </h1>
+              <p style={{ color: '#c3c9d4', lineHeight: 1.65, margin: 0, maxWidth: '34rem' }}>
+                {creatorName} is building {productName} with the people who will use it. Your answers decide which features go into the first release.
+              </p>
+              <p className="sv-muted" style={{ margin: '1rem 0 0', fontSize: '.85rem' }}>
+                {totalCount} questions, about 2 minutes. The first one is required.
+              </p>
+            </section>
+
+            <form onSubmit={handleSubmit}>
+              <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '2rem' }}>
+                {questions.map((q, idx) => {
+                  const done = Boolean(String(answers[q.id] || '').trim())
+                  const inputId = `sv-q-${q.id || idx}`
+                  return (
+                    <li key={q.id || idx} className="sv-item">
+                      <div className="sv-rail">
+                        <span className="sv-dot" data-done={done} aria-hidden="true">
+                          {done ? <Check size={15} /> : idx + 1}
+                        </span>
+                        <label htmlFor={inputId} style={{ display: 'block' }}>
+                          {q.category && (
+                            <span className="sv-muted" style={{ display: 'block', fontSize: '.8rem', marginBottom: '.25rem' }}>
+                              {q.category}{idx === 0 ? ', required' : ''}
+                            </span>
+                          )}
+                          <span className="serif" style={{ display: 'block', fontSize: 'clamp(1.35rem, 4.5vw, 1.65rem)', lineHeight: 1.25, color: '#fff', marginBottom: '.75rem' }}>
+                            {q.question}
+                          </span>
+                        </label>
+                        <textarea
+                          id={inputId}
+                          rows={3}
+                          required={idx === 0}
+                          className="sv-field"
+                          placeholder="Write what comes to mind. Specific examples help most."
+                          value={answers[q.id] || ''}
+                          onChange={e => handleAnswerChange(q.id, e.target.value)}
+                          style={{ resize: 'vertical' }}
+                        />
+                      </div>
+                    </li>
+                  )
+                })}
+
+                {/* Excitement scale */}
+                <li className="sv-item">
+                  <div className="sv-rail">
+                    <span className="sv-dot" data-done="true" aria-hidden="true"><Check size={15} /></span>
+                    <p id="sv-rating-label" className="serif" style={{ fontSize: 'clamp(1.35rem, 4.5vw, 1.65rem)', lineHeight: 1.25, color: '#fff', margin: '0 0 .75rem' }}>
+                      How excited are you to use {productName}?
+                    </p>
+                    <div className="sv-scale" role="radiogroup" aria-labelledby="sv-rating-label">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                        <button
+                          key={num}
+                          type="button"
+                          role="radio"
+                          aria-checked={intentRating === num}
+                          className="sv-pt"
+                          onClick={() => setIntentRating(num)}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="sv-muted" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', marginTop: '.6rem' }}>
+                      <span>Not interested</span>
+                      <span>Need it on day one</span>
+                    </div>
+                  </div>
+                </li>
+              </ol>
+
+              {/* Contact */}
+              <section style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                <h2 className="serif" style={{ fontSize: '1.75rem', margin: '0 0 .35rem', color: '#fff' }}>Where should we send your invite?</h2>
+                <p className="sv-muted" style={{ margin: '0 0 1.25rem', fontSize: '.9rem' }}>
+                  Everyone who answers gets priority access to the founding offer.
+                </p>
+                <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))' }}>
+                  <div>
+                    <label htmlFor="sv-name" style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, marginBottom: '.4rem', color: '#d7dbe4' }}>Your name</label>
+                    <input
+                      id="sv-name"
+                      type="text"
+                      required
+                      autoComplete="name"
+                      className="sv-field"
+                      placeholder="First and last name"
+                      value={respondentName}
+                      onChange={e => setRespondentName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="sv-email" style={{ display: 'block', fontSize: '.85rem', fontWeight: 600, marginBottom: '.4rem', color: '#d7dbe4' }}>Your email</label>
+                    <input
+                      id="sv-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      className="sv-field"
+                      placeholder="you@email.com"
+                      value={respondentEmail}
+                      onChange={e => setRespondentEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {submitError && (
+                <p role="alert" style={{ margin: '1.25rem 0 0', padding: '.75rem 1rem', borderRadius: '.75rem', background: 'rgba(255,90,90,.1)', border: '1px solid rgba(255,90,90,.35)', color: '#ffb3b3', fontSize: '.9rem' }}>
+                  {submitError}
+                </p>
+              )}
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <button type="submit" disabled={isSubmitting} className="sv-btn">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Sending</span>
+                    </>
+                  ) : (
+                    <span>Send my answers</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        <footer className="sv-muted" style={{ marginTop: '3rem', fontSize: '.8rem' }}>
+          Powered by CoLaunch
+        </footer>
+      </main>
     </div>
   )
 }

@@ -1387,6 +1387,7 @@ export async function generateProductImageWithOpenAI(
   creatorData,
   promptOverride = null,
   signal = undefined,
+  imageOpts = {},
 ) {
   const { openaiKey } = loadAiKeys();
   if (!openaiKey) {
@@ -1395,52 +1396,53 @@ export async function generateProductImageWithOpenAI(
 
   const prompt = promptOverride || buildChannelSpecificImagePrompt(creatorData);
 
-  // 1. Primary: OpenAI DALL-E 3 (1024x1024 photorealistic)
-  try {
-    const res = await fetch("/api/openai/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify({
-        model: "dall-e-3",
+  // Try candidate models: gpt-image-2.6-sunburst first, then gpt-image-2.5-sunburst, then dall-e-3
+  const candidateModels = ["gpt-image-2.6-sunburst", "gpt-image-2.5-sunburst", "dall-e-3"];
+  let lastError = null;
+
+  for (const model of candidateModels) {
+    try {
+      const payload = {
+        model,
         prompt: prompt.slice(0, 4000),
         n: 1,
-        size: "1024x1024",
-        quality: "standard",
-        response_format: "url",
-      }),
-      signal,
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.data?.[0]?.url) {
-        return data.data[0].url;
+      };
+      if (imageOpts.size) {
+        payload.size = imageOpts.size;
       }
-      if (data?.data?.[0]?.b64_json) {
-        return `data:image/png;base64,${data.data[0].b64_json}`;
-      }
-    }
 
-    // Parse error response from OpenAI
-    let errMsg = `OpenAI status ${res.status}`;
-    try {
-      const errData = await res.json();
-      if (errData?.error?.message) errMsg = errData.error.message;
-    } catch (_) {
+      const res = await fetch("/api/openai/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.data?.[0]?.b64_json) {
+          return `data:image/png;base64,${data.data[0].b64_json}`;
+        }
+        if (data?.data?.[0]?.url) {
+          return data.data[0].url;
+        }
+      }
+
+      let errMsg = `OpenAI status ${res.status}`;
       try {
-        const errText = await res.text();
-        if (errText) errMsg = errText.slice(0, 200);
-      } catch (__) {}
-    }
+        const errData = await res.json();
+        if (errData?.error?.message) errMsg = errData.error.message;
+      } catch (_) {
+        try {
+          const errText = await res.text();
+          if (errText) errMsg = errText.slice(0, 200);
+        } catch (__) {}
+      }
 
-    console.warn(`[Forge] DALL-E 3 API returned status ${res.status}:`, errMsg);
-
-    // If key has expired or unauthorized, throw immediate clear message and purge stale cache
-    if (res.status === 401) {
-      if (openaiKey) {
+      if (res.status === 401) {
         failedKeys.add(openaiKey);
         try {
           if (localStorage.getItem("forge_openai_api_key") === openaiKey) {
@@ -1450,42 +1452,17 @@ export async function generateProductImageWithOpenAI(
             inMemoryAiKeys.openaiKey = "";
           }
         } catch (_) {}
+        throw new Error(`OpenAI Key Expired: ${errMsg}`);
       }
-      throw new Error(`OpenAI Key Expired: ${errMsg}`);
+
+      lastError = new Error(`OpenAI ${model} Error (${res.status}): ${errMsg}`);
+    } catch (err) {
+      if (err.name === "AbortError" || err.message?.includes("OpenAI Key Expired")) throw err;
+      lastError = err;
     }
-
-    // 2. Fallback: DALL-E 2 if DALL-E 3 has temporary capacity/quota bounds
-    if (res.status !== 401 && res.status !== 403) {
-      try {
-        const resDalle2 = await fetch("/api/openai/v1/images/generations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiKey}`,
-          },
-          body: JSON.stringify({
-            model: "dall-e-2",
-            prompt: prompt.slice(0, 1000),
-            n: 1,
-            size: "1024x1024",
-            response_format: "url",
-          }),
-          signal,
-        });
-
-        if (resDalle2.ok) {
-          const data2 = await resDalle2.json();
-          if (data2?.data?.[0]?.url) return data2.data[0].url;
-          if (data2?.data?.[0]?.b64_json) return `data:image/png;base64,${data2.data[0].b64_json}`;
-        }
-      } catch (_) {}
-    }
-
-    throw new Error(`OpenAI DALL-E Error (${res.status}): ${errMsg}`);
-  } catch (err) {
-    if (err.name === "AbortError") throw err;
-    throw err;
   }
+
+  throw lastError || new Error("Failed to generate image with OpenAI");
 }
 
 async function saveImageToBackendMedia(imageResult) {
