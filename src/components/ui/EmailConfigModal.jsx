@@ -90,8 +90,7 @@ export default function EmailConfigModal({
 
   const candidateUrls = [
     '',
-    'https://creator-forge-backend-jj1y.onrender.com',
-    'https://creator-forge-backend.onrender.com'
+    'https://colaunch-backend.onrender.com',
   ]
 
   // Step 1: Send verification code to the email address

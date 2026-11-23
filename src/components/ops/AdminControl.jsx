@@ -48,8 +48,7 @@ export default function AdminControl() {
     setLoading(true)
     const candidateUrls = [
       '',
-      'https://creator-forge-backend-jj1y.onrender.com',
-      'https://creator-forge-backend.onrender.com'
+      'https://colaunch-backend.onrender.com',
     ]
 
     try {
@@ -122,8 +121,7 @@ export default function AdminControl() {
     setActionLoading(true)
     const candidateUrls = [
       '',
-      'https://creator-forge-backend-jj1y.onrender.com',
-      'https://creator-forge-backend.onrender.com'
+      'https://colaunch-backend.onrender.com',
     ]
     try {
       for (const base of candidateUrls) {

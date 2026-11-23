@@ -1917,8 +1917,7 @@ export default function AiDoesItPanel({ onClose }) {
 
     const candidateUrls = [
       '',
-      'https://creator-forge-backend-jj1y.onrender.com',
-      'https://creator-forge-backend.onrender.com'
+      'https://colaunch-backend.onrender.com',
     ]
 
     let delivered = false

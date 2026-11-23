@@ -28,8 +28,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || [
 // Candidate backend URLs with intelligent fallback and timeout protection
 const CANDIDATE_API_URLS = [
   '',
-  'https://creator-forge-backend-jj1y.onrender.com',
-  'https://creator-forge-backend.onrender.com'
+  'https://colaunch-backend.onrender.com',
 ]
 
 async function apiPost(endpoint, body, onStatusUpdate = null) {

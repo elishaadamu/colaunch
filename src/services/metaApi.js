@@ -4,7 +4,7 @@
  * and direct publishing for Facebook and Instagram.
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://colaunch-backend.onrender.com'
 const STORAGE_KEY = 'forge_meta_connection'
 
 function getActiveUserKey(userEmail = null) {
@@ -57,8 +57,7 @@ export async function checkRemoteMetaStatus(handle = null, username = null, emai
   const candidateUrls = [
     '',
     BACKEND_URL,
-    'https://creator-forge-backend-jj1y.onrender.com',
-    'https://creator-forge-backend.onrender.com'
+    'https://colaunch-backend.onrender.com',
   ].filter((v, i, a) => a.indexOf(v) === i)
 
   for (const baseUrl of candidateUrls) {

@@ -5,7 +5,7 @@
  * not dependent on localStorage.
  */
 
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com').replace(/\/$/, '')
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://colaunch-backend.onrender.com').replace(/\/$/, '')
 
 const CANDIDATE_URLS = [
   '',

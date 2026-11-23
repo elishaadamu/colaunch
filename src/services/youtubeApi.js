@@ -10,7 +10,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || [
   '.apps.googleusercontent.com'
 ].join('')
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || (typeof window !== 'undefined' ? window.location.origin : 'https://app.co-launch.app')
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://creator-forge-backend-jj1y.onrender.com'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://colaunch-backend.onrender.com'
 
 const STORAGE_KEY = 'forge_youtube_connection'
 
@@ -110,8 +110,7 @@ export async function exchangeYouTubeAuthCode(code, redirectUri = null, userEmai
 
   const candidateUrls = [
     BACKEND_URL,
-    'https://creator-forge-backend.onrender.com',
-    'https://creator-forge-backend-jj1y.onrender.com'
+    'https://colaunch-backend.onrender.com'
   ].filter(Boolean)
 
   let lastError = null
@@ -182,8 +181,7 @@ export async function checkRemoteYouTubeStatus(identifier = null) {
   const candidateUrls = [
     '',
     BACKEND_URL,
-    'https://creator-forge-backend-jj1y.onrender.com',
-    'https://creator-forge-backend.onrender.com'
+    'https://colaunch-backend.onrender.com',
   ].filter((v, i, a) => a.indexOf(v) === i)
 
   for (const baseUrl of candidateUrls) {
@@ -286,8 +284,7 @@ export async function publishToYouTube({
 
   const candidateUrls = [
     BACKEND_URL,
-    'https://creator-forge-backend.onrender.com',
-    'https://creator-forge-backend-jj1y.onrender.com'
+    'https://colaunch-backend.onrender.com'
   ].filter(Boolean)
 
   let lastError = null

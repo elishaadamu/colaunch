@@ -22,7 +22,7 @@
     },
     {
       "source": "/api/:path*",
-      "destination": "https://creator-forge-backend-jj1y.onrender.com/api/:path*"
+      "destination": "https://colaunch-backend.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
